@@ -1,0 +1,3 @@
+[submodule "Fission/vendor/yaml-cpp"]
+	path = Fission/vendor/yaml-cpp
+	url = https://github.com/lazergenixdev/yaml-cpp
