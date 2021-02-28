@@ -1,5 +1,5 @@
 #pragma once
-#include "LazerEngine/Core/Graphics/Bindable.h"
+#include "Fission/Core/Graphics/Bindable.h"
 #include <d3d11.h>
 
 namespace Fission::Platform {

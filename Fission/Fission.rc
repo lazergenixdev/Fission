@@ -53,7 +53,7 @@ END
 
 VS_VERSION_INFO VERSIONINFO
  FILEVERSION 1,0,0,1
- PRODUCTVERSION LAZER_ENGINE_VER_MAJ, LAZER_ENGINE_VER_MIN, LAZER_ENGINE_VER_PAT, 69
+ PRODUCTVERSION FISSION_VERSION_MAJ, FISSION_VERSION_MIN, FISSION_VERSION_PAT, 69
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -68,14 +68,14 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "CompanyName", LAZER_COMPANY_NAME
-            VALUE "FileDescription", "Lazer Game Engine"
+            VALUE "CompanyName", FISSION_COMPANY_NAME
+            VALUE "FileDescription", "Fission Game Engine"
             VALUE "FileVersion", "1.0.0.1"
-            VALUE "InternalName", "LazerEngine"
-            VALUE "LegalCopyright", LAZER_COPYRIGHT
-            VALUE "OriginalFilename", "LazerEngine.dll"
-            VALUE "ProductName", "Lazer Engine"
-            VALUE "ProductVersion", LAZER_ENGINE_VER_STRING
+            VALUE "InternalName", "Fission"
+            VALUE "LegalCopyright", FISSION_COPYRIGHT
+            VALUE "OriginalFilename", "Fission.dll"
+            VALUE "ProductName", "Fission Engine"
+            VALUE "ProductVersion", FISSION_VERSION_STRING
         END
     END
     BLOCK "VarFileInfo"

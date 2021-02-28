@@ -1,6 +1,6 @@
-#include "LazerEngine/Core/Input/Cursor.h"
+#include "Fission/Core/Input/Cursor.h"
 
-#ifdef LAZER_PLATFORM_WINDOWS
+#ifdef FISSION_PLATFORM_WINDOWS
 #include "Platform/Windows/WindowsCursor.h"
 #endif
 
@@ -12,9 +12,9 @@ namespace Fission {
 
     Cursor * Cursor::Get( Default_ default_cursor ) 
     {
-#ifdef LAZER_PLATFORM_WINDOWS
+#ifdef FISSION_PLATFORM_WINDOWS
         return Platform::WindowsCursor::Default( default_cursor );
-#endif // LAZER_PLATFORM_WINDOWS
+#endif // FISSION_PLATFORM_WINDOWS
     }
 
 } // namespace Fission

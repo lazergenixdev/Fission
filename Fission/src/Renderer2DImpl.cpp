@@ -1,0 +1,635 @@
+#include "Renderer2DImpl.h"
+#include "Mesh.h"
+#include <numbers>
+#include "lazer/unfinished.h"
+
+namespace Fission {
+
+	std::unique_ptr<Renderer2D> Renderer2D::Create( Graphics * pGraphics ) {
+		return std::make_unique<Renderer2DImpl>( pGraphics );
+	}
+
+	std::vector<Renderer2DImpl::DrawCommand::sincos> Renderer2DImpl::DrawCommand::TrigCache = [] () {
+		using sincos = Renderer2DImpl::DrawCommand::sincos;
+		std::vector<sincos> out;
+
+		int geometry_persision = 7;
+
+		assert( geometry_persision >= 1 && geometry_persision < 100 ); // restrict the amount of persision to a reasonable range
+
+		out.reserve( geometry_persision );
+		static constexpr float quarter_rotation = ( std::numbers::pi_v<float> / 2.0f );
+		const float n = (float)( geometry_persision + 1 );
+
+		// Calculate sin/cos to cache for later render commands
+		for( int i = 0; i < geometry_persision; i++ ) {
+			float x = (float)( i + 1 ) * quarter_rotation / n;
+			out.emplace_back( sinf( x ), cosf( x ) );
+		}
+
+		return out;
+	}();
+
+
+	static constexpr const char * _fission_renderer2d_shader_code_hlsl =
+		R"( 
+	matrix screen_transform;
+
+struct VS_OUT { 
+	float2 tc : TexCoord; 
+	float4 color : Color; 
+	float4 pos : SV_Position; 
+};
+VS_OUT vs_main( float2 pos : Position, float2 tc : TexCoord, float4 color : Color ) { 
+	VS_OUT vso; 
+	vso.pos = mul( float4( pos, 1.0, 1.0 ), screen_transform ); 
+	vso.tc = tc; 
+	vso.color = color;
+	return vso; 
+}
+Texture2D tex;
+SamplerState ss;
+float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target { 
+	if( tc.x < 0.0f ) return color;
+	return tex.Sample( ss, tc ) * color;
+}
+	)";
+
+	Renderer2DImpl::Renderer2DImpl( Graphics * pGraphics )
+		: m_pGraphics( pGraphics )
+	{
+		vertex_data = (vertex *)_aligned_malloc( vertex_max_count * sizeof vertex, 32 );
+		index_data = (uint32_t *)_aligned_malloc( index_max_count * sizeof uint32_t, 32 );
+
+		using namespace Resource;
+		using namespace Resource::VertexLayoutTypes;
+
+		auto vl = VertexLayout{};
+		vl.Append<Float2>( "Position" );
+		vl.Append<Float2>( "TexCoord" );
+		vl.Append<Float4>( "Color" );
+
+		{ // Create Transform Buffer for screen transform
+			ConstantBuffer::CreateInfo info;
+			info.ByteSize = 64u;
+			m_pTransformBuffer = pGraphics->CreateConstantBuffer( info );
+
+			vec2f res = (vec2f)pGraphics->GetResolution();
+
+			float matrix[16] = {
+				2.0f / res.x,	0.0f,		   -1.0f, 0.0f,
+				0.0f,		   -2.0f / res.y,	1.0f, 0.0f,
+				0.0f,			0.0f,			1.0f, 0.0f,
+				0.0f,			0.0f,			0.0f, 1.0f,
+			};
+			m_pTransformBuffer->Update( matrix );
+		}
+		{ // Create Vertex Buffer
+			VertexBuffer::CreateInfo info;
+			info.vtxCount = vertex_max_count;
+			info.pVertexLayout = &vl;
+			info.type = VertexBuffer::Type::Dynamic;
+			m_pVertexBuffer = pGraphics->CreateVertexBuffer( info );
+		}
+		{ // Create Index Buffer
+			IndexBuffer::CreateInfo info;
+			info.idxCount = index_max_count;
+			info.size = IndexBuffer::Size::UInt32;
+			info.type = IndexBuffer::Type::Dynamic;
+			m_pIndexBuffer = pGraphics->CreateIndexBuffer( info );
+		}
+		{ // Create Shaders
+			Shader::CreateInfo info;
+			info.pVertexLayout = &vl;
+			if( pGraphics->GetAPI() == Graphics::API::DirectX11 )
+				info.source_code = _fission_renderer2d_shader_code_hlsl;
+			m_pShader = pGraphics->CreateShader( info );
+		}
+		{ // todo: more blenders
+			Blender::CreateInfo info;
+
+			info.blend = Blender::Blend::Normal;
+			m_pBlenders[(int)BlendMode::Normal] = pGraphics->CreateBlender( info );
+
+			info.blend = Blender::Blend::Add;
+			m_pBlenders[(int)BlendMode::Add] = pGraphics->CreateBlender( info );
+
+			m_pUseBlender = m_pBlenders[(int)BlendMode::Normal].get();
+		}
+
+		m_CommandBuffer.reserve( 20 );
+		m_CommandBuffer.emplace_back( this, 0u, 0u );
+	}
+
+	Renderer2DImpl::~Renderer2DImpl() noexcept
+	{
+		_aligned_free( vertex_data );
+		_aligned_free( index_data );
+	}
+
+	void Renderer2DImpl::Render()
+	{
+		if( m_CommandBuffer.size() == 1u && m_CommandBuffer[0].vtxCount == 0u ) return;
+
+		auto & end = m_CommandBuffer.back();
+
+		m_pShader->Bind();
+		m_pVertexBuffer->SetData( vertex_data, end.vtxCount + end.vtxStart );
+		m_pVertexBuffer->Bind();
+		m_pIndexBuffer->SetData( index_data, end.idxCount + end.idxStart );
+		m_pIndexBuffer->Bind();
+		m_pTransformBuffer->Bind();
+		m_pUseBlender->Bind();
+
+		for( auto && cmd : m_CommandBuffer )
+		{
+			if( cmd.Texture ) cmd.Texture->Bind(0);
+			m_pGraphics->DrawIndexed( cmd.idxCount, cmd.idxStart, cmd.vtxStart );
+		}
+
+		vertex_count = 0;
+		index_count = 0;
+
+		m_CommandBuffer.clear();
+		m_CommandBuffer.emplace_back( this, 0u, 0u );
+
+	}
+
+	void Renderer2DImpl::FillTriangle( vec2f p0, vec2f p1, vec2f p2, colorf color )
+	{
+		m_CommandBuffer.back().AddTriangle( p0, p1, p2, color );
+	}
+
+	void Renderer2DImpl::FillTriangleUV( vec2f p0, vec2f p1, vec2f p2, vec2f uv0, vec2f uv1, vec2f uv2, Resource::Texture2D * pTexture, colorf tint )
+	{
+		SetTexture( pTexture );
+		m_CommandBuffer.back().AddTriangleUV( p0, p1, p2, uv0, uv1, uv2, tint );
+	}
+
+	void Renderer2DImpl::FillRect( rectf rect, colorf color )
+	{
+		m_CommandBuffer.back().AddRectFilled( rect, color );
+	}
+
+	void Renderer2DImpl::DrawRect( rectf rect, colorf color, float stroke_width, StrokeStyle stroke )
+	{
+		m_CommandBuffer.back().AddRect( rect, color, stroke_width, stroke );
+	}
+
+	void Renderer2DImpl::FillRectGrad( rectf rect, colorf color_topleft, colorf color_topright, colorf color_bottomleft, colorf color_bottomright )
+	{
+		m_CommandBuffer.back().AddRectFilled( rect, color_topleft, color_topright, color_bottomleft, color_bottomright );
+	}
+
+	void Renderer2DImpl::FillRoundRect( rectf rect, float rad, colorf color )
+	{
+		_lazer_throw_not_implemented;
+	}
+
+	void Renderer2DImpl::DrawRoundRect( rectf rect, float rad, colorf color, float stroke_width, StrokeStyle stroke )
+	{
+		_lazer_throw_not_implemented;
+	}
+
+	void Renderer2DImpl::DrawLine( vec2f start, vec2f end, colorf color, float stroke_width, StrokeStyle stroke )
+	{
+		(void)stroke;
+		m_CommandBuffer.back().AddLine( start, end, stroke_width, color, color );
+	}
+
+	void Renderer2DImpl::FillCircle( vec2f point, float radius, colorf color )
+	{
+		m_CommandBuffer.back().AddCircleFilled( point, radius, color );
+	}
+
+	void Renderer2DImpl::DrawCircle( vec2f point, float radius, colorf color, float stroke_width, StrokeStyle stroke )
+	{
+		_lazer_throw_not_implemented;
+	}
+
+	void Renderer2DImpl::FillArrow( vec2f start, vec2f end, float width, colorf color )
+	{
+		if( start == end )
+		{
+			m_CommandBuffer.back().AddCircleFilled( start, width * 0.2f, color );
+			return;
+		}
+
+		vec2f diff = start - end;
+		vec2f par = diff.norm();
+		float lensq = diff.lensq();
+
+		if( lensq < width * width )
+		{
+			const vec2f center = start;
+			const vec2f perp = par.perp() * ( sqrtf( lensq ) * 0.5f );
+			const vec2f l = center - perp, r = center + perp;
+
+			m_CommandBuffer.back().AddTriangle( end, l, r, color );
+		}
+		else
+		{
+			const vec2f perp = par.perp() * ( width * 0.5f );
+			const vec2f center = end + par * width;
+			const vec2f l = center - perp, r = center + perp;
+
+			m_CommandBuffer.back().AddTriangle( end, l, r, color );
+			m_CommandBuffer.back().AddLine( start, center, 0.4f * width, color, color );
+		}
+
+	}
+
+	void Renderer2DImpl::DrawImage( Resource::Texture2D * pTexture, rectf rect, rectf uv, colorf tint )
+	{
+		SetTexture( pTexture );
+		m_CommandBuffer.back().AddRectFilledUV( rect, uv, tint );
+	}
+
+	void Renderer2DImpl::DrawImage( Resource::Texture2D * pTexture, rectf rect, colorf tint )
+	{
+		SetTexture( pTexture );
+		m_CommandBuffer.back().AddRectFilledUV( rect, { 0.0f, 1.0f, 0.0f, 1.0f }, tint );
+	}
+
+	void Renderer2DImpl::DrawMesh( const Mesh * m )
+	{
+		m_CommandBuffer.back().AddMesh( m );
+	}
+
+	void Renderer2DImpl::SelectFont( const Font * pFont )
+	{
+		m_pSelectedFont = pFont;
+	}
+
+	TextLayout Renderer2DImpl::DrawString( const wchar_t * wstr, vec2f pos, colorf color )
+	{
+		FISSION_ASSERT( m_pSelectedFont, "you're not supposed to do that." );
+
+		SetTexture( m_pSelectedFont->GetTexture2D() );
+
+		float start = 0.0f;
+		const Font::Glyph * glyph;
+
+		while( wstr[0] != L'\0' )
+		{
+			if( *wstr == L'\r' || *wstr == L'\n' ) { wstr++; pos.y += m_pSelectedFont->GetSize(); start = 0.0f; continue; }
+			glyph = m_pSelectedFont->GetGylph( *wstr );
+
+
+#define __SNAP_TEXT 1
+
+#define _ROUND(_VAL) ((float)(int)((_VAL) + 0.5f))
+
+#if __SNAP_TEXT
+			const auto left = _ROUND( pos.x + glyph->offset.x + start );
+			const auto right = _ROUND( left + glyph->size.x );
+			const auto top = _ROUND( pos.y + glyph->offset.y );
+			const auto bottom = _ROUND( top + glyph->size.y );
+#else
+			const auto left = pos.x + glyph->offset.x + start;
+			const auto right = left + glyph->size.x;
+			const auto top = pos.y + glyph->offset.y;
+			const auto bottom = top + glyph->size.y;
+#endif
+
+			m_CommandBuffer.back().AddRectFilledUV( { left, right, top, bottom }, glyph->rc, color );
+
+			start += glyph->advance;
+
+			wstr++;
+		}
+
+		return TextLayout{ start, (float)m_pSelectedFont->GetSize() };
+	}
+
+	TextLayout Renderer2DImpl::CreateTextLayout( const wchar_t * wstr )
+	{
+		FISSION_ASSERT( m_pSelectedFont, "you're not supposed to do that." );
+
+		TextLayout out{ 0.0f,(float)m_pSelectedFont->GetSize() };
+
+		while( wstr[0] != L'\0' )
+		{
+			const Font::Glyph * g = m_pSelectedFont->GetGylph( *wstr );
+		//	out.ch_divisions.emplace_back( out.width + g->advance * 0.5f, out.width );
+			out.width += g->advance;
+			wstr++;
+		}
+
+		return out;
+	}
+
+	TextLayout Renderer2DImpl::DrawString( const char * str, vec2f pos, colorf color )
+	{
+		FISSION_ASSERT( m_pSelectedFont, "you're not supposed to do that." );
+
+		SetTexture( m_pSelectedFont->GetTexture2D() );
+
+		float start = 0.0f;
+		const Font::Glyph * glyph;
+
+		while( str[0] != '\0' )
+		{
+			if( *str == '\r' || *str == '\n' ) { str++; pos.y += m_pSelectedFont->GetSize(); start = 0.0f; continue; }
+			glyph = m_pSelectedFont->GetGylph( (wchar_t)*str );
+
+
+#define __SNAP_TEXT 1
+
+#define _ROUND(_VAL) ((float)(int)((_VAL) + 0.5f))
+
+#if __SNAP_TEXT
+			const auto left = _ROUND( pos.x + glyph->offset.x + start );
+			const auto right = _ROUND( left + glyph->size.x );
+			const auto top = _ROUND( pos.y + glyph->offset.y );
+			const auto bottom = _ROUND( top + glyph->size.y );
+#else
+			const auto left = pos.x + glyph->offset.x + start;
+			const auto right = left + glyph->size.x;
+			const auto top = pos.y + glyph->offset.y;
+			const auto bottom = top + glyph->size.y;
+#endif
+
+			m_CommandBuffer.back().AddRectFilledUV( { left, right, top, bottom }, glyph->rc, color );
+
+			start += glyph->advance;
+
+			str++;
+		}
+
+		return TextLayout{ start, (float)m_pSelectedFont->GetSize() };
+	}
+
+	TextLayout Renderer2DImpl::CreateTextLayout( const char * str )
+	{
+		FISSION_ASSERT( m_pSelectedFont, "you're not supposed to do that." );
+
+		TextLayout out{ 0.0f,(float)m_pSelectedFont->GetSize() };
+
+		while( str[0] != '\0' )
+		{
+			const Font::Glyph * g = m_pSelectedFont->GetGylph( (wchar_t)*str );
+			out.width += g->advance;
+			str++;
+		}
+
+		return out;
+	}
+
+	void Renderer2DImpl::SetBlendMode( BlendMode mode )
+	{
+		m_pUseBlender = m_pBlenders[(int)mode].get();
+	}
+
+	void Renderer2DImpl::PushTransform( const mat3x2f & transform )
+	{
+		m_TransformStack.emplace_back( transform );
+		_set_accumulated_transform();
+	}
+
+	void Renderer2DImpl::PopTransform()
+	{
+		FISSION_ASSERT( !m_TransformStack.empty(), "No Transforms were left to be poped" );
+		m_TransformStack.pop_back();
+		_set_accumulated_transform();
+	}
+
+	void Renderer2DImpl::_set_accumulated_transform()
+	{
+		if( m_TransformStack.empty() ) {
+			m_accTransform = mat3x2f::Identity();
+			return;
+		}
+
+		m_accTransform = m_TransformStack.front();
+
+		for( int i = 1; i < m_TransformStack.size(); i++ )
+			m_accTransform = m_TransformStack[i] * m_accTransform;
+	}
+
+	void Renderer2DImpl::SetTexture( Resource::Texture2D * tex )
+	{
+		FISSION_ASSERT( tex, "bruh" );
+
+		auto & end = m_CommandBuffer.back();
+		if( end.Texture == nullptr ) end.Texture = tex;
+		else if( end.Texture != tex )
+		{
+			m_CommandBuffer.emplace_back( this, end.vtxStart + end.vtxCount, end.idxStart + end.idxCount );
+			m_CommandBuffer.back().Texture = tex;
+		}
+	}
+
+	Renderer2DImpl::DrawCommand::DrawCommand( Renderer2DImpl * parent, uint32_t vc, uint32_t ic )
+		: vtxStart( vc ), idxStart( ic ),
+		pVtxData( parent->vertex_data + vtxStart ), pIdxData( parent->index_data + idxStart ),
+		mat( &parent->m_accTransform )
+	{}
+
+	void Renderer2DImpl::DrawCommand::AddRect( rectf rect, colorf color, float stroke_width, StrokeStyle stroke )
+	{
+		for( int i = 0; i < 8; i++ ) {
+		// I bet you've never seen code like this:
+			i & 0x1 ? (
+				pIdxData[idxCount++] = vtxCount + i,
+				pIdxData[idxCount++] = vtxCount + ( i + 1u ) % 8u,
+				pIdxData[idxCount++] = vtxCount + ( i + 2u ) % 8u
+			) : (
+				pIdxData[idxCount++] = vtxCount + i,
+				pIdxData[idxCount++] = vtxCount + ( i + 2u ) % 8u,
+				pIdxData[idxCount++] = vtxCount + ( i + 1u ) % 8u
+			);
+		}
+
+		float in_l = rect.get_l();
+		float in_r = rect.get_r();
+		float in_t = rect.get_t();
+		float in_b = rect.get_b();
+
+		float out_l = rect.get_l();
+		float out_r = rect.get_r();
+		float out_t = rect.get_t();
+		float out_b = rect.get_b();
+
+		switch( stroke )
+		{
+		case StrokeStyle::Center:
+		{
+			float half_stroke = stroke_width / 2.0f;
+
+			in_l += half_stroke, in_t += half_stroke;
+			in_r -= half_stroke, in_b -= half_stroke;
+
+			out_l -= half_stroke, out_t -= half_stroke;
+			out_r += half_stroke, out_b += half_stroke;
+			break;
+		}
+		case StrokeStyle::Inside:
+		{
+			stroke_width = std::min( stroke_width, ( out_b - out_t ) / 2.0f );
+			stroke_width = std::min( stroke_width, ( out_r - out_l ) / 2.0f );
+
+			in_l += stroke_width, in_t += stroke_width;
+			in_r -= stroke_width, in_b -= stroke_width;
+			break;
+		}
+		case StrokeStyle::Outside:
+		{
+			out_l -= stroke_width, out_t -= stroke_width;
+			out_r += stroke_width, out_b += stroke_width;
+			break;
+		}
+		default:throw std::logic_error( "this don't make no fucking sense" );
+		}
+
+		pVtxData[vtxCount++] = vertex( *mat * vec2( out_l, out_b ), color );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( in_l, in_b ), color );
+
+		pVtxData[vtxCount++] = vertex( *mat * vec2( out_l, out_t ), color );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( in_l, in_t ), color );
+
+		pVtxData[vtxCount++] = vertex( *mat * vec2( out_r, out_t ), color );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( in_r, in_t ), color );
+
+		pVtxData[vtxCount++] = vertex( *mat * vec2( out_r, out_b ), color );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( in_r, in_b ), color );
+	}
+
+	void Renderer2DImpl::DrawCommand::AddMesh( const Mesh * m )
+	{
+		const auto * colors = m->m_Data->color_buffer.data();
+
+		for( auto && i : m->m_Data->index_buffer )
+			pIdxData[idxCount++] = i + vtxCount;
+
+		for( auto && v : m->m_Data->vertex_buffer )
+			pVtxData[vtxCount++] = vertex( *mat * v.pos, colors[v.color_index] );
+	}
+
+	void Renderer2DImpl::DrawCommand::AddCircleFilled( vec2f center, float rad, colorf c )
+	{
+		const int count = ( (int)TrigCache.size() + 1u ) * 4u - 2;
+		for( int i = 0; i < count; i++ )
+		{
+			pIdxData[idxCount++] = vtxCount;
+			pIdxData[idxCount++] = vtxCount + i + 1u;
+			pIdxData[idxCount++] = vtxCount + i + 2u;
+		}
+
+		pVtxData[vtxCount++] = vertex( *mat * vec2( center.x + rad, center.y ), c );
+		for( auto && trig : TrigCache )
+			pVtxData[vtxCount++] = vertex( *mat * vec2( center.x + trig.cos * rad, center.y + trig.sin * rad ), c );
+
+		pVtxData[vtxCount++] = vertex( *mat * vec2( center.x, center.y + rad ), c );
+		for( auto && trig : TrigCache )
+			pVtxData[vtxCount++] = vertex( *mat * vec2( center.x - trig.sin * rad, center.y + trig.cos * rad ), c );
+
+		pVtxData[vtxCount++] = vertex( *mat * vec2( center.x - rad, center.y ), c );
+		for( auto && trig : TrigCache )
+			pVtxData[vtxCount++] = vertex( *mat * vec2( center.x - trig.cos * rad, center.y - trig.sin * rad ), c );
+
+		pVtxData[vtxCount++] = vertex( *mat * vec2( center.x, center.y - rad ), c );
+		for( auto && trig : TrigCache )
+			pVtxData[vtxCount++] = vertex( *mat * vec2( center.x + trig.sin * rad, center.y - trig.cos * rad ), c );
+	}
+
+	void Renderer2DImpl::DrawCommand::AddTriangle( vec2f p0, vec2f p1, vec2f p2, colorf c )
+	{
+		pIdxData[idxCount++] = vtxCount;
+		pIdxData[idxCount++] = vtxCount + 1u;
+		pIdxData[idxCount++] = vtxCount + 2u;
+
+		pVtxData[vtxCount++] = vertex( *mat * p0, c );
+		pVtxData[vtxCount++] = vertex( *mat * p1, c );
+		pVtxData[vtxCount++] = vertex( *mat * p2, c );
+	}
+
+	void Renderer2DImpl::DrawCommand::AddTriangleUV( vec2f p0, vec2f p1, vec2f p2, vec2f uv0, vec2f uv1, vec2f uv2, colorf c )
+	{
+		pIdxData[idxCount++] = vtxCount;
+		pIdxData[idxCount++] = vtxCount + 1u;
+		pIdxData[idxCount++] = vtxCount + 2u;
+
+		pVtxData[vtxCount++] = vertex( *mat * p0, uv0, c );
+		pVtxData[vtxCount++] = vertex( *mat * p1, uv1, c );
+		pVtxData[vtxCount++] = vertex( *mat * p2, uv2, c );
+	}
+
+	void Renderer2DImpl::DrawCommand::AddLine( vec2f start, vec2f end, float stroke, colorf startColor, colorf endColor )
+	{
+		const auto edge_vector = ( end - start ).perp().norm() * stroke / 2.0f;
+
+		pIdxData[idxCount++] = vtxCount;
+		pIdxData[idxCount++] = vtxCount + 1u;
+		pIdxData[idxCount++] = vtxCount + 2u;
+		pIdxData[idxCount++] = vtxCount + 2u;
+		pIdxData[idxCount++] = vtxCount + 1u;
+		pIdxData[idxCount++] = vtxCount + 3u;
+
+		pVtxData[vtxCount++] = vertex( *mat * start + edge_vector, startColor );
+		pVtxData[vtxCount++] = vertex( *mat * start - edge_vector, startColor );
+		pVtxData[vtxCount++] = vertex( *mat * end + edge_vector, endColor );
+		pVtxData[vtxCount++] = vertex( *mat * end - edge_vector, endColor );
+	}
+
+	void Renderer2DImpl::DrawCommand::AddRectFilledUV( rectf rect, rectf uv, color c )
+	{
+		pIdxData[idxCount++] = vtxCount;
+		pIdxData[idxCount++] = vtxCount + 1u;
+		pIdxData[idxCount++] = vtxCount + 2u;
+		pIdxData[idxCount++] = vtxCount + 3u;
+		pIdxData[idxCount++] = vtxCount;
+		pIdxData[idxCount++] = vtxCount + 2u;
+
+		pVtxData[vtxCount++] = vertex( *mat * vec2( rect.x.low, rect.y.high ), vec2( uv.x.low, uv.y.high ), c );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( rect.x.low, rect.y.low ), vec2( uv.x.low, uv.y.low ), c );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( rect.x.high, rect.y.low ), vec2( uv.x.high, uv.y.low ), c );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( rect.x.high, rect.y.high ), vec2( uv.x.high, uv.y.high ), c );
+	}
+
+	void Renderer2DImpl::DrawCommand::AddRectFilled( vec2f tl, vec2f tr, vec2f bl, vec2f br, color c )
+	{
+		pIdxData[idxCount++] = vtxCount;
+		pIdxData[idxCount++] = vtxCount + 1u;
+		pIdxData[idxCount++] = vtxCount + 2u;
+		pIdxData[idxCount++] = vtxCount + 3u;
+		pIdxData[idxCount++] = vtxCount;
+		pIdxData[idxCount++] = vtxCount + 2u;
+
+		pVtxData[vtxCount++] = vertex( *mat * bl, c );
+		pVtxData[vtxCount++] = vertex( *mat * tl, c );
+		pVtxData[vtxCount++] = vertex( *mat * tr, c );
+		pVtxData[vtxCount++] = vertex( *mat * br, c );
+	}
+
+	void Renderer2DImpl::DrawCommand::AddRectFilled( rectf rect, color c )
+	{
+		pIdxData[idxCount++] = vtxCount;
+		pIdxData[idxCount++] = vtxCount + 1u;
+		pIdxData[idxCount++] = vtxCount + 2u;
+		pIdxData[idxCount++] = vtxCount + 3u;
+		pIdxData[idxCount++] = vtxCount;
+		pIdxData[idxCount++] = vtxCount + 2u;
+
+		pVtxData[vtxCount++] = vertex( *mat * vec2( rect.x.low, rect.y.high ), c );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( rect.x.low, rect.y.low ), c );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( rect.x.high, rect.y.low ), c );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( rect.x.high, rect.y.high ), c );
+	}
+
+	void Renderer2DImpl::DrawCommand::AddRectFilled( rectf rect, color tl, color tr, color bl, color br )
+	{
+		pIdxData[idxCount++] = vtxCount;
+		pIdxData[idxCount++] = vtxCount + 1u;
+		pIdxData[idxCount++] = vtxCount + 2u;
+		pIdxData[idxCount++] = vtxCount + 3u;
+		pIdxData[idxCount++] = vtxCount;
+		pIdxData[idxCount++] = vtxCount + 2u;
+
+		pVtxData[vtxCount++] = vertex( *mat * vec2( rect.x.low, rect.y.high ), bl );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( rect.x.low, rect.y.low ), tl );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( rect.x.high, rect.y.low ), tr );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( rect.x.high, rect.y.high ), br );
+	}
+
+}

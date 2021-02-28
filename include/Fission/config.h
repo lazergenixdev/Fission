@@ -52,11 +52,13 @@ namespace Fission {
 
 #include <cassert>
 
-#define LAZER_ASSERT( expression, msg ) assert( expression && "" msg )
+#define FISSION_ASSERT( expression, msg ) assert( expression && "" msg )
 
 #ifdef DEBUG
 #define FISSION_DEBUG
 #endif
+
+#define FISSION_MK_STR(X) #X
 
 // reminder that these functions can introduce race conditions
 #define FISSION_THREAD_SAFE

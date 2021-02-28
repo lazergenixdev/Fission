@@ -1,5 +1,5 @@
 #pragma once
-#include "LazerEngine/config.h"
+#include "Fission/config.h"
 #include "Color.h"
 
 #ifndef FISSION_CREATE_CONSOLE_WINDOW

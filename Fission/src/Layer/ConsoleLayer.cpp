@@ -105,7 +105,7 @@ namespace Fission {
 					lineOffset = 0;
 					m_bShow = true;
 				}
-				return LAZER_EVENT_HANDLED;
+				return FISSION_EVENT_HANDLED;
 			}
 			case Keys::Up:
 			case Keys::Mouse_WheelUp:
@@ -125,7 +125,7 @@ namespace Fission {
 			{
 				if( m_bShow ) {
 					_hide();
-					return LAZER_EVENT_HANDLED;
+					return FISSION_EVENT_HANDLED;
 				}
 				break;
 			}
@@ -133,7 +133,7 @@ namespace Fission {
 				break;
 			}
 		}
-		return ( m_bShow ) ? LAZER_EVENT_HANDLED : LAZER_EVENT_PASS;
+		return ( m_bShow ) ? FISSION_EVENT_HANDLED : FISSION_EVENT_PASS;
 	}
 
 	EventResult ConsoleLayer::OnTextInput( TextInputEventArgs & args )
@@ -144,7 +144,7 @@ namespace Fission {
 			{
 			case '`':
 			case '~':
-				return LAZER_EVENT_HANDLED;
+				return FISSION_EVENT_HANDLED;
 			case '\r':
 			{
 				if( !m_CommandText.empty() )
@@ -166,9 +166,9 @@ namespace Fission {
 					m_CommandText += args.character;
 				break;
 			}
-			return LAZER_EVENT_HANDLED;
+			return FISSION_EVENT_HANDLED;
 		}
-		return LAZER_EVENT_PASS;
+		return FISSION_EVENT_PASS;
 	}
 
 	void ConsoleLayer::_hide()

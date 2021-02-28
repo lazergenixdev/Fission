@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by LazerEngine.rc
+// Used by Fission.rc
 
 // Next default values for new objects
 // 

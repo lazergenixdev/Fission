@@ -1,5 +1,5 @@
 #pragma once
-#include "LazerEngine/Core/Console.h"
+#include "Fission/Core/Console.h"
 
 namespace Fission {
 

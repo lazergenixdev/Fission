@@ -1,5 +1,5 @@
 #include "DebugLayer.h"
-#include "LazerEngine/Core/Application.h"
+#include "Fission/Core/Application.h"
 #include "../Version.h"
 
 namespace RobotoRegularTTF {
@@ -62,7 +62,7 @@ void DebugLayerImpl::Pop()
 
 void DebugLayerImpl::Text( const char * what )
 {
-	LAZER_ASSERT( m_CurrentInfo, "You must Push before Text() friendo" );
+	FISSION_ASSERT( m_CurrentInfo, "You must Push before Text() friendo" );
 
 	m_CurrentInfo->emplace_back( what );
 }
@@ -91,11 +91,11 @@ void DebugLayerImpl::OnUpdate() {
 
 
 
-		auto tl = m_pRenderer2D->CreateTextLayout( L"LazerEngine v" LAZER_ENGINE_VER_STRING " - Debug Layer" );
+		auto tl = m_pRenderer2D->CreateTextLayout( L"Fission-v" FISSION_VERSION_STRING " - Debug Layer" );
 
 		m_pRenderer2D->FillRect( rectf( 0.0f, tl.width, 0.0f, 2.0f * diff ), color( Colors::Black, 0.5f ) );
 
-		m_pRenderer2D->DrawString( L"LazerEngine v" LAZER_ENGINE_VER_STRING " - Debug Layer", { 0.0f, 0.0f }, Colors::White );
+		m_pRenderer2D->DrawString( L"Fission-v" FISSION_VERSION_STRING " - Debug Layer", { 0.0f, 0.0f }, Colors::White );
 
 		m_pRenderer2D->DrawString( L"(F3)", { tl.width + 4.0f, 0.0f }, color( 0xFFFFFF, 0.5f ) );
 
@@ -128,7 +128,7 @@ EventResult DebugLayerImpl::OnKeyDown( KeyDownEventArgs & args )
 	if( args.key == Keys::Key::F3 )
 	{
 		m_bShow = !m_bShow;
-		return LAZER_EVENT_HANDLED;
+		return FISSION_EVENT_HANDLED;
 	}
 	if( args.key == Keys::Key::F9 )
 	{
@@ -138,5 +138,5 @@ EventResult DebugLayerImpl::OnKeyDown( KeyDownEventArgs & args )
 		swprintf( buf, std::size( buf ), L"%.1f FPS\n", 1000.0f / m_AvgFrameTime );
 		OutputDebugStringW( buf );
 	}
-	return LAZER_EVENT_PASS;
+	return FISSION_EVENT_PASS;
 }

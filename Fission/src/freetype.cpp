@@ -1,16 +1,16 @@
 #include "freetype.h"
 
-#include "LazerEngine/Core/Console.h"
+#include "Fission/Core/Console.h"
 
-#define _LAZER_FREETYPE_THROW_FAILED( _ft_call, _Info )			if( _ft_call ) throw freetype::Exception(_lazer_exception_msg.append( _Info ))
-#define _LAZER_FREETYPE_THROW_FAILED_EX( _ft_call, _Info, _Ex ) if( err = _ft_call ) throw freetype::Exception(_lazer_exception_msg.append("Error",FT_Error_String(err)).append(_Info,_Ex))
+#define _FREETYPE_THROW_FAILED( _ft_call, _Info )			if( _ft_call ) throw freetype::Exception(_lazer_exception_msg.append( _Info ))
+#define _FREETYPE_THROW_FAILED_EX( _ft_call, _Info, _Ex ) if( err = _ft_call ) throw freetype::Exception(_lazer_exception_msg.append("Error",FT_Error_String(err)).append(_Info,_Ex))
 
 namespace freetype {
 
 	Face::Face( FT_Library lib, const lazer::file::path & path )
 	{
 		FT_Error err;
-		_LAZER_FREETYPE_THROW_FAILED_EX(
+		_FREETYPE_THROW_FAILED_EX(
 			FT_New_Face( lib, path.string().c_str(), 0, &m_Face ),
 			"Loading Face from file",
 			"Failed to load \"" + path.string() + "\" as a font face."
@@ -26,7 +26,7 @@ namespace freetype {
 	Face::Face( FT_Library lib, const void * data, size_t size )
 	{
 		FT_Error err;
-		_LAZER_FREETYPE_THROW_FAILED_EX(
+		_FREETYPE_THROW_FAILED_EX(
 			FT_New_Memory_Face( lib, (FT_Byte *)data, (FT_Long)size, 0, &m_Face ),
 			"Loading Face from file",
 			"Failed to load memory at " + ptr_to_str( data ) + " as a font face."
@@ -39,7 +39,7 @@ namespace freetype {
 	}
 
 	Library::Library() {
-		_LAZER_FREETYPE_THROW_FAILED( FT_Init_FreeType( &m_Library ), "Library Initialization" );
+		_FREETYPE_THROW_FAILED( FT_Init_FreeType( &m_Library ), "Library Initialization" );
 
 		int maj, min, pat;
 

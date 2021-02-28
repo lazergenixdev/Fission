@@ -1,5 +1,5 @@
-#include <LazerEngine/Core/Configuration.h>
-#include <LazerEngine/Core/Console.h>
+#include <Fission/Core/Configuration.h>
+#include <Fission/Core/Console.h>
 
 #include "yaml-cpp/yaml.h"
 #include "lazer/files.h"
@@ -125,11 +125,11 @@ void Configuration::Load() noexcept
 
 		file::create_directory( "etc" );
 
-#ifdef LAZER_PLATFORM_WINDOWS
+#ifdef FISSION_PLATFORM_WINDOWS
 		DWORD attr = GetFileAttributesW( L"etc" );
 		if( !( attr & FILE_ATTRIBUTE_HIDDEN ) )
 			SetFileAttributesW( L"etc", attr | FILE_ATTRIBUTE_HIDDEN );
-#endif /* LAZER_PLATFORM_WINDOWS */
+#endif /* FISSION_PLATFORM_WINDOWS */
 		
 		return;
 	}

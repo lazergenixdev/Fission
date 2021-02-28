@@ -1,10 +1,3 @@
-/********************************************************/
-/*                                                      */
-/*                      Window.h                        */
-/*                                                      */
-/*   License can be found under Licenses\LazerEngine    */
-/*                                                      */
-/********************************************************/
 #pragma once
 #include "Fission/config.h"
 #include "Input/Event.h"
@@ -59,7 +52,7 @@ namespace Fission
 		/// <summary>
 		/// Window::Create Summary.
 		/// </summary>
-		LAZER_API static std::unique_ptr<Window> Create( const Properties & props, IEventHandler * event_handler );
+		FISSION_API static std::unique_ptr<Window> Create( const Properties & props, IEventHandler * event_handler );
 
 		virtual ~Window() = default;
 	public:

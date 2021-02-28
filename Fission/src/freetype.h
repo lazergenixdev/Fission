@@ -1,5 +1,5 @@
 #pragma once
-#include "LazerEngine/config.h"
+#include "Fission/config.h"
 #include "freetype/freetype.h"
 
 namespace freetype

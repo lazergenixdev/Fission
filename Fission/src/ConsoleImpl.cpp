@@ -159,7 +159,7 @@ namespace Fission {
 		f.write( L"\n", 1u );
 		f.close();
 
-#if LAZER_CREATE_CONSOLE_WINDOW
+#ifdef FISSION_CREATE_CONSOLE_WINDOW
 		printf( "%ws\n", std::wstring( _Text, len ).c_str() );
 #endif
 
