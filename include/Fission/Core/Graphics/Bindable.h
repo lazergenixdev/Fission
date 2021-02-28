@@ -1,9 +1,9 @@
 #pragma once
-#include "LazerEngine/config.h"
-#include "LazerEngine/Core/Surface.h"
+#include "Fission/config.h"
+#include "Fission/Core/Surface.h"
 #include "VertexLayout.h"
 
-namespace lazer::Resource
+namespace Fission::Resource
 {
 	interface IBindable
 	{

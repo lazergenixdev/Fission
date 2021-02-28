@@ -1,11 +1,10 @@
 #pragma once
-#include "../../config.h"
+#include "Fission/config.h"
 
-namespace lazer
+namespace Fission
 {
 	namespace Keys
 	{
-
 		enum Key : char
 		{
 			Unknown = 0,
@@ -132,7 +131,7 @@ namespace lazer
 			__Keyboard_End = Numpad9,
 
 			__count__,
-		};
+		}; // Fission::Keys::Key
 
 
 		static constexpr Key string_to_key( const char * _str )
@@ -257,11 +256,11 @@ namespace lazer
 		static constexpr bool is_gamepad( Key key ) {
 			return ( __Gamepad_Start <= key ) && ( key <= __Gamepad_End );
 		}
-	} // namespace lazer::Keys
+	} // namespace Fission::Keys
 
 	namespace Platform 
 	{
-#ifdef LAZER_PLATFORM_WINDOWS
+#ifdef FISSION_PLATFORM_WINDOWS
 		static constexpr Keys::Key key_from_win32( int key_code ) {
 			switch( key_code ) {
 
@@ -346,10 +345,10 @@ namespace lazer
 
 			}
 		}
-#endif
+#endif // FISSION_PLATFORM_WINDOWS
 
 	//	extern  Keys::Key key_from_andriod( int key_code );
 
-	} // namespace lazer::Platform
+	} // namespace Fission::Platform
 
-} // namespace lazer
+} // namespace Fission

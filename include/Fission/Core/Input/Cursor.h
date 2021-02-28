@@ -1,7 +1,7 @@
 #pragma once
-#include "LazerEngine/config.h"
+#include "Fission/config.h"
 
-namespace lazer {
+namespace Fission {
 
     class Cursor 
     {
@@ -28,14 +28,14 @@ namespace lazer {
     public:
 
         // create a custom cursor
-        LAZER_API static std::unique_ptr<Cursor> Create( const CreateInfo & info );
+        FISSION_API static std::unique_ptr<Cursor> Create( const CreateInfo & info );
 
-        LAZER_API static Cursor * Get( Default_ default_cursor );
+        FISSION_API static Cursor * Get( Default_ default_cursor );
 
         virtual bool Use() = 0;
 
         virtual ~Cursor() = default;
 
-    }; // class lazer::Cursor
+    }; // class Fission::Cursor
 
-} // namespace lazer
+} // namespace Fission

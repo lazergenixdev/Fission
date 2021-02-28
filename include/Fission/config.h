@@ -3,6 +3,8 @@
 #include "Platform/Platform.h"
 #include "lazer/lazer.h"
 
+#define FISSION_ENGINE "Fission"
+
 #ifdef FISSION_PLATFORM_WINDOWS
 #ifdef FISSION_BUILD_DLL
 #define FISSION_API __declspec(dllexport)
@@ -34,6 +36,8 @@
 
 namespace Fission {
 
+	using namespace lazer;
+
 	using uInt8 = uint8_t;
 	using uInt32 = uint32_t;
 	using uInt16 = uint16_t;
@@ -53,3 +57,6 @@ namespace Fission {
 #ifdef DEBUG
 #define FISSION_DEBUG
 #endif
+
+// reminder that these functions can introduce race conditions
+#define FISSION_THREAD_SAFE

@@ -1,17 +1,14 @@
 #pragma once
-#include "LazerEngine/config.h"
+#include "Fission/config.h"
 #include "Keys.h"
 #include "Cursor.h"
 
-#define LAZER_EVENT_HANDLED	::lazer::EventResult::Handled
-#define LAZER_EVENT_PASS	::lazer::EventResult::Pass
+#define FISSION_EVENT_HANDLED  ::Fission::EventResult::Handled
+#define FISSION_EVENT_PASS     ::Fission::EventResult::Pass
 
-// reminder that these functions can introduce race conditions
-#define LAZER_THREAD_SAFE
+#define FISSION_EVENT_DEFAULT { return FISSION_EVENT_PASS; }
 
-#define LAZER_EVENT_DEFAULT { return LAZER_EVENT_PASS; }
-
-namespace lazer {
+namespace Fission {
 
 	enum class EventResult : int
 	{
@@ -69,42 +66,53 @@ namespace lazer {
 	
 	interface IEventHandler
 	{
+		// this is some next level formatting right here
 
-		LAZER_THREAD_SAFE virtual EventResult OnKeyDown( KeyDownEventArgs & )
-		LAZER_EVENT_DEFAULT
+		FISSION_THREAD_SAFE virtual EventResult OnKeyDown
+		( KeyDownEventArgs & )
+		FISSION_EVENT_DEFAULT
 
-		LAZER_THREAD_SAFE virtual EventResult OnKeyUp( KeyUpEventArgs & )
-		LAZER_EVENT_DEFAULT
+		FISSION_THREAD_SAFE virtual EventResult OnKeyUp
+		( KeyUpEventArgs & )
+		FISSION_EVENT_DEFAULT
 
-		LAZER_THREAD_SAFE virtual EventResult OnTextInput( TextInputEventArgs & )
-		LAZER_EVENT_DEFAULT
+		FISSION_THREAD_SAFE virtual EventResult OnTextInput
+		( TextInputEventArgs & )
+		FISSION_EVENT_DEFAULT
 
-		LAZER_THREAD_SAFE virtual EventResult OnMouseMove( MouseMoveEventArgs & )
-		LAZER_EVENT_DEFAULT
+		FISSION_THREAD_SAFE virtual EventResult OnMouseMove
+		( MouseMoveEventArgs & )
+		FISSION_EVENT_DEFAULT
 
-		LAZER_THREAD_SAFE virtual EventResult OnMouseLeave( MouseLeaveEventArgs & )
-		LAZER_EVENT_DEFAULT
+		FISSION_THREAD_SAFE virtual EventResult OnMouseLeave
+		( MouseLeaveEventArgs & )
+		FISSION_EVENT_DEFAULT
 
-		LAZER_THREAD_SAFE virtual EventResult OnSetCursor( SetCursorEventArgs & )
-		LAZER_EVENT_DEFAULT
+		FISSION_THREAD_SAFE virtual EventResult OnSetCursor
+		( SetCursorEventArgs & )
+		FISSION_EVENT_DEFAULT
 
-		LAZER_THREAD_SAFE virtual EventResult OnHide()
-		LAZER_EVENT_DEFAULT
+		FISSION_THREAD_SAFE virtual EventResult OnHide
+		()
+		FISSION_EVENT_DEFAULT
 
-		LAZER_THREAD_SAFE virtual EventResult OnShow()
-		LAZER_EVENT_DEFAULT
+		FISSION_THREAD_SAFE virtual EventResult OnShow
+		()
+		FISSION_EVENT_DEFAULT
 
-		LAZER_THREAD_SAFE virtual EventResult OnClose( CloseEventArgs &	)
-		LAZER_EVENT_DEFAULT
+		FISSION_THREAD_SAFE virtual EventResult OnClose
+		( CloseEventArgs &	)
+		FISSION_EVENT_DEFAULT
 
-	//	LAZER_THREAD_SAFE virtual EventResult OnResize ( ResizeEventArgs & )
-	//	LAZER_EVENT_DEFAULT
+	//	FISSION_THREAD_SAFE virtual EventResult OnResize
+	//  ( ResizeEventArgs & )
+	//	FISSION_EVENT_DEFAULT
 
 	public:
 		// Returns a null EventHandler(does not respond to events), Use in place of 'nullptr'
 		// Allows for the ability to always call the event handler with no nullptr errors
-		LAZER_API static IEventHandler * Default();
+		FISSION_API static IEventHandler * Default();
 
-	};
+	}; // interface Fission::IEventHandler
 
-}
+} // namespace Fission

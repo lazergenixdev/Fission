@@ -1,11 +1,10 @@
 #pragma once
-#include "LazerEngine/config.h"
+#include "Fission/config.h"
 #include "Renderer.h"
 #include "Graphics.h"
 #include "Font.h"
-#include "lazer/matrix.h"
 
-namespace lazer
+namespace Fission
 {
 	enum class StrokeStyle {
 		Center, Inside, Outside,
@@ -25,19 +24,19 @@ namespace lazer
 	class Mesh 
 	{
 	public:
-		LAZER_API Mesh( int vertex_count, int index_count, int color_count = 1 );
-		LAZER_API Mesh( const Mesh & );
-		LAZER_API ~Mesh();
+		FISSION_API Mesh( int vertex_count, int index_count, int color_count = 1 );
+		FISSION_API Mesh( const Mesh & );
+		FISSION_API ~Mesh();
 
-		LAZER_API void push_color( color col );
-		LAZER_API void push_vertex( vec2f position, int color_index );
-		LAZER_API void push_index( uint32_t index );
+		FISSION_API void push_color( color col );
+		FISSION_API void push_vertex( vec2f position, int color_index );
+		FISSION_API void push_index( uint32_t index );
 
-		LAZER_API void set_color( uint32_t index, color new_color );
+		FISSION_API void set_color( uint32_t index, color new_color );
 
-		LAZER_API uint32_t vertex_count() const;
-		LAZER_API uint32_t index_count() const;
-		LAZER_API uint32_t color_count() const;
+		FISSION_API uint32_t vertex_count() const;
+		FISSION_API uint32_t index_count() const;
+		FISSION_API uint32_t color_count() const;
 
 	public:
 		struct MeshData * m_Data;
@@ -47,7 +46,7 @@ namespace lazer
 	{
 	public:
 
-		LAZER_API static std::unique_ptr<Renderer2D> Create( Graphics * pGraphics );
+		FISSION_API static std::unique_ptr<Renderer2D> Create( Graphics * pGraphics );
 
 		virtual void FillRect( rectf rect, colorf color ) = 0;
 
@@ -97,6 +96,6 @@ namespace lazer
 
 	//	virtual void PopClipRect() = 0;
 
-	}; // class lazer::Renderer2D
+	}; // class Fission::Renderer2D
 
-} // namespace lazer
+} // namespace Fission

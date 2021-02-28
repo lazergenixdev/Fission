@@ -1,7 +1,7 @@
 #pragma once
-#include "../../config.h"
+#include "Fission/config.h"
 
-namespace lazer
+namespace Fission
 {
 
 	interface IRenderer

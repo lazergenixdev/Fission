@@ -1,15 +1,10 @@
 #pragma once
-#include "LazerEngine/config.h"
+#include "Fission/config.h"
 #include "Window.h"
 #include "Graphics/Graphics.h"
 #include "Layer.h"
 
-namespace lazer {
-
-	class FrameTimer {
-	public:
-		LAZER_API static float GetLastDelta();
-	};
+namespace Fission {
 
 	class Application : public IEventHandler
 	{
@@ -27,54 +22,54 @@ namespace lazer {
 	public:
 		Application( const Application & ) = delete;
 
-		LAZER_API Application( const CreateInfo & fallback = {} );
+		FISSION_API Application( const CreateInfo & fallback = {} );
 
-		LAZER_API virtual ~Application() noexcept;
+		FISSION_API virtual ~Application() noexcept;
 
-		LAZER_API static Application * Get();
+		FISSION_API static Application * Get();
 
 	public:
 
-		LAZER_API void PushLayer( const char * name, ILayer * layer );
+		FISSION_API void PushLayer( const char * name, ILayer * layer );
 		
-		LAZER_API DebugLayer * GetDebugLayer();
+		FISSION_API DebugLayer * GetDebugLayer();
 		
-		LAZER_API void Exit( Platform::ExitCode ec = 0 );
+		FISSION_API void Exit( Platform::ExitCode ec = 0 );
 		
-		LAZER_API void Recreate();
+		FISSION_API void Recreate();
 		
-		LAZER_API Window * GetWindow();
+		FISSION_API Window * GetWindow();
 		
-		LAZER_API Graphics * GetGraphics();
+		FISSION_API Graphics * GetGraphics();
 		
-	//	LAZER_API basic_timer * GetTimer();
+	//	FISSION_API basic_timer * GetTimer();
 		
-	//	LAZER_API void SetGraphicsProperties( Graphics::API gAPI );
+	//	FISSION_API void SetGraphicsProperties( Graphics::API gAPI );
 		
-		LAZER_API Platform::ExitCode Run();
+		FISSION_API Platform::ExitCode Run();
 
 
-		LAZER_API EventResult OnKeyDown		( KeyDownEventArgs & )		override;
+		FISSION_API EventResult OnKeyDown     ( KeyDownEventArgs & )         override;
 
-		LAZER_API EventResult OnKeyUp		( KeyUpEventArgs & )		override;
+		FISSION_API EventResult OnKeyUp       ( KeyUpEventArgs & )           override;
 
-		LAZER_API EventResult OnTextInput	( TextInputEventArgs & )	override;
+		FISSION_API EventResult OnTextInput   ( TextInputEventArgs & )       override;
 
-		LAZER_API EventResult OnMouseMove	( MouseMoveEventArgs & )	override;
+		FISSION_API EventResult OnMouseMove    ( MouseMoveEventArgs & )      override;
 
-		LAZER_API EventResult OnMouseLeave	( MouseLeaveEventArgs & )	override;
+		FISSION_API EventResult OnMouseLeave   ( MouseLeaveEventArgs & )     override;
 
-		LAZER_API EventResult OnSetCursor	( SetCursorEventArgs & )	override;
+		FISSION_API EventResult OnSetCursor    ( SetCursorEventArgs & )      override;
 
-		LAZER_API EventResult OnHide		()							override;
+		FISSION_API EventResult OnHide         ()                            override;
 
-		LAZER_API EventResult OnShow		()							override;
+		FISSION_API EventResult OnShow         ()                            override;
 
-		LAZER_API EventResult OnClose		( CloseEventArgs & )		override;
+		FISSION_API EventResult OnClose        ( CloseEventArgs & )          override;
 
 	private:
 		struct ApplicationState * m_State;
 
-	};
+	}; // class Fission::Application
 
-}
+} // namespace Fission

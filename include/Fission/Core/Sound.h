@@ -1,7 +1,7 @@
 #pragma once
-#include "LazerEngine/config.h"
+#include "Fission/config.h"
 
-namespace lazer {
+namespace Fission {
 
 namespace experimental {
 
@@ -27,7 +27,7 @@ namespace experimental {
 	interface ISoundEngine
 	{
 	public:
-		LAZER_API static std::unique_ptr<ISoundEngine> Create();
+		FISSION_API static std::unique_ptr<ISoundEngine> Create();
 
 		// Creates sound channels
 		virtual void Configure( ChannelID * ch_ids, int count ) = 0;
@@ -45,4 +45,4 @@ namespace experimental {
 
 }
 
-} // namespace lazer
+} // namespace Fission

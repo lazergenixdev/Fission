@@ -1,7 +1,7 @@
 #pragma once
 #include "Bindable.h"
 
-namespace lazer {
+namespace Fission {
 
 	interface Font
 	{
@@ -54,6 +54,6 @@ namespace lazer {
 
 		LAZER_API static void SetFont( const char * key, const void * pdata, size_t size, float pxsize );
 
-	};
+	}; // class Fission::FontManager
 
-}
+} // namespace Fission

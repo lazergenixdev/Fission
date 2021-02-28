@@ -1,7 +1,7 @@
-#include <LazerEngine/config.h>
-#include <LazerEngine/Core/Window.h>
+#include <Fission/config.h>
+#include <Fission/Core/Window.h>
 
-namespace lazer {
+namespace Fission {
 
     class Configuration
     {
@@ -24,18 +24,18 @@ namespace lazer {
             std::optional<std::string>      FSAA;
         };
 
-        LAZER_API static void Load() noexcept;
+        FISSION_API static void Load() noexcept;
 
-        LAZER_API static void Save() noexcept;
+        FISSION_API static void Save() noexcept;
 
 
-        LAZER_API static void SetWindowConfig( const Window::Properties & ) noexcept;
+        FISSION_API static void SetWindowConfig( const Window::Properties & ) noexcept;
 
-        LAZER_API static Window::Properties GetWindowConfig( const Window::Properties & fallback ) noexcept;
+        FISSION_API static Window::Properties GetWindowConfig( const Window::Properties & fallback ) noexcept;
 
-        LAZER_API static void SetGraphicsConfig( const GraphicsConfig & ) noexcept;
+        FISSION_API static void SetGraphicsConfig( const GraphicsConfig & ) noexcept;
 
-        LAZER_API static GraphicsConfig GetGraphicsConfig() noexcept;
+        FISSION_API static GraphicsConfig GetGraphicsConfig() noexcept;
 
 
     };

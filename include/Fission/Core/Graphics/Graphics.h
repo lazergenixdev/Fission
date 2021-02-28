@@ -1,9 +1,9 @@
 #pragma once
-#include "LazerEngine/Core/Window.h"
+#include "Fission/Core/Window.h"
 #include "Bindable.h"
 #include "Renderer.h"
 
-namespace lazer {
+namespace Fission {
 
 class Graphics
 {
@@ -79,6 +79,6 @@ public:
 public:
 	virtual ~Graphics() = default;
 
-}; // class lazer::Graphics
+}; // class Fission::Graphics
 
-} // namespace lazer
+} // namespace Fission

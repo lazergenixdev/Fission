@@ -1,7 +1,7 @@
 #pragma once
-#include "LazerEngine/config.h"
+#include "Fission/config.h"
 
-namespace lazer {
+namespace Fission {
 
 	interface ISerializable
 	{
@@ -10,6 +10,6 @@ namespace lazer {
 
 		virtual ~ISerializable() = default;
 
-	}; // interface lazer::ISerializable
+	}; // interface Fission::ISerializable
 
-} // namespace lazer
+} // namespace Fission

@@ -2,7 +2,7 @@
 #include <vector>
 #include <cassert>
 
-namespace lazer::Resource {
+namespace Fission::Resource {
 
 	namespace VertexLayoutTypes
 	{
@@ -91,6 +91,6 @@ namespace lazer::Resource {
 		std::vector<char> m_SemanticBuffer;
 		std::vector<vertex_type> m_TypeBuffer;
 		uint32_t m_Stride;
-	};
+	}; // class Fission::VertexLayout
 
-}
+} // namespace Fission

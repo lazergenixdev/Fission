@@ -1,17 +1,20 @@
 #pragma once
-#include "LazerEngine/config.h"
+#include "Fission/config.h"
 
 // todo:
-// [ ] - make a saturate function in lazer_lib
+// [ ] - make a saturate function
 // [ ] - use saturate so color values are never >1.0
+// maybe add to lazerlib?
 
-namespace lazer
+namespace Fission
 {
 
+/* Colors which use single-persision floating point */
 	struct colorf;
-	struct coloru;
-
 	struct colorf_hsv;
+
+/* Colors which use 8-bit integers */
+	struct coloru;
 	struct coloru_hsv;
 
 	// Select defualt structure to use for color
@@ -157,11 +160,11 @@ namespace lazer
 			Sienna           = 0xa0522d,
 			Brown            = 0xa52a2a,
 			Maroon           = 0x800000,
-		}; // enum lazer::Colors::KnownColor
+		}; // enum Fission::Colors::KnownColor
 
 		static constexpr color make_color( const color & color, float value, float alpha = 1.0f );
 
-	} // namespace lazer::Colors
+	} // namespace Fission::Colors
 
 
 	struct colorf_hsv { 
@@ -178,11 +181,11 @@ namespace lazer
 		colorf_hsv( const coloru_hsv & src );
 
 		colorf_hsv( const colorf & src );
-	}; // struct lazer::colorf_hsv
+	}; // struct Fission::colorf_hsv
 
 	struct coloru_hsv { 
 		unsigned char h, s, v, a; 
-	}; // struct lazer::coloru_hsv
+	}; // struct Fission::coloru_hsv
 
 	struct colorf {
 		float r, g, b, a;
@@ -224,7 +227,7 @@ namespace lazer
 		colorf operator*( const float rhs ) const {
 			return colorf( r * rhs, g * rhs, b * rhs, a * rhs );
 		}
-	}; // struct lazer::colorf
+	}; // struct Fission::colorf
 
 	struct coloru {
 		unsigned char r, g, b, a;
@@ -252,7 +255,8 @@ namespace lazer
 		coloru( const colorf & src );
 
 		coloru( const colorf & src, unsigned char _a );
-	}; // struct lazer::coloru
+	}; // struct Fission::coloru
+
 
 	//*********************** Begin Conversion Functions ***********************//
 
@@ -370,5 +374,5 @@ namespace lazer
 	}
 
 
-} // namespace lazer
+} // namespace Fission
 

@@ -2,7 +2,7 @@
 #include "Input/Event.h"
 #include "Graphics/Renderer2D.h"
 
-namespace lazer {
+namespace Fission {
 
 	class Application;
 
@@ -15,9 +15,9 @@ namespace lazer {
 
 	protected:
 		
-		LAZER_API Application * GetApp();
+		FISSION_API Application * GetApp();
 		
-	}; // interface lazer::ILayer
+	}; // interface Fission::ILayer
 
 
 	///////////////////////////////////////////////////////////////////////
@@ -31,11 +31,11 @@ namespace lazer {
 	public:
 		virtual void RegisterDrawCallback( const char * _Key, DebugDrawCallback _Callback ) = 0;
 
-		LAZER_API static void Push( const char * name );
+		FISSION_API static void Push( const char * name );
 
-		LAZER_API static void Pop();
+		FISSION_API static void Pop();
 
-		LAZER_API static void Text( const char * what );
+		FISSION_API static void Text( const char * what );
 
 		template <size_t Buffer_Size = 128, typename...T>
 		static void Text( const char * fmt, T&&...args )
@@ -54,4 +54,4 @@ namespace lazer {
 	{
 	};
 	
-} // namespace lazer
+} // namespace Fission
