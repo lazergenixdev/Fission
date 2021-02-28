@@ -1,17 +1,16 @@
 #include "UILayer.h"
-#include "LazerEngine/Core/Application.h"
+#include "Fission/Core/Application.h"
 #include <lazer/math.h>
 
-#define _lazer_key_type lazer::Keys::Key
-#define _lazer_key_left_mouse_ lazer::Keys::Mouse_Left
-#define _lazer_key_right_mouse_ lazer::Keys::Mouse_Right
+#define _lazer_key_type Fission::Keys::Key
+#define _lazer_key_left_mouse_ Fission::Keys::Mouse_Left
+#define _lazer_key_right_mouse_ Fission::Keys::Mouse_Right
 #define _lazer_char_type wchar_t
-#define _lazer_cursor_type lazer::Cursor *
+#define _lazer_cursor_type Fission::Cursor *
 #include "lazerui.h"
 
-#include <LazerEngine/Core/UI/UI.h>
-
-#include "LazerEngine/Core/Console.h"
+#include <Fission/Core/UI/UI.h>
+#include "Fission/Core/Console.h"
 
 namespace NunitoSemiBoldTTF {
 #include "Static Fonts/Nunito-SemiBold.inl"
@@ -163,7 +162,7 @@ public:
 
 	}
 private:
-	lazer::vec2i pos, size;
+	vec2i pos, size;
 	std::wstring text;
 };
 
@@ -346,6 +345,7 @@ EventResult UILayer::OnSetCursor( SetCursorEventArgs & args )
 
 
 /* UI */
+using namespace Fission;
 
 UI::Key::Key() : context( nullptr ) {}
 

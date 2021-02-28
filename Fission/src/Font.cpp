@@ -1,9 +1,9 @@
-#include "LazerEngine/Core/Application.h"
-#include "LazerEngine/Core/Graphics/Font.h"
-#include "LazerEngine/Core/Surface.h"
+#include "Fission/Core/Application.h"
+#include "Fission/Core/Graphics/Font.h"
+#include "Fission/Core/Surface.h"
 #include "freetype.h"
 
-namespace lazer {
+namespace Fission {
 
 	static std::map<std::string, std::unique_ptr<Font>> s_Fonts;
 
@@ -17,7 +17,7 @@ namespace lazer {
 		{
 			if( is_leaf() )
 			{
-				lazer::vec2i sz = rc.size();
+				vec2i sz = rc.size();
 
 				//( if there's already a lightmap here, return )
 				if( isFilled ) return NULL;

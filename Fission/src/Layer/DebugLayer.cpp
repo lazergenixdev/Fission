@@ -6,7 +6,7 @@ namespace RobotoRegularTTF {
 #include "Static Fonts/Roboto-Regular.inl"
 }
 
-using namespace lazer;
+using namespace Fission;
 
 static DebugLayerImpl * s_DebugLayer = nullptr;
 

@@ -1,7 +1,7 @@
 #pragma once
-#include "LazerEngine/Core/Layer.h"
+#include "Fission/Core/Layer.h"
 
-namespace lazer {
+namespace Fission {
 
 	class DebugLayerImpl : public DebugLayer
 	{

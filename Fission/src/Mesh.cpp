@@ -1,7 +1,7 @@
 #include "Mesh.h"
 #include "unfinished.h"
 
-namespace lazer {
+namespace Fission {
 
 
 	Mesh::Mesh( int vertex_count, int index_count, int color_count ) 

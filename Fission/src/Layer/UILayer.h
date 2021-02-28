@@ -1,11 +1,7 @@
 #pragma once
-#include "LazerEngine/Core/Layer.h"
+#include "Fission/Core/Layer.h"
 
-namespace lazer::ui {
-	class WindowManager;
-}
-
-namespace lazer {
+namespace Fission {
 
 	class UILayer : public IUILayer
 	{

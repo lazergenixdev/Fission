@@ -1,6 +1,6 @@
 #include "ConsoleImpl.h"
 
-namespace lazer {
+namespace Fission {
 
 	void Console::SetEnabled( bool _Enable ) {
 		return ConsoleImpl::Get().SetEnabled( _Enable );

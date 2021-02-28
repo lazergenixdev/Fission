@@ -3,9 +3,7 @@
 #include <d3dcompiler.h>
 #include <filesystem>
 
-#pragma comment( lib, "d3dcompiler" )
-
-namespace lazer::Platform {
+namespace Fission::Platform {
 
 	VertexBufferDX11::VertexBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info )
 		: m_pContext( pContext ), m_Count( info.vtxCount ), m_Stride( info.pVertexLayout->GetStride() ), m_Type( info.type )
@@ -262,19 +260,19 @@ namespace lazer::Platform {
 	{
 		switch( type )
 		{
-		case lazer::Resource::VertexLayoutTypes::Float:
+		case Resource::VertexLayoutTypes::Float:
 			return DXGI_FORMAT_R32_FLOAT;
-		case lazer::Resource::VertexLayoutTypes::Float2:
+		case Resource::VertexLayoutTypes::Float2:
 			return DXGI_FORMAT_R32G32_FLOAT;
-		case lazer::Resource::VertexLayoutTypes::Float3:
+		case Resource::VertexLayoutTypes::Float3:
 			return DXGI_FORMAT_R32G32B32_FLOAT;
-		case lazer::Resource::VertexLayoutTypes::Float4:
+		case Resource::VertexLayoutTypes::Float4:
 			return DXGI_FORMAT_R32G32B32A32_FLOAT;
-		case lazer::Resource::VertexLayoutTypes::Int:
+		case Resource::VertexLayoutTypes::Int:
 			return DXGI_FORMAT_R32_SINT;
-		case lazer::Resource::VertexLayoutTypes::Int2:
-		case lazer::Resource::VertexLayoutTypes::Int3:
-		case lazer::Resource::VertexLayoutTypes::Int4:
+		case Resource::VertexLayoutTypes::Int2:
+		case Resource::VertexLayoutTypes::Int3:
+		case Resource::VertexLayoutTypes::Int4:
 		default:
 			throw 0x45;
 		}

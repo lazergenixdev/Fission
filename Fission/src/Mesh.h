@@ -1,14 +1,14 @@
 #pragma once
-#include "LazerEngine/Core/Graphics/Renderer2D.h"
+#include "Fission/Core/Graphics/Renderer2D.h"
 
-namespace lazer {
+namespace Fission {
 
 	struct MeshData
 	{
 		using index = uint32_t;
 
 		struct vertex {
-			lazer::vec2f pos;
+			vec2f pos;
 			uint32_t color_index;
 		};
 

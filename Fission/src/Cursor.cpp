@@ -4,7 +4,7 @@
 #include "Platform/Windows/WindowsCursor.h"
 #endif
 
-namespace lazer {
+namespace Fission {
 
     std::unique_ptr<Cursor> Cursor::Create( const CreateInfo & info ) {
         return nullptr;
@@ -17,4 +17,4 @@ namespace lazer {
 #endif // LAZER_PLATFORM_WINDOWS
     }
 
-} // namespace lazer
+} // namespace Fission

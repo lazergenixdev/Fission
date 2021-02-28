@@ -3,9 +3,9 @@
 
 #include "unfinished.h"
 
-#define _lazer_Console_Log_Location L"console.log"
+#define _Fission_Console_Log_Location L"console.log"
 
-namespace lazer {
+namespace Fission {
 
 	namespace helpers {
 		int wstrlen( const wchar_t * str ) {
@@ -27,7 +27,7 @@ namespace lazer {
 
 	ConsoleImpl::ConsoleImpl()
 	{
-#if LAZER_CREATE_CONSOLE_WINDOW
+#ifdef FISSION_CREATE_CONSOLE_WINDOW
 		{
 			// Create Console Window
 			AllocConsole();
@@ -44,12 +44,12 @@ namespace lazer {
 			sprintf( title, "Debug Console - %s", sProcessName.c_str() );
 			SetConsoleTitleA( title );
 		}
-#endif /* LAZER_CREATE_CONSOLE_WINDOW */
+#endif /* FISSION_CREATE_CONSOLE_WINDOW */
 
 		{ // Clear contexts of debug log for writing
-			auto f = std::wofstream( _lazer_Console_Log_Location, std::ios::trunc );
+			auto f = std::wofstream( _Fission_Console_Log_Location, std::ios::trunc );
 
-			f << L"===== " _lazer_Console_Log_Location L" =====\n\n";
+			f << L"===== " _Fission_Console_Log_Location L" =====\n\n";
 		}
 
 		m_CharacterBuffer = (wchar_t *)_aligned_malloc( m_BufferCapacity * sizeof( wchar_t ), 16u );
@@ -84,7 +84,7 @@ namespace lazer {
 	ConsoleImpl::~ConsoleImpl()
 	{
 		{
-			auto f = std::ofstream( _lazer_Console_Log_Location, std::ios::app );
+			auto f = std::ofstream( _Fission_Console_Log_Location, std::ios::app );
 
 			f << "Process Terminated\n";
 		}
@@ -154,7 +154,7 @@ namespace lazer {
 
 		uint32_t len = (uint32_t)helpers::wstrlen( _Text );
 
-		auto f = std::wofstream( _lazer_Console_Log_Location, std::ios::app );
+		auto f = std::wofstream( _Fission_Console_Log_Location, std::ios::app );
 		f.write( _Text, len );
 		f.write( L"\n", 1u );
 		f.close();

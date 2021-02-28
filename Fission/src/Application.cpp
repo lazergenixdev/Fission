@@ -1,9 +1,9 @@
 #pragma once
 #include "Application.h"
-#include "LazerEngine/Core/Console.h"
-#include "LazerEngine/Core/Configuration.h"
+#include "Fission/Core/Console.h"
+#include "Fission/Core/Configuration.h"
 
-using namespace lazer;
+using namespace Fission;
 
 static Application * s_pInstance = nullptr;
 

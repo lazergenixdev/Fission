@@ -1,11 +1,11 @@
 #pragma once
-#include "LazerEngine/Core/Application.h"
+#include "Fission/Core/Application.h"
 
 #include "Layer/UILayer.h"
 #include "Layer/DebugLayer.h"
 #include "Layer/ConsoleLayer.h"
 
-namespace lazer {
+namespace Fission {
 
 	struct ApplicationState {
 

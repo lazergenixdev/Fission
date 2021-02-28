@@ -1,7 +1,7 @@
 #pragma once
 #include "LazerEngine/Core/Console.h"
 
-namespace lazer {
+namespace Fission {
 
 class ConsoleImpl
 {

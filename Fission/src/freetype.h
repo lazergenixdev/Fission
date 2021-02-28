@@ -1,6 +1,5 @@
 #pragma once
 #include "LazerEngine/config.h"
-#include "lazer/exception.h"
 #include "freetype/freetype.h"
 
 namespace freetype

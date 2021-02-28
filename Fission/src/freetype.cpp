@@ -48,7 +48,7 @@ namespace freetype {
 		static wchar_t buf[48] = {};
 		swprintf( buf, 48, L"Freetype Library Version %i.%i.%i", maj, min, pat );
 
-		lazer::Console::WriteLine( buf );
+		Fission::Console::WriteLine( buf );
 	}
 
 	Library::~Library() {

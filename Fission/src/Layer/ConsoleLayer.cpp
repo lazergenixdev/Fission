@@ -1,12 +1,12 @@
 #include "ConsoleLayer.h"
-#include "LazerEngine/Core/Console.h"
-#include "LazerEngine/Core/Application.h"
+#include "Fission/Core/Console.h"
+#include "Fission/Core/Application.h"
 
 namespace JetBrainsMonoTTF {
-#include "../resources/Static Fonts/JetBrainsMono-Regular.inl"
+#include "resources/Static Fonts/JetBrainsMono-Regular.inl"
 }
 
-namespace lazer {
+namespace Fission {
 
 	void ConsoleLayer::OnCreate()
 	{

@@ -2,7 +2,7 @@
 #include "LazerEngine/Core/Graphics/Bindable.h"
 #include <d3d11.h>
 
-namespace lazer::Platform {
+namespace Fission::Platform {
 
 	class VertexBufferDX11 : public Resource::VertexBuffer
 	{

@@ -1,7 +1,7 @@
 #pragma once
 #include "Application.h"
 
-namespace lazer {
+namespace Fission {
 
 // Very boring code, here only for debugging purposes
 //

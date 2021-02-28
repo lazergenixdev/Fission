@@ -1,6 +1,6 @@
-#include "LazerEngine/Core/Input/Event.h"
+#include "Fission/Core/Input/Event.h"
 
-using namespace lazer;
+using namespace Fission;
 
 IEventHandler * IEventHandler::Default() {
 	static IEventHandler _DefEventHandler;

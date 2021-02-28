@@ -7,7 +7,7 @@
 
 static std::string ConfFile = "etc/appconf.yml";
 
-using namespace lazer;
+using namespace Fission;
 
 namespace convert {
 
@@ -121,7 +121,7 @@ void Configuration::Load() noexcept
 {
 	if( !file::exists( "etc" ) )
 	{
-		lazer::Console::WriteLine( L"'etc/' not found. Creating directory .." );
+		Console::WriteLine( L"'etc/' not found. Creating directory .." );
 
 		file::create_directory( "etc" );
 
@@ -150,14 +150,14 @@ void Configuration::Load() noexcept
 			}
 			if( auto pos = wnd["Position"] )
 			{
-				Conf.Window.Position = lazer::vec2i{};
+				Conf.Window.Position = vec2i{};
 				Conf.Window.Position.value().x = pos["x"].as<int>();
 				Conf.Window.Position.value().y = pos["y"].as<int>();
 				Conf.Window.SavePosition = pos["Save On Exit"].as<bool>();
 			}
 			if( auto size = wnd["Size"] )
 			{
-				Conf.Window.Size = lazer::vec2i{};
+				Conf.Window.Size = vec2i{};
 				Conf.Window.Size.value().x = size["w"].as<int>();
 				Conf.Window.Size.value().y = size["h"].as<int>();
 				Conf.Window.SaveSize = size["Save On Exit"].as<bool>();
@@ -168,7 +168,7 @@ void Configuration::Load() noexcept
 		{
 			if( auto res = yaml["Resolution"] )
 			{
-				Conf.Graphics.Resolution = lazer::vec2i{};
+				Conf.Graphics.Resolution = vec2i{};
 				Conf.Graphics.Resolution.value().x = res["w"].as<int>();
 				Conf.Graphics.Resolution.value().y = res["h"].as<int>();
 			}
@@ -189,12 +189,12 @@ void Configuration::Load() noexcept
 	}
 	catch( YAML::BadFile & ) 
 	{
-		lazer::Console::WriteLine( L"'appconf.yml' not found. Using default configuration .." );
+		Console::WriteLine( L"'appconf.yml' not found. Using default configuration .." );
 	}
 	catch( std::exception & e ) 
 	{
 		std::wstring what = utf8_to_wstring( e.what() );
-		lazer::Console::WriteLine( L"Error reading 'appconf.yml' [%s]", what.c_str() );
+		Console::WriteLine( L"Error reading 'appconf.yml' [%s]", what.c_str() );
 	}
 
 }
@@ -215,9 +215,9 @@ void Configuration::Save() noexcept
 		file << ",\n\n\tFullscreen: ";
 		file << convert::encode<bool>( Conf.Window.Fullscreen.value_or( bool(defwnd.flags & Window::Flags::Fullscreen) ) );
 		file << ", \n\n\tPosition: {\n\t\tx: ";
-		file << Conf.Window.Position.value_or( lazer::vec2i{} ).x;
+		file << Conf.Window.Position.value_or( vec2i{} ).x;
 		file << ",\n\t\ty: ";
-		file << Conf.Window.Position.value_or( lazer::vec2i{} ).y;
+		file << Conf.Window.Position.value_or( vec2i{} ).y;
 		file << ",\n\t\tSave On Exit: ";
 		file << convert::encode( Conf.Window.SavePosition.value_or( bool( defwnd.flags & Window::Flags::SavePosition ) ) );
 		file << "\n\t},\n\n\tSize: {\n\t\tw: ";
@@ -232,6 +232,6 @@ void Configuration::Save() noexcept
 	catch( std::exception & e )
 	{
 		std::wstring what = utf8_to_wstring( e.what() );
-		lazer::Console::Error( L"Failed to save to 'appconf.yml' [%s]", what.c_str() );
+		Console::Error( L"Failed to save to 'appconf.yml' [%s]", what.c_str() );
 	}
 }
