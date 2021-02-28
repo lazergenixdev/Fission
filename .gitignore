@@ -18,3 +18,7 @@
 **.vcxproj
 **.vcxproj.user
 **.vcxproj.filters
+
+# Build Binaries
+bin/
+bin-int/

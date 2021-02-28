@@ -150,7 +150,3 @@ void Application::Exit( Platform::ExitCode ec )
 {
 	m_State->m_pMainWindow->Close();
 }
-
-float FrameTimer::GetLastDelta() {
-	return s_LastDelta;
-}

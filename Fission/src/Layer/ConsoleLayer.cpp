@@ -3,7 +3,7 @@
 #include "Fission/Core/Application.h"
 
 namespace JetBrainsMonoTTF {
-#include "resources/Static Fonts/JetBrainsMono-Regular.inl"
+#include "Static Fonts/JetBrainsMono-Regular.inl"
 }
 
 namespace Fission {
@@ -22,7 +22,7 @@ namespace Fission {
 	{
 		if( m_bShow )
 		{
-			extend += ( 200.0f - extend ) * FrameTimer::GetLastDelta() * extend_rate;
+			extend += ( 200.0f - extend ) * 0.016 * extend_rate;
 
 			vec2f size = (vec2f)GetApp()->GetGraphics()->GetResolution();
 
