@@ -5,7 +5,7 @@
 #include "Platform/Windows/WindowsWindow.h"
 #endif
 
-namespace lazer {
+namespace Fission {
 	
 	std::unique_ptr<Window> Window::Create( const Properties & props, IEventHandler * event_handler ) 
 	{

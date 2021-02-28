@@ -1,6 +1,5 @@
 #include "UILayer.h"
 #include "Fission/Core/Application.h"
-#include <lazer/math.h>
 
 #define _lazer_key_type Fission::Keys::Key
 #define _lazer_key_left_mouse_ Fission::Keys::Mouse_Left
