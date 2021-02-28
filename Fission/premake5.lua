@@ -1,7 +1,7 @@
 project 'Fission'
     kind 'SharedLib'
     language 'C++'
-    cppdialect "C++17"
+    cppdialect "C++latest"
 
     targetdir ("%{wks.location}/bin/" .. OutputDir .. "/%{prj.name}")
 	objdir ("%{wks.location}/bin-int/" .. OutputDir .. "/%{prj.name}")
@@ -17,9 +17,15 @@ project 'Fission'
         "%{IncludeDir.lazerlib}",
         '%{prj.location}/resources'
 	}
-
+    
     staticruntime "On"
     defines 'FISSION_BUILD_DLL'
+    
+    -- Texture processing library for windows
+    filter "system:windows"
+        includedirs '%{prj.location}/vendor/windows/DirectXTex/include'
+        libdirs { "%{prj.location}/vendor/windows/DirectXTex/%{cfg.buildcfg}-%{cfg.architecture}" }
+        links { 'DirectXTex' }
 
     filter "configurations:Debug"
         defines { "FISSION_DEBUG" }
