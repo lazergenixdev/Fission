@@ -20,9 +20,10 @@ namespace Fission {
 
 	void ConsoleLayer::OnUpdate()
 	{
+		float dt = t.gets();
 		if( m_bShow )
 		{
-			extend += ( 200.0f - extend ) * 0.016 * extend_rate;
+			extend += ( 200.0f - extend ) * dt * extend_rate;
 
 			vec2f size = (vec2f)GetApp()->GetGraphics()->GetResolution();
 

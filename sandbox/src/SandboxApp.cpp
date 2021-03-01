@@ -65,7 +65,9 @@ public:
 		pRenderer2D->FillArrow( { 200.0f, 250.0f }, vec2f{ 250.0f + cs, 250.0f + sn }, scale, Colors::White );
 
 		DebugLayer::Push( "HECK" );
-		DebugLayer::Text( "what in the heck %i", 5 );
+		int vmaj, vmin, vpat;
+		Fission::GetVersion( &vmaj, &vmin, &vpat );
+		DebugLayer::Text( "Fission Engine v%i.%i.%i", vmaj, vmin, vpat );
 		DebugLayer::Text( "what in the heck %i", 5 );
 		DebugLayer::Text( "what in the %i", 5 );
 		DebugLayer::Text( "what %i", 5 );

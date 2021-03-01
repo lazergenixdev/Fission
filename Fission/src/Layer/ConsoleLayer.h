@@ -29,6 +29,8 @@ private:
 
 	float m_FontSize;
 	float m_BottomPadding = 2.0f;
+
+	simple_timer t;
 };
 
 }

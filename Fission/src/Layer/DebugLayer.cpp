@@ -70,7 +70,7 @@ void DebugLayerImpl::Text( const char * what )
 void DebugLayerImpl::OnCreate() {
 	m_pRenderer2D = Renderer2D::Create( GetApp()->GetGraphics() );
 
-	FontManager::SetFont( "$debug", RobotoRegularTTF::data, RobotoRegularTTF::size, 8.0f );
+	FontManager::SetFont( "$debug", RobotoRegularTTF::data, RobotoRegularTTF::size, 10.0f );
 }
 
 void DebugLayerImpl::OnUpdate() {
@@ -91,11 +91,11 @@ void DebugLayerImpl::OnUpdate() {
 
 
 
-		auto tl = m_pRenderer2D->CreateTextLayout( L"Fission-v" FISSION_VERSION_STRING " - Debug Layer" );
+		auto tl = m_pRenderer2D->CreateTextLayout( L"Fission v" FISSION_VERSION_STRING " - Debug Layer" );
 
 		m_pRenderer2D->FillRect( rectf( 0.0f, tl.width, 0.0f, 2.0f * diff ), color( Colors::Black, 0.5f ) );
 
-		m_pRenderer2D->DrawString( L"Fission-v" FISSION_VERSION_STRING " - Debug Layer", { 0.0f, 0.0f }, Colors::White );
+		m_pRenderer2D->DrawString( L"Fission v" FISSION_VERSION_STRING " - Debug Layer", { 0.0f, 0.0f }, Colors::White );
 
 		m_pRenderer2D->DrawString( L"(F3)", { tl.width + 4.0f, 0.0f }, color( 0xFFFFFF, 0.5f ) );
 
