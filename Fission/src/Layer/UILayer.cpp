@@ -1,4 +1,4 @@
-//#include "UILayer.h"
+#include "UILayer.h"
 //#include "Fission/Core/Application.h"
 //
 //#define _lazer_key_type Fission::Keys::Key
@@ -287,23 +287,25 @@
 //	std::function<void()> action;
 //};
 //
-//UILayer::UILayer()
-//{
-//	g_pWindowManager = std::make_unique<ui::WindowManager>( 1280, 720 );
-//}
+using namespace Fission;
+
+UILayer::UILayer()
+{
+	//g_pWindowManager = std::make_unique<ui::WindowManager>( 1280, 720 );
+}
 //
-//void UILayer::OnCreate()
-//{
-//	g_pRenderer2D = Renderer2D::Create( GetApp()->GetGraphics() );
-//	FontManager::SetFont( "$ui", NunitoSemiBoldTTF::data, NunitoSemiBoldTTF::size, 10.0f );
-//	g_pRenderer2D->SelectFont( FontManager::GetFont( "$ui" ) );
-//}
-//
-//void UILayer::OnUpdate()
-//{
-//	g_pWindowManager->OnUpdate( 0.0f );
-//	g_pRenderer2D->Render();
-//}
+void UILayer::OnCreate()
+{
+	//g_pRenderer2D = Renderer2D::Create( GetApp()->GetGraphics() );
+	//FontManager::SetFont( "$ui", NunitoSemiBoldTTF::data, NunitoSemiBoldTTF::size, 10.0f );
+	//g_pRenderer2D->SelectFont( FontManager::GetFont( "$ui" ) );
+}
+
+void UILayer::OnUpdate()
+{
+	//g_pWindowManager->OnUpdate( 0.0f );
+	//g_pRenderer2D->Render();
+}
 //
 //EventResult UILayer::OnKeyDown( KeyDownEventArgs & args )
 //{
@@ -344,7 +346,6 @@
 //
 //
 ///* UI */
-//using namespace Fission;
 //
 //UI::Key::Key() : context( nullptr ) {}
 //
