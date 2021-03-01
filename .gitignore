@@ -4,11 +4,6 @@
 **.o
 **.obj
 
-# Executables
-**.exe
-**.out
-**.app
-
 # Built Config files
 sandbox/etc/
 
