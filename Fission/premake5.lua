@@ -3,10 +3,10 @@ project 'Fission'
     language 'C++'
     cppdialect "C++latest"
 
-    targetdir ("%{wks.location}/bin/" .. OutputDir .. "/%{prj.name}")
+    targetdir ("%{wks.location}/bin/" .. OutputDir)
 	objdir ("%{wks.location}/bin-int/" .. OutputDir .. "/%{prj.name}")
 
-    files { "%{prj.location}/src/**.cpp", "%{wks.location}/include/**.h" }
+    files { "%{prj.location}/src/**.cpp", "%{wks.location}/src/**.h" }
 
     links { "yaml", "freetype" }
 
