@@ -9,6 +9,7 @@ git clone --recursive https://github.com/lazergenixdev/Fission
 To make a Visual Studio Solution run `GenWindowsProj.bat` in the `scripts` directory
 
 ## Features
+- Native Win32 support
 - Included 2D renderer with support for fonts
 - DirectX11 support
 
