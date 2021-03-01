@@ -21,8 +21,11 @@ project 'Fission'
     staticruntime "On"
     defines 'FISSION_BUILD_DLL'
     
-    -- Texture processing library for windows
     filter "system:windows"
+        -- HRESULT translation to readable strings
+        includedirs '%{prj.location}/vendor/windows/DXErr'
+    
+        -- Texture processing library for windows
         includedirs '%{prj.location}/vendor/windows/DirectXTex/include'
         libdirs { "%{prj.location}/vendor/windows/DirectXTex/%{cfg.buildcfg}-%{cfg.architecture}" }
         links { 'DirectXTex' }
