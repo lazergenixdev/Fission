@@ -8,13 +8,19 @@ project 'Fission'
 
     files { "%{prj.location}/src/**.cpp", "%{wks.location}/include/**.h" }
 
-    links { "yaml" }
+    links { "yaml", "freetype" }
+
+    libdirs
+    {
+        '%{prj.location}/vendor/freetype/' .. OutputDir
+    }
 
 	includedirs
 	{
         '%{wks.location}/include',
         "%{IncludeDir.yaml}",
         "%{IncludeDir.lazerlib}",
+        '%{prj.location}/vendor/freetype/include',
         '%{prj.location}/resources'
 	}
     
@@ -22,6 +28,19 @@ project 'Fission'
     defines 'FISSION_BUILD_DLL'
     
     filter "system:windows"
+        files { "resource.h", "Fission.rc" }
+
+        -- COM
+        links 'ole32'
+
+        -- Windows
+        links 'user32'
+        links 'gdi32'
+
+        -- DirectX
+        links 'd3d11'
+        links 'd3dcompiler'
+
         -- HRESULT translation to readable strings
         includedirs '%{prj.location}/vendor/windows/DXErr'
     
