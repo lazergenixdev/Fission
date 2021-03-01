@@ -17,7 +17,6 @@
 
 #pragma once
 #include "Fission/Core/Application.h"
-#include "Fission/Core/Exception.h"
 #include "Fission/Platform/System.h"
 
 #define FISSION_EXIT_SUCCESS 0x0 /* Success */

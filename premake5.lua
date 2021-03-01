@@ -8,7 +8,7 @@ workspace 'Fission'
     flags { 'MultiProcessorCompile', 'MFC' }
     defines '_CRT_SECURE_NO_WARNINGS'
 	
-	startproject 'Fission'
+	startproject 'sandbox'
 
 	
     OutputDir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
@@ -24,3 +24,4 @@ group "Dependencies"
 group ""
 
 include 'Fission'
+include 'sandbox'
