@@ -9,6 +9,9 @@
 **.out
 **.app
 
+# Built Config files
+sandbox/etc/
+
 # Log files
 *.log
 
