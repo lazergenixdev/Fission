@@ -7,6 +7,10 @@
 
 using namespace Fission;
 
+namespace CustomFont {
+#include "Static Fonts/Nunito-SemiBold.inl"
+}
+
 static color randColor() {
 	return color( (float)rand() / (float)RAND_MAX, (float)rand() / (float)RAND_MAX, (float)rand() / (float)RAND_MAX );
 }
@@ -16,10 +20,16 @@ class SandboxLayer : public ILayer
 public:
 	static constexpr int nSides = 60;
 	SandboxLayer() : mesh( 100, 200 )
-	{}
+	{
+	}
 	virtual void OnCreate() override
 	{
+		FontManager::SetFont( "myfont", CustomFont::data, CustomFont::size, 20.0f );
+		Font * font = FontManager::GetFont( "myfont" );
+
 		pRenderer2D = Renderer2D::Create( GetApp()->GetGraphics() );
+		pRenderer2D->SelectFont( font );
+
 
 		const int nVerticies = nSides + 1;
 
@@ -63,6 +73,8 @@ public:
 
 		pRenderer2D->FillCircle( { 250.0f, 250.0f }, 100.0f, coloru(25, 25, 25) );
 		pRenderer2D->FillArrow( { 200.0f, 250.0f }, vec2f{ 250.0f + cs, 250.0f + sn }, scale, Colors::White );
+
+		pRenderer2D->DrawString( L"Sandbox app", { 450.0f, 50.0f }, Colors::White );
 
 		DebugLayer::Push( "HECK" );
 		int vmaj, vmin, vpat;

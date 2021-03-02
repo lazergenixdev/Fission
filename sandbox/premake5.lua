@@ -14,7 +14,7 @@ project 'sandbox'
 	{
         '%{wks.location}/include',
         "%{IncludeDir.lazerlib}",
-        '%{prj.location}/resources'
+        '%{wks.location}/resources'
 	}
     
     staticruntime "On"

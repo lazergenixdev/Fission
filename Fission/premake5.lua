@@ -24,7 +24,7 @@ project 'Fission'
         "%{IncludeDir.yaml}",
         "%{IncludeDir.lazerlib}",
         '%{prj.location}/vendor/freetype/include',
-        '%{prj.location}/resources'
+        '%{wks.location}/resources'
 	}
     
     staticruntime "On"
