@@ -1,6 +1,8 @@
 #pragma once
 
+#ifndef FISSION_MK_STR
 #define FISSION_MK_STR(X) #X
+#endif
 
 #define FISSION_VERSION_MAJ 0
 #define FISSION_VERSION_MIN 1
