@@ -1,8 +1,6 @@
 #include "SurfaceImpl.h"
 //#include "Platform/Windows/hr_Exception.h"
-#include <DirectXTex/DirectXTex.h>
 #include "lazer/unfinished.h"
-#include <DXErr/dxerr.hpp>
 
 namespace Fission {
 
@@ -25,46 +23,6 @@ namespace Fission {
 		}
 	}
 
-	bool SurfaceRGBA8_UNormImpl::Load( const file::path & _FilePath )
-	{
-		HRESULT hr;
-		DirectX::ScratchImage scratch;
-		DirectX::ScratchImage converted;
-
-		if( FAILED( hr = DirectX::LoadFromWICFile( _FilePath.wstring().c_str(), DirectX::WIC_FLAGS_NONE, nullptr, scratch ) ) )
-		{
-			static char desc[512];
-			DXGetErrorDescriptionA( hr, desc, std::size( desc ) );
-			throw lazer::exception( "Surface Exception", _lazer_exception_msg.append( "HRESULT", desc ) );
-			return false;
-		}
-
-		auto image = scratch.GetImage( 0, 0, 0 );
-		/* Image in an incorrect format */
-		if( image->format != DXGI_FORMAT_R8G8B8A8_UNORM )
-		{
-			if( FAILED( DirectX::Convert( *image, DXGI_FORMAT_R8G8B8A8_UNORM, DirectX::TEX_FILTER_DEFAULT, 1.0f, converted ) ) )
-				return false;
-
-			image = converted.GetImage( 0, 0, 0 );
-		}
-
-		this->m_Width = (uInt32)image->width;
-		this->m_Height = (uInt32)image->height;
-		this->m_pxCount = (uInt32)(m_Width * m_Height);
-		this->m_cbSize = (uInt32)image->slicePitch;
-
-		m_pData = std::make_unique<coloru[]>( m_pxCount );
-		memcpy( m_pData.get(), image->pixels, m_cbSize );
-
-		return true;
-	}
-
-	bool SurfaceRGBA8_UNormImpl::Save( const file::path & _FilePath )
-	{
-		return false;
-	}
-
 	void SurfaceRGBA8_UNormImpl::resize( vec2 new_size, ResizeOptions_ options )
 	{
 		_lazer_throw_not_implemented;
@@ -80,7 +38,7 @@ namespace Fission {
 		_lazer_throw_not_implemented;
 	}
 
-	void SurfaceRGBA8_UNormImpl::insert( int x, int y, PixelCallback src, vec2i src_size )
+	void SurfaceRGBA8_UNormImpl::insert( uInt32 x, uInt32 y, PixelCallback src, vec2 src_size )
 	{
 		assert( x + src_size.x <= (int)m_Width );
 		assert( y + src_size.y <= (int)m_Height );
@@ -95,9 +53,20 @@ namespace Fission {
 		}
 	}
 
+	void SurfaceRGBA8_UNormImpl::insert( uInt32 x, uInt32 y, const Surface * src, std::optional<recti> src_region )
+	{
+
+		_lazer_throw_not_implemented;
+	}
+
 	Texture::Format SurfaceRGBA8_UNormImpl::format() const
 	{
 		return Texture::Format_RGBA8_UNORM;
+	}
+
+	Fission::color SurfaceRGBA8_UNormImpl::GetPixel( uInt32 x, uInt32 y )
+	{
+		_lazer_throw_not_implemented;
 	}
 
 	void SurfaceRGBA8_UNormImpl::PutPixel( uInt32 x, uInt32 y, color color )

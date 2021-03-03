@@ -13,7 +13,7 @@ namespace Fission {
 		using sincos = Renderer2DImpl::DrawCommand::sincos;
 		std::vector<sincos> out;
 
-		int geometry_persision = 7;
+		int geometry_persision = 13;
 
 		assert( geometry_persision >= 1 && geometry_persision < 100 ); // restrict the amount of persision to a reasonable range
 
@@ -518,19 +518,19 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 
 		pVtxData[vtxCount++] = vertex( *mat * vec2( center.x + rad, center.y ), c );
 		for( auto && trig : TrigCache )
-			pVtxData[vtxCount++] = vertex( *mat * vec2( center.x + trig.cos * rad, center.y + trig.sin * rad ), c );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( center.x + trig.cos * rad, center.y + trig.sin * rad ), c );
 
 		pVtxData[vtxCount++] = vertex( *mat * vec2( center.x, center.y + rad ), c );
 		for( auto && trig : TrigCache )
-			pVtxData[vtxCount++] = vertex( *mat * vec2( center.x - trig.sin * rad, center.y + trig.cos * rad ), c );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( center.x - trig.sin * rad, center.y + trig.cos * rad ), c );
 
 		pVtxData[vtxCount++] = vertex( *mat * vec2( center.x - rad, center.y ), c );
 		for( auto && trig : TrigCache )
-			pVtxData[vtxCount++] = vertex( *mat * vec2( center.x - trig.cos * rad, center.y - trig.sin * rad ), c );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( center.x - trig.cos * rad, center.y - trig.sin * rad ), c );
 
 		pVtxData[vtxCount++] = vertex( *mat * vec2( center.x, center.y - rad ), c );
 		for( auto && trig : TrigCache )
-			pVtxData[vtxCount++] = vertex( *mat * vec2( center.x + trig.sin * rad, center.y - trig.cos * rad ), c );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( center.x + trig.sin * rad, center.y - trig.cos * rad ), c );
 	}
 
 	void Renderer2DImpl::DrawCommand::AddTriangle( vec2f p0, vec2f p1, vec2f p2, colorf c )

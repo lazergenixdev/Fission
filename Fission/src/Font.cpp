@@ -151,10 +151,10 @@ namespace Fission {
 			/* now, draw to our target surface */
 			pSurface->insert(
 				node->rc.get_l(), node->rc.get_t(),
-				[&] ( int x, int y ) {
+				[&] ( uInt32 x, uInt32 y ) {
 				return coloru( 255, 255, 255, bitmap.buffer[y * bitmap.width + x] );
 			},
-				vec2i{ (int)bitmap.width, (int)bitmap.rows }
+				vec2u{ bitmap.width, bitmap.rows }
 			);
 
 			g.rc = {

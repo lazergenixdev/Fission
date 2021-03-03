@@ -17,9 +17,11 @@ namespace Fission
 		virtual void set_height( uInt32 new_height, ResizeOptions_ options = ResizeOptions_Clip ) override;
 
 
-		virtual void insert( int x, int y, PixelCallback src, vec2i src_size ) override;
+		virtual void insert( uInt32 x, uInt32 y, PixelCallback src, vec2 src_size ) override;
+		virtual void insert( uInt32 x, uInt32 y, const Surface * src, std::optional<recti> src_region ) override;
 
 		virtual Texture::Format format() const override;
+		virtual color GetPixel( uInt32 x, uInt32 y ) override;
 		virtual void PutPixel( uInt32 x, uInt32 y, color color ) override;
 		virtual void shrink_to_fit( color clear_color = coloru( 0, 0, 0, 0 ) ) override;
 		virtual const void * data() const override;

@@ -53,6 +53,7 @@ public:
 	virtual void OnUpdate() override
 	{
 		pRenderer2D->FillRect( rectf::from_center( { 500.0f, 300.0f }, { 50.0f, 50.0f } ), c );
+		pRenderer2D->DrawRect( rectf::from_center( { 500.0f, 300.0f }, { 50.0f, 50.0f } ), Colors::White, 2.0f );
 
 		mesh.set_color( 0, colorf_hsv( 0.0f, 0.0f, v ) );
 		for( int i = 0; i < nSides; i++ ) {
@@ -95,7 +96,7 @@ public:
 private:
 	std::unique_ptr<Renderer2D> pRenderer2D;
 	color c = Colors::Red;
-	float scale = 5.0f;
+	float scale = 16.0f;
 	float v = 1.0f;
 
 	simple_timer t;

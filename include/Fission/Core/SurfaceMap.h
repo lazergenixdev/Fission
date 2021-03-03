@@ -19,6 +19,7 @@ public:
     }
 
     FISSION_API surface_map();
+    FISSION_API ~surface_map();
 
     FISSION_API const value & operator[]( const std::string & key ) const;
 
@@ -27,8 +28,8 @@ public:
 
     FISSION_API void clear();
 
-    FISSION_API virtual bool Load( const std::string & file ) override;
-    FISSION_API virtual bool Save( const std::string & file ) const override;
+    FISSION_API virtual bool Load( const file::path & file ) override;
+    FISSION_API virtual bool Save( const file::path & file ) override;
 
     FISSION_API void SetMaxWidth( int _Width );
     FISSION_API void SetMaxHeight( int _Height );
@@ -52,8 +53,8 @@ public:
     FISSION_API std::unique_ptr<Surface> && release();
 
 private:
-    std::unordered_map<std::string,value> map;
-    
+    std::unordered_map<std::string,const Surface *> map;
+
 } // class Fission::surface_map
 
 } // namespace Fission

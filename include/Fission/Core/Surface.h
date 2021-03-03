@@ -5,7 +5,7 @@
 
 namespace Fission
 {
-	using PixelCallback = std::function<colorf(int x, int y)>;
+	using PixelCallback = std::function<colorf( uInt32 x, uInt32 y)>;
 
 	namespace Texture {
 		typedef enum Format_ {
@@ -40,9 +40,10 @@ namespace Fission
 
 		// seems familiar
 		virtual void PutPixel( uInt32 x, uInt32 y, color color ) = 0;
+		virtual color GetPixel( uInt32 x, uInt32 y ) = 0;
 
-		virtual void insert( int x, int y, PixelCallback src, vec2i src_size ) = 0;
-	//	void Insert( uint32_t x, uint32_t y, const SurfaceRGBA & src, recti src_region = {} );
+		virtual void insert( uInt32 x, uInt32 y, PixelCallback src, vec2 src_size ) = 0;
+		virtual void insert( uInt32 x, uInt32 y, const Surface * src, std::optional<recti> src_region = {} ) = 0;
 
 		// shrink the surface if there is any 'clear_color' on any side
 		virtual void shrink_to_fit( color clear_color = coloru(0,0,0,0) ) = 0;
