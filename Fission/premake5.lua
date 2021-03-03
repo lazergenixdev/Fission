@@ -58,4 +58,4 @@ project 'Fission'
 
     filter "configurations:Dist"
         defines { "FISSION_DIST" }
-        optimize "On"
+        optimize "Speed"
