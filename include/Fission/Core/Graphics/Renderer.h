@@ -4,7 +4,7 @@
 namespace Fission
 {
 
-	interface IRenderer
+	struct IRenderer
 	{
 	public:
 	//	virtual void FreeResources() = 0;

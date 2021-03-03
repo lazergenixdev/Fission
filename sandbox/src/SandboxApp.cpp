@@ -1,5 +1,5 @@
+#include <Fission/Platform/EntryPoint.h>
 #include <Fission/Fission.h>
-#include <Fission/Core/Console.h>
 #include <Fission/Core/UI/UI.h>
 
 #include <numbers>

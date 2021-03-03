@@ -22,46 +22,101 @@
 
 namespace Fission {
 
-// \brief performs a command
-// \param command_args: command input
-// \returns message for incorrectly formatted commands
+	/***************************************************************************************
+	 * @brief 
+	 *   Command Callback Function
+	 * 
+	 * @description: 
+	 *   Callback called once every time the corresponding command is executed.
+	 * 
+	 * @param 
+	 *  command_args ::
+	 *     Wide String containing everything after the command name.
+	 *   
+	 * 
+	 * @return 
+	 *   Wide String message which outputs to the console if command was unsuccessful.
+	 * 
+	 */
 	using CommandCallback = std::function<std::wstring( std::wstring command_args )>;
 
+
+	/***************************************************************************************
+	 * @brief 
+	 *   Console, it is a console not much else to say.. 
+	 */
 	class Console
 	{
 		static constexpr size_t Default_Format_Buffer_Size = 128;
 	public:
 
-		// use this to stop console from showing when typing
-		FISSION_API static void SetEnabled( bool _Enable );
+		//! @brief Sets whether the Console should be active to the user.
+		//! @param 
+		//! @note Use this to stop console from showing when typing
+		FISSION_THREAD_SAFE FISSION_API static void SetEnabled( bool _Enable );
 
-		FISSION_API static bool IsEnabled();
 
-		FISSION_API static void Clear();
+		//! @brief Check to see if the Console is active for the user.
+		//! @return `true` => Console is enabled; `false` otherwise.
+		FISSION_THREAD_SAFE FISSION_API static bool IsEnabled();
 
-		FISSION_API static void RegisterCommand( const std::wstring & _Command_Name, CommandCallback _Callback );
 
-		FISSION_API static void UnregisterCommand( const std::wstring & _Command_Name );
+		//! @brief Clears all text from the Console.
+		FISSION_THREAD_SAFE FISSION_API static void Clear();
 
-		FISSION_API static void ExecuteCommand( const std::wstring & _Full_Command );
 
-		// All console functions are thread safe
-		FISSION_API static void WriteLine( color _Color, const wchar_t * _Text );
+	   /**
+		* @brief  Registers a command name to a callback.
+		* @param  _Command_Name: Name the command will be refered as.
+		* @param  _Callback: Command callback function that will be called when the command is executed.
+		* 
+		* @note This function cannot fail, and will simply override commands that already exist.
+		*/
+		FISSION_THREAD_SAFE FISSION_API static void RegisterCommand( const std::wstring & _Command_Name, CommandCallback _Callback );
 
-		FISSION_API static void Write( color _Color, const wchar_t * _Text );
 
-		// \param _Output_Text - destination of where the line of the console is copied to
-		// \return True - success; False - Function did not find a line at that index
-		FISSION_API static bool GetLine( int _Line_Number, std::wstring * _Output_Text, color * _Output_Color = nullptr );
+		//! @brief Removes a command from the Console.
+		//! @param _Command_Name: Name of the command to remove.
+		FISSION_THREAD_SAFE FISSION_API static void UnregisterCommand( const std::wstring & _Command_Name );
 
-		FISSION_API static int GetLineCount();
 
-		// This might be needed for safety when reading console.
+		//! @brief Executes a full command string.
+		//! @param _Full_Command: Wide string of the command to be executed.
+		//! @note Syntax of commands should be: <command name> [command arguments]
+		FISSION_THREAD_SAFE FISSION_API static void ExecuteCommand( const std::wstring & _Full_Command );
+
+
+		//! @brief Writes a line to the Console.
+		//! @param _Color: Color of the line of text outputed.
+		//! @param _Text: Text to be put onto the Console.
+		FISSION_THREAD_SAFE FISSION_API static void WriteLine( color _Color, const wchar_t * _Text );
+
+
+		//! @brief Writes a string to the Console.
+		//! @warning THIS FUNCTION IS NOT IMPLEMENTED AS OF v0.1.0
+		FISSION_THREAD_SAFE FISSION_API static void Write( color _Color, const wchar_t * _Text );
+
+
+		//! @brief Gets a line of text and the text color from the Console.
+		//! @param _Line_Number Line number of the line retrieved.
+		//! @param _Output_Text [out] Destination of where the line of the console is copied to.
+		//! @param _Output_Color [out] Destination of where the color of the text is copied to. This may be omitted.
+		//! @return `true` => Success; `False` => Function did not find a line at that index.
+		FISSION_THREAD_SAFE FISSION_API static bool GetLine( int _Line_Number, std::wstring * _Output_Text, color * _Output_Color = nullptr );
+
+
+		//! @brief Gets Console line count.
+		//! @return Number of lines of text in the Console.
+		FISSION_THREAD_SAFE FISSION_API static int GetLineCount();
+
+	// This might be needed for thread safety when reading console. todo:
 	//	FISSION_API static std::lock_guard<std::mutex> Lock();
 
-		static void WriteLine( const wchar_t * _Text ) {
-			WriteLine( FISSION_MESSAGE_COLOR, _Text );
-		}
+
+
+/* ------------------------------------------ Begin Console Helpers ----------------------------------------------- */
+
+		static void WriteLine( const wchar_t * _Text ) { WriteLine( FISSION_MESSAGE_COLOR, _Text ); }
 
 		template <size_t _Format_Buffer_Size = Default_Format_Buffer_Size, typename...T>
 		static void WriteLine( color _Color, const wchar_t * const _Text, T&&...t )
@@ -93,6 +148,8 @@ namespace Fission {
 		static void Message( const wchar_t * _Text, T&&...t ) {
 			WriteLine( FISSION_MESSAGE_COLOR, _Text, std::forward<T>( t )... );
 		}
+
+/* ------------------------------------------- End Console Helpers ------------------------------------------------ */
 
 	}; // class Fission::Console
 

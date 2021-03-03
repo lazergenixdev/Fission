@@ -46,7 +46,7 @@ namespace freetype {
 		FT_Library_Version( m_Library, &maj, &min, &pat );
 
 		static wchar_t buf[48] = {};
-		swprintf( buf, 48, L"Freetype Library Version %i.%i.%i", maj, min, pat );
+		swprintf( buf, 48, L"FreeType Library Version %i.%i.%i", maj, min, pat );
 
 		Fission::Console::WriteLine( buf );
 	}
@@ -60,15 +60,16 @@ namespace freetype {
 	Face * Library::LoadFaceFromFile( const lazer::file::path & path )
 	{
 		std::string location = path.string();
+		auto & s = Get(); // static instance
 
-		auto key = Get().m_Faces.find( location );
-		if( key != Get().m_Faces.end() ) {
+		auto key = s.m_Faces.find( location );
+		if( key != s.m_Faces.end() ) {
 			return key->second.get();
 		}
 
-		Get().m_Faces.emplace( location, std::make_unique<Face>( Get().m_Library, path ) );
+		s.m_Faces.emplace( location, std::make_unique<Face>( Get().m_Library, path ) );
 
-		return Get().m_Faces[location].get();
+		return s.m_Faces[location].get();
 	}
 
 	Face * Library::LoadFaceFromMemory( const void * pData, const size_t size )
@@ -76,15 +77,16 @@ namespace freetype {
 		char buf[16];
 		sprintf( buf, "%I64x", (uint64_t)pData );
 		std::string location = buf;
+		auto & s = Get(); // static instance
 
-		auto key = Get().m_Faces.find( location );
-		if( key != Get().m_Faces.end() ) {
+		auto key = s.m_Faces.find( location );
+		if( key != s.m_Faces.end() ) {
 			return key->second.get();
 		}
 
-		Get().m_Faces.emplace( location, std::make_unique<Face>( Get().m_Library, pData, size ) );
+		s.m_Faces.emplace( location, std::make_unique<Face>( Get().m_Library, pData, size ) );
 
-		return Get().m_Faces[location].get();
+		return s.m_Faces[location].get();
 	}
 
 	Library & Library::Get()
@@ -94,7 +96,7 @@ namespace freetype {
 	}
 
 	Exception::Exception( const lazer::exception_message & msg ) noexcept
-		: lazer::exception( "Freetype Exception", msg )
+		: lazer::exception( "FreeType Exception", msg )
 	{}
 
 }

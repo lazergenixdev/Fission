@@ -3,7 +3,7 @@
 
 namespace Fission {
 
-	interface Font
+	struct Font
 	{
 	public:
 		struct Glyph {
@@ -30,7 +30,7 @@ namespace Fission {
 		virtual ~Font() = default;
 	};
 
-	interface FontFace
+	struct FontFace
 	{
 		virtual std::unique_ptr<Font> CreateFont( float size, const Font::CreateOptions & options = {} );
 

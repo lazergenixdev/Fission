@@ -1,14 +1,3 @@
-/* ===================================================== */
-/* - File: "EntryPoint.h" ------------------------------ */
-/* - Author: Lazergenix (lazergenixdev@gmail.com) ------ */
-/* - Last Modified: 2021-02-28 ------------------------- */
-/* ===================================================== */
-/*
- 
- Copyright (c) 2021 Lazergenix Software
-
-*/
-
 //
 // USAGE:
 //   include header where you create your application
@@ -32,13 +21,13 @@
 /// Creates User Application.
 /// </summary>
 /// <returns>Pointer to a Fission::Application</returns>
-extern Fission::Application * CreateApplication( void );
+static Fission::Application * CreateApplication( void );
 
 /// <summary>
 /// Runs main application loop
 /// </summary>
 /// <returns>ExitCode from the status of how the application exited</returns>
-inline Fission::Platform::ExitCode _fission_main( void );
+static Fission::Platform::ExitCode _fission_main( void );
 
 
 /* =================================================================================================== */

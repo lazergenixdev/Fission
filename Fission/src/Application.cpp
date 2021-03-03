@@ -64,11 +64,11 @@ Application::Application( const CreateInfo & info )
 
 	Configuration::Load();
 
-	Window::Properties wndProps = info.wndProps;
+	Window::Properties wndProps = info.window;
 	wndProps.flags = wndProps.flags | Window::Flags::IsMainWindow;
 	m_State->m_pMainWindow = Window::Create( wndProps, this );
 
-	m_State->m_pGraphics = Graphics::Create( m_State->m_pMainWindow.get(), info.gAPI, info.resolution );
+	m_State->m_pGraphics = Graphics::Create( m_State->m_pMainWindow.get(), info.graphics );
 }
 
 Application::~Application() noexcept 
@@ -92,11 +92,6 @@ Window * Application::GetWindow()
 Graphics * Application::GetGraphics()
 {
 	return m_State->m_pGraphics.get();
-}
-
-DebugLayer * Application::GetDebugLayer()
-{
-	return &m_State->m_DebugLayer;
 }
 
 Platform::ExitCode Application::Run()

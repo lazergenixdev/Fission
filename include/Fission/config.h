@@ -1,9 +1,5 @@
 #pragma once
-
-#include "Platform/Platform.h"
-#include "lazer/lazer.h"
-
-#define FISSION_ENGINE "Fission"
+#include "Platform/Platform.h" /*!< Determine Target Platform */
 
 #ifdef FISSION_PLATFORM_WINDOWS
 #ifdef FISSION_BUILD_DLL
@@ -13,10 +9,13 @@
 #endif // FISSION_BUILD_DLL
 #endif // FISSION_PLATFORM_WINDOWS
 
-#ifndef interface
-#define interface struct
-#endif
+#define FISSION_ENGINE "Fission" /*!< Engine Name */
 
+#define FISSION_THREAD_SAFE /*!< Functions that should be thread safe */
+
+/**
+ * standard library includes
+ */
 #include <memory>
 #include <utility>
 #include <algorithm>
@@ -34,6 +33,14 @@
 #include <map>
 #include <filesystem>
 
+/**
+ * External helper library
+ */
+#include "lazer/lazer.h"
+
+/**
+ * convenient type aliases 
+ */
 namespace Fission {
 
 	using namespace lazer;
@@ -50,15 +57,20 @@ namespace Fission {
 
 }
 
+/**
+ * assertions
+ */
 #include <cassert>
-
 #ifdef FISSION_DEBUG
 #define FISSION_ASSERT( expression, msg ) assert( expression && "" msg )
 #else
 #define FISSION_ASSERT( expression, msg ) ((void)0)
 #endif // FISSION_DEBUG
 
+/**
+ * macro helpers
+ */
 #define FISSION_MK_STR(X) #X
+#define FISSION_MK_WSTR(X) L#X
+#define FISSION_MK_WIDE(X) L##X
 
-// reminder that these functions can introduce race conditions
-#define FISSION_THREAD_SAFE

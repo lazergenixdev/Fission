@@ -5,7 +5,7 @@
 
 namespace Fission::Resource
 {
-	interface IBindable
+	struct IBindable
 	{
 		virtual void Bind() = 0;
 		virtual void Unbind() = 0;

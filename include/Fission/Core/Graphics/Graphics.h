@@ -18,20 +18,26 @@ public:
 
 public:
 	enum class API {
-		DirectX11,
-		DirectX12,
-		Vulkan,
-		OpenGL,
+		DirectX11, /*!< DirectX 11 */
+		DirectX12, /*!< DirectX 12 */
+		Vulkan,    /*!< Vulkan */
+		OpenGL,    /*!< OpenGL */
 
-		__count__,
-		Default // Let Graphics decide
+		__count__, /*!< Number of Graphics APIs available */
+		Default /*!< @Graphics will decide which api is best to use */
+	};
+
+	struct Properties
+	{
+		API api = API::Default;
+		vec2i resolution = { 1280, 720 };
 	};
 		
 public:
 
-	static bool IsSupported( API api );
+	static bool IsSupported( API _GFX_API );
 
-	static std::unique_ptr<Graphics> Create( Window * pWindow, API api, vec2i resolution );
+	static std::unique_ptr<Graphics> Create( Window * _Ptr_Window, const Properties & _Properties );
 
 
 /* ------------------------------------ Begin Base API Functions ----------------------------------- */

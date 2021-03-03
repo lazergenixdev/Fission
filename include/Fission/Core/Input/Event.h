@@ -3,70 +3,82 @@
 #include "Keys.h"
 #include "Cursor.h"
 
+/*!< Event has been handled */
 #define FISSION_EVENT_HANDLED  ::Fission::EventResult::Handled
+
+/*!< Event should be passed to the next event handler */
 #define FISSION_EVENT_PASS     ::Fission::EventResult::Pass
 
+/*!< Default behavior of event callbacks */
 #define FISSION_EVENT_DEFAULT { return FISSION_EVENT_PASS; }
+
 
 namespace Fission {
 
-	enum class EventResult : int
+	//! @brief Result of a Event Callback
+	enum class EventResult
 	{
 		Handled = 0,
 		Pass = 1,
 	};
 
-/* ================================================================================================== */
-/* -------------------------------------- Event Arguments ------------------------------------------- */
-/* ================================================================================================== */
 
-	struct CloseEventArgs 
-	{
+/* -------------------------------------- Event Arguments ------------------------------------------- */
+
+	struct CloseEventArgs {
 		int ExitCode; 
 	};
 
-	struct KeyDownEventArgs
-	{
+	struct KeyDownEventArgs{
 		Keys::Key key;
 	};
 
-	struct KeyUpEventArgs
-	{
+	struct KeyUpEventArgs {
 		Keys::Key key;
 	};
 
-	struct TextInputEventArgs
-	{
+	struct TextInputEventArgs {
 		wchar_t character;
 	};
 
-	struct MouseMoveEventArgs
-	{
+	struct MouseMoveEventArgs {
 		vec2i position;
 	};
 
-	struct MouseLeaveEventArgs 
-	{
-	};
+	struct MouseLeaveEventArgs {};
 
-	struct SetCursorEventArgs
-	{
+	struct SetCursorEventArgs {
 		Cursor * cursor;
 	};
 
-	struct ResizeEventArgs
-	{
+	struct ResizeEventArgs {
 		vec2i size; 
 	};
+
 
 
 /* ================================================================================================== */
 /* -------------------------------------- Event Handler --------------------------------------------- */
 /* ================================================================================================== */
 	
-	interface IEventHandler
+	struct IEventHandler
 	{
-		// this is some next level formatting right here
+
+		/****************************************************************************************
+		* @brief 
+		*   Get the Default Event Handler.
+		* 
+		* @note:   
+		*   Allows for the ability to always call the event handler with no nullptr errors.
+		*   Use this instead of `nullptr`.
+		* 
+		* @return null EventHandler (does not respond to events).
+		*/
+		FISSION_API static IEventHandler * Default();
+
+
+
+		// this is some next level formatting right here:
 
 		FISSION_THREAD_SAFE virtual EventResult OnKeyDown
 		( KeyDownEventArgs & )
@@ -108,11 +120,6 @@ namespace Fission {
 	//  ( ResizeEventArgs & )
 	//	FISSION_EVENT_DEFAULT
 
-	public:
-		// Returns a null EventHandler(does not respond to events), Use in place of 'nullptr'
-		// Allows for the ability to always call the event handler with no nullptr errors
-		FISSION_API static IEventHandler * Default();
-
-	}; // interface Fission::IEventHandler
+	}; // struct Fission::IEventHandler
 
 } // namespace Fission

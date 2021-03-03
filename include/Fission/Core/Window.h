@@ -10,7 +10,9 @@ namespace Fission
 	{
 	public:
 
+		/*!< Native window handle type */
 		using native_handle_type = Platform::WindowHandle;
+
 
 		enum class Style
 		{
@@ -40,7 +42,7 @@ namespace Fission
 		/// </summary>
 		struct Properties
 		{
-			std::wstring title = L"Lazer Engine";
+			std::wstring title = L"Window Title";
 			Style style = Style::Default;
 			Flags flags = Flags::Default;
 			std::optional<vec2i> position;

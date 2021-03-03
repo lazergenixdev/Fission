@@ -40,10 +40,6 @@ project 'Fission'
         links 'user32'
         links 'gdi32'
 
-        -- DirectX
-        links 'd3d11'
-        links 'd3dcompiler'
-
         -- HRESULT translation to readable strings
         includedirs '%{prj.location}/vendor/windows/DXErr'
     
