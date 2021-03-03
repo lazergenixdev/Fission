@@ -1,6 +1,6 @@
 #include "BindableDirectX11.h"
 //#include "hr_Exception.h"
-#include <d3dcompiler.h>
+#include "dx11_library.h"
 #include <filesystem>
 
 namespace Fission::Platform {
@@ -150,6 +150,9 @@ namespace Fission::Platform {
 	ShaderDX11::ShaderDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info )
 		: m_pContext( pContext )
 	{
+		if( !dx11_library::Initialize() ) 
+			throw lazer::exception( "DX11 Shader Exception", _lazer_exception_msg.append("Failed to get \"d3dcompiler\"") );
+
 		HRESULT hr = S_OK;
 		com_ptr<ID3DBlob> pBlob;
 
@@ -182,12 +185,12 @@ namespace Fission::Platform {
 			std::wstring vsPath = info.name + L"VS.cso";
 			std::wstring psPath = info.name + L"PS.cso";
 
-			D3DReadFileToBlob( vsPath.c_str(), &pBlob );
+			dx11_library::ReadFileToBlob( vsPath.c_str(), &pBlob );
 			pDevice->CreateVertexShader( pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &m_pVertexShader );
 
 			create_input_layout();
 
-			D3DReadFileToBlob( psPath.c_str(), &pBlob );
+			dx11_library::ReadFileToBlob( psPath.c_str(), &pBlob );
 			pDevice->CreatePixelShader( pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &m_pPixelShader );
 		}
 		// compile from source code
@@ -202,7 +205,7 @@ namespace Fission::Platform {
 
 			com_ptr<ID3DBlob> pErrorBlob;
 			if( FAILED( 
-				hr = D3DCompile(
+				hr = dx11_library::Compile(
 					info.source_code.data(),
 					info.source_code.size(),
 					nullptr,
@@ -223,7 +226,7 @@ namespace Fission::Platform {
 			create_input_layout();
 
 			if( FAILED(
-				hr = D3DCompile(
+				hr = dx11_library::Compile(
 					info.source_code.data(),
 					info.source_code.size(),
 					nullptr,
@@ -243,6 +246,7 @@ namespace Fission::Platform {
 
 		}
 
+		dx11_library::Shutdown();
 	}
 
 	void ShaderDX11::Bind()

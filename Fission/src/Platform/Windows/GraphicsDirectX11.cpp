@@ -3,21 +3,19 @@
 #include "WindowsWindow.h"
 #include "Fission/Core/Console.h"
 
+#include "dx11_library.h"
+
 // todo: this is not epic
 #define ThrowFailedHR( func, garbo ) func
 
-// todo: reference counting to not release on accident?
-static HMODULE d3d11_library = NULL;
-
 namespace Fission::Platform {
-
-	typedef decltype( &D3D11CreateDeviceAndSwapChain )	D3D11CreateDeviceAndSwapChain_Ty;
-	typedef decltype( &D3D11CreateDevice )				D3D11CreateDevice_Ty;
 
 	GraphicsDirectX11::GraphicsDirectX11( Window * pWindow, vec2i resolution )
 		: m_Resolution( resolution ), m_pParentWindow( pWindow )
 	{
 		assert( pWindow );
+
+		dx11_library::Initialize();
 
 		HRESULT hr = S_OK;
 
@@ -36,17 +34,13 @@ namespace Fission::Platform {
 		static constexpr D3D_FEATURE_LEVEL FeatureLevelsWant[] = { D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0 };
 		D3D_FEATURE_LEVEL FeatureLevelGot;
 
-		d3d11_library = LoadLibraryW( L"d3d11.dll" );
-
-		auto Func = GetProcAddress( d3d11_library, "D3D11CreateDeviceAndSwapChain" );
-
-		hr = reinterpret_cast<D3D11CreateDeviceAndSwapChain_Ty>( Func )(
+		hr = dx11_library::CreateDeviceAndSwapChain(
 			nullptr,								/* Graphics Adapter */
 			D3D_DRIVER_TYPE_HARDWARE,				/* Driver Type */
 			nullptr,								/* Software */
 			0u,										/* Create Flags */
 			FeatureLevelsWant,						/* Feature Levels requested */
-			(UINT)std::size( FeatureLevelsWant ),	/* Num Feature Levels requested */
+			(UINT)std::size( FeatureLevelsWant ),	/* Number of Feature Levels requested */
 			D3D11_SDK_VERSION,						/* SDK Version */
 			&dSwapChain,							/* pp Swap Chain Descriptor */
 			&m_pSwapChain,							/* pp Swap Chain */
@@ -139,8 +133,7 @@ namespace Fission::Platform {
 		m_pSwapChain.Reset();
 		m_pImmediateContext.Reset();
 		m_pDevice.Reset();
-
-		if( d3d11_library ) FreeLibrary( d3d11_library );
+		dx11_library::Shutdown();
 	}
 
 	Graphics::API GraphicsDirectX11::GetAPI() { return API::DirectX11; }
@@ -215,16 +208,9 @@ namespace Fission::Platform {
 		com_ptr<ID3D11Device>			pDevice;
 		com_ptr<ID3D11DeviceContext>	pImmediateContext;
 
-		if( d3d11_library == NULL )
-			d3d11_library = LoadLibraryW( L"d3d11.dll" );
+		if( !dx11_library::Initialize() ) return false;
 
-		if( !d3d11_library ) return false;
-
-		auto Func = GetProcAddress( d3d11_library, "D3D11CreateDevice" );
-
-		if( !Func ) return false;
-
-		hr = reinterpret_cast<D3D11CreateDevice_Ty>( Func )(
+		hr = dx11_library::CreateDevice(
 			nullptr,
 			D3D_DRIVER_TYPE_HARDWARE,
 			nullptr,
@@ -237,8 +223,7 @@ namespace Fission::Platform {
 			&pImmediateContext
 		);
 
-		if( d3d11_library )
-			FreeLibrary( d3d11_library );
+		dx11_library::Shutdown();
 
 		return SUCCEEDED( hr ); // Device ??  well ok then thanks for the free device
 	}
