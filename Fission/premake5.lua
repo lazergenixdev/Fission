@@ -36,9 +36,11 @@ project 'Fission'
         -- COM
         links 'ole32'
 
+        -- Graphics
+        links { 'd3d11', 'd3dcompiler' }
+
         -- Windows
-        links 'user32'
-        links 'gdi32'
+        links { 'user32', 'gdi32' }
 
         -- HRESULT translation to readable strings
         includedirs '%{prj.location}/vendor/windows/DXErr'

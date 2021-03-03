@@ -3,8 +3,6 @@
 #include "WindowsWindow.h"
 #include "Fission/Core/Console.h"
 
-#include "dx11_library.h"
-
 // todo: this is not epic
 #define ThrowFailedHR( func, garbo ) func
 
@@ -14,8 +12,6 @@ namespace Fission::Platform {
 		: m_Resolution( resolution ), m_pParentWindow( pWindow )
 	{
 		assert( pWindow );
-
-		dx11_library::Initialize();
 
 		HRESULT hr = S_OK;
 
@@ -34,7 +30,7 @@ namespace Fission::Platform {
 		static constexpr D3D_FEATURE_LEVEL FeatureLevelsWant[] = { D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0 };
 		D3D_FEATURE_LEVEL FeatureLevelGot;
 
-		hr = dx11_library::CreateDeviceAndSwapChain(
+		hr = D3D11CreateDeviceAndSwapChain(
 			nullptr,								/* Graphics Adapter */
 			D3D_DRIVER_TYPE_HARDWARE,				/* Driver Type */
 			nullptr,								/* Software */
@@ -133,7 +129,6 @@ namespace Fission::Platform {
 		m_pSwapChain.Reset();
 		m_pImmediateContext.Reset();
 		m_pDevice.Reset();
-		dx11_library::Shutdown();
 	}
 
 	Graphics::API GraphicsDirectX11::GetAPI() { return API::DirectX11; }
@@ -208,9 +203,7 @@ namespace Fission::Platform {
 		com_ptr<ID3D11Device>			pDevice;
 		com_ptr<ID3D11DeviceContext>	pImmediateContext;
 
-		if( !dx11_library::Initialize() ) return false;
-
-		hr = dx11_library::CreateDevice(
+		hr = D3D11CreateDevice(
 			nullptr,
 			D3D_DRIVER_TYPE_HARDWARE,
 			nullptr,
@@ -222,8 +215,6 @@ namespace Fission::Platform {
 			nullptr,
 			&pImmediateContext
 		);
-
-		dx11_library::Shutdown();
 
 		return SUCCEEDED( hr ); // Device ??  well ok then thanks for the free device
 	}
