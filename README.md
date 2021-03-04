@@ -17,7 +17,6 @@ To make a Visual Studio Solution run `GenWindowsProj.bat` in the `scripts` direc
 ## Features to come soon
 - OpenGL support
 - Fullscreen functionality
-- Runtime Texture Atlas creation utility
 - Sound (mp3,wav,ogg)
 - Application Icon/Cursor loading from Memory or File
 - ImGui integration for debugging
