@@ -41,7 +41,6 @@ public:
 	}
 	virtual void OnCreate() override
 	{
-		surface_map map;
 		std::vector<std::unique_ptr<Surface>> arr;
 		Surface::CreateInfo info;
 
@@ -78,12 +77,27 @@ public:
 		map.Load( "assets/Atlas" );
 
 		if( map["{region name}11"]->meta["prime"].as_boolean() ) Console::Message( L"Success!!!" );
+
+		std::unique_ptr<Surface> surface = map.release();
+		auto gfx = GetApp()->GetGraphics();
+
+		Resource::Texture2D::CreateInfo tex_info;
+		tex_info.pSurface = surface.get();
+		tex = gfx->CreateTexture2D(tex_info);
+		r2d = Renderer2D::Create( gfx );
 	}
 	virtual void OnUpdate() override
 	{
-		GetApp()->Exit();
+		auto region = &map["{region name}3"]->region;
+		r2d->DrawImage( tex.get(), rectf::from_tl( { 100.0f, 100.0f }, (vec2f)region->abs.size() ), region->rel );
+		region = &map["{region name}10"]->region;
+		r2d->DrawImage( tex.get(), rectf::from_tl( { 700.0f, 100.0f }, (vec2f)region->abs.size() ), region->rel );
+		r2d->Render();
 	}
 private:
+	std::unique_ptr<Renderer2D> r2d;
+	std::unique_ptr<Resource::Texture2D> tex;
+	surface_map map;
 };
 
 class SandboxApp : public Application

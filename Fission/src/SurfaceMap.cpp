@@ -719,6 +719,10 @@ bool surface_map::Load( const file::path & file )
 		m_MetaData = from_json( desc["__metadata__"] );
 		desc.erase( "__metadata__" );
 
+		vec2f scale = (vec2f)m_Surface->size();
+		if( scale.x <= 0.0f || scale.y <= 0.0f ) return false;
+		scale = { 1.0f / scale.x, 1.0f / scale.y };
+
 		for( auto && [key, value] : desc.items() )
 		{
 			sub_surface subs;
@@ -731,12 +735,14 @@ bool surface_map::Load( const file::path & file )
 			subs.region.flipped = value["[flip]"].get<bool>();
 			subs.meta = from_json( value["__metadata__"] );
 
+			subs.region.rel = rectf( (rangef)rc.x * scale.x, (rangef)rc.y * scale.y );
+
 			m_Map.emplace( key, subs );
 		}
 	}
-	catch( std::exception & e )
+	catch( ... )
 	{
-		throw e;
+		return false;
 	}
 	return true;
 }
