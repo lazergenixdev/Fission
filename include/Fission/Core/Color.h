@@ -3,7 +3,7 @@
 
 // todo:
 // [ ] - make a saturate function
-// [ ] - use saturate so color values are never >1.0
+// ~~[ ] - use saturate so color values are never >1.0~~
 // maybe add to lazerlib?
 
 namespace Fission
@@ -17,11 +17,11 @@ namespace Fission
 	struct coloru;
 	struct coloru_hsv;
 
-	// Select defualt structure to use for color
+	// Select default structure to use for color
 	using color = colorf;
 
 	namespace Colors {
-		enum KnownColor : uInt32 {
+		enum KnownColor : uint32_t {
 			Red              = 0xff0000,
 			DarkRed          = 0x8b0000,
 			FireBrick        = 0xb22222,
@@ -366,13 +366,16 @@ namespace Fission
 
 	//*********************** End Conversion Functions ***********************//
 
+	namespace Colors {
 
+	static constexpr color Transparent = color( 0.0f, 0.0f, 0.0f, 0.0f );
 
 	static constexpr color Colors::make_color( const color & c, float value, float alpha ) 
 	{
 		return color( c * value, alpha );
 	}
 
+	}
 
 } // namespace Fission
 

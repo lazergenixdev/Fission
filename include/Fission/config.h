@@ -45,16 +45,6 @@ namespace Fission {
 
 	using namespace lazer;
 
-	using uInt8 = uint8_t;
-	using uInt32 = uint32_t;
-	using uInt16 = uint16_t;
-	using uInt64 = uint64_t;
-
-	using Int8 = int8_t;
-	using Int16 = int16_t;
-	using Int32 = int32_t;
-	using Int64 = int64_t;
-
 }
 
 /**

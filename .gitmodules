@@ -4,3 +4,6 @@
 [submodule "Fission/vendor/lazerlib"]
 	path = Fission/vendor/lazerlib
 	url = https://github.com/lazergenixdev/lazerlib
+[submodule "Fission/vendor/json"]
+	path = Fission/vendor/json
+	url = https://github.com/nlohmann/json

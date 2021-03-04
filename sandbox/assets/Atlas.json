@@ -1,0 +1,347 @@
+{
+    "__file__": "Atlas.png",
+    "__metadata__": {
+        "cat": "meow",
+        "glow": 9.46
+    },
+    "{region name}0": {
+        "$bottom": 1280,
+        "$left": 512,
+        "$right": 1024,
+        "$top": 1024,
+        "[flip]": false,
+        "__metadata__": {
+            "color": {
+                "a": 1.0,
+                "b": 1.0,
+                "g": 0.0,
+                "r": 0.0
+            },
+            "even": true,
+            "prime": false
+        }
+    },
+    "{region name}1": {
+        "$bottom": 768,
+        "$left": 1024,
+        "$right": 1536,
+        "$top": 512,
+        "[flip]": false,
+        "__metadata__": {
+            "color": {
+                "a": 1.0,
+                "b": 0.0,
+                "g": 0.0,
+                "r": 1.0
+            },
+            "even": false,
+            "prime": true
+        }
+    },
+    "{region name}10": {
+        "$bottom": 3072,
+        "$left": 0,
+        "$right": 256,
+        "$top": 2560,
+        "[flip]": false,
+        "__metadata__": {
+            "color": {
+                "a": 1.0,
+                "b": 1.0,
+                "g": 0.0,
+                "r": 0.0
+            },
+            "even": true,
+            "prime": false
+        }
+    },
+    "{region name}11": {
+        "$bottom": 256,
+        "$left": 2048,
+        "$right": 2560,
+        "$top": 0,
+        "[flip]": false,
+        "__metadata__": {
+            "color": {
+                "a": 1.0,
+                "b": 0.0,
+                "g": 0.0,
+                "r": 1.0
+            },
+            "even": false,
+            "prime": true
+        }
+    },
+    "{region name}12": {
+        "$bottom": 512,
+        "$left": 512,
+        "$right": 1024,
+        "$top": 0,
+        "[flip]": false,
+        "__metadata__": {
+            "color": {
+                "a": 1.0,
+                "b": 1.0,
+                "g": 0.0,
+                "r": 0.0
+            },
+            "even": true,
+            "prime": false
+        }
+    },
+    "{region name}13": {
+        "$bottom": 1536,
+        "$left": 0,
+        "$right": 512,
+        "$top": 1024,
+        "[flip]": false,
+        "__metadata__": {
+            "color": {
+                "a": 1.0,
+                "b": 0.0,
+                "g": 0.0,
+                "r": 1.0
+            },
+            "even": false,
+            "prime": true
+        }
+    },
+    "{region name}14": {
+        "$bottom": 1024,
+        "$left": 512,
+        "$right": 1024,
+        "$top": 512,
+        "[flip]": false,
+        "__metadata__": {
+            "color": {
+                "a": 1.0,
+                "b": 0.0,
+                "g": 0.0,
+                "r": 1.0
+            },
+            "even": true,
+            "prime": false
+        }
+    },
+    "{region name}15": {
+        "$bottom": 512,
+        "$left": 1024,
+        "$right": 1536,
+        "$top": 0,
+        "[flip]": false,
+        "__metadata__": {
+            "color": {
+                "a": 1.0,
+                "b": 0.0,
+                "g": 0.0,
+                "r": 1.0
+            },
+            "even": false,
+            "prime": false
+        }
+    },
+    "{region name}16": {
+        "$bottom": 2560,
+        "$left": 256,
+        "$right": 512,
+        "$top": 2048,
+        "[flip]": false,
+        "__metadata__": {
+            "color": {
+                "a": 1.0,
+                "b": 1.0,
+                "g": 0.0,
+                "r": 0.0
+            },
+            "even": true,
+            "prime": false
+        }
+    },
+    "{region name}17": {
+        "$bottom": 2304,
+        "$left": 512,
+        "$right": 768,
+        "$top": 1792,
+        "[flip]": false,
+        "__metadata__": {
+            "color": {
+                "a": 1.0,
+                "b": 0.0,
+                "g": 0.0,
+                "r": 1.0
+            },
+            "even": false,
+            "prime": true
+        }
+    },
+    "{region name}18": {
+        "$bottom": 2048,
+        "$left": 0,
+        "$right": 512,
+        "$top": 1536,
+        "[flip]": false,
+        "__metadata__": {
+            "color": {
+                "a": 1.0,
+                "b": 1.0,
+                "g": 0.0,
+                "r": 0.0
+            },
+            "even": true,
+            "prime": false
+        }
+    },
+    "{region name}19": {
+        "$bottom": 1536,
+        "$left": 768,
+        "$right": 1280,
+        "$top": 1280,
+        "[flip]": false,
+        "__metadata__": {
+            "color": {
+                "a": 1.0,
+                "b": 1.0,
+                "g": 0.0,
+                "r": 0.0
+            },
+            "even": false,
+            "prime": true
+        }
+    },
+    "{region name}2": {
+        "$bottom": 1024,
+        "$left": 1280,
+        "$right": 1536,
+        "$top": 768,
+        "[flip]": false,
+        "__metadata__": {
+            "color": {
+                "a": 1.0,
+                "b": 0.0,
+                "g": 0.0,
+                "r": 1.0
+            },
+            "even": true,
+            "prime": false
+        }
+    },
+    "{region name}3": {
+        "$bottom": 512,
+        "$left": 0,
+        "$right": 512,
+        "$top": 0,
+        "[flip]": false,
+        "__metadata__": {
+            "color": {
+                "a": 1.0,
+                "b": 0.0,
+                "g": 0.0,
+                "r": 1.0
+            },
+            "even": false,
+            "prime": true
+        }
+    },
+    "{region name}4": {
+        "$bottom": 1024,
+        "$left": 0,
+        "$right": 512,
+        "$top": 512,
+        "[flip]": false,
+        "__metadata__": {
+            "color": {
+                "a": 1.0,
+                "b": 1.0,
+                "g": 0.0,
+                "r": 0.0
+            },
+            "even": true,
+            "prime": false
+        }
+    },
+    "{region name}5": {
+        "$bottom": 256,
+        "$left": 1536,
+        "$right": 2048,
+        "$top": 0,
+        "[flip]": false,
+        "__metadata__": {
+            "color": {
+                "a": 1.0,
+                "b": 1.0,
+                "g": 0.0,
+                "r": 0.0
+            },
+            "even": false,
+            "prime": true
+        }
+    },
+    "{region name}6": {
+        "$bottom": 2560,
+        "$left": 0,
+        "$right": 256,
+        "$top": 2048,
+        "[flip]": false,
+        "__metadata__": {
+            "color": {
+                "a": 1.0,
+                "b": 1.0,
+                "g": 0.0,
+                "r": 0.0
+            },
+            "even": true,
+            "prime": false
+        }
+    },
+    "{region name}7": {
+        "$bottom": 1792,
+        "$left": 512,
+        "$right": 768,
+        "$top": 1280,
+        "[flip]": false,
+        "__metadata__": {
+            "color": {
+                "a": 1.0,
+                "b": 0.0,
+                "g": 0.0,
+                "r": 1.0
+            },
+            "even": false,
+            "prime": true
+        }
+    },
+    "{region name}8": {
+        "$bottom": 1280,
+        "$left": 1024,
+        "$right": 1280,
+        "$top": 768,
+        "[flip]": false,
+        "__metadata__": {
+            "color": {
+                "a": 1.0,
+                "b": 0.0,
+                "g": 0.0,
+                "r": 1.0
+            },
+            "even": true,
+            "prime": false
+        }
+    },
+    "{region name}9": {
+        "$bottom": 768,
+        "$left": 1536,
+        "$right": 1792,
+        "$top": 256,
+        "[flip]": false,
+        "__metadata__": {
+            "color": {
+                "a": 1.0,
+                "b": 0.0,
+                "g": 0.0,
+                "r": 1.0
+            },
+            "even": false,
+            "prime": false
+        }
+    }
+}

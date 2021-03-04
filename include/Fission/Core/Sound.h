@@ -3,16 +3,14 @@
 
 namespace Fission {
 
-namespace experimental {
-
-	interface ISound
+	struct ISound
 	{
 	public:
 		virtual bool empty() = 0;
 		virtual uint32_t length() = 0;
 	};
 
-	interface ISoundSource
+	struct ISoundSource
 	{
 	public:
 		virtual void SetPosition( uint32_t position ) = 0;
@@ -22,27 +20,27 @@ namespace experimental {
 		virtual bool GetPlaying() = 0;
 	};
 
-	using ChannelID = short;
+	using OutputID = short;
 
-	interface ISoundEngine
+	struct ISoundEngine
 	{
 	public:
-		FISSION_API static std::unique_ptr<ISoundEngine> Create();
+		struct CreateInfo
+		{
+			short nOutputs = 1;
+		};
 
-		// Creates sound channels
-		virtual void Configure( ChannelID * ch_ids, int count ) = 0;
+		FISSION_API static std::unique_ptr<ISoundEngine> Create( const CreateInfo & info = {} );
 
 		virtual ISound * CreateSound( const wchar_t * file ) = 0;
 
-		virtual ISoundSource * Play( ISound * sound, ChannelID ch_id, bool start_playing = true ) = 0;
+		virtual ISoundSource * Play( ISound * sound, OutputID _Output, bool start_playing = true ) = 0;
 
-		virtual void SetVolume( ChannelID ch_id, float value ) = 0;
-		virtual float GetVolume( ChannelID ch_id ) = 0;
+		virtual void SetVolume( OutputID _Output, float value ) = 0;
+		virtual float GetVolume( OutputID _Output ) = 0;
 
 		virtual void SetMasterVolume( float value ) = 0;
 		virtual float GetMasterVolume() = 0;
 	};
-
-}
 
 } // namespace Fission
