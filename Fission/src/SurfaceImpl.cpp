@@ -79,7 +79,7 @@ namespace Fission {
 		{
 			coloru * copy_dest = &this->m_pData[( py + y ) * this->m_Width + x];
 
-			for( int x = 0; x < size.x; x++ )
+			for( uint32_t x = 0; x < size.x; x++ )
 				copy_dest[x] = (coloru)src->GetPixel( x + start.x, py );
 		}
 	}

@@ -144,7 +144,7 @@ namespace rbp {
 			{
 				int bestScore1 = std::numeric_limits<int>::max();
 				int bestScore2 = std::numeric_limits<int>::max();
-				int bestRectIndex = -1;
+				size_t bestRectIndex = SIZE_MAX;
 				Rect bestNode;
 
 				for( size_t i = 0; i < rects.size(); ++i )
@@ -164,7 +164,7 @@ namespace rbp {
 					}
 				}
 
-				if( bestRectIndex == -1 )
+				if( bestRectIndex == SIZE_MAX )
 					return;
 
 				PlaceRect( bestNode );

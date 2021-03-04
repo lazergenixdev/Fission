@@ -52,9 +52,9 @@ namespace Fission {
  */
 #include <cassert>
 #ifdef FISSION_DEBUG
-#define FISSION_ASSERT( expression, msg ) assert( expression && "" msg )
+#define FISSION_ASSERT( expression, ... ) assert( expression && "" __VA_ARGS__ )
 #else
-#define FISSION_ASSERT( expression, msg ) ((void)0)
+#define FISSION_ASSERT( expression, ... ) ((void)0)
 #endif // FISSION_DEBUG
 
 /**

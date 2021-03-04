@@ -14,9 +14,9 @@ void put_border( Surface * s )
 {
 	uint32_t w = s->width();
 	uint32_t h = s->height();
-	for( int i = 0; i < w; i++ )
+	for( uint32_t i = 0; i < w; i++ )
 		s->PutPixel( i, 0, Colors::White ), s->PutPixel( i, h - 1, Colors::White );
-	for( int i = 0; i < h; i++ )
+	for( uint32_t i = 0; i < h; i++ )
 		s->PutPixel( 0, i, Colors::White ), s->PutPixel( w - 1, i, Colors::White );
 }
 
