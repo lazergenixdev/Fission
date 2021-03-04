@@ -637,12 +637,28 @@ surface_map::surface_map()
 
 bool surface_map::Load( const file::path & file )
 {
+	try {
+
+	}
+	catch( ... )
+	{
+		return false;
+	}
 	return false;
 }
 
 bool surface_map::Save( const file::path & file ) const
 {
+	try
+	{
 
+	}
+	catch (...)
+	{
+		return false;
+	}
+
+	return true;
 }
 
 void surface_map::clear()
