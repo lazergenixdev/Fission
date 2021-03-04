@@ -1,11 +1,16 @@
 {
-    "__file__": "assets/Atlas.png",
+    "__file__": "Atlas.png",
     "__metadata__": {
         "cat": "meow",
         "glow": 9.46
     },
     "{region name}0": {
-        "meta": {
+        "$bottom": 1280,
+        "$left": 512,
+        "$right": 1024,
+        "$top": 1024,
+        "[flip]": false,
+        "__metadata__": {
             "color": {
                 "a": 1.0,
                 "b": 1.0,
@@ -14,17 +19,15 @@
             },
             "even": true,
             "prime": false
-        },
-        "region": {
-            "_flip_": false,
-            "bottom": 1280,
-            "left": 512,
-            "right": 1024,
-            "top": 1024
         }
     },
     "{region name}1": {
-        "meta": {
+        "$bottom": 768,
+        "$left": 1024,
+        "$right": 1536,
+        "$top": 512,
+        "[flip]": false,
+        "__metadata__": {
             "color": {
                 "a": 1.0,
                 "b": 0.0,
@@ -33,17 +36,15 @@
             },
             "even": false,
             "prime": true
-        },
-        "region": {
-            "_flip_": false,
-            "bottom": 768,
-            "left": 1024,
-            "right": 1536,
-            "top": 512
         }
     },
     "{region name}10": {
-        "meta": {
+        "$bottom": 3072,
+        "$left": 0,
+        "$right": 256,
+        "$top": 2560,
+        "[flip]": false,
+        "__metadata__": {
             "color": {
                 "a": 1.0,
                 "b": 1.0,
@@ -52,17 +53,15 @@
             },
             "even": true,
             "prime": false
-        },
-        "region": {
-            "_flip_": false,
-            "bottom": 3072,
-            "left": 0,
-            "right": 256,
-            "top": 2560
         }
     },
     "{region name}11": {
-        "meta": {
+        "$bottom": 256,
+        "$left": 2048,
+        "$right": 2560,
+        "$top": 0,
+        "[flip]": false,
+        "__metadata__": {
             "color": {
                 "a": 1.0,
                 "b": 0.0,
@@ -71,17 +70,15 @@
             },
             "even": false,
             "prime": true
-        },
-        "region": {
-            "_flip_": false,
-            "bottom": 256,
-            "left": 2048,
-            "right": 2560,
-            "top": 0
         }
     },
     "{region name}12": {
-        "meta": {
+        "$bottom": 512,
+        "$left": 512,
+        "$right": 1024,
+        "$top": 0,
+        "[flip]": false,
+        "__metadata__": {
             "color": {
                 "a": 1.0,
                 "b": 1.0,
@@ -90,17 +87,15 @@
             },
             "even": true,
             "prime": false
-        },
-        "region": {
-            "_flip_": false,
-            "bottom": 512,
-            "left": 512,
-            "right": 1024,
-            "top": 0
         }
     },
     "{region name}13": {
-        "meta": {
+        "$bottom": 1536,
+        "$left": 0,
+        "$right": 512,
+        "$top": 1024,
+        "[flip]": false,
+        "__metadata__": {
             "color": {
                 "a": 1.0,
                 "b": 0.0,
@@ -109,17 +104,15 @@
             },
             "even": false,
             "prime": true
-        },
-        "region": {
-            "_flip_": false,
-            "bottom": 1536,
-            "left": 0,
-            "right": 512,
-            "top": 1024
         }
     },
     "{region name}14": {
-        "meta": {
+        "$bottom": 1024,
+        "$left": 512,
+        "$right": 1024,
+        "$top": 512,
+        "[flip]": false,
+        "__metadata__": {
             "color": {
                 "a": 1.0,
                 "b": 0.0,
@@ -128,17 +121,15 @@
             },
             "even": true,
             "prime": false
-        },
-        "region": {
-            "_flip_": false,
-            "bottom": 1024,
-            "left": 512,
-            "right": 1024,
-            "top": 512
         }
     },
     "{region name}15": {
-        "meta": {
+        "$bottom": 512,
+        "$left": 1024,
+        "$right": 1536,
+        "$top": 0,
+        "[flip]": false,
+        "__metadata__": {
             "color": {
                 "a": 1.0,
                 "b": 0.0,
@@ -147,17 +138,15 @@
             },
             "even": false,
             "prime": false
-        },
-        "region": {
-            "_flip_": false,
-            "bottom": 512,
-            "left": 1024,
-            "right": 1536,
-            "top": 0
         }
     },
     "{region name}16": {
-        "meta": {
+        "$bottom": 2560,
+        "$left": 256,
+        "$right": 512,
+        "$top": 2048,
+        "[flip]": false,
+        "__metadata__": {
             "color": {
                 "a": 1.0,
                 "b": 1.0,
@@ -166,17 +155,15 @@
             },
             "even": true,
             "prime": false
-        },
-        "region": {
-            "_flip_": false,
-            "bottom": 2560,
-            "left": 256,
-            "right": 512,
-            "top": 2048
         }
     },
     "{region name}17": {
-        "meta": {
+        "$bottom": 2304,
+        "$left": 512,
+        "$right": 768,
+        "$top": 1792,
+        "[flip]": false,
+        "__metadata__": {
             "color": {
                 "a": 1.0,
                 "b": 0.0,
@@ -185,17 +172,15 @@
             },
             "even": false,
             "prime": true
-        },
-        "region": {
-            "_flip_": false,
-            "bottom": 2304,
-            "left": 512,
-            "right": 768,
-            "top": 1792
         }
     },
     "{region name}18": {
-        "meta": {
+        "$bottom": 2048,
+        "$left": 0,
+        "$right": 512,
+        "$top": 1536,
+        "[flip]": false,
+        "__metadata__": {
             "color": {
                 "a": 1.0,
                 "b": 1.0,
@@ -204,17 +189,15 @@
             },
             "even": true,
             "prime": false
-        },
-        "region": {
-            "_flip_": false,
-            "bottom": 2048,
-            "left": 0,
-            "right": 512,
-            "top": 1536
         }
     },
     "{region name}19": {
-        "meta": {
+        "$bottom": 1536,
+        "$left": 768,
+        "$right": 1280,
+        "$top": 1280,
+        "[flip]": false,
+        "__metadata__": {
             "color": {
                 "a": 1.0,
                 "b": 1.0,
@@ -223,17 +206,15 @@
             },
             "even": false,
             "prime": true
-        },
-        "region": {
-            "_flip_": false,
-            "bottom": 1536,
-            "left": 768,
-            "right": 1280,
-            "top": 1280
         }
     },
     "{region name}2": {
-        "meta": {
+        "$bottom": 1024,
+        "$left": 1280,
+        "$right": 1536,
+        "$top": 768,
+        "[flip]": false,
+        "__metadata__": {
             "color": {
                 "a": 1.0,
                 "b": 0.0,
@@ -242,17 +223,15 @@
             },
             "even": true,
             "prime": false
-        },
-        "region": {
-            "_flip_": false,
-            "bottom": 1024,
-            "left": 1280,
-            "right": 1536,
-            "top": 768
         }
     },
     "{region name}3": {
-        "meta": {
+        "$bottom": 512,
+        "$left": 0,
+        "$right": 512,
+        "$top": 0,
+        "[flip]": false,
+        "__metadata__": {
             "color": {
                 "a": 1.0,
                 "b": 0.0,
@@ -261,17 +240,15 @@
             },
             "even": false,
             "prime": true
-        },
-        "region": {
-            "_flip_": false,
-            "bottom": 512,
-            "left": 0,
-            "right": 512,
-            "top": 0
         }
     },
     "{region name}4": {
-        "meta": {
+        "$bottom": 1024,
+        "$left": 0,
+        "$right": 512,
+        "$top": 512,
+        "[flip]": false,
+        "__metadata__": {
             "color": {
                 "a": 1.0,
                 "b": 1.0,
@@ -280,17 +257,15 @@
             },
             "even": true,
             "prime": false
-        },
-        "region": {
-            "_flip_": false,
-            "bottom": 1024,
-            "left": 0,
-            "right": 512,
-            "top": 512
         }
     },
     "{region name}5": {
-        "meta": {
+        "$bottom": 256,
+        "$left": 1536,
+        "$right": 2048,
+        "$top": 0,
+        "[flip]": false,
+        "__metadata__": {
             "color": {
                 "a": 1.0,
                 "b": 1.0,
@@ -299,17 +274,15 @@
             },
             "even": false,
             "prime": true
-        },
-        "region": {
-            "_flip_": false,
-            "bottom": 256,
-            "left": 1536,
-            "right": 2048,
-            "top": 0
         }
     },
     "{region name}6": {
-        "meta": {
+        "$bottom": 2560,
+        "$left": 0,
+        "$right": 256,
+        "$top": 2048,
+        "[flip]": false,
+        "__metadata__": {
             "color": {
                 "a": 1.0,
                 "b": 1.0,
@@ -318,17 +291,15 @@
             },
             "even": true,
             "prime": false
-        },
-        "region": {
-            "_flip_": false,
-            "bottom": 2560,
-            "left": 0,
-            "right": 256,
-            "top": 2048
         }
     },
     "{region name}7": {
-        "meta": {
+        "$bottom": 1792,
+        "$left": 512,
+        "$right": 768,
+        "$top": 1280,
+        "[flip]": false,
+        "__metadata__": {
             "color": {
                 "a": 1.0,
                 "b": 0.0,
@@ -337,17 +308,15 @@
             },
             "even": false,
             "prime": true
-        },
-        "region": {
-            "_flip_": false,
-            "bottom": 1792,
-            "left": 512,
-            "right": 768,
-            "top": 1280
         }
     },
     "{region name}8": {
-        "meta": {
+        "$bottom": 1280,
+        "$left": 1024,
+        "$right": 1280,
+        "$top": 768,
+        "[flip]": false,
+        "__metadata__": {
             "color": {
                 "a": 1.0,
                 "b": 0.0,
@@ -356,17 +325,15 @@
             },
             "even": true,
             "prime": false
-        },
-        "region": {
-            "_flip_": false,
-            "bottom": 1280,
-            "left": 1024,
-            "right": 1280,
-            "top": 768
         }
     },
     "{region name}9": {
-        "meta": {
+        "$bottom": 768,
+        "$left": 1536,
+        "$right": 1792,
+        "$top": 256,
+        "[flip]": false,
+        "__metadata__": {
             "color": {
                 "a": 1.0,
                 "b": 0.0,
@@ -375,13 +342,6 @@
             },
             "even": false,
             "prime": false
-        },
-        "region": {
-            "_flip_": false,
-            "bottom": 768,
-            "left": 1536,
-            "right": 1792,
-            "top": 256
         }
     }
 }

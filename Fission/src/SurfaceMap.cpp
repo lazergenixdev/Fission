@@ -657,22 +657,88 @@ static nlohmann::json to_json( const metadata & md )
 	default: return nlohmann::json();
 	}
 }
+static metadata from_json( const nlohmann::json & node )
+{
+	namespace json = nlohmann::detail;
+	switch( node.type() )
+	{
+	case json::value_t::boolean: return node.get<bool>();
+	case json::value_t::null: return nullptr;
+	case json::value_t::string: return node.get<std::string>();
+	case json::value_t::number_float: return node.get<double>();
+	case json::value_t::number_unsigned:
+	case json::value_t::number_integer: return node.get<long long>();
+	case json::value_t::array:
+	{
+		metadata out;
+		out.resize( node.size() );
+		size_t i = 0;
+		for( auto & element : node )
+			out[i++] = from_json(element);
+		return out;
+	}
+	case json::value_t::object:
+	{
+		metadata out;
+		for( auto & [key,value] : node.items() )
+			out[key] = from_json( value );
+		return out;
+	}
+	default: return metadata();
+	}
+}
 
 surface_map::surface_map()
-	: m_MaxSize(MaxWidth,MaxHeight)
+	: m_MaxSize(MaxWidth,MaxHeight), m_MetaData()
 {}
 
 bool surface_map::Load( const file::path & file )
 {
+	m_MetaData = {};
+	m_Map.clear();
 	try 
 	{
+		auto imageFilePath = file.parent_path();
+		auto metaFilePath = file;
 
+		metaFilePath.replace_extension( ".json" );
+
+		nlohmann::json desc;
+		std::ifstream ifs( metaFilePath );
+		ifs >> desc;
+		ifs.close();
+
+		if( !m_Surface ) m_Surface = Surface::Create();
+
+		{
+			std::string temp = desc["__file__"];
+			m_Surface->Load( imageFilePath /= file::path( temp ) );
+			desc.erase( "__file__" );
+		}
+
+		m_MetaData = from_json( desc["__metadata__"] );
+		desc.erase( "__metadata__" );
+
+		for( auto && [key, value] : desc.items() )
+		{
+			sub_surface subs;
+			auto & rc = subs.region.abs;
+
+			rc.x.low = value["$left"].get<int>();
+			rc.x.high = value["$right"].get<int>();
+			rc.y.low = value["$top"].get<int>();
+			rc.y.high = value["$bottom"].get<int>();
+			subs.region.flipped = value["[flip]"].get<bool>();
+			subs.meta = from_json( value["__metadata__"] );
+
+			m_Map.emplace( key, subs );
+		}
 	}
-	catch( ... )
+	catch( std::exception & e )
 	{
-		return false;
+		throw e;
 	}
-	return false;
+	return true;
 }
 #include "Fission/Core/Console.h"
 
@@ -689,22 +755,21 @@ bool surface_map::Save( const file::path & file ) const
 
 		nlohmann::json meta;
 
-		meta["__file__"] = imageFilePath.string();
+		meta["__file__"] = imageFilePath.filename().string();
 		meta["__metadata__"] = to_json( m_MetaData );
 		for( auto && [key, subs] : m_Map )
 		{
 			auto & data = meta[key];
-			auto & region = data["region"];
 			auto & rc = subs.region.abs;
 
-			region["left"] = rc.x.low;
-			region["right"] = rc.x.high;
-			region["top"] = rc.y.low;
-			region["bottom"] = rc.y.high;
-			region["_flip_"] = false;
+			data["$left"] = rc.x.low;
+			data["$right"] = rc.x.high;
+			data["$top"] = rc.y.low;
+			data["$bottom"] = rc.y.high;
+			data["[flip]"] = false;
 
 			if( subs.meta.type() != metadata::empty )
-				data["meta"] = to_json( subs.meta );
+				data["__metadata__"] = to_json( subs.meta );
 		}
 
 		m_Surface->Save( imageFilePath );
@@ -1031,7 +1096,7 @@ long long metadata::as_integer() const
 		}
 		catch( ... ) {}
 	}
-	default: return 0.0; // fall through and return 0 on error
+	default: return 0; // fall through and return 0 on error
 	}
 }
 

@@ -74,6 +74,10 @@ public:
 		map.build();
 
 		map.Save( "assets/Atlas" );
+
+		map.Load( "assets/Atlas" );
+
+		if( map["{region name}11"]->meta["prime"].as_boolean() ) Console::Message( L"Success!!!" );
 	}
 	virtual void OnUpdate() override
 	{
