@@ -10,13 +10,14 @@
 #include <vector>
 #include <algorithm>
 #include <utility>
-#include <iostream>
+#include <fstream>
 #include <limits>
 #include <cassert>
 #include <cstring>
 #include <cmath>
 #include <cstdlib>
 
+#include "nlohmann/json.hpp"
 
 namespace rbp {
 
@@ -631,13 +632,40 @@ namespace rbp {
 
 using namespace Fission;
 
+static nlohmann::json to_json( const metadata & md )
+{
+	switch( md.type() )
+	{
+	case metadata::boolean: return nlohmann::json( md.as_boolean() );
+	case metadata::number: return nlohmann::json( md.as_number() );
+	case metadata::integer: return nlohmann::json( md.as_integer() );
+	case metadata::string: return nlohmann::json( md.as_string() );
+	case metadata::array:
+	{
+		nlohmann::json json;
+		for( size_t i = 0; i < md.size(); ++i )
+			json.emplace_back( to_json( md[i] ) );
+		return json;
+	}
+	case metadata::table:
+	{
+		nlohmann::json json;
+		for( auto && [key, val] : md )
+			json[key] = to_json( val );
+		return json;
+	}
+	default: return nlohmann::json();
+	}
+}
+
 surface_map::surface_map()
 	: m_MaxSize(MaxWidth,MaxHeight)
 {}
 
 bool surface_map::Load( const file::path & file )
 {
-	try {
+	try 
+	{
 
 	}
 	catch( ... )
@@ -646,12 +674,42 @@ bool surface_map::Load( const file::path & file )
 	}
 	return false;
 }
+#include "Fission/Core/Console.h"
 
 bool surface_map::Save( const file::path & file ) const
 {
+	if( !m_Surface ) return false;
 	try
 	{
+		auto imageFilePath = file;
+		auto metaFilePath = file;
 
+		imageFilePath.replace_extension( ".png" );
+		metaFilePath.replace_extension( ".json" );
+
+		nlohmann::json meta;
+
+		meta["__file__"] = imageFilePath.string();
+		meta["__metadata__"] = to_json( m_MetaData );
+		for( auto && [key, subs] : m_Map )
+		{
+			auto & data = meta[key];
+			auto & region = data["region"];
+			auto & rc = subs.region.abs;
+
+			region["left"] = rc.x.low;
+			region["right"] = rc.x.high;
+			region["top"] = rc.y.low;
+			region["bottom"] = rc.y.high;
+			region["_flip_"] = false;
+
+			if( subs.meta.type() != metadata::empty )
+				data["meta"] = to_json( subs.meta );
+		}
+
+		m_Surface->Save( imageFilePath );
+		std::ofstream ofs( metaFilePath );
+		ofs << std::setw( 4 ) << meta;
 	}
 	catch (...)
 	{
@@ -738,14 +796,20 @@ bool surface_map::build( BuildFlags flags )
 	for( auto && r : out_rects )
 	{
 		sub_surface * sub = reinterpret_cast<sub_surface *>( r.userdata );
-		sub->quad.abs = recti( r.x, r.x + r.width, r.y * scale.y, ( r.y + r.height ) * scale.y );
-		sub->quad.rel = (rectf)sub->quad.abs * scale.x; // todo: fix for differing width and height
+		sub->region.abs = recti( r.x, r.x + r.width, r.y, ( r.y + r.height ) );
+		sub->region.rel = (rectf)sub->region.abs * scale.x; // todo: fix for differing width and height
 
 		m_Surface->insert( r.x, r.y, sub->source );
 	}
 	
 	return true;
 }
+
+void surface_map::set_metadata( const Fission::metadata & meta ) { m_MetaData = meta; }
+
+metadata & surface_map::get_metadata() { return m_MetaData; }
+
+const metadata & surface_map::get_metadata() const { return m_MetaData; }
 
 
 using table_t = std::unordered_map<std::string, metadata>;
@@ -767,6 +831,11 @@ metadata & metadata::operator=( const metadata & src )
 	m_Type = src.m_Type;
 	switch( m_Type )
 	{
+	case metadata::boolean:
+	{
+		m_pData = src.m_pData;
+		break;
+	}
 	case metadata::number:
 	{
 		m_pData = new number_t( as<number_t>( src.m_pData ) );
@@ -799,7 +868,9 @@ metadata & metadata::operator=( const metadata & src )
 
 metadata::metadata() : m_Type( empty ) {}
 
-metadata::metadata( int _X ): m_Type(integer) { m_pData = new integer_t( (integer_t)_X ); }
+metadata::metadata( bool _X ) : m_Type( boolean ) { m_pData = _X ? (void*)(1) : (void*)(0); }
+
+metadata::metadata( int _X ) : m_Type( integer ) { m_pData = new integer_t( (integer_t)_X ); }
 
 metadata::metadata( long long _X ) : m_Type( integer ) { m_pData = new integer_t( (integer_t)_X ); }
 
@@ -813,11 +884,7 @@ metadata::metadata( const std::string & _X ) : m_Type( string ) { m_pData = new 
 
 metadata::metadata( nullptr_t _X ) : m_Type( null ) {}
 
-metadata::metadata( metadata && src ): m_Type(src.m_Type), m_pData(src.m_pData)
-{
-	src.m_Type = empty;
-}
-
+metadata::metadata( metadata && src ): m_Type(src.m_Type), m_pData(src.m_pData) { src.m_Type = empty; }
 
 metadata::value_t metadata::type() const { return m_Type; }
 
@@ -870,19 +937,7 @@ metadata & metadata::operator[]( const std::string & key )
 {
 	if( m_Type != table )
 	{
-		switch( m_Type )
-		{
-		case Fission::metadata::number:
-		case Fission::metadata::integer:
-		case Fission::metadata::string:
-		case Fission::metadata::array:
-		case Fission::metadata::table:
-		{
-			delete m_pData;
-			break;
-		}
-		default:break;
-		}
+		this->~metadata();
 		m_Type = table;
 		m_pData = new table_t;
 	}
@@ -927,7 +982,24 @@ const char * metadata::as_string() const
 	return as<string_t>( m_pData ).c_str();
 }
 
-FISSION_API double metadata::as_number() const
+bool metadata::as_boolean() const
+{
+	switch( m_Type )
+	{
+	case metadata::boolean: return (bool)m_pData;
+	case metadata::number: return (bool)as<number_t>( m_pData );
+	case metadata::integer: return (bool)as<integer_t>( m_pData );
+	case metadata::string:
+	{
+		std::string s = as<string_t>( m_pData );
+		std::for_each( s.begin(), s.end(), [] ( char & c ) {c = std::tolower( c ); } );
+		if( s == "true" ) return true;
+	}
+	default: return false; // fall through and return false on error
+	}
+}
+
+double metadata::as_number() const
 {
 	switch( m_Type )
 	{
@@ -945,7 +1017,7 @@ FISSION_API double metadata::as_number() const
 	}
 }
 
-FISSION_API long long metadata::as_integer() const
+long long metadata::as_integer() const
 {
 	switch( m_Type )
 	{
@@ -963,7 +1035,7 @@ FISSION_API long long metadata::as_integer() const
 	}
 }
 
-FISSION_API metadata::const_iterator metadata::cbegin() const
+metadata::const_iterator metadata::begin() const
 {
 	switch( m_Type )
 	{
@@ -972,7 +1044,7 @@ FISSION_API metadata::const_iterator metadata::cbegin() const
 	}
 }
 
-FISSION_API metadata::const_iterator metadata::cend() const
+metadata::const_iterator metadata::end() const
 {
 	switch( m_Type )
 	{
@@ -981,7 +1053,7 @@ FISSION_API metadata::const_iterator metadata::cend() const
 	}
 }
 
-FISSION_API size_t metadata::size() const
+size_t metadata::size() const
 {
 	switch( m_Type )
 	{

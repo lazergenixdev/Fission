@@ -20,6 +20,19 @@ void put_border( Surface * s )
 		s->PutPixel( 0, i, Colors::White ), s->PutPixel( w - 1, i, Colors::White );
 }
 
+static color blueOrRed() {return ( rand() % 2 == 0 ) ? Colors::Red : Colors::Blue;}
+static const char * to_string( color c ) { return ( c.r == 1.0f ) ? "Red" : "Blue"; }
+
+static constexpr bool is_prime( int n )
+{
+	if( n < 1 ) return false;
+	if( n == 1 ) return true;
+	if( n % 2 == 0 ) return false;
+	for( int i = n / 2; i > 2; --i )
+		if( n % i == 0 ) return false;
+	return true;
+}
+
 class SandboxLayer : public ILayer 
 {
 public:
@@ -31,44 +44,36 @@ public:
 		surface_map map;
 		std::vector<std::unique_ptr<Surface>> arr;
 		Surface::CreateInfo info;
-		goto yes;
 
 		arr.reserve( 100 );
 		for( int i = 0; i < 20; i++ )
 		{
-			info.FillColor = ( rand() % 2 == 0 ) ? Colors::Red : Colors::Blue;
+			info.FillColor = blueOrRed();
 			info.Width = ( rand() % 2 == 0 ) ? ( 256 ) : ( 512 );
 			info.Height = ( rand() % 2 == 0 ) ? ( 256 ) : ( 512 );
 			arr.emplace_back( Surface::Create( info ) );
 			put_border( arr.back().get() );
 
 			char buf[100];
-			sprintf( buf, "text%i", i );
+			sprintf( buf, "{region name}%i", i );
 
 			map.emplace( buf, arr.back().get() );
-		}
-
-		map.build();
-
-		map.get()->Save( "Atlas.png" );
-
-	yes:
-		{
-			metadata md;
-			md["what"] = "nice";
-			md["array thing"].resize(10);
-			auto & arr = md["array thing"];
-			for( int i = 0; i < (int)arr.size(); i++ )
-				arr[i] = i;
-
-			auto wstr = utf8_to_wstring( md["what"].as_string() );
-			Console::Warning( L"%s", wstr.c_str() );
-			Console::Warning( L"%i", md["array thing"][3].as_integer() );
-			Console::Warning( L"%i", md["array thing"][4].as_integer() );
-			Console::Warning( L"%i", md["array thing"][5].as_integer() );
+			map[buf]->meta["color"]["r"] = info.FillColor->r;
+			map[buf]->meta["color"]["g"] = info.FillColor->g;
+			map[buf]->meta["color"]["b"] = info.FillColor->b;
+			map[buf]->meta["color"]["a"] = info.FillColor->a;
+			map[buf]->meta["prime"] = is_prime(i);
+			map[buf]->meta["even"] = (i%2==0);
 		}
 
 		metadata md;
+		md["cat"] = "meow";
+		md["glow"] = 9.46;
+		map.set_metadata( md );
+
+		map.build();
+
+		map.Save( "assets/Atlas" );
 	}
 	virtual void OnUpdate() override
 	{

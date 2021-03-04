@@ -10,6 +10,7 @@ namespace Fission {
 	{
         enum value_t
         {
+            boolean, // contains a true/false
             number, // contains a number
             integer, // contains an integer
             string, // contains a string
@@ -30,6 +31,7 @@ namespace Fission {
 
         FISSION_API metadata & from_JSON( const std::string & json_str );
 
+        FISSION_API metadata( bool _X );
         FISSION_API metadata( int _X );
 		FISSION_API metadata( long long _X );
 		FISSION_API metadata( float _X );
@@ -47,32 +49,34 @@ namespace Fission {
 		FISSION_API size_t size() const;
 		FISSION_API void resize(size_t n);
 
-		FISSION_API const_iterator cbegin() const;
-		FISSION_API const_iterator cend() const;
+		FISSION_API const_iterator begin() const;
+		FISSION_API const_iterator end() const;
 
         FISSION_API value_t type() const;
 
         FISSION_API const char * as_string() const;
         FISSION_API double as_number() const;
         FISSION_API long long as_integer() const;
+        FISSION_API bool as_boolean() const;
     private:
 
         value_t m_Type;
         void * m_pData;
     };
 
-    struct quad_uv
-    {
-        rectf rel; // relative rect (UV texture coordinates)
-        recti abs; // absolute rect (pixel coordinates)
-        bool flipped = false;
-    };
 
 	struct sub_surface
 	{
+        struct region_uv
+        {
+            rectf rel; // relative rect (UV texture coordinates)
+            recti abs; // absolute rect (pixel coordinates)
+            bool flipped = false;
+        };
+
 		const Surface * source;
 
-		quad_uv quad;
+        region_uv region;
 		metadata meta;
 	};
 
@@ -97,6 +101,10 @@ namespace Fission {
         FISSION_API virtual bool Load( const file::path & file ) override;
         FISSION_API virtual bool Save( const file::path & file ) const override;
 
+        FISSION_API void set_metadata( const metadata & meta );
+        FISSION_API metadata & get_metadata();
+        FISSION_API const metadata & get_metadata() const;
+
         //FISSION_API void SetMaxWidth( int _Width );
         //FISSION_API void SetMaxHeight( int _Height );
         //FISSION_API void SetMaxSize( vec2<int> _Size );
@@ -120,6 +128,7 @@ namespace Fission {
 
     private:
         vec2i m_MaxSize;
+        metadata m_MetaData;
 
         std::unordered_map<std::string,sub_surface> m_Map;
         std::unique_ptr<Surface> m_Surface;
