@@ -25,33 +25,37 @@ namespace Fission {
 
 /* -------------------------------------- Event Arguments ------------------------------------------- */
 
+	struct NativeEventArgs {
+		Platform::Event * native_event;
+	};
+
 	struct CloseEventArgs {
 		int ExitCode; 
 	};
 
-	struct KeyDownEventArgs{
+	struct KeyDownEventArgs : public NativeEventArgs {
 		Keys::Key key;
 	};
 
-	struct KeyUpEventArgs {
+	struct KeyUpEventArgs : public NativeEventArgs {
 		Keys::Key key;
 	};
 
-	struct TextInputEventArgs {
+	struct TextInputEventArgs : public NativeEventArgs {
 		wchar_t character;
 	};
 
-	struct MouseMoveEventArgs {
+	struct MouseMoveEventArgs : public NativeEventArgs {
 		vec2i position;
 	};
 
-	struct MouseLeaveEventArgs {};
+	struct MouseLeaveEventArgs : public NativeEventArgs {};
 
-	struct SetCursorEventArgs {
+	struct SetCursorEventArgs : public NativeEventArgs {
 		Cursor * cursor;
 	};
 
-	struct ResizeEventArgs {
+	struct ResizeEventArgs : public NativeEventArgs {
 		vec2i size; 
 	};
 

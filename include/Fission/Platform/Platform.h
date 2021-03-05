@@ -50,6 +50,13 @@ namespace Fission::Platform
 
 	using WindowHandle = HWND;
 
+	using Event = struct {
+		HWND hWnd;
+		UINT Msg;
+		WPARAM wParam;
+		LPARAM lParam;
+	};
+
 	template <typename T>
 	using com_ptr = Microsoft::WRL::ComPtr<T>;
 }

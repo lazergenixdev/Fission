@@ -1,13 +1,15 @@
 #pragma once
 #include "Platform/Platform.h" /*!< Determine Target Platform */
 
-#ifdef FISSION_PLATFORM_WINDOWS
+#if defined(FISSION_PLATFORM_WINDOWS)
 #ifdef FISSION_BUILD_DLL
 #define FISSION_API __declspec(dllexport)
 #else
 #define FISSION_API __declspec(dllimport)
 #endif // FISSION_BUILD_DLL
-#endif // FISSION_PLATFORM_WINDOWS
+#else
+#define FISSION_API extern
+#endif
 
 #define FISSION_ENGINE "Fission" /*!< Engine Name */
 
@@ -44,6 +46,22 @@
 namespace Fission {
 
 	using namespace lazer;
+
+	template <typename T>
+	using shared_ptr = std::shared_ptr<T>;
+	template <typename T>
+	using scoped_ptr = std::unique_ptr<T>;
+
+	template <typename T, typename...Args>
+	static constexpr shared_ptr<T> CreateShared( Args&&...args )
+	{
+		return std::make_shared<T>( std::forward<Args>( args ) ... );
+	}
+	template <typename T, typename...Args>
+	static constexpr scoped_ptr<T> CreateScoped( Args&&...args )
+	{
+		return std::make_unique<T>( std::forward<Args>( args ) ... );
+	}
 
 }
 

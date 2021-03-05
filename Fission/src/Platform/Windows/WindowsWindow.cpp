@@ -236,6 +236,7 @@ namespace Fission::Platform {
     {
         auto pWindow = reinterpret_cast<WindowsWindow *>( GetWindowLongPtrW( hWnd, GWLP_USERDATA ) );
 
+        Event native_event = { hWnd, Msg, wParam, lParam };
         //Console::WriteLine( L"HWND[%i] -- MSG:%i", Colors::White, hWnd, Msg );
 
         switch( Msg )
@@ -244,7 +245,7 @@ namespace Fission::Platform {
         /************* Input Messages *************/
         case WM_MOUSEMOVE:
         {
-            MouseMoveEventArgs ev;
+            MouseMoveEventArgs ev{ &native_event };
             ev.position.x = short( lParam );
             ev.position.y = short( lParam >> 16 );
             pWindow->pEventHandler->OnMouseMove( ev );
@@ -253,7 +254,7 @@ namespace Fission::Platform {
         }
         case WM_MOUSELEAVE:
         {
-            MouseLeaveEventArgs ev;
+            MouseLeaveEventArgs ev{ &native_event };
             pWindow->pEventHandler->OnMouseLeave( ev );
             pWindow->m_MouseTracker.Reset( hWnd );
             break;
@@ -271,7 +272,8 @@ namespace Fission::Platform {
             if( lParam & 0x40000000 )
                 break;
 
-            KeyDownEventArgs ev;
+            KeyDownEventArgs ev{ &native_event };
+            ev.native_event = &native_event;
             ev.key = key_from_win32( (int)wParam );
 
             if( ev.key == Keys::F11 )
@@ -291,21 +293,21 @@ namespace Fission::Platform {
         }
         case WM_KEYUP:
         {
-            KeyUpEventArgs ev;
+            KeyUpEventArgs ev{ &native_event };
             ev.key = key_from_win32( (int)wParam );
             pWindow->pEventHandler->OnKeyUp( ev );
             break;
         }
         case WM_CHAR:
         {
-            TextInputEventArgs ev;
+            TextInputEventArgs ev{ &native_event };
             ev.character = (wchar_t)wParam;
             pWindow->pEventHandler->OnTextInput( ev );
             break;
         }
         case WM_LBUTTONDOWN:
         {
-            KeyDownEventArgs ev;
+            KeyDownEventArgs ev{ &native_event };
             ev.key = Keys::Mouse_Left;
             pWindow->pEventHandler->OnKeyDown( ev );
             SetCapture( hWnd );
@@ -313,7 +315,7 @@ namespace Fission::Platform {
         }
         case WM_LBUTTONUP:
         {
-            KeyUpEventArgs ev;
+            KeyUpEventArgs ev{ &native_event };
             ev.key = Keys::Mouse_Left;
             pWindow->pEventHandler->OnKeyUp( ev );
             ReleaseCapture();
@@ -321,22 +323,22 @@ namespace Fission::Platform {
         }
         case WM_RBUTTONDOWN:
         {
-            KeyDownEventArgs ev;
+            KeyDownEventArgs ev{ &native_event };
             ev.key = Keys::Mouse_Right;
             pWindow->pEventHandler->OnKeyDown( ev );
             break;
         }
         case WM_RBUTTONUP:
         {
-            KeyUpEventArgs ev;
+            KeyUpEventArgs ev{ &native_event };
             ev.key = Keys::Mouse_Right;
             pWindow->pEventHandler->OnKeyUp( ev );
             break;
         }
         case WM_MOUSEWHEEL:
         {
-            KeyDownEventArgs downEvent;
-            KeyUpEventArgs upEvent;
+            KeyDownEventArgs downEvent{ &native_event };
+            KeyUpEventArgs upEvent{ &native_event };
             pWindow->m_MouseWheelDelta += GET_WHEEL_DELTA_WPARAM( wParam );
             downEvent.key = upEvent.key = Keys::Mouse_WheelUp;
             while( pWindow->m_MouseWheelDelta >= WHEEL_DELTA ) {
@@ -484,7 +486,7 @@ namespace Fission::Platform {
         {
             if( (short)lParam == HTCLIENT )
             {
-                SetCursorEventArgs ev;
+                SetCursorEventArgs ev{ &native_event };
                 ev.cursor = pWindow->m_Cursor;
                 pWindow->pEventHandler->OnSetCursor( ev );
                 ev.cursor->Use();

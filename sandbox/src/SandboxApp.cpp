@@ -8,6 +8,8 @@
 
 #include "lazer/unfinished.h"
 
+#pragma comment(lib,"user32")
+
 using namespace Fission;
 
 void put_border( Surface * s )
@@ -39,6 +41,16 @@ public:
 	SandboxLayer()
 	{
 	}
+
+	virtual EventResult OnKeyDown( KeyDownEventArgs & args ) override
+	{
+		if( args.native_event->wParam == VK_SPACE )
+		{
+			PostQuitMessage( 0 );
+		}
+		return EventResult::Handled;
+	}
+
 	virtual void OnCreate() override
 	{
 		//std::vector<std::unique_ptr<Surface>> arr;
