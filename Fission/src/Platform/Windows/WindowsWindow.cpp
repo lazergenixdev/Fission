@@ -268,12 +268,9 @@ namespace Fission::Platform {
         case WM_KEYDOWN:
         {
         //    Console::WriteLine( L"[WindowId:%x] KEYDOWN: wParam=%i lParam=%i", Colors::Gray, (int)hWnd, wParam, lParam );
-            // No Repeats
-            if( lParam & 0x40000000 )
-                break;
 
             KeyDownEventArgs ev{ &native_event };
-            ev.native_event = &native_event;
+            ev.repeat = ( lParam & 0x40000000 );
             ev.key = key_from_win32( (int)wParam );
 
             if( ev.key == Keys::F11 )

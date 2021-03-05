@@ -37,6 +37,8 @@ namespace Fission::Platform
 		virtual std::unique_ptr<Texture2D>		CreateTexture2D		( const Texture2D::CreateInfo & info		) override;
 		virtual std::unique_ptr<Blender>		CreateBlender		( const Blender::CreateInfo & info			) override;
 
+		virtual native_handle_type native_handle() override;
+
 	public:
 
 		static bool CheckSupport();
@@ -55,6 +57,8 @@ namespace Fission::Platform
 		com_ptr<ID3D11RenderTargetView>		m_pRenderTargetView;
 
 		Window *							m_pParentWindow;
+
+		native_type_dx11					m_NativeHandle;
 	};
 
 }

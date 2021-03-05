@@ -83,6 +83,19 @@ public:
 /* ------------------------------------ End Graphics Primitives ----------------------------------- */
 
 public:
+
+	using native_handle_type = void *;
+
+	/*!< @brief Only returned by `native_handle()` when `GetAPI() == DirectX11` */
+	struct native_type_dx11
+	{
+		void * pDevice; /*!< d3d11device */
+		void * pDeviceContext; /*!< immediate mode context */
+	};
+
+	virtual native_handle_type native_handle() = 0;
+
+public:
 	virtual ~Graphics() = default;
 
 }; // class Fission::Graphics

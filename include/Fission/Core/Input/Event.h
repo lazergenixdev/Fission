@@ -35,6 +35,7 @@ namespace Fission {
 
 	struct KeyDownEventArgs : public NativeEventArgs {
 		Keys::Key key;
+		bool repeat;
 	};
 
 	struct KeyUpEventArgs : public NativeEventArgs {

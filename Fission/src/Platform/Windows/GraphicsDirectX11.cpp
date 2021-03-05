@@ -45,6 +45,11 @@ namespace Fission::Platform {
 			&m_pImmediateContext					/* pp Device Context */
 		);
 
+		if( FAILED( hr ) ) throw exception("DirectX Exception", _lazer_exception_msg.append("Failed to Create Device and SwapChain."));
+
+		m_NativeHandle.pDevice = m_pDevice.Get();
+		m_NativeHandle.pDeviceContext = m_pImmediateContext.Get();
+
 		switch( FeatureLevelGot ) 
 		{
 		case D3D_FEATURE_LEVEL_11_1:
@@ -159,7 +164,10 @@ namespace Fission::Platform {
 
 	void GraphicsDirectX11::EndFrame()
 	{
-		m_pSwapChain->Present( m_SyncInterval, 0u );
+		HRESULT hr;
+		hr = m_pSwapChain->Present( m_SyncInterval, 0u );
+		if( FAILED( hr ) ) throw exception("DirectX Exception", 
+			_lazer_exception_msg.append("Failed to present").append("Reason","Honestly don't know, I should have checked the HRESULT, my bad dude.") );
 	}
 
 	void GraphicsDirectX11::Draw( uint32_t vertexCount, uint32_t vertexOffset )
@@ -217,6 +225,11 @@ namespace Fission::Platform {
 		);
 
 		return SUCCEEDED( hr ); // Device ??  well ok then thanks for the free device
+	}
+
+	Graphics::native_handle_type GraphicsDirectX11::native_handle()
+	{
+		return &m_NativeHandle;
 	}
 
 }
