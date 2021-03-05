@@ -1153,15 +1153,21 @@ void metadata::resize( size_t n )
 	return _array.resize(n);
 }
 
-metadata & metadata::from_JSON( const std::string & json_str )
+metadata metadata::from_JSON( const std::string & json_str )
 {
-	nlohmann::json j;
+	metadata meta;
 	try
 	{
-		j.parse( json_str );
+		meta = from_json( nlohmann::json::parse( json_str ) );
 	}
-	catch (...) {}
+	catch (nlohmann::json::parse_error & e)
+	{
+		throw lazer::exception("JSON parse error", _lazer_exception_msg.append(e.what()));
+	}
+	catch (...)
+	{
+		throw std::logic_error("this don't make no fucking sense");
+	}
 
-	*this = from_json( j );
-	return *this;
+	return meta;
 }

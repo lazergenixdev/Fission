@@ -29,7 +29,7 @@ namespace Fission {
 		FISSION_API metadata( metadata && src );
 		FISSION_API metadata & operator=( const metadata & src );
 
-        FISSION_API metadata & from_JSON( const std::string & json_str );
+        FISSION_API static metadata from_JSON( const std::string & json_str );
 
         FISSION_API metadata( bool _X );
         FISSION_API metadata( int _X );
@@ -66,7 +66,7 @@ namespace Fission {
         inline bool is_table() const { return ( m_Type == table ); }
         inline bool is_array() const { return ( m_Type == array ); }
         inline bool is_null() const { return ( m_Type == null ); }
-        inline bool empty() const { return ( m_Type == value_t::empty ); }
+        inline bool is_empty() const { return ( m_Type == value_t::empty ); }
 
     private:
 
