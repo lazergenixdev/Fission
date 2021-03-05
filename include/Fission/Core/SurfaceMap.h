@@ -58,6 +58,16 @@ namespace Fission {
         FISSION_API double as_number() const;
         FISSION_API long long as_integer() const;
         FISSION_API bool as_boolean() const;
+
+        // helpers
+        inline bool is_number() const { return ( m_Type == number || m_Type == integer ); }
+        inline bool is_integer() const { return ( m_Type == number || m_Type == integer ); }
+        inline bool is_boolean() const { return ( m_Type == boolean || m_Type == integer ); }
+        inline bool is_table() const { return ( m_Type == table ); }
+        inline bool is_array() const { return ( m_Type == array ); }
+        inline bool is_null() const { return ( m_Type == null ); }
+        inline bool empty() const { return ( m_Type == value_t::empty ); }
+
     private:
 
         value_t m_Type;
@@ -84,7 +94,9 @@ namespace Fission {
     {
     public:
 		static constexpr int MaxWidth = 8192/2;
-		static constexpr int MaxHeight = 8192/2;
+		static constexpr int MaxHeight = 8192 / 2;
+
+		using iterator = std::unordered_map<std::string, sub_surface>::iterator;
 
         FISSION_API surface_map();
         FISSION_API ~surface_map() = default;
@@ -92,6 +104,9 @@ namespace Fission {
         // pointers are not guaranteed to be valid after later calls to emplace()
         FISSION_API const sub_surface * operator[]( const std::string & key ) const;
         FISSION_API sub_surface * operator[]( const std::string & key );
+
+		FISSION_API iterator begin();
+		FISSION_API iterator end();
 
         FISSION_API void emplace( const std::string & key, const Surface * surface );
         FISSION_API void remove( const std::string & key );

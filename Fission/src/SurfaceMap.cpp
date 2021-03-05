@@ -882,6 +882,9 @@ metadata & surface_map::get_metadata() { return m_MetaData; }
 
 const metadata & surface_map::get_metadata() const { return m_MetaData; }
 
+surface_map::iterator surface_map::begin() { return m_Map.begin(); }
+
+surface_map::iterator surface_map::end() { return m_Map.end(); }
 
 using table_t = std::unordered_map<std::string, metadata>;
 using array_t = std::vector<metadata>;
@@ -1148,4 +1151,17 @@ void metadata::resize( size_t n )
 	array_t & _array = as<array_t>( m_pData );
 
 	return _array.resize(n);
+}
+
+metadata & metadata::from_JSON( const std::string & json_str )
+{
+	nlohmann::json j;
+	try
+	{
+		j.parse( json_str );
+	}
+	catch (...) {}
+
+	*this = from_json( j );
+	return *this;
 }

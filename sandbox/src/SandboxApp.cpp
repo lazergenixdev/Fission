@@ -41,38 +41,38 @@ public:
 	}
 	virtual void OnCreate() override
 	{
-		std::vector<std::unique_ptr<Surface>> arr;
-		Surface::CreateInfo info;
+		//std::vector<std::unique_ptr<Surface>> arr;
+		//Surface::CreateInfo info;
 
-		arr.reserve( 100 );
-		for( int i = 0; i < 20; i++ )
-		{
-			info.FillColor = blueOrRed();
-			info.Width = ( rand() % 2 == 0 ) ? ( 256 ) : ( 512 );
-			info.Height = ( rand() % 2 == 0 ) ? ( 256 ) : ( 512 );
-			arr.emplace_back( Surface::Create( info ) );
-			put_border( arr.back().get() );
+		//arr.reserve( 100 );
+		//for( int i = 0; i < 20; i++ )
+		//{
+		//	info.FillColor = blueOrRed();
+		//	info.Width = ( rand() % 2 == 0 ) ? ( 256 ) : ( 512 );
+		//	info.Height = ( rand() % 2 == 0 ) ? ( 256 ) : ( 512 );
+		//	arr.emplace_back( Surface::Create( info ) );
+		//	put_border( arr.back().get() );
 
-			char buf[100];
-			sprintf( buf, "{region name}%i", i );
+		//	char buf[100];
+		//	sprintf( buf, "{region name}%i", i );
 
-			map.emplace( buf, arr.back().get() );
-			map[buf]->meta["color"]["r"] = info.FillColor->r;
-			map[buf]->meta["color"]["g"] = info.FillColor->g;
-			map[buf]->meta["color"]["b"] = info.FillColor->b;
-			map[buf]->meta["color"]["a"] = info.FillColor->a;
-			map[buf]->meta["prime"] = is_prime(i);
-			map[buf]->meta["even"] = (i%2==0);
-		}
+		//	map.emplace( buf, arr.back().get() );
+		//	map[buf]->meta["color"]["r"] = info.FillColor->r;
+		//	map[buf]->meta["color"]["g"] = info.FillColor->g;
+		//	map[buf]->meta["color"]["b"] = info.FillColor->b;
+		//	map[buf]->meta["color"]["a"] = info.FillColor->a;
+		//	map[buf]->meta["prime"] = is_prime(i);
+		//	map[buf]->meta["even"] = (i%2==0);
+		//}
 
-		metadata md;
-		md["cat"] = "meow";
-		md["glow"] = 9.46;
-		map.set_metadata( md );
+		//metadata md;
+		//md["cat"] = "meow";
+		//md["glow"] = 9.46;
+		//map.set_metadata( md );
 
-		map.build();
+		//map.build();
 
-		map.Save( "assets/Atlas" );
+		//map.Save( "assets/Atlas" );
 
 		map.Load( "assets/Atlas" );
 
