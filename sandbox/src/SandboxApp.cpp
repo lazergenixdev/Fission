@@ -1,115 +1,87 @@
 #include <Fission/Platform/EntryPoint.h>
 #include <Fission/Fission.h>
-#include <Fission/Core/UI/UI.h>
 #include <Fission/Core/SurfaceMap.h>
-
-#include <numbers>
-#include <iostream>
-
-#include "lazer/unfinished.h"
-
-#pragma comment(lib,"user32")
-
 using namespace Fission;
-
-void put_border( Surface * s )
-{
-	uint32_t w = s->width();
-	uint32_t h = s->height();
-	for( uint32_t i = 0; i < w; i++ )
-		s->PutPixel( i, 0, Colors::White ), s->PutPixel( i, h - 1, Colors::White );
-	for( uint32_t i = 0; i < h; i++ )
-		s->PutPixel( 0, i, Colors::White ), s->PutPixel( w - 1, i, Colors::White );
-}
-
-static color blueOrRed() {return ( rand() % 2 == 0 ) ? Colors::Red : Colors::Blue;}
-static const char * to_string( color c ) { return ( c.r == 1.0f ) ? "Red" : "Blue"; }
-
-static constexpr bool is_prime( int n )
-{
-	if( n < 1 ) return false;
-	if( n == 1 ) return true;
-	if( n % 2 == 0 ) return false;
-	for( int i = n / 2; i > 2; --i )
-		if( n % i == 0 ) return false;
-	return true;
-}
 
 class SandboxLayer : public ILayer 
 {
 public:
 	SandboxLayer()
 	{
-	}
+		map.Load( "assets/dino_atlas" );
 
-	virtual EventResult OnKeyDown( KeyDownEventArgs & args ) override
-	{
-		if( args.native_event->wParam == VK_SPACE )
-		{
-			PostQuitMessage( 0 );
+		if( map.get_metadata().is_table() )
+			action = map.get_metadata()["Action"].as_string();
+
+		first = map[action+" (1)"];
+
+		if( !first ) { 
+			Console::Error( L"That is not an action, setting action to \"Walk\"" ); 
+			if( !( first = map["Walk (1)"] ) ) exit( 1 );
+			action = "Walk";
 		}
-		return EventResult::Handled;
+
+		Console::RegisterCommand( L"Action", 
+			[&] ( std::wstring wstr ) -> std::wstring {
+				auto str = wstring_to_utf8( wstr );
+				if( map[str + " (1)"] ) {
+					action = std::move( str );
+					first = map[action+" (1)"];
+					Console::WriteLine( Colors::DodgerBlue, L"Loaded the Action: %s", wstr.c_str() );
+					return {};
+				}
+				return wstr + L" is not an action.";
+			}
+		);
 	}
 
 	virtual void OnCreate() override
 	{
-		//std::vector<std::unique_ptr<Surface>> arr;
-		//Surface::CreateInfo info;
-
-		//arr.reserve( 100 );
-		//for( int i = 0; i < 20; i++ )
-		//{
-		//	info.FillColor = blueOrRed();
-		//	info.Width = ( rand() % 2 == 0 ) ? ( 256 ) : ( 512 );
-		//	info.Height = ( rand() % 2 == 0 ) ? ( 256 ) : ( 512 );
-		//	arr.emplace_back( Surface::Create( info ) );
-		//	put_border( arr.back().get() );
-
-		//	char buf[100];
-		//	sprintf( buf, "{region name}%i", i );
-
-		//	map.emplace( buf, arr.back().get() );
-		//	map[buf]->meta["color"]["r"] = info.FillColor->r;
-		//	map[buf]->meta["color"]["g"] = info.FillColor->g;
-		//	map[buf]->meta["color"]["b"] = info.FillColor->b;
-		//	map[buf]->meta["color"]["a"] = info.FillColor->a;
-		//	map[buf]->meta["prime"] = is_prime(i);
-		//	map[buf]->meta["even"] = (i%2==0);
-		//}
-
-		//metadata md;
-		//md["cat"] = "meow";
-		//md["glow"] = 9.46;
-		//map.set_metadata( md );
-
-		//map.build();
-
-		//map.Save( "assets/Atlas" );
-
-		map.Load( "assets/Atlas" );
-
-		if( map["{region name}11"]->meta["prime"].as_boolean() ) Console::Message( L"Success!!!" );
-
-		std::unique_ptr<Surface> surface = map.release();
 		auto gfx = GetApp()->GetGraphics();
-
-		Resource::Texture2D::CreateInfo tex_info;
-		tex_info.pSurface = surface.get();
-		tex = gfx->CreateTexture2D(tex_info);
 		r2d = Renderer2D::Create( gfx );
+
+		auto surface = map.release();
+
+		Resource::Texture2D::CreateInfo info;
+		info.pSurface = surface.get();
+		tex = gfx->CreateTexture2D( info );
+
+		std::wstring wstr = utf8_to_wstring( action );
+		Console::WriteLine( Colors::DodgerBlue, L"Loaded the Action: %s", wstr.c_str() );
+
+		timer.reset();
 	}
 	virtual void OnUpdate() override
 	{
-		auto region = &map["{region name}3"]->region;
-		r2d->DrawImage( tex.get(), rectf::from_tl( { 100.0f, 100.0f }, (vec2f)region->abs.size() ), region->rel );
-		region = &map["{region name}10"]->region;
-		r2d->DrawImage( tex.get(), rectf::from_tl( { 700.0f, 100.0f }, (vec2f)region->abs.size() ), region->rel );
+		if( timer.peeks() > 0.08f ) ++frame, timer.reset();
+
+		sub_surface::region_uv * region;
+		char frameIndex[100];
+		sprintf(frameIndex,"%s (%i)",action.c_str(),frame);
+
+		if( auto subs = map[frameIndex] )
+			region = &subs->region;
+		else
+		{
+			region = &first->region;
+			frame = 1;
+		}
+
+		auto size = (vec2f)region->abs.size();
+		vec2f res = { 1280,720 };
+
+		r2d->DrawImage( tex.get(), rectf::from_center( res/2.0f, size ), region->rel );
+
 		r2d->Render();
 	}
 private:
+	surface_map map;
 	std::unique_ptr<Renderer2D> r2d;
 	std::unique_ptr<Resource::Texture2D> tex;
-	surface_map map;
+	std::string action;
+	sub_surface * first;
+	simple_timer timer;
+	int frame = 0;
 };
 
 class SandboxApp : public Application
