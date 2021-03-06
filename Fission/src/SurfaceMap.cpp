@@ -663,7 +663,6 @@ static metadata from_json( const nlohmann::json & node )
 	switch( node.type() )
 	{
 	case json::value_t::boolean: return node.get<bool>();
-	case json::value_t::null: return nullptr;
 	case json::value_t::string: return node.get<std::string>();
 	case json::value_t::number_float: return node.get<double>();
 	case json::value_t::number_unsigned:
@@ -886,14 +885,6 @@ surface_map::iterator surface_map::begin() { return m_Map.begin(); }
 
 surface_map::iterator surface_map::end() { return m_Map.end(); }
 
-using table_t = std::unordered_map<std::string, metadata>;
-using array_t = std::vector<metadata>;
-using number_t = double;
-using integer_t = long long;
-using string_t = std::string;
-
-template <typename T, typename source_t> static constexpr T & as( const source_t & src ) { return *reinterpret_cast<T *>( src ); }
-
 
 metadata::metadata( const metadata & src )
 {
@@ -912,27 +903,27 @@ metadata & metadata::operator=( const metadata & src )
 	}
 	case metadata::number:
 	{
-		m_pData = new number_t( as<number_t>( src.m_pData ) );
+		m_pData.m_number = src.m_pData.m_number;
 		break;
 	}
 	case metadata::integer:
 	{
-		m_pData = new integer_t( as<integer_t>( src.m_pData ) );
+		m_pData.m_integer = src.m_pData.m_integer;
 		break;
 	}
 	case metadata::string:
 	{
-		m_pData = new string_t( std::string( as<string_t>( src.m_pData ) ) );
+		m_pData.m_string = new string_t( *src.m_pData.m_string );
 		break;
 	}
 	case metadata::array:
 	{
-		m_pData = new array_t( as<array_t>( src.m_pData ) );
+		m_pData.m_array = new array_t( *src.m_pData.m_array );
 		break;
 	}
 	case metadata::table:
 	{
-		m_pData = new table_t( as<table_t>( src.m_pData ) );
+		m_pData.m_table = new table_t( *src.m_pData.m_table );
 		break;
 	}
 	default:break;
@@ -942,21 +933,19 @@ metadata & metadata::operator=( const metadata & src )
 
 metadata::metadata() : m_Type( empty ) {}
 
-metadata::metadata( bool _X ) : m_Type( boolean ) { m_pData = _X ? (void*)(1) : (void*)(0); }
+metadata::metadata( bool _X ) : m_Type( boolean ) { m_pData.m_boolean = _X; }
 
-metadata::metadata( int _X ) : m_Type( integer ) { m_pData = new integer_t( (integer_t)_X ); }
+metadata::metadata( int _X ) : m_Type( integer ) { m_pData.m_integer = (integer_t)_X; }
 
-metadata::metadata( long long _X ) : m_Type( integer ) { m_pData = new integer_t( (integer_t)_X ); }
+metadata::metadata( long long _X ) : m_Type( integer ) { m_pData.m_integer = (integer_t)_X; }
 
-metadata::metadata( float _X ) : m_Type( number ) { m_pData = new number_t( (number_t)_X ); }
+metadata::metadata( float _X ) : m_Type( number ) { m_pData.m_number = (number_t)_X; }
 
-metadata::metadata( double _X ) : m_Type( number ) { m_pData = new number_t( (number_t)_X ); }
+metadata::metadata( double _X ) : m_Type( number ) { m_pData.m_number = (number_t)_X; }
 
-metadata::metadata( const char * _X ) : m_Type( string ) { m_pData = new string_t( std::string( _X ) ); }
+metadata::metadata( const char * _X ) : m_Type( string ) { m_pData.m_string = new string_t( _X ); }
 
-metadata::metadata( const std::string & _X ) : m_Type( string ) { m_pData = new string_t( std::string(_X)  ); }
-
-metadata::metadata( nullptr_t _X ) : m_Type( null ) {}
+metadata::metadata( const std::string & _X ) : m_Type( string ) { m_pData.m_string = new string_t( std::string(_X) ); }
 
 metadata::metadata( metadata && src ): m_Type(src.m_Type), m_pData(src.m_pData) { src.m_Type = empty; }
 
@@ -966,31 +955,19 @@ metadata::~metadata()
 {
 	switch( m_Type )
 	{
-	case Fission::metadata::number:
-	{
-		delete m_pData;
-		break;
-	}
-	case Fission::metadata::integer:
-	{
-		delete m_pData;
-		break;
-	}
 	case Fission::metadata::string:
 	{
-		delete reinterpret_cast<string_t*>( m_pData );
+		delete m_pData.m_string;
 		break;
 	}
 	case Fission::metadata::array:
 	{
-		as<array_t>( m_pData ).~array_t();
-		delete m_pData;
+		delete m_pData.m_array;
 		break;
 	}
 	case Fission::metadata::table:
 	{
-		as<table_t>( m_pData ).~table_t();
-		delete m_pData;
+		delete m_pData.m_table;
 		break;
 	}
 	default:break;
@@ -1000,9 +977,9 @@ metadata::~metadata()
 
 const metadata & metadata::operator[]( const std::string & key ) const
 {
-	if( m_Type != table ) return *this;
+	if( m_Type != table ) return *this; // undefined behavior
 
-	table_t & _table = as<table_t>( m_pData );
+	table_t & _table = *m_pData.m_table;
 
 	return _table[key];
 }
@@ -1013,19 +990,19 @@ metadata & metadata::operator[]( const std::string & key )
 	{
 		this->~metadata();
 		m_Type = table;
-		m_pData = new table_t;
+		m_pData.m_table = new table_t;
 	}
 
-	table_t & _table = as<table_t>( m_pData );
+	table_t & _table = *m_pData.m_table;
 
 	return _table[key];
 }
 
 const metadata & metadata::operator[]( size_t index ) const
 {
-	if( m_Type != array ) return *this;
+	if( m_Type != array ) return *this; // undefined behavior
 
-	array_t & _array = as<array_t>( m_pData );
+	array_t & _array = *m_pData.m_array;
 
 	return _array[index];
 }
@@ -1036,10 +1013,10 @@ metadata & metadata::operator[]( size_t index )
 	{
 		this->~metadata();
 		m_Type = array;
-		m_pData = new array_t;
+		m_pData.m_array = new array_t;
 	}
 
-	array_t & _array = as<array_t>( m_pData );
+	array_t & _array = *m_pData.m_array;
 
 	if( index >= _array.size() )
 	{
@@ -1051,25 +1028,25 @@ metadata & metadata::operator[]( size_t index )
 
 const char * metadata::as_string() const
 {
-	if( m_Type != string ) return nullptr;
+	if( m_Type != string ) return nullptr; // undefined behavior
 
-	return as<string_t>( m_pData ).c_str();
+	return m_pData.m_string->c_str();
 }
 
 bool metadata::as_boolean() const
 {
 	switch( m_Type )
 	{
-	case metadata::boolean: return (bool)m_pData;
-	case metadata::number: return (bool)as<number_t>( m_pData );
-	case metadata::integer: return (bool)as<integer_t>( m_pData );
+	case metadata::boolean: return m_pData.m_boolean;
+	case metadata::number: return (bool)m_pData.m_number;
+	case metadata::integer: return (bool)m_pData.m_integer;
 	case metadata::string:
 	{
-		std::string s = as<string_t>( m_pData );
+		std::string s = *m_pData.m_string;
 		std::for_each( s.begin(), s.end(), [] ( char & c ) {c = std::tolower( c ); } );
 		if( s == "true" ) return true;
 	}
-	default: return false; // fall through and return false on error
+	default: return false; // fall through and return false on error : undefined behavior
 	}
 }
 
@@ -1077,17 +1054,17 @@ double metadata::as_number() const
 {
 	switch( m_Type )
 	{
-	case Fission::metadata::number: return as<number_t>( m_pData );
-	case Fission::metadata::integer: return (number_t)as<integer_t>( m_pData );
+	case Fission::metadata::number: return m_pData.m_number;
+	case Fission::metadata::integer: return (number_t)m_pData.m_integer;
 	case Fission::metadata::string:
 	{
 		try {
-			number_t n = std::stod( as<string_t>( m_pData ) );
+			number_t n = std::stod( *m_pData.m_string );
 			return n;
 		}
 		catch( ... ) {}
 	}
-	default: return 0.0; // fall through and return 0 on error
+	default: return 0.0; // fall through and return 0 on error : undefined behavior
 	}
 }
 
@@ -1095,17 +1072,17 @@ long long metadata::as_integer() const
 {
 	switch( m_Type )
 	{
-	case Fission::metadata::number: return (integer_t)as<number_t>( m_pData );
-	case Fission::metadata::integer: return as<integer_t>( m_pData );
+	case Fission::metadata::number: return (integer_t)m_pData.m_number;
+	case Fission::metadata::integer: return m_pData.m_integer;
 	case Fission::metadata::string:
 	{
 		try {
-			integer_t n = std::stoll( as<string_t>( m_pData ) );
+			integer_t n = std::stoll( *m_pData.m_string );
 			return n;
 		}
 		catch( ... ) {}
 	}
-	default: return 0; // fall through and return 0 on error
+	default: return 0; // fall through and return 0 on error : undefined behavior
 	}
 }
 
@@ -1113,7 +1090,7 @@ metadata::const_iterator metadata::begin() const
 {
 	switch( m_Type )
 	{
-	case metadata::table: return as<table_t>( m_pData ).cbegin();
+	case metadata::table: return m_pData.m_table->cbegin();
 	default:return const_iterator();
 	}
 }
@@ -1122,7 +1099,7 @@ metadata::const_iterator metadata::end() const
 {
 	switch( m_Type )
 	{
-	case metadata::table: return as<table_t>( m_pData ).cend();
+	case metadata::table: return m_pData.m_table->cend();
 	default:return const_iterator();
 	}
 }
@@ -1133,7 +1110,7 @@ size_t metadata::size() const
 	{
 	case metadata::array:
 	{
-		return as<array_t>( m_pData ).size();
+		return m_pData.m_array->size();
 	}
 	default:return 0;
 	}
@@ -1145,12 +1122,10 @@ void metadata::resize( size_t n )
 	{
 		this->~metadata();
 		m_Type = array;
-		m_pData = new array_t;
+		m_pData.m_array = new array_t;
 	}
 
-	array_t & _array = as<array_t>( m_pData );
-
-	return _array.resize(n);
+	m_pData.m_array->resize(n);
 }
 
 metadata metadata::from_JSON( const std::string & json_str )

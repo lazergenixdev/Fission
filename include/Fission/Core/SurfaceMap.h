@@ -16,7 +16,6 @@ namespace Fission {
             string, // contains a string
             array, // contains an array
             table, // contains a table
-            null, // contains null
 
             empty, // this metadata node contains no object
         };
@@ -38,7 +37,6 @@ namespace Fission {
 		FISSION_API metadata( double _X );
 		FISSION_API metadata( const char * _X );
 		FISSION_API metadata( const std::string & _X );
-		FISSION_API metadata( nullptr_t _X );
 
 		FISSION_API metadata & operator[]( const std::string & key );
 		FISSION_API const metadata & operator[]( const std::string & key ) const;
@@ -63,15 +61,31 @@ namespace Fission {
         inline bool is_number() const { return ( m_Type == number || m_Type == integer ); }
         inline bool is_integer() const { return ( m_Type == number || m_Type == integer ); }
         inline bool is_boolean() const { return ( m_Type == boolean || m_Type == integer ); }
+        inline bool is_string() const { return ( m_Type == string ); }
         inline bool is_table() const { return ( m_Type == table ); }
         inline bool is_array() const { return ( m_Type == array ); }
-        inline bool is_null() const { return ( m_Type == null ); }
         inline bool is_empty() const { return ( m_Type == value_t::empty ); }
 
     private:
 
+		using table_t = std::unordered_map<std::string, metadata>;
+		using array_t = std::vector<metadata>;
+		using number_t = double;
+		using integer_t = long long;
+		using string_t = std::string;
+
+        union data_t
+        {
+            table_t * m_table;
+            array_t * m_array;
+            string_t * m_string;
+            number_t m_number;
+            integer_t m_integer;
+            bool m_boolean;
+        };
+
         value_t m_Type;
-        void * m_pData;
+        data_t m_pData;
     };
 
 
