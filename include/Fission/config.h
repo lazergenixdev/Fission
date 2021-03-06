@@ -82,3 +82,14 @@ namespace Fission {
 #define FISSION_MK_WSTR(X) L#X
 #define FISSION_MK_WIDE(X) L##X
 
+/**
+ * ImGui
+ */
+#ifndef FISSION_IMGUI_ENABLE
+#if defined(FISSION_DIST)
+#define FISSION_IMGUI_ENABLE 0
+#else
+#define FISSION_IMGUI_ENABLE 1
+#endif
+#endif
+

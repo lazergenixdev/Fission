@@ -79,6 +79,7 @@ namespace Fission
 
 		virtual void DisplayMessageBox( const std::wstring & title, const std::wstring & text ) = 0;
 
+		//! @brief Get a Handle to the native window
 		virtual native_handle_type native_handle() = 0;
 
 	};

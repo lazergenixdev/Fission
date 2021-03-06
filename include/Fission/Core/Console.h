@@ -51,8 +51,8 @@ namespace Fission {
 	public:
 
 		//! @brief Sets whether the Console should be active to the user.
-		//! @param 
-		//! @note Use this to stop console from showing when typing
+		//! @param _Enable: New state for the Console.
+		//! @note Use this to stop console from showing when typing.
 		FISSION_THREAD_SAFE FISSION_API static void SetEnabled( bool _Enable );
 
 
@@ -67,7 +67,7 @@ namespace Fission {
 
 	   /**
 		* @brief  Registers a command name to a callback.
-		* @param  _Command_Name: Name the command will be refered as.
+		* @param  _Command_Name: Name the command will be referred as.
 		* @param  _Callback: Command callback function that will be called when the command is executed.
 		* 
 		* @note This function cannot fail, and will simply override commands that already exist.
@@ -87,7 +87,7 @@ namespace Fission {
 
 
 		//! @brief Writes a line to the Console.
-		//! @param _Color: Color of the line of text outputed.
+		//! @param _Color: Color of the line of text outputted.
 		//! @param _Text: Text to be put onto the Console.
 		FISSION_THREAD_SAFE FISSION_API static void WriteLine( color _Color, const wchar_t * _Text );
 

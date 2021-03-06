@@ -54,6 +54,7 @@ namespace Fission {
 
 	struct SetCursorEventArgs : public NativeEventArgs {
 		Cursor * cursor;
+		bool bUseCursor = true; /*!< States whether the window should use the cursor argument when event handled */
 	};
 
 	struct ResizeEventArgs : public NativeEventArgs {
@@ -83,46 +84,44 @@ namespace Fission {
 
 
 
-		// this is some next level formatting right here:
-
-		FISSION_THREAD_SAFE virtual EventResult OnKeyDown
-		( KeyDownEventArgs & )
+		FISSION_THREAD_SAFE 
+		virtual EventResult OnKeyDown( KeyDownEventArgs & )
 		FISSION_EVENT_DEFAULT
 
-		FISSION_THREAD_SAFE virtual EventResult OnKeyUp
-		( KeyUpEventArgs & )
+		FISSION_THREAD_SAFE 
+		virtual EventResult OnKeyUp( KeyUpEventArgs & )
 		FISSION_EVENT_DEFAULT
 
-		FISSION_THREAD_SAFE virtual EventResult OnTextInput
-		( TextInputEventArgs & )
+		FISSION_THREAD_SAFE 
+		virtual EventResult OnTextInput( TextInputEventArgs & )
 		FISSION_EVENT_DEFAULT
 
-		FISSION_THREAD_SAFE virtual EventResult OnMouseMove
-		( MouseMoveEventArgs & )
+		FISSION_THREAD_SAFE
+		virtual EventResult OnMouseMove( MouseMoveEventArgs & )
 		FISSION_EVENT_DEFAULT
 
-		FISSION_THREAD_SAFE virtual EventResult OnMouseLeave
-		( MouseLeaveEventArgs & )
+		FISSION_THREAD_SAFE
+		virtual EventResult OnMouseLeave( MouseLeaveEventArgs & )
 		FISSION_EVENT_DEFAULT
 
-		FISSION_THREAD_SAFE virtual EventResult OnSetCursor
-		( SetCursorEventArgs & )
+		FISSION_THREAD_SAFE
+		virtual EventResult OnSetCursor( SetCursorEventArgs & )
 		FISSION_EVENT_DEFAULT
 
-		FISSION_THREAD_SAFE virtual EventResult OnHide
-		()
+		FISSION_THREAD_SAFE
+		virtual EventResult OnHide()
 		FISSION_EVENT_DEFAULT
 
-		FISSION_THREAD_SAFE virtual EventResult OnShow
-		()
+		FISSION_THREAD_SAFE 
+		virtual EventResult OnShow()
 		FISSION_EVENT_DEFAULT
 
-		FISSION_THREAD_SAFE virtual EventResult OnClose
-		( CloseEventArgs &	)
+		FISSION_THREAD_SAFE
+		virtual EventResult OnClose( CloseEventArgs & )
 		FISSION_EVENT_DEFAULT
 
-	//	FISSION_THREAD_SAFE virtual EventResult OnResize
-	//  ( ResizeEventArgs & )
+	//	FISSION_THREAD_SAFE
+	//	virtual EventResult OnResize( ResizeEventArgs & )
 	//	FISSION_EVENT_DEFAULT
 
 	}; // struct Fission::IEventHandler
