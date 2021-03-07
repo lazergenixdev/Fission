@@ -1,13 +1,19 @@
 #include <Fission/config.h>
 
+struct ImGuiContext;
+namespace Fission {
+FISSION_API ImGuiContext * GetImGuiContext();
+}
+
 /*
 *  WARNING:
 *   This API is ABSOLUTE GARBAGE and will be removed and replaced with
-*      two systems, defualt debug ui and general purpose ui
+*      two systems, default debug ui and general purpose ui
 */
 
 namespace Fission::UI
 {
+
     struct WindowKey;    
     struct SliderKey;
     struct ButtonKey;

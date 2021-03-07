@@ -105,9 +105,12 @@ create:
 		m_State->m_bRecreate = false;
 	}
 
-	m_State->m_DebugLayer.OnCreate();
 	m_State->m_UILayer.OnCreate();
+#ifndef IMGUI_DISABLE
+	m_State->m_ImGuiLayer.OnCreate();
+#endif
 	m_State->m_ConsoleLayer.OnCreate();
+	m_State->m_DebugLayer.OnCreate();
 	for( auto && layer : m_State->m_vMainLayers )
 		layer->OnCreate();
 
@@ -127,6 +130,9 @@ create:
 		for( auto && layer : m_State->m_vMainLayers )
 			layer->OnUpdate();
 		m_State->m_UILayer.OnUpdate();
+#ifndef IMGUI_DISABLE
+		m_State->m_ImGuiLayer.OnUpdate();
+#endif
 		m_State->m_ConsoleLayer.OnUpdate();
 		m_State->m_DebugLayer.OnUpdate();
 

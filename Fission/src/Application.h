@@ -4,6 +4,7 @@
 #include "Layer/UILayer.h"
 #include "Layer/DebugLayer.h"
 #include "Layer/ConsoleLayer.h"
+#include "Layer/ImGuiLayer.h"
 
 namespace Fission {
 
@@ -14,6 +15,9 @@ namespace Fission {
 
 		ConsoleLayer m_ConsoleLayer;
 		DebugLayerImpl m_DebugLayer;
+#ifndef IMGUI_DISABLE
+		ImGuiLayer m_ImGuiLayer;
+#endif
 		UILayer m_UILayer;
 		std::vector<ILayer *> m_vMainLayers;
 

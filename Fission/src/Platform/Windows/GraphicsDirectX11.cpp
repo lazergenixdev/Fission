@@ -79,8 +79,6 @@ namespace Fission::Platform {
 			m_pImmediateContext->RSSetViewports( 1u, &vp );
 		}
 
-		m_pImmediateContext->OMSetRenderTargets( 1u, m_pRenderTargetView.GetAddressOf(), nullptr );
-
 		// this all needs to be moved !epic
 
 		// disable depth testing
@@ -160,6 +158,8 @@ namespace Fission::Platform {
 		FLOAT col[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
 		m_pImmediateContext->ClearRenderTargetView( m_pRenderTargetView.Get(), col );
+
+		m_pImmediateContext->OMSetRenderTargets( 1u, m_pRenderTargetView.GetAddressOf(), nullptr );
 	}
 
 	void GraphicsDirectX11::EndFrame()

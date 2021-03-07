@@ -339,6 +339,6 @@
     "__metadata__": {
         "credits": "https://www.gameart2d.com/free-dino-sprites",
         "Actions": ["Run","Jump","Walk","Idle","Dead"],
-        "Action": "Dead"
+        "Action": "Walk"
     }
 }

@@ -1,6 +1,19 @@
+
+#if defined(DEBUG)
+#define FISSION_DEBUG
+#elif defined(RELEASE)
+#define FISSION_RELEASE
+#elif defined(DIST)
+#define FISSION_DIST
+#else
+#error "Unknown Configuration"
+#endif
+
 #include <Fission/Platform/EntryPoint.h>
 #include <Fission/Fission.h>
 #include <Fission/Core/SurfaceMap.h>
+#include <Fission/Core/UI/UI.h>
+#include "imgui.h"
 using namespace Fission;
 
 class SandboxLayer : public ILayer 
@@ -20,19 +33,6 @@ public:
 			if( !( first = map["Walk (1)"] ) ) exit( 1 );
 			action = "Walk";
 		}
-
-		Console::RegisterCommand( L"Action", 
-			[&] ( std::wstring wstr ) -> std::wstring {
-				auto str = wstring_to_utf8( wstr );
-				if( map[str + " (1)"] ) {
-					action = std::move( str );
-					first = map[action+" (1)"];
-					Console::WriteLine( Colors::DodgerBlue, L"Loaded the Action: %s", wstr.c_str() );
-					return {};
-				}
-				return wstr + L" is not an action.";
-			}
-		);
 	}
 
 	virtual void OnCreate() override
@@ -49,11 +49,15 @@ public:
 		std::wstring wstr = utf8_to_wstring( action );
 		Console::WriteLine( Colors::DodgerBlue, L"Loaded the Action: %s", wstr.c_str() );
 
+#ifndef IMGUI_DISABLE
+		ImGui::SetCurrentContext( Fission::GetImGuiContext() );
+#endif
+
 		timer.reset();
 	}
 	virtual void OnUpdate() override
 	{
-		if( timer.peeks() > 0.08f ) ++frame, timer.reset();
+		if( timer.peeks() > 1.0f/(float)animationFR ) ++frame, timer.reset();
 
 		sub_surface::region_uv * region;
 		char frameIndex[100];
@@ -67,10 +71,43 @@ public:
 			frame = 1;
 		}
 
-		auto size = (vec2f)region->abs.size();
 		vec2f res = { 1280,720 };
 
+		static vec2f size = (vec2f)region->abs.size();
+#ifndef IMGUI_DISABLE
+		static bool show_hitbox = false;
+		ImGui::Begin( "Dino" );
+		if( ImGui::Button( "Reset" ) )
+			size = (vec2f)region->abs.size();
+		ImGui::SameLine();
+		ImGui::SliderFloat2( "Size", (float *)&size, 20.0f, 500.0f, "%.1f" );
+		if( ImGui::SliderFloat( "Animation FPS", &animationFR, 2.0f, 60.0f, "%.1f" ) )
+			animationFR = std::clamp( animationFR, 2.0f, 30.0f );
+		static int item = 1;
+		static const char * items[] = {
+			"Idle",
+			"Walk",
+			"Run",
+			"Jump",
+			"Dead",
+		};
+		if( ImGui::Combo( "Animation", &item, items, (int)std::size( items ) ) )
+		{
+			std::string str = items[item];
+			action = std::move( str );
+			frame = 1, timer.reset();
+			first = map[action + " (1)"];
+		}
+		ImGui::Checkbox( "Show Image Size", &show_hitbox );
+		ImGui::End();
+#endif
+
 		r2d->DrawImage( tex.get(), rectf::from_center( res/2.0f, size ), region->rel );
+
+#ifndef IMGUI_DISABLE
+		if( show_hitbox )
+			r2d->DrawRect( rectf::from_center( res/2.0f, size ), Colors::OrangeRed, 2.0f );
+#endif
 
 		r2d->Render();
 	}
@@ -82,6 +119,7 @@ private:
 	sub_surface * first;
 	simple_timer timer;
 	int frame = 0;
+	float animationFR = 12.3f;
 };
 
 class SandboxApp : public Application

@@ -38,7 +38,7 @@ namespace Fission
 
 
 		/// <summary>
-		/// Struct defining the properties of a given Window
+		/// struct defining the properties of a given Window
 		/// </summary>
 		struct Properties
 		{
@@ -78,6 +78,10 @@ namespace Fission
 		virtual void Close() = 0;
 
 		virtual void DisplayMessageBox( const std::wstring & title, const std::wstring & text ) = 0;
+		
+		// experimental, this function might seem pointless, 
+		// but this is necessary for calling platform functions within the same thread of a window
+		virtual void Call( std::function<void()> function ) = 0;
 
 		//! @brief Get a Handle to the native window
 		virtual native_handle_type native_handle() = 0;

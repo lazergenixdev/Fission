@@ -33,6 +33,8 @@ namespace Fission::Platform
 
 		virtual void DisplayMessageBox( const std::wstring & title, const std::wstring & info ) override;
 
+		virtual void Call( std::function<void()> function ) override;
+
 		virtual native_handle_type native_handle() override;
 
 		virtual void Close() override;

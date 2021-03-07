@@ -9,6 +9,7 @@
 #define FISSION_WINEVENT_SETTITLE     ( WM_USER + 2 )
 #define FISSION_WINEVENT_SETSTYLE     ( WM_USER + 3 )
 #define FISSION_WINEVENT_SETSIZE      ( WM_USER + 4 )
+#define FISSION_WINEVENT_CALLEXTERNAL ( WM_USER + 5 )
 
 // TODO: Restrict Window Aspect Ratio
 // TODO: Fix Sizing of window when switching Window styles
@@ -94,7 +95,12 @@ namespace Fission::Platform {
         m_Properties.style = style;
         auto nstyle = GetWindowsStyle();
         SendMessageW( m_Handle, FISSION_WINEVENT_SETSTYLE, (WPARAM)&nstyle, 0 );
-    }
+	}
+
+	void WindowsWindow::Call( std::function<void()> function )
+	{
+		SendMessageW( m_Handle, FISSION_WINEVENT_CALLEXTERNAL, (WPARAM)&function, 0 );
+	}
 
     Window::Style WindowsWindow::GetStyle()
     {
@@ -294,42 +300,44 @@ namespace Fission::Platform {
             ev.key = key_from_win32( (int)wParam );
             pWindow->pEventHandler->OnKeyUp( ev );
             break;
-        }
+		}
+		case WM_LBUTTONDOWN: case WM_LBUTTONDBLCLK:
+		case WM_RBUTTONDOWN: case WM_RBUTTONDBLCLK:
+		case WM_MBUTTONDOWN: case WM_MBUTTONDBLCLK:
+		case WM_XBUTTONDOWN: case WM_XBUTTONDBLCLK:
+		{
+			Keys::Key button = Keys::Unknown;
+			if( Msg == WM_LBUTTONDOWN || Msg == WM_LBUTTONDBLCLK ) { button = Keys::Mouse_Left; }
+			if( Msg == WM_RBUTTONDOWN || Msg == WM_RBUTTONDBLCLK ) { button = Keys::Mouse_Right; }
+			if( Msg == WM_MBUTTONDOWN || Msg == WM_MBUTTONDBLCLK ) { button = Keys::Mouse_Middle; }
+			//if( Msg == WM_XBUTTONDOWN || Msg == WM_XBUTTONDBLCLK ) { button = ( GET_XBUTTON_WPARAM( wParam ) == XBUTTON1 ) ? 3 : 4; }
+            SetCapture( hWnd );
+			KeyDownEventArgs ev{ &native_event };
+			ev.key = button;
+			pWindow->pEventHandler->OnKeyDown( ev );
+			return 0;
+		}
+		case WM_LBUTTONUP:
+		case WM_RBUTTONUP:
+		case WM_MBUTTONUP:
+		case WM_XBUTTONUP:
+		{
+			Keys::Key button = Keys::Unknown;
+			if( Msg == WM_LBUTTONUP ) { button = Keys::Mouse_Left; }
+			if( Msg == WM_RBUTTONUP ) { button = Keys::Mouse_Right; }
+			if( Msg == WM_MBUTTONUP ) { button = Keys::Mouse_Middle; }
+		//	if( Msg == WM_XBUTTONUP ) { button = ( GET_XBUTTON_WPARAM( wParam ) == XBUTTON1 ) ? 3 : 4; }
+			ReleaseCapture();
+			KeyUpEventArgs ev{ &native_event };
+			ev.key = button;
+			pWindow->pEventHandler->OnKeyUp( ev );
+			return 0;
+		}
         case WM_CHAR:
         {
             TextInputEventArgs ev{ &native_event };
             ev.character = (wchar_t)wParam;
             pWindow->pEventHandler->OnTextInput( ev );
-            break;
-        }
-        case WM_LBUTTONDOWN:
-        {
-            KeyDownEventArgs ev{ &native_event };
-            ev.key = Keys::Mouse_Left;
-            pWindow->pEventHandler->OnKeyDown( ev );
-            SetCapture( hWnd );
-            break;
-        }
-        case WM_LBUTTONUP:
-        {
-            KeyUpEventArgs ev{ &native_event };
-            ev.key = Keys::Mouse_Left;
-            pWindow->pEventHandler->OnKeyUp( ev );
-            ReleaseCapture();
-            break;
-        }
-        case WM_RBUTTONDOWN:
-        {
-            KeyDownEventArgs ev{ &native_event };
-            ev.key = Keys::Mouse_Right;
-            pWindow->pEventHandler->OnKeyDown( ev );
-            break;
-        }
-        case WM_RBUTTONUP:
-        {
-            KeyUpEventArgs ev{ &native_event };
-            ev.key = Keys::Mouse_Right;
-            pWindow->pEventHandler->OnKeyUp( ev );
             break;
         }
         case WM_MOUSEWHEEL:
@@ -354,11 +362,17 @@ namespace Fission::Platform {
 
 
         /************* User Messages *************/
-        case FISSION_WINEVENT_SETTITLE:
+        case FISSION_WINEVENT_CALLEXTERNAL:
         {
-            SetWindowTextW( hWnd, (const wchar_t *)wParam );
+            std::function<void()> & fn = *reinterpret_cast<std::function<void()> *>( wParam );
+            fn();
             return 0;
-        }
+		}
+		case FISSION_WINEVENT_SETTITLE:
+		{
+			SetWindowTextW( hWnd, (const wchar_t *)wParam );
+			return 0;
+		}
         case FISSION_WINEVENT_SETSIZE:
         {
             SetWindowPos( hWnd, NULL, 0, 0, (int)wParam, (int)lParam, SWP_NOMOVE );
@@ -486,7 +500,7 @@ namespace Fission::Platform {
                 SetCursorEventArgs ev{ &native_event };
                 ev.cursor = pWindow->m_Cursor;
                 pWindow->pEventHandler->OnSetCursor( ev );
-                ev.cursor->Use();
+                if( ev.bUseCursor ) ev.cursor->Use();
                 //pWindow->m_Cursor = ev.cursor;
 
                 //HCURSOR hCurs3;             // cursor handle 

@@ -55,6 +55,11 @@ namespace Fission {
 		if( m_State->m_ConsoleLayer.OnKeyDown( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
+#ifndef IMGUI_DISABLE
+		if( m_State->m_ImGuiLayer.OnKeyDown( args ) == EventResult::Handled )
+			return EventResult::Handled;
+#endif
+
 		if( m_State->m_UILayer.OnKeyDown( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
@@ -72,6 +77,11 @@ namespace Fission {
 
 		if( m_State->m_ConsoleLayer.OnKeyUp( args ) == EventResult::Handled )
 			return EventResult::Handled;
+
+#ifndef IMGUI_DISABLE
+		if( m_State->m_ImGuiLayer.OnKeyUp( args ) == EventResult::Handled )
+			return EventResult::Handled;
+#endif
 
 		if( m_State->m_UILayer.OnKeyUp( args ) == EventResult::Handled )
 			return EventResult::Handled;
@@ -91,6 +101,11 @@ namespace Fission {
 		if( m_State->m_ConsoleLayer.OnTextInput( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
+#ifndef IMGUI_DISABLE
+		if( m_State->m_ImGuiLayer.OnTextInput( args ) == EventResult::Handled )
+			return EventResult::Handled;
+#endif
+
 		if( m_State->m_UILayer.OnTextInput( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
@@ -108,6 +123,11 @@ namespace Fission {
 
 		if( m_State->m_ConsoleLayer.OnMouseMove( args ) == EventResult::Handled )
 			return EventResult::Handled;
+
+#ifndef IMGUI_DISABLE
+		if( m_State->m_ImGuiLayer.OnMouseMove( args ) == EventResult::Handled )
+			return EventResult::Handled;
+#endif
 
 		if( m_State->m_UILayer.OnMouseMove( args ) == EventResult::Handled )
 			return EventResult::Handled;
@@ -127,6 +147,11 @@ namespace Fission {
 		if( m_State->m_ConsoleLayer.OnMouseLeave( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
+#ifndef IMGUI_DISABLE
+		if( m_State->m_ImGuiLayer.OnMouseLeave( args ) == EventResult::Handled )
+			return EventResult::Handled;
+#endif
+
 		if( m_State->m_UILayer.OnMouseLeave( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
@@ -144,6 +169,11 @@ namespace Fission {
 
 		if( m_State->m_ConsoleLayer.OnSetCursor( args ) == EventResult::Handled )
 			return EventResult::Handled;
+
+#ifndef IMGUI_DISABLE
+		if( m_State->m_ImGuiLayer.OnSetCursor( args ) == EventResult::Handled )
+			return EventResult::Handled;
+#endif
 
 		if( m_State->m_UILayer.OnSetCursor( args ) == EventResult::Handled )
 			return EventResult::Handled;

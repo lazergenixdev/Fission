@@ -14,6 +14,7 @@ project 'sandbox'
 	{
         '%{wks.location}/include',
         "%{IncludeDir.lazerlib}",
+        "%{IncludeDir.imgui}",
         '%{wks.location}/resources'
 	}
     
@@ -29,4 +30,4 @@ project 'sandbox'
 
     filter "configurations:Dist"
         defines { "DIST" }
-        optimize "On"
+        optimize "Speed"

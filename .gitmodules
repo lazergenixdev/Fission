@@ -7,3 +7,6 @@
 [submodule "Fission/vendor/json"]
 	path = Fission/vendor/json
 	url = https://github.com/nlohmann/json
+[submodule "Fission/vendor/imgui"]
+	path = Fission/vendor/imgui
+	url = https://github.com/lazergenixdev/imgui

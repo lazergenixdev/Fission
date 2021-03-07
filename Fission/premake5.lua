@@ -11,7 +11,7 @@ project 'Fission'
     -- public headers
     files '%{wks.location}/include/**.h'
 
-    links { "yaml", "freetype" }
+    links { "yaml", "freetype", "imgui" }
 
     libdirs
     {
@@ -20,8 +20,9 @@ project 'Fission'
 
 	includedirs
 	{
-        '%{wks.location}/include',
+        "%{wks.location}/include",
         "%{IncludeDir.yaml}",
+        "%{IncludeDir.imgui}",
         "%{IncludeDir.lazerlib}",
         '%{prj.location}/vendor/freetype/include',
         '%{prj.location}/vendor/json/single_include',

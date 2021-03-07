@@ -85,11 +85,10 @@ namespace Fission {
 /**
  * ImGui
  */
-#ifndef FISSION_IMGUI_ENABLE
+#ifndef FISSION_IMGUI_ENABLE // ImGui only available on debug and release builds by default
 #if defined(FISSION_DIST)
-#define FISSION_IMGUI_ENABLE 0
-#else
-#define FISSION_IMGUI_ENABLE 1
+#define IMGUI_DISABLE //  Disable everything: all headers and source files will be empty.
 #endif
 #endif
 
+#define IMGUI_API FISSION_API
