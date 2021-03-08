@@ -50,7 +50,7 @@ VS_OUT vs_main( float2 pos : Position, float2 tc : TexCoord, float4 color : Colo
 Texture2D tex;
 SamplerState ss;
 float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target { 
-	if( tc.x < 0.0f ) return color;
+	if( tc.x < -0.5f ) return color;
 	return tex.Sample( ss, tc ) * color;
 }
 	)";
