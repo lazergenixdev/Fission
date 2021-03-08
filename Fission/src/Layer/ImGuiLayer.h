@@ -1,6 +1,5 @@
 #pragma once
 #include "Fission/Core/Layer.h"
-#include <queue>
 
 namespace Fission {
 
@@ -16,9 +15,6 @@ namespace Fission {
 		virtual EventResult OnMouseMove( MouseMoveEventArgs & ) override;
 		virtual EventResult OnMouseLeave( MouseLeaveEventArgs & ) override;
 		virtual EventResult OnSetCursor( SetCursorEventArgs & ) override;
-	private:
-		std::queue<Platform::Event> m_EventQueue;
-		bool m_bRender = false;
 	};
 
 }

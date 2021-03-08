@@ -11,7 +11,7 @@ project 'Fission'
     -- public headers
     files '%{wks.location}/include/**.h'
 
-    links { "yaml", "freetype", "imgui" }
+    links { "yaml", "freetype" }
 
     libdirs
     {

@@ -270,7 +270,8 @@ namespace Fission::Platform {
             if( wParam == WA_INACTIVE && bool( pWindow->m_Properties.flags & Flags::Fullscreen ) )
                 ShowWindow( hWnd, SW_MINIMIZE );
             break;
-        }
+		}
+        case WM_SYSKEYDOWN:
         case WM_KEYDOWN:
         {
         //    Console::WriteLine( L"[WindowId:%x] KEYDOWN: wParam=%i lParam=%i", Colors::Gray, (int)hWnd, wParam, lParam );
@@ -294,6 +295,7 @@ namespace Fission::Platform {
             pWindow->pEventHandler->OnKeyDown( ev );
             break;
         }
+        case WM_SYSKEYUP:
         case WM_KEYUP:
         {
             KeyUpEventArgs ev{ &native_event };

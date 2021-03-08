@@ -10,6 +10,7 @@
 #include "backends/imgui_impl_win32.h"
 
 #include "Fission/Core/UI/UI.h"
+#include "Fission/Core/Console.h"
 
 namespace Fission {
 	ImGuiContext * GetImGuiContext()
@@ -19,6 +20,11 @@ namespace Fission {
 }
 
 using namespace Fission;
+
+std::mutex mutex;
+std::vector<wchar_t> character_buffer;
+
+extern void SetImGuiPlatformIO();
 
 //namespace JetBrainsMonoTTF {
 //#include "Static Fonts/JetBrainsMono-Regular.inl"
@@ -35,23 +41,6 @@ static void SetImGuiColors()
 
 	style.FrameRounding = 2.0f;
 	style.WindowRounding = 2.0f;
-}
-
-// override platform functions to ensure consistancy with Fission::Window implementation
-static void SetImGuiPlatformIO()
-{
-	extern void platform_create_window( struct ImGuiViewport * vp );
-	extern void platform_destroy_window( struct ImGuiViewport * vp );
-	extern void platform_update_window( struct ImGuiViewport * vp );
-	extern bool platform_get_window_focus( struct ImGuiViewport * vp );
-	extern void platform_set_window_focus( struct ImGuiViewport * vp );
-
-	auto & PlatformIO = ImGui::GetPlatformIO();
-	PlatformIO.Platform_CreateWindow = platform_create_window;
-	PlatformIO.Platform_DestroyWindow = platform_destroy_window;
-	PlatformIO.Platform_UpdateWindow = platform_update_window;
-	PlatformIO.Platform_SetWindowFocus = platform_set_window_focus;
-	PlatformIO.Platform_GetWindowFocus = platform_get_window_focus;
 }
 
 void ImGuiLayer::OnCreate()
@@ -85,28 +74,21 @@ void ImGuiLayer::OnCreate()
 
 	ImGui::DockSpaceOverViewport( nullptr, ImGuiDockNodeFlags_NoDockingInCentralNode | ImGuiDockNodeFlags_PassthruCentralNode );
 
-	ImGui::ShowDemoWindow();
+	//ImGui::ShowDemoWindow();
 }
 
 static EventResult HandleEvent( Platform::Event * pEvent )
 {
 	extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam );
-	return (EventResult)ImGui_ImplWin32_WndProcHandler( pEvent->hWnd, pEvent->Msg, pEvent->wParam, pEvent->lParam );
+	return !!ImGui_ImplWin32_WndProcHandler( pEvent->hWnd, pEvent->Msg, pEvent->wParam, pEvent->lParam ) ? EventResult::Handled : EventResult::Pass;
 }
 
 void ImGuiLayer::OnUpdate()
 {
-	while( !m_EventQueue.empty() )
-	{
-		auto ev = m_EventQueue.front();
-		HandleEvent( &ev );
-		m_EventQueue.pop();
-	}
-
+	auto io = ImGui::GetIO();
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData( ImGui::GetDrawData() );
 
-	auto io = ImGui::GetIO();
 	// Update and Render additional Platform Windows
 	if( io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable )
 	{
@@ -114,16 +96,13 @@ void ImGuiLayer::OnUpdate()
 		ImGui::RenderPlatformWindowsDefault();
 	}
 
-
 	ImGui_ImplDX11_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
 
 	ImGui::DockSpaceOverViewport( nullptr, ImGuiDockNodeFlags_NoDockingInCentralNode | ImGuiDockNodeFlags_PassthruCentralNode );
 
-	ImGui::ShowDemoWindow();
-
-	m_bRender = true;
+	//ImGui::ShowDemoWindow();
 }
 
 EventResult ImGuiLayer::OnKeyDown( KeyDownEventArgs & args )
@@ -136,33 +115,36 @@ EventResult ImGuiLayer::OnKeyDown( KeyDownEventArgs & args )
 
 EventResult ImGuiLayer::OnKeyUp( KeyUpEventArgs & args )
 {
-	HandleEvent( args.native_event );
-	return EventResult::Handled;
+	return HandleEvent( args.native_event );
 }
 
 EventResult ImGuiLayer::OnTextInput( TextInputEventArgs & args )
 {
-	HandleEvent( args.native_event );
-	return EventResult::Handled;
+	//if( ImGui::GetCurrentContext() == NULL )
+	//	return EventResult::Pass;
+	//auto io = ImGui::GetIO();
+	//unsigned short ch = args.character;
+	//if( ch > 0 && ch < 0x10000 )
+	//	io.AddInputCharacter( ch );
+	//Console::Message( L"Got character: %c", args.character );
+	//return EventResult::Pass;
+	return HandleEvent( args.native_event );
 }
 
 EventResult ImGuiLayer::OnMouseMove( MouseMoveEventArgs & args )
 {
-	HandleEvent( args.native_event );
-	return EventResult::Handled;
+	return HandleEvent( args.native_event );
 }
 
 EventResult ImGuiLayer::OnMouseLeave( MouseLeaveEventArgs & args )
 {
-	HandleEvent( args.native_event );
-	return EventResult::Handled;
+	return HandleEvent( args.native_event );
 }
 
 EventResult ImGuiLayer::OnSetCursor( SetCursorEventArgs & args )
 {
 	args.bUseCursor = false; // we set the cursor ourselves
-	HandleEvent( args.native_event );
-	return EventResult::Handled;
+	return HandleEvent( args.native_event );
 }
 
 #endif // !IMGUI_DISABLE

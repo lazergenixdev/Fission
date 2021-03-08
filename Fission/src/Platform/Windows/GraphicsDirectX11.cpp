@@ -101,11 +101,11 @@ namespace Fission::Platform {
 
 		ID3D11SamplerState * ss;
 		D3D11_SAMPLER_DESC sdesc = CD3D11_SAMPLER_DESC{};
-		sdesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-		sdesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+		sdesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+		sdesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
 		sdesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
 		sdesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-		sdesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+		sdesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
 		m_pDevice->CreateSamplerState( &sdesc, &ss );
 		m_pImmediateContext->PSSetSamplers( 0u, 1u, &ss );
 

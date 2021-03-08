@@ -76,6 +76,17 @@ void platform_set_window_focus( struct ImGuiViewport * vp )
 	app->GetWindow()->Call( fn );
 }
 
+// override platform functions to ensure consistancy with Fission::Window implementation
+void SetImGuiPlatformIO()
+{
+	auto & PlatformIO = ImGui::GetPlatformIO();
+	PlatformIO.Platform_CreateWindow = platform_create_window;
+	PlatformIO.Platform_DestroyWindow = platform_destroy_window;
+	PlatformIO.Platform_UpdateWindow = platform_update_window;
+	PlatformIO.Platform_SetWindowFocus = platform_set_window_focus;
+	PlatformIO.Platform_GetWindowFocus = platform_get_window_focus;
+}
+
 #endif
 
 #endif // !IMGUI_DISABLE
