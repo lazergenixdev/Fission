@@ -4,7 +4,7 @@ Game Engine I am developing on for a specific game that I am working on, but tho
 \
 \
 This Engine mainly focuses on 2D graphics, but the rendering API is not limited to 2D (however some concepts are missing, such as depth stencils).
-If you really want 3D graphics, then you would have to query the `Graphics` object for it's native handle.
+If you really want 3D graphics, then you would have to query the `Graphics` object for its native handle.
 \
 \
 Only focusing on the Windows build for now, but after I got the main features stable I will move to work on an Andriod build as the next platform.
