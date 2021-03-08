@@ -75,13 +75,14 @@ public:
 
 		static vec2f size = (vec2f)region->abs.size();
 #ifndef IMGUI_DISABLE
+		ImGui::SetCurrentContext( Fission::GetImGuiContext() );
 		static bool show_hitbox = false;
 		ImGui::Begin( "Dino" );
 		if( ImGui::Button( "Reset" ) )
 			size = (vec2f)region->abs.size();
 		ImGui::SameLine();
 		ImGui::SliderFloat2( "Size", (float *)&size, 20.0f, 500.0f, "%.1f" );
-		if( ImGui::SliderFloat( "Animation FPS", &animationFR, 2.0f, 60.0f, "%.1f" ) )
+		if( ImGui::SliderFloat( "Animation FPS", &animationFR, 2.0f, 30.0f, "%.1f" ) )
 			animationFR = std::clamp( animationFR, 2.0f, 30.0f );
 		static int item = 1;
 		static const char * items[] = {
@@ -99,6 +100,8 @@ public:
 			first = map[action + " (1)"];
 		}
 		ImGui::Checkbox( "Show Image Size", &show_hitbox );
+		static char buffer[1000] = {};
+		ImGui::InputTextMultiline( "Yes", buffer, 1000 );
 		ImGui::End();
 #endif
 
