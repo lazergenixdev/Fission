@@ -22,7 +22,7 @@ workspace 'Fission'
 group "Dependencies"
     include "Fission/vendor/yaml-cpp"
     include "Fission/vendor/lazerlib"
-    include "Fission/vendor/imgui"
+--    include "Fission/vendor/imgui"
 group ""
 
 include 'Fission'
