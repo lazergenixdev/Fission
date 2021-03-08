@@ -20,27 +20,31 @@ namespace Fission {
 		virtual bool GetPlaying() = 0;
 	};
 
-	using OutputID = short;
+	namespace Sound {
+		typedef short Output;
+		typedef Output OutputID;
+	}
 
 	struct ISoundEngine
 	{
 	public:
 		struct CreateInfo
 		{
-			short nOutputs = 1;
+			Sound::Output nOutputs = 1;
 		};
 
 		FISSION_API static std::unique_ptr<ISoundEngine> Create( const CreateInfo & info = {} );
 
 		virtual ISound * CreateSound( const wchar_t * file ) = 0;
 
-		virtual ISoundSource * Play( ISound * sound, OutputID _Output, bool start_playing = true ) = 0;
+		virtual ISoundSource * Play( ISound * _Sound, Sound::OutputID _Output, bool _Start_Playing = true ) = 0;
 
-		virtual void SetVolume( OutputID _Output, float value ) = 0;
-		virtual float GetVolume( OutputID _Output ) = 0;
+		virtual void SetVolume( Sound::OutputID _Output, float _Volume ) = 0;
+		virtual float GetVolume( Sound::OutputID _Output ) = 0;
 
-		virtual void SetMasterVolume( float value ) = 0;
+		virtual void SetMasterVolume( float _Volume ) = 0;
 		virtual float GetMasterVolume() = 0;
+
 	};
 
 } // namespace Fission
