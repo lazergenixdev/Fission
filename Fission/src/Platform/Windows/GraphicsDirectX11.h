@@ -33,7 +33,6 @@ namespace Fission::Platform
 		virtual std::unique_ptr<VertexBuffer>	CreateVertexBuffer	( const VertexBuffer::CreateInfo & info		) override;
 		virtual std::unique_ptr<IndexBuffer>	CreateIndexBuffer	( const IndexBuffer::CreateInfo & info		) override;
 		virtual std::unique_ptr<Shader>			CreateShader		( const Shader::CreateInfo & info			) override;
-		virtual std::unique_ptr<ConstantBuffer>	CreateConstantBuffer( const ConstantBuffer::CreateInfo & info	) override;
 		virtual std::unique_ptr<Texture2D>		CreateTexture2D		( const Texture2D::CreateInfo & info		) override;
 		virtual std::unique_ptr<Blender>		CreateBlender		( const Blender::CreateInfo & info			) override;
 

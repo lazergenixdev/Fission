@@ -11,10 +11,9 @@ public:
 
 	using VertexBuffer =		Resource::VertexBuffer;
 	using IndexBuffer =			Resource::IndexBuffer;
-	using ConstantBuffer =	Resource::ConstantBuffer;
-	using Texture2D =				Resource::Texture2D;
-	using Shader =					Resource::Shader;
-	using Blender =					Resource::Blender;
+	using Texture2D =			Resource::Texture2D;
+	using Shader =				Resource::Shader;
+	using Blender =				Resource::Blender;
 
 public:
 	enum class API {
@@ -74,8 +73,6 @@ public:
 	virtual scoped_ptr<IndexBuffer> CreateIndexBuffer( const IndexBuffer::CreateInfo & info ) = 0;
 
 	virtual scoped_ptr<Shader> CreateShader( const Shader::CreateInfo & info ) = 0;
-
-	virtual scoped_ptr<ConstantBuffer> CreateConstantBuffer( const ConstantBuffer::CreateInfo & info ) = 0;
 
 	virtual scoped_ptr<Texture2D> CreateTexture2D( const Texture2D::CreateInfo & info ) = 0;
 

@@ -72,7 +72,6 @@ namespace Fission {
 		std::unique_ptr<Resource::VertexBuffer>		m_pVertexBuffer;
 		std::unique_ptr<Resource::IndexBuffer>		m_pIndexBuffer;
 		std::unique_ptr<Resource::Shader>			m_pShader;
-		std::unique_ptr<Resource::ConstantBuffer>	m_pTransformBuffer;
 		std::unique_ptr<Resource::Blender>			m_pBlenders[(size_t)BlendMode::__count__];
 		Resource::Blender *							m_pUseBlender;
 

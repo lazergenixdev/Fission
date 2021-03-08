@@ -33,7 +33,7 @@ namespace Fission {
 
 	static constexpr const char * _fission_renderer2d_shader_code_hlsl =
 		R"( 
-	matrix screen_transform;
+	matrix screen;
 
 struct VS_OUT { 
 	float2 tc : TexCoord; 
@@ -42,7 +42,7 @@ struct VS_OUT {
 };
 VS_OUT vs_main( float2 pos : Position, float2 tc : TexCoord, float4 color : Color ) { 
 	VS_OUT vso; 
-	vso.pos = mul( float4( pos, 1.0, 1.0 ), screen_transform ); 
+	vso.pos = mul( float4( pos, 1.0, 1.0 ), screen ); 
 	vso.tc = tc; 
 	vso.color = color;
 	return vso; 
@@ -69,21 +69,6 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		vl.Append<Float2>( "TexCoord" );
 		vl.Append<Float4>( "Color" );
 
-		{ // Create Transform Buffer for screen transform
-			ConstantBuffer::CreateInfo info;
-			info.ByteSize = 64u;
-			m_pTransformBuffer = pGraphics->CreateConstantBuffer( info );
-
-			vec2f res = (vec2f)pGraphics->GetResolution();
-
-			float matrix[16] = {
-				2.0f / res.x,	0.0f,		   -1.0f, 0.0f,
-				0.0f,		   -2.0f / res.y,	1.0f, 0.0f,
-				0.0f,			0.0f,			1.0f, 0.0f,
-				0.0f,			0.0f,			0.0f, 1.0f,
-			};
-			m_pTransformBuffer->Update( matrix );
-		}
 		{ // Create Vertex Buffer
 			VertexBuffer::CreateInfo info;
 			info.vtxCount = vertex_max_count;
@@ -104,6 +89,16 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			if( pGraphics->GetAPI() == Graphics::API::DirectX11 )
 				info.source_code = _fission_renderer2d_shader_code_hlsl;
 			m_pShader = pGraphics->CreateShader( info );
+
+			vec2f res = (vec2f)pGraphics->GetResolution();
+			float matrix[16] = {
+				2.0f / res.x,	0.0f,		   -1.0f, 0.0f,
+				0.0f,		   -2.0f / res.y,	1.0f, 0.0f,
+				0.0f,			0.0f,			1.0f, 0.0f,
+				0.0f,			0.0f,			0.0f, 1.0f,
+			};
+
+			m_pShader->SetVariable( "screen", *(Shader::mat4x4f *)matrix );
 		}
 		{ // todo: more blenders
 			Blender::CreateInfo info;
@@ -138,7 +133,6 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		m_pVertexBuffer->Bind();
 		m_pIndexBuffer->SetData( index_data, end.idxCount + end.idxStart );
 		m_pIndexBuffer->Bind();
-		m_pTransformBuffer->Bind();
 		m_pUseBlender->Bind();
 
 		for( auto && cmd : m_CommandBuffer )

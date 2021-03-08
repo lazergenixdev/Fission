@@ -192,10 +192,6 @@ namespace Fission::Platform {
 		return std::make_unique<ShaderDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info );
 	}
 
-	std::unique_ptr<Resource::ConstantBuffer> GraphicsDirectX11::CreateConstantBuffer( const ConstantBuffer::CreateInfo & info ) {
-		return std::make_unique<ConstantBufferDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info );
-	}
-
 	std::unique_ptr<Resource::Texture2D> GraphicsDirectX11::CreateTexture2D( const Texture2D::CreateInfo & info ) {
 		return std::make_unique<Texture2DDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info );
 	}

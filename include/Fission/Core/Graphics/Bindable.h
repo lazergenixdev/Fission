@@ -106,8 +106,8 @@ namespace Fission::Resource
 		virtual bool SetVariable( const char * name, mat3x3f val ) = 0;
 		virtual bool SetVariable( const char * name, mat4x4f val ) = 0;
 
-		virtual bool SetVariable( const char * name, float * pBegin, uint32_t count ) = 0;
-		virtual bool SetVariable( const char * name, int * pBegin, uint32_t count ) = 0;
+	//	virtual bool SetVariable( const char * name, float * pBegin, uint32_t count ) = 0;
+	//	virtual bool SetVariable( const char * name, int * pBegin, uint32_t count ) = 0;
 
 		inline bool SetVariable( const char * name, colorf val ) { return SetVariable( name, *(vec4f *)&val ); };
 	};

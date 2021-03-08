@@ -2,8 +2,35 @@
 //#include "hr_Exception.h"
 #include <filesystem>
 #include <d3dcompiler.h>
+#include "lazer/matrix.h"
 
 namespace Fission::Platform {
+
+#define DEFINE_HLSL_TYPE(N,T,HT,HC,C,R) \
+	struct N { \
+        using type = T; \
+        static constexpr D3D_SHADER_VARIABLE_TYPE hlsltype = HT; \
+        static constexpr D3D_SHADER_VARIABLE_CLASS hlslclass = HC; \
+        static constexpr uint32_t columns = C; \
+        static constexpr uint32_t rows = R; \
+    }
+
+	DEFINE_HLSL_TYPE( HLSLFloat, float, D3D_SVT_FLOAT, D3D_SVC_SCALAR, 1, 1 );
+	DEFINE_HLSL_TYPE( HLSLFloat2, vec2f, D3D_SVT_FLOAT, D3D_SVC_VECTOR, 2, 1 );
+	DEFINE_HLSL_TYPE( HLSLFloat3, vec3f, D3D_SVT_FLOAT, D3D_SVC_VECTOR, 3, 1 );
+	DEFINE_HLSL_TYPE( HLSLFloat4, vec4f, D3D_SVT_FLOAT, D3D_SVC_VECTOR, 4, 1 );
+
+	DEFINE_HLSL_TYPE( HLSLInt, int, D3D_SVT_INT, D3D_SVC_SCALAR, 1, 1 );
+	DEFINE_HLSL_TYPE( HLSLInt2, vec2i, D3D_SVT_INT, D3D_SVC_VECTOR, 2, 1 );
+	DEFINE_HLSL_TYPE( HLSLInt3, vec3i, D3D_SVT_INT, D3D_SVC_VECTOR, 3, 1 );
+	DEFINE_HLSL_TYPE( HLSLInt4, vec4i, D3D_SVT_INT, D3D_SVC_VECTOR, 4, 1 );
+
+	using mat4x4f = Resource::Shader::mat4x4f; // todo: remove this
+	DEFINE_HLSL_TYPE( HLSLFloat2x2, mat2x2f, D3D_SVT_FLOAT, D3D_SVC_MATRIX_COLUMNS, 2, 2 );
+	DEFINE_HLSL_TYPE( HLSLMatrix, mat4x4f, D3D_SVT_FLOAT, D3D_SVC_MATRIX_COLUMNS, 4, 4 );
+
+#undef DEFINE_HLSL_TYPE
+
 
 	VertexBufferDX11::VertexBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info )
 		: m_pContext( pContext ), m_Count( info.vtxCount ), m_Stride( info.pVertexLayout->GetStride() ), m_Type( info.type )
@@ -147,11 +174,61 @@ namespace Fission::Platform {
 		return m_Count;
 	}
 
+	template <typename T>
+	static HRESULT ReflectToConstantBuffers(
+		std::vector<T> * pBuffers,
+		ID3D11Device * pDevice,
+		ID3D11DeviceContext * pContext,
+		ID3DBlob * pBlob )
+	{
+		HRESULT hr;
+
+		com_ptr<ID3D11ShaderReflection> pShaderReflection;
+		hr = D3DReflect( pBlob->GetBufferPointer(), pBlob->GetBufferSize(), __uuidof( ID3D11ShaderReflection ), &pShaderReflection );
+
+		D3D11_SHADER_DESC shader_desc;
+		pShaderReflection->GetDesc( &shader_desc );
+		for( int i = 0; i < (int)shader_desc.BoundResources; ++i )
+		{
+			D3D11_SHADER_INPUT_BIND_DESC bind_desc;
+			pShaderReflection->GetResourceBindingDesc( i, &bind_desc );
+			if( bind_desc.Type != D3D_SIT_CBUFFER ) continue;
+
+			auto pConstantBuffer = pShaderReflection->GetConstantBufferByName( bind_desc.Name );
+
+			D3D11_SHADER_BUFFER_DESC desc;
+			pConstantBuffer->GetDesc( &desc );
+			pBuffers->emplace_back( pDevice, pContext, bind_desc.BindPoint, desc.Size );
+			auto & cb = pBuffers->back();
+
+			for( int i = 0; i < (int)desc.Variables; ++i )
+			{
+				D3D11_SHADER_VARIABLE_DESC vdesc;
+				D3D11_SHADER_TYPE_DESC tdesc;
+				auto * pVar = pConstantBuffer->GetVariableByIndex( i );
+				auto * pType = pVar->GetType();
+				pVar->GetDesc( &vdesc );
+				pType->GetDesc( &tdesc );
+
+				ConstantBufferDX11::Variable var;
+				var.m_class = tdesc.Class;
+				var.m_type = tdesc.Type;
+				var.m_columns = tdesc.Columns;
+				var.m_rows = tdesc.Rows;
+				var.m_offset = vdesc.StartOffset;
+				cb.AddVariable( vdesc.Name, var );
+			}
+		}
+
+		return S_OK;
+	}
+
 	ShaderDX11::ShaderDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info )
 		: m_pContext( pContext )
 	{
 		HRESULT hr = S_OK;
-		com_ptr<ID3DBlob> pBlob;
+		com_ptr<ID3DBlob> pPSBlob;
+		com_ptr<ID3DBlob> pVSBlob;
 
 		auto create_input_layout = [&] () {
 			uint32_t numElements = info.pVertexLayout->GetCount();
@@ -174,7 +251,7 @@ namespace Fission::Platform {
 				offset += Resource::VertexLayoutTypes::GetStride( type );
 			}
 
-			hr = pDevice->CreateInputLayout( pInputElements, numElements, pBlob->GetBufferPointer(), pBlob->GetBufferSize(), &m_pInputLayout );
+			hr = pDevice->CreateInputLayout( pInputElements, numElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &m_pInputLayout );
 		};
 
 		if( info.source_code.empty() )
@@ -182,19 +259,14 @@ namespace Fission::Platform {
 			std::wstring vsPath = info.name + L"VS.cso";
 			std::wstring psPath = info.name + L"PS.cso";
 
-			D3DReadFileToBlob( vsPath.c_str(), &pBlob );
-			pDevice->CreateVertexShader( pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &m_pVertexShader );
-
-			create_input_layout();
-
-			D3DReadFileToBlob( psPath.c_str(), &pBlob );
-			pDevice->CreatePixelShader( pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &m_pPixelShader );
+			D3DReadFileToBlob( vsPath.c_str(), &pVSBlob );
+			D3DReadFileToBlob( psPath.c_str(), &pPSBlob );
 		}
 		// compile from source code
 		else
 		{
 			UINT CompileFlags = 0u;
-#if defined(_DEBUG)
+#if defined(FISSION_DEBUG)
 			CompileFlags |= D3DCOMPILE_DEBUG;
 #else
 			CompileFlags |= D3DCOMPILE_OPTIMIZATION_LEVEL3;
@@ -211,16 +283,14 @@ namespace Fission::Platform {
 					"vs_main",
 					"vs_4_0",
 					CompileFlags, 0u,
-					&pBlob,
+					&pVSBlob,
 					&pErrorBlob 
 				)
 			) )
 			{
 				throw std::logic_error( (const char *)pErrorBlob->GetBufferPointer() );
 			}
-			pDevice->CreateVertexShader( pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &m_pVertexShader );
 
-			create_input_layout();
 
 			if( FAILED(
 				hr = D3DCompile(
@@ -232,20 +302,31 @@ namespace Fission::Platform {
 					"ps_main",
 					"ps_4_0",
 					CompileFlags, 0u,
-					&pBlob,
+					&pPSBlob,
 					&pErrorBlob 
 				)
 			) )
 			{
 				throw std::logic_error( (const char *)pErrorBlob->GetBufferPointer() );
 			}
-			hr = pDevice->CreatePixelShader( pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &m_pPixelShader );
-
 		}
+
+		// Create Shaders
+		hr = pDevice->CreateVertexShader( pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &m_pVertexShader );
+		hr = pDevice->CreatePixelShader( pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &m_pPixelShader );
+		create_input_layout();
+
+		// Create Constant Buffers
+		ReflectToConstantBuffers( &m_VertexCBuffers, pDevice, pContext, pVSBlob.Get() );
+		ReflectToConstantBuffers( &m_PixelCBuffers, pDevice, pContext, pPSBlob.Get() );
+
 	}
 
 	void ShaderDX11::Bind()
 	{
+		for( auto && b : m_PixelCBuffers ) b.Bind();
+		for( auto && b : m_VertexCBuffers ) b.Bind();
+
 		m_pContext->IASetInputLayout( m_pInputLayout.Get() );
 		m_pContext->VSSetShader( m_pVertexShader.Get(), nullptr, 0u );
 		m_pContext->PSSetShader( m_pPixelShader.Get(), nullptr, 0u );
@@ -254,6 +335,21 @@ namespace Fission::Platform {
 	void ShaderDX11::Unbind()
 	{
 	}
+	
+	bool ShaderDX11::SetVariable( const char * name, float val ) { return _Set<HLSLFloat>( name, val ); }
+	bool ShaderDX11::SetVariable( const char * name, vec2f val ) { return _Set<HLSLFloat2>( name, val ); }
+	bool ShaderDX11::SetVariable( const char * name, vec3f val ) { return _Set<HLSLFloat3>( name, val ); }
+	bool ShaderDX11::SetVariable( const char * name, vec4f val ) { return _Set<HLSLFloat4>( name, val ); }
+
+	bool ShaderDX11::SetVariable( const char * name, int val ) { return _Set<HLSLInt>( name, val ); }
+	bool ShaderDX11::SetVariable( const char * name, vec2i val ) { return _Set<HLSLInt2>( name, val ); }
+	bool ShaderDX11::SetVariable( const char * name, vec3i val ) { return _Set<HLSLInt3>( name, val ); }
+	bool ShaderDX11::SetVariable( const char * name, vec4i val ) { return _Set<HLSLInt4>( name, val ); }
+
+	bool ShaderDX11::SetVariable( const char * name, mat2x2f val ) { return _Set<HLSLFloat2x2>( name, val ); }
+	//bool ShaderDX11::SetVariable( const char * name, mat3x2f val ) { return _Set<HLSLMatrix>( name, val ); }
+	//bool ShaderDX11::SetVariable( const char * name, mat3x3f val ) { return _Set<HLSLMatrix>( name, val ); }
+	bool ShaderDX11::SetVariable( const char * name, mat4x4f val ) { return _Set<HLSLMatrix>( name, val ); }
 
 	DXGI_FORMAT ShaderDX11::get_format( Resource::VertexLayoutTypes::Type type )
 	{
@@ -278,43 +374,46 @@ namespace Fission::Platform {
 		return DXGI_FORMAT_UNKNOWN;
 	}
 
-	ConstantBufferDX11::ConstantBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info )
-		: m_pContext( pContext ), m_Type( info.type ), m_ByteSize( info.ByteSize ), m_Slot( info.slot )
+	ConstantBufferDX11::ConstantBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, uint32_t slot, uint32_t size )
+		: m_pContext( pContext ), m_ByteSize(size), m_BindSlot(slot), m_pData(std::make_unique<char[]>( size ))
 	{
 		D3D11_BUFFER_DESC bd = CD3D11_BUFFER_DESC{};
 		bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 		bd.Usage = D3D11_USAGE_DYNAMIC;
 		bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		bd.ByteWidth = std::max( info.ByteSize, 64u );
+		bd.ByteWidth = std::max( size, 64u );
 
 		pDevice->CreateBuffer( &bd, nullptr, &m_pBuffer );
 	}
 
+	PixelConstantBufferDX11::PixelConstantBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, uint32_t slot, uint32_t size )
+		: ConstantBufferDX11( pDevice, pContext, slot, size )
+	{}
+
+	VertexConstantBufferDX11::VertexConstantBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, uint32_t slot, uint32_t size )
+		: ConstantBufferDX11( pDevice, pContext, slot, size )
+	{}
+
+	void PixelConstantBufferDX11::Bind()
+	{
+		ConstantBufferDX11::Bind();
+		m_pContext->PSSetConstantBuffers( m_BindSlot, 1u, m_pBuffer.GetAddressOf() );
+	}
+
+	void VertexConstantBufferDX11::Bind()
+	{
+		ConstantBufferDX11::Bind();
+		m_pContext->VSSetConstantBuffers( m_BindSlot, 1u, m_pBuffer.GetAddressOf() );
+	}
+
 	void ConstantBufferDX11::Bind()
 	{
-		switch( m_Type )
-		{
-		case Type::Vertex:
-			m_pContext->VSSetConstantBuffers( m_Slot, 1u, m_pBuffer.GetAddressOf() );
-			break;
-		case Type::Pixel:
-			m_pContext->PSSetConstantBuffers( m_Slot, 1u, m_pBuffer.GetAddressOf() );
-			break;
-
-		default:break;
-		}
-	}
-
-	void ConstantBufferDX11::Unbind()
-	{
-	}
-
-	void ConstantBufferDX11::Update( void * pData )
-	{
+		if( !m_bDirty ) return;
 		D3D11_MAPPED_SUBRESOURCE msr = {};
 		m_pContext->Map( m_pBuffer.Get(), 0u, D3D11_MAP_WRITE_DISCARD, 0u, &msr );
-		memcpy( msr.pData, pData, m_ByteSize );
+		memcpy( msr.pData, m_pData.get(), m_ByteSize );
 		m_pContext->Unmap( m_pBuffer.Get(), 0u );
+		m_bDirty = false;
 	}
 
 	Texture2DDX11::Texture2DDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info )
