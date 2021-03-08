@@ -82,30 +82,34 @@ namespace Fission::Resource
 			VertexLayout * pVertexLayout;
 		};
 
-	//public:
-	//	void SetVariable( const char * name, float val ) {}
-	//	void SetVariable( const char * name, vec2f val ) {}
-	//	void SetVariable( const char * name, vec3f val ) {}
-	//	void SetVariable( const char * name, vec4f val ) {}
-	//	void SetVariable( const char * name, colorf val ) {}
-	//	void SetVariable( const char * name, int val ) {}
-	};
-
-	// todo: remove this and integrate into Shader
-	class ConstantBuffer : public IBindable
-	{
-	public:
-		enum class Type {
-			Vertex, Pixel,
+		// temp
+		using mat3x3f = struct {
+			float data[3*3];
+		};
+		using mat4x4f = struct {
+			float data[4*4];
 		};
 
-		struct CreateInfo {
-			Type type = Type::Vertex;
-			uint32_t ByteSize;
-			uint32_t slot = 0;
-		};
 	public:
-		virtual void Update( void * pData ) = 0;
+		virtual bool SetVariable( const char * name, float val ) = 0;
+		virtual bool SetVariable( const char * name, vec2f val ) = 0;
+		virtual bool SetVariable( const char * name, vec3f val ) = 0;
+		virtual bool SetVariable( const char * name, vec4f val ) = 0;
+
+		virtual bool SetVariable( const char * name, int val ) = 0;
+		virtual bool SetVariable( const char * name, vec2i val ) = 0;
+		virtual bool SetVariable( const char * name, vec3i val ) = 0;
+		virtual bool SetVariable( const char * name, vec4i val ) = 0;
+
+		virtual bool SetVariable( const char * name, mat2x2f val ) = 0;
+		virtual bool SetVariable( const char * name, mat3x2f val ) = 0;
+		virtual bool SetVariable( const char * name, mat3x3f val ) = 0;
+		virtual bool SetVariable( const char * name, mat4x4f val ) = 0;
+
+		virtual bool SetVariable( const char * name, float * pBegin, uint32_t count ) = 0;
+		virtual bool SetVariable( const char * name, int * pBegin, uint32_t count ) = 0;
+
+		inline bool SetVariable( const char * name, colorf val ) { return SetVariable( name, *(vec4f *)&val ); };
 	};
 
 	//class Topology : public Bindable
