@@ -218,7 +218,7 @@ namespace Fission::Platform {
             ec = (int)msg.wParam;
         }
         catch( ... ) {
-            MessageBoxA( NULL, "Summary: Don't Fucking throw exceptions from the event handler!!", "Exception Caught in Message Loop", MB_OK );
+            MessageBoxA( NULL, "Summary: Don't Fucking throw exceptions from the event handler!!", "Exception Caught in Message Loop!", MB_OK );
             ec = 0x45;
         }
 
@@ -505,45 +505,6 @@ namespace Fission::Platform {
                 if( ev.bUseCursor ) ev.cursor->Use();
                 //pWindow->m_Cursor = ev.cursor;
 
-                //HCURSOR hCurs3;             // cursor handle 
-                //BYTE ANDmaskCursor[] =
-                //{
-                //    0xFF, 0xFF,
-                //    0xFF, 0xFF,
-                //    0xFF, 0xFF,
-                //    0xFF, 0xFF,
-                //    0xFF, 0xFF,
-                //    0xFF, 0xFF,
-                //    0xFF, 0xFF,
-                //    0xFF, 0xFF,
-                //    0xFF, 0xFF,
-                //    0xFF, 0xFF,
-                //    0xFF, 0xFF,
-                //    0xFF, 0xFF,
-                //    0xFF, 0xFF,
-                //    0xFF, 0xFF,
-                //    0xFF, 0xFF,
-                //    0xFF, 0xFF,
-                //};
-                //BYTE XORmaskCursor[] =
-                //{
-                //    0xFF, 0xFF,
-                //    0x80, 0x01,
-                //    0x80, 0x01,
-                //    0x80, 0x01,
-                //    0x80, 0x01,
-                //    0x80, 0x01,
-                //    0x80, 0x01,
-                //    0x80, 0x01,
-                //    0x80, 0x01,
-                //    0x80, 0x01,
-                //    0x80, 0x01,
-                //    0x80, 0x01,
-                //    0x80, 0x01,
-                //    0x80, 0x01,
-                //    0x80, 0x01,
-                //    0xFF, 0xFF,
-                //};
                 //hCurs3 = CreateCursor( WindowClass::GetInstance(),   // app. instance 
                 //    8,                 // horizontal position of hot spot 
                 //    8,                 // vertical position of hot spot 
@@ -571,7 +532,12 @@ namespace Fission::Platform {
         }
         case WM_DESTROY:
             if( pWindow )
+            {
             PostQuitMessage( 0 );
+            extern bool MAIN_APPICATION_EXITING;
+            if( bool ( pWindow->m_Properties.flags & Window::Flags::IsMainWindow ) )
+                MAIN_APPICATION_EXITING = true;
+            }
            break;
 
         default:break;
@@ -637,6 +603,7 @@ namespace Fission::Platform {
         wc.hInstance = m_hInstance;
         wc.lpfnWndProc = WindowsWindow::BaseWindowsProc;
         wc.hbrBackground = (HBRUSH)GetStockObject( BLACK_BRUSH );
+        wc.hIcon = (HICON)LoadImageW( NULL, L"icon.ico", IMAGE_ICON, 0, 0, LR_LOADFROMFILE );
 
         RegisterClassW( &wc );
     }

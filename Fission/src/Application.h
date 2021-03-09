@@ -24,9 +24,11 @@ namespace Fission {
 		bool m_bRunning = false;
 		bool m_bMinimized = false;
 
-		std::condition_variable m_MinimizeCondition;
+		std::mutex m_PauseMutex;
+		std::condition_variable m_PauseCondition;
 
 		bool m_bRecreate = false;
+		bool m_bReadyToExit = false;
 
 		Platform::ExitCode m_ExitCode = 0;
 

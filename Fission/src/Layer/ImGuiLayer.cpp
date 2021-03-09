@@ -1,5 +1,6 @@
 #include "ImGuiLayer.h"
 #include "Fission/Core/Application.h"
+#include "Fission/Core/Input/Cursor.h"
 
 #if !defined(IMGUI_DISABLE)
 
@@ -11,6 +12,8 @@
 
 #include "Fission/Core/UI/UI.h"
 #include "Fission/Core/Console.h"
+
+extern bool MAIN_APPICATION_EXITING;
 
 namespace Fission {
 	ImGuiContext * GetImGuiContext()
@@ -43,7 +46,7 @@ static void SetImGuiColors()
 	style.WindowRounding = 2.0f;
 }
 
-void ImGuiLayer::OnCreate()
+ImGuiLayer::ImGuiLayer()
 {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -56,8 +59,17 @@ void ImGuiLayer::OnCreate()
 	SetImGuiColors();
 
 	//io.Fonts->AddFontFromMemoryTTF( (void *)JetBrainsMonoTTF::data, JetBrainsMonoTTF::size, 13.0f );
-	io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\Consola.ttf", 13.0f);
+	io.Fonts->AddFontFromFileTTF( "c:\\Windows\\Fonts\\Consola.ttf", 13.0f );
+}
 
+ImGuiLayer::~ImGuiLayer()
+{
+}
+
+void ImGuiLayer::OnCreate()
+{
+	std::scoped_lock lock( m_ExitMutex );
+	if( m_bExiting ) return;
 	auto win = GetApp()->GetWindow();
 	auto gfx = GetApp()->GetGraphics();
 
@@ -73,18 +85,20 @@ void ImGuiLayer::OnCreate()
 	ImGui::NewFrame();
 
 	ImGui::DockSpaceOverViewport( nullptr, ImGuiDockNodeFlags_NoDockingInCentralNode | ImGuiDockNodeFlags_PassthruCentralNode );
-
-	//ImGui::ShowDemoWindow();
+	m_bCreated = true;
 }
 
 static EventResult HandleEvent( Platform::Event * pEvent )
 {
 	extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam );
-	return !!ImGui_ImplWin32_WndProcHandler( pEvent->hWnd, pEvent->Msg, pEvent->wParam, pEvent->lParam ) ? EventResult::Handled : EventResult::Pass;
+	return ImGui_ImplWin32_WndProcHandler( pEvent->hWnd, pEvent->Msg, pEvent->wParam, pEvent->lParam ) ? EventResult::Handled : EventResult::Pass;
 }
+
+static ImGuiMouseCursor cursor = 0;
 
 void ImGuiLayer::OnUpdate()
 {
+	if( MAIN_APPICATION_EXITING ) return;
 	auto io = ImGui::GetIO();
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData( ImGui::GetDrawData() );
@@ -96,13 +110,13 @@ void ImGuiLayer::OnUpdate()
 		ImGui::RenderPlatformWindowsDefault();
 	}
 
+	cursor = ImGui::GetMouseCursor();
+
 	ImGui_ImplDX11_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
 
 	ImGui::DockSpaceOverViewport( nullptr, ImGuiDockNodeFlags_NoDockingInCentralNode | ImGuiDockNodeFlags_PassthruCentralNode );
-
-	//ImGui::ShowDemoWindow();
 }
 
 EventResult ImGuiLayer::OnKeyDown( KeyDownEventArgs & args )
@@ -143,8 +157,48 @@ EventResult ImGuiLayer::OnMouseLeave( MouseLeaveEventArgs & args )
 
 EventResult ImGuiLayer::OnSetCursor( SetCursorEventArgs & args )
 {
-	args.bUseCursor = false; // we set the cursor ourselves
-	return HandleEvent( args.native_event );
+	ImGuiIO & io = ImGui::GetIO();
+	if( io.ConfigFlags & ImGuiConfigFlags_NoMouseCursorChange )
+		return EventResult::Pass;
+
+	if( cursor == ImGuiMouseCursor_None || io.MouseDrawCursor )
+	{
+		// Hide OS mouse cursor if imgui is drawing it or if it wants no cursor
+		::SetCursor( NULL );
+		args.bUseCursor = false;
+	}
+	else
+	{
+		// Show OS mouse cursor
+		switch( cursor )
+		{
+		case ImGuiMouseCursor_Arrow:        args.cursor = Cursor::Get( Cursor::Default_Arrow ); break;
+		case ImGuiMouseCursor_TextInput:    args.cursor = Cursor::Get( Cursor::Default_TextInput ); break;
+		case ImGuiMouseCursor_ResizeAll:    args.cursor = Cursor::Get( Cursor::Default_Move ); break;
+		case ImGuiMouseCursor_ResizeEW:     args.cursor = Cursor::Get( Cursor::Default_SizeX ); break;
+		case ImGuiMouseCursor_ResizeNS:     args.cursor = Cursor::Get( Cursor::Default_SizeY ); break;
+		case ImGuiMouseCursor_ResizeNESW:   args.cursor = Cursor::Get( Cursor::Default_SizeBLTR ); break;
+		case ImGuiMouseCursor_ResizeNWSE:   args.cursor = Cursor::Get( Cursor::Default_SizeTLBR ); break;
+		case ImGuiMouseCursor_Hand:         args.cursor = Cursor::Get( Cursor::Default_Hand ); break;
+		case ImGuiMouseCursor_NotAllowed:   args.cursor = Cursor::Get( Cursor::Default_Wait ); break;
+		}
+	}
+	return EventResult::Handled;
+}
+
+EventResult ImGuiLayer::OnClose( CloseEventArgs & )
+{
+	std::scoped_lock lock( m_ExitMutex );
+	m_bExiting = true;
+	// destructors are broken as heck!
+	// it's ok though, the os will clean this up for us
+	if( m_bCreated )
+	{
+		//ImGui_ImplDX11_Shutdown();
+		//ImGui_ImplWin32_Shutdown();
+	}
+	//ImGui::DestroyContext();
+	return EventResult::Pass;
 }
 
 #endif // !IMGUI_DISABLE

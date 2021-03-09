@@ -13,8 +13,14 @@
 #include <Fission/Fission.h>
 #include <Fission/Core/SurfaceMap.h>
 #include <Fission/Core/UI/UI.h>
+#include <Fission/Core/Sound.h>
 #include "imgui.h"
 using namespace Fission;
+
+#define MOVE_UP_BIT 0b0001
+#define MOVE_DOWN_BIT 0b0010
+#define MOVE_LEFT_BIT 0b0100
+#define MOVE_RIGHT_BIT 0b1000
 
 class SandboxLayer : public ILayer 
 {
@@ -23,16 +29,38 @@ public:
 	{
 		map.Load( "assets/dino_atlas" );
 
-		if( map.get_metadata().is_table() )
-			action = map.get_metadata()["Action"].as_string();
-
+		action = "Walk";
 		first = map[action+" (1)"];
 
-		if( !first ) { 
-			Console::Error( L"That is not an action, setting action to \"Walk\"" ); 
-			if( !( first = map["Walk (1)"] ) ) exit( 1 );
-			action = "Walk";
+		soundengine = SoundEngine::Create();
+		sound = soundengine->CreateSound( "assets/sound.mp3" );
+	}
+
+	virtual EventResult OnKeyDown( KeyDownEventArgs & args ) override { 
+		if( !args.repeat )
+		switch( args.key )
+		{
+		case Keys::Up: moveFlags |= MOVE_UP_BIT; break;
+		case Keys::Down: moveFlags |= MOVE_DOWN_BIT; break;
+		case Keys::Left: moveFlags |= MOVE_LEFT_BIT; break;
+		case Keys::Right: moveFlags |= MOVE_RIGHT_BIT; break;
+		default:
+			break;
 		}
+		return FISSION_EVENT_HANDLED;
+	}
+
+	virtual EventResult OnKeyUp( KeyUpEventArgs & args ) override { 
+		switch( args.key )
+		{
+		case Keys::Up: moveFlags &=~ MOVE_UP_BIT; break;
+		case Keys::Down: moveFlags &=~ MOVE_DOWN_BIT; break;
+		case Keys::Left: moveFlags &=~ MOVE_LEFT_BIT; break;
+		case Keys::Right: moveFlags &=~ MOVE_RIGHT_BIT; break;
+		default:
+			break;
+		}
+		return FISSION_EVENT_HANDLED;
 	}
 
 	virtual void OnCreate() override
@@ -52,11 +80,17 @@ public:
 #ifndef IMGUI_DISABLE
 		ImGui::SetCurrentContext( Fission::GetImGuiContext() );
 #endif
+		source = soundengine->Play( sound.get(), 0 );
 
 		timer.reset();
 	}
 	virtual void OnUpdate() override
 	{
+		if( moveFlags & MOVE_UP_BIT ) off.y -= 1.0f;
+		if( moveFlags & MOVE_DOWN_BIT ) off.y += 1.0f;
+		if( moveFlags & MOVE_LEFT_BIT ) off.x -= 1.0f;
+		if( moveFlags & MOVE_RIGHT_BIT ) off.x += 1.0f;
+
 		if( timer.peeks() > 1.0f/(float)animationFR ) ++frame, timer.reset();
 
 		sub_surface::region_uv * region;
@@ -101,28 +135,44 @@ public:
 		}
 		ImGui::Checkbox( "Show Image Size", &show_hitbox );
 		static char buffer[1000] = {};
-		ImGui::InputTextMultiline( "Yes", buffer, 1000 );
+		ImGui::InputTextMultiline( "Text\nthing", buffer, 1000 );
+		float volume = soundengine->GetMasterVolume();
+		if( ImGui::SliderFloat( "Volume", &volume, 0.0f, 1.0f ) )
+			soundengine->SetMasterVolume( std::clamp( volume, 0.0f, 1.0f ) );
+		bool playing = source->GetPlaying();
+		if( ImGui::Button( playing ? "Pause" : "Play" ) )
+			source->SetPlaying( !playing );
+		bool vsync = GetApp()->GetGraphics()->GetVSync();
+		if( ImGui::Checkbox( "v-sync", &vsync ) )
+			GetApp()->GetGraphics()->SetVSync( vsync );
 		ImGui::End();
+		ImGui::ShowDemoWindow();
 #endif
-
-		r2d->DrawImage( tex.get(), rectf::from_center( res/2.0f, size ), region->rel );
+		auto sz = size;
+		if( moveFlags & MOVE_LEFT_BIT ) sz.x = -size.x;
+		r2d->DrawImage( tex.get(), rectf::from_center( res/2.0f+off, sz ), region->rel );
 
 #ifndef IMGUI_DISABLE
 		if( show_hitbox )
-			r2d->DrawRect( rectf::from_center( res/2.0f, size ), Colors::OrangeRed, 2.0f );
+			r2d->DrawRect( rectf::from_center( res/2.0f+off, size ), Colors::OrangeRed, 2.0f );
 #endif
 
 		r2d->Render();
 	}
 private:
+	ref<SoundEngine> soundengine;
+	ref<ISound> sound;
+	ref<ISoundSource> source;
 	surface_map map;
 	std::unique_ptr<Renderer2D> r2d;
 	std::unique_ptr<Resource::Texture2D> tex;
 	std::string action;
 	sub_surface * first;
 	simple_timer timer;
-	int frame = 0;
+	int frame = 1;
 	float animationFR = 12.3f;
+	vec2f off;
+	unsigned int moveFlags = 0;
 };
 
 class SandboxApp : public Application

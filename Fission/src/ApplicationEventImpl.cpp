@@ -8,18 +8,35 @@ namespace Fission {
 
 	EventResult Application::OnClose( CloseEventArgs & args )
 	{
+		if( m_State->m_bMinimized )
+		{
+			m_State->m_bMinimized = false;
+			m_State->m_PauseCondition.notify_one();
+		}
+
+		m_State->m_ExitCode = args.ExitCode;
+
+#ifndef IMGUI_DISABLE
+	{
+		std::unique_lock lock( m_State->m_PauseMutex );
+		m_State->m_bRunning = false;
+		m_State->m_PauseCondition.wait( lock, [this] { return m_State->m_bReadyToExit; } );
+
+		m_State->m_ImGuiLayer.OnClose( args );
+#else
+		m_State->m_bRunning = false;
+#endif
+
 		// notify layers that application will exit
 		for( auto && layer : m_State->m_vMainLayers )
 			layer->OnClose( args );
 
-		if( m_State->m_bMinimized )
-		{
-			m_State->m_bMinimized = false;
-			m_State->m_MinimizeCondition.notify_one();
-		}
+#ifndef IMGUI_DISABLE
+		m_State->m_bReadyToExit = false;
+	}
+		m_State->m_PauseCondition.notify_all();
+#endif
 
-		m_State->m_ExitCode = args.ExitCode;
-		m_State->m_bRunning = false;
 		return EventResult::Handled;
 	}
 
@@ -42,7 +59,7 @@ namespace Fission {
 		{
 			m_State->m_bMinimized = false;
 			// Notify Main thread to continue rendering frames
-			m_State->m_MinimizeCondition.notify_one();
+			m_State->m_PauseCondition.notify_one();
 		}
 		return EventResult::Handled;
 	}

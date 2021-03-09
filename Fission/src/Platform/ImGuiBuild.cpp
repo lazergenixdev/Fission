@@ -1,6 +1,8 @@
 #include "Fission/config.h"
 #include "Fission/Core/Application.h"
 
+bool MAIN_APPICATION_EXITING = false;
+
 #if !defined(IMGUI_DISABLE)
 #include "imgui.cpp"
 #include "imgui_demo.cpp"
@@ -76,6 +78,35 @@ void platform_set_window_focus( struct ImGuiViewport * vp )
 	app->GetWindow()->Call( fn );
 }
 
+ImVec2 platform_get_window_size( struct ImGuiViewport * vp )
+{
+	auto app = Fission::Application::Get();
+	ImVec2 ret;
+	auto fn = [&] {
+		ret = ImGui_ImplWin32_GetWindowSize( vp );
+	};
+	app->GetWindow()->Call( fn );
+	return ret;
+}
+
+void platform_set_window_size( struct ImGuiViewport * vp, ImVec2 sz )
+{
+	auto app = Fission::Application::Get();
+	auto fn = [&] {
+		ImGui_ImplWin32_SetWindowSize( vp, sz );
+	};
+	app->GetWindow()->Call( fn );
+}
+
+void platform_on_changed_viewport( struct ImGuiViewport * vp )
+{
+	auto app = Fission::Application::Get();
+	auto fn = [&] {
+		ImGui_ImplWin32_OnChangedViewport( vp );
+	};
+	app->GetWindow()->Call( fn );
+}
+
 // override platform functions to ensure consistancy with Fission::Window implementation
 void SetImGuiPlatformIO()
 {
@@ -85,6 +116,9 @@ void SetImGuiPlatformIO()
 	PlatformIO.Platform_UpdateWindow = platform_update_window;
 	PlatformIO.Platform_SetWindowFocus = platform_set_window_focus;
 	PlatformIO.Platform_GetWindowFocus = platform_get_window_focus;
+	PlatformIO.Platform_SetWindowSize = platform_set_window_size;
+	PlatformIO.Platform_GetWindowSize = platform_get_window_size;
+	PlatformIO.Platform_OnChangedViewport = platform_on_changed_viewport;
 }
 
 #endif

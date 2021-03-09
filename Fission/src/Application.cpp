@@ -77,6 +77,8 @@ Application::~Application() noexcept
 		delete layer;
 
 	Configuration::Save();
+
+	delete m_State;
 }
 
 void Application::PushLayer( const char * name, ILayer * layer )
@@ -121,7 +123,7 @@ create:
 		{
 			std::mutex mutex;
 			std::unique_lock lock( mutex );
-			m_State->m_MinimizeCondition.wait( lock );
+			m_State->m_PauseCondition.wait( lock );
 		}
 
 		m_State->m_pGraphics->BeginFrame();
@@ -143,6 +145,19 @@ create:
 		if( m_State->m_bRecreate )
 			goto create;
 	}
+
+#ifndef IMGUI_DISABLE
+	{
+		std::unique_lock lock( m_State->m_PauseMutex );
+		m_State->m_bReadyToExit = true;
+	}
+	m_State->m_PauseCondition.notify_all();
+
+	{
+		std::unique_lock lock( m_State->m_PauseMutex );
+		m_State->m_PauseCondition.wait( lock, [this] { return !m_State->m_bReadyToExit; } );
+	}
+#endif
 
 	return m_State->m_ExitCode;
 }

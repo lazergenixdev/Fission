@@ -36,7 +36,7 @@ public:
 
 	static bool IsSupported( API _GFX_API );
 
-	static scoped_ptr<Graphics> Create( Window * _Ptr_Window, const Properties & _Properties );
+	static scoped<Graphics> Create( Window * _Ptr_Window, const Properties & _Properties );
 
 
 /* ------------------------------------ Begin Base API Functions ----------------------------------- */
@@ -68,15 +68,15 @@ public:
 
 /* ------------------------------------ Begin Graphics Primitives ----------------------------------- */
 
-	virtual scoped_ptr<VertexBuffer> CreateVertexBuffer( const VertexBuffer::CreateInfo & info ) = 0;
+	virtual scoped<VertexBuffer> CreateVertexBuffer( const VertexBuffer::CreateInfo & info ) = 0;
 
-	virtual scoped_ptr<IndexBuffer> CreateIndexBuffer( const IndexBuffer::CreateInfo & info ) = 0;
+	virtual scoped<IndexBuffer> CreateIndexBuffer( const IndexBuffer::CreateInfo & info ) = 0;
 
-	virtual scoped_ptr<Shader> CreateShader( const Shader::CreateInfo & info ) = 0;
+	virtual scoped<Shader> CreateShader( const Shader::CreateInfo & info ) = 0;
 
-	virtual scoped_ptr<Texture2D> CreateTexture2D( const Texture2D::CreateInfo & info ) = 0;
+	virtual scoped<Texture2D> CreateTexture2D( const Texture2D::CreateInfo & info ) = 0;
 
-	virtual scoped_ptr<Blender> CreateBlender( const Blender::CreateInfo & info ) = 0;
+	virtual scoped<Blender> CreateBlender( const Blender::CreateInfo & info ) = 0;
 
 /* ------------------------------------ End Graphics Primitives ----------------------------------- */
 

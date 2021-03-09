@@ -180,24 +180,24 @@ namespace Fission::Platform {
 		m_pImmediateContext->DrawIndexed( indexCount, indexOffset, vertexOffset );
 	}
 
-	std::unique_ptr<Resource::VertexBuffer> GraphicsDirectX11::CreateVertexBuffer( const VertexBuffer::CreateInfo & info ) {
-		return std::make_unique<VertexBufferDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info );
+	scoped<Resource::VertexBuffer> GraphicsDirectX11::CreateVertexBuffer( const VertexBuffer::CreateInfo & info ) {
+		return CreateScoped<VertexBufferDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info );
 	}
 
-	std::unique_ptr<Resource::IndexBuffer> GraphicsDirectX11::CreateIndexBuffer( const IndexBuffer::CreateInfo & info ) {
-		return std::make_unique<IndexBufferDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info );
+	scoped<Resource::IndexBuffer> GraphicsDirectX11::CreateIndexBuffer( const IndexBuffer::CreateInfo & info ) {
+		return CreateScoped<IndexBufferDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info );
 	}
 
-	std::unique_ptr<Resource::Shader> GraphicsDirectX11::CreateShader( const Shader::CreateInfo & info ) {
-		return std::make_unique<ShaderDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info );
+	scoped<Resource::Shader> GraphicsDirectX11::CreateShader( const Shader::CreateInfo & info ) {
+		return CreateScoped<ShaderDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info );
 	}
 
-	std::unique_ptr<Resource::Texture2D> GraphicsDirectX11::CreateTexture2D( const Texture2D::CreateInfo & info ) {
-		return std::make_unique<Texture2DDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info );
+	scoped<Resource::Texture2D> GraphicsDirectX11::CreateTexture2D( const Texture2D::CreateInfo & info ) {
+		return CreateScoped<Texture2DDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info );
 	}
 
-	std::unique_ptr<Resource::Blender> GraphicsDirectX11::CreateBlender( const Blender::CreateInfo & info ) {
-		return std::make_unique<BlenderDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info );
+	scoped<Resource::Blender> GraphicsDirectX11::CreateBlender( const Blender::CreateInfo & info ) {
+		return CreateScoped<BlenderDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info );
 	}
 
 	bool GraphicsDirectX11::CheckSupport()

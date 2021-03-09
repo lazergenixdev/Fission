@@ -48,17 +48,17 @@ namespace Fission {
 	using namespace lazer;
 
 	template <typename T>
-	using shared_ptr = std::shared_ptr<T>;
+	using ref = std::shared_ptr<T>;
 	template <typename T>
-	using scoped_ptr = std::unique_ptr<T>;
+	using scoped = std::unique_ptr<T>;
 
 	template <typename T, typename...Args>
-	static constexpr shared_ptr<T> CreateShared( Args&&...args )
+	static constexpr ref<T> CreateRef( Args&&...args )
 	{
 		return std::make_shared<T>( std::forward<Args>( args ) ... );
 	}
 	template <typename T, typename...Args>
-	static constexpr scoped_ptr<T> CreateScoped( Args&&...args )
+	static constexpr scoped<T> CreateScoped( Args&&...args )
 	{
 		return std::make_unique<T>( std::forward<Args>( args ) ... );
 	}
