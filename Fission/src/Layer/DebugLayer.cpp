@@ -93,7 +93,7 @@ void DebugLayerImpl::OnUpdate() {
 
 		auto tl = m_pRenderer2D->CreateTextLayout( L"Fission v" FISSION_VERSION_STRING " - Debug Layer" );
 
-		m_pRenderer2D->FillRect( rectf( 0.0f, tl.width, 0.0f, 2.0f * diff ), color( Colors::Black, 0.5f ) );
+		m_pRenderer2D->FillRect( rectf( 0.0f, tl.width, 0.0f, 2.0f * diff ), color( Colors::Black, 0.7f ) );
 
 		m_pRenderer2D->DrawString( L"Fission v" FISSION_VERSION_STRING " - Debug Layer", { 0.0f, 0.0f }, Colors::White );
 
