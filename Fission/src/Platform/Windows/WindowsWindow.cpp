@@ -15,6 +15,8 @@
 // TODO: Fix Sizing of window when switching Window styles
 // TODO: Use raw input for keyboard and mouse
 
+WPARAM g_ImGuiWin32WheelData = 0;
+
 namespace Fission::Platform {
 
     static bool SetFullscreen( HWND hwnd, WindowsWindow * pwnd, bool fullscreen )
@@ -347,6 +349,7 @@ namespace Fission::Platform {
             KeyDownEventArgs downEvent{ &native_event };
             KeyUpEventArgs upEvent{ &native_event };
             pWindow->m_MouseWheelDelta += GET_WHEEL_DELTA_WPARAM( wParam );
+            g_ImGuiWin32WheelData = wParam;
             downEvent.key = upEvent.key = Keys::Mouse_WheelUp;
             while( pWindow->m_MouseWheelDelta >= WHEEL_DELTA ) {
                 pWindow->pEventHandler->OnKeyDown( downEvent );

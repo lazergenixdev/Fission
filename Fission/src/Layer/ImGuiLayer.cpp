@@ -24,26 +24,36 @@ namespace Fission {
 
 using namespace Fission;
 
-std::mutex mutex;
-std::vector<wchar_t> character_buffer;
+extern WPARAM g_ImGuiWin32WheelData;
 
 extern void SetImGuiPlatformIO();
 
-//namespace JetBrainsMonoTTF {
-//#include "Static Fonts/JetBrainsMono-Regular.inl"
-//}
+namespace Nunito {
+#include "Static Fonts/Nunito-SemiBold.inl"
+}
 
-static void SetImGuiColors()
+static void SetImGuiStyle()
 {
 	auto & style = ImGui::GetStyle();
 
 	ImVec4 * colors = style.Colors;
 	colors[ImGuiCol_WindowBg] = ImVec4( 0.00f, 0.00f, 0.00f, 0.94f );
-	colors[ImGuiCol_Border] = ImVec4( 1.00f, 1.00f, 1.00f, 0.14f );
 	colors[ImGuiCol_FrameBg] = ImVec4( 0.34f, 0.34f, 0.34f, 0.14f );
+	colors[ImGuiCol_FrameBgHovered] = ImVec4( 0.34f, 0.34f, 0.34f, 0.50f );
+	colors[ImGuiCol_Border] = ImVec4( 1.00f, 1.00f, 1.00f, 0.06f );
+	colors[ImGuiCol_SliderGrab] = ImVec4( 0.99f, 0.99f, 0.99f, 0.11f );
+	colors[ImGuiCol_NavHighlight] = ImVec4( 0.36f, 0.98f, 0.26f, 1.00f );
 
-	style.FrameRounding = 2.0f;
-	style.WindowRounding = 2.0f;
+	style.FrameBorderSize = 1.0f;
+	style.FramePadding = { 5.0f, 0.0f };
+	style.FrameRounding = 6.0f;
+	style.WindowRounding = 6.0f;
+	style.WindowTitleAlign = { 0.5f, 0.5f };
+	style.PopupRounding = 4.0f;
+	style.TabRounding = 0.0f;
+	style.TabBorderSize = 2.0f;
+	style.GrabRounding = 4.0f;
+	style.GrabMinSize = 10.0f;
 }
 
 ImGuiLayer::ImGuiLayer()
@@ -56,10 +66,9 @@ ImGuiLayer::ImGuiLayer()
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
 	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
 	io.IniFilename = "etc/imgui.ini"; // "etc/" is guaranteed to exist
-	SetImGuiColors();
+	SetImGuiStyle();
 
-	//io.Fonts->AddFontFromMemoryTTF( (void *)JetBrainsMonoTTF::data, JetBrainsMonoTTF::size, 13.0f );
-	io.Fonts->AddFontFromFileTTF( "c:\\Windows\\Fonts\\Consola.ttf", 13.0f );
+	io.Fonts->AddFontFromMemoryTTF( (void *)Nunito::data, Nunito::size, 18.0f );
 }
 
 ImGuiLayer::~ImGuiLayer()
@@ -88,9 +97,9 @@ void ImGuiLayer::OnCreate()
 	m_bCreated = true;
 }
 
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam );
 static EventResult HandleEvent( Platform::Event * pEvent )
 {
-	extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam );
 	return ImGui_ImplWin32_WndProcHandler( pEvent->hWnd, pEvent->Msg, pEvent->wParam, pEvent->lParam ) ? EventResult::Handled : EventResult::Pass;
 }
 
@@ -99,6 +108,7 @@ static ImGuiMouseCursor cursor = 0;
 void ImGuiLayer::OnUpdate()
 {
 	if( MAIN_APPICATION_EXITING ) return;
+
 	auto io = ImGui::GetIO();
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData( ImGui::GetDrawData() );
@@ -110,7 +120,14 @@ void ImGuiLayer::OnUpdate()
 		ImGui::RenderPlatformWindowsDefault();
 	}
 
-	cursor = ImGui::GetMouseCursor();
+	{
+		cursor = ImGui::GetMouseCursor();
+		if( g_ImGuiWin32WheelData )
+		{
+			ImGui_ImplWin32_WndProcHandler( NULL, WM_MOUSEWHEEL, g_ImGuiWin32WheelData, 0 );
+			g_ImGuiWin32WheelData = 0;
+		}
+	}
 
 	ImGui_ImplDX11_NewFrame();
 	ImGui_ImplWin32_NewFrame();
@@ -121,6 +138,15 @@ void ImGuiLayer::OnUpdate()
 
 EventResult ImGuiLayer::OnKeyDown( KeyDownEventArgs & args )
 {
+	switch( args.key )
+	{
+	case Keys::Mouse_WheelUp:
+		return EventResult::Handled;
+	case Keys::Mouse_WheelDown:
+		return EventResult::Handled;
+	default:
+		break;
+	}
 	HandleEvent( args.native_event );
 	if( ImGui::GetIO().WantCaptureKeyboard && Keys::is_keyboard( args.key ) ) return EventResult::Handled;
 	if( ImGui::GetIO().WantCaptureMouse && Keys::is_mouse( args.key ) ) return EventResult::Handled;
@@ -129,6 +155,13 @@ EventResult ImGuiLayer::OnKeyDown( KeyDownEventArgs & args )
 
 EventResult ImGuiLayer::OnKeyUp( KeyUpEventArgs & args )
 {
+	switch( args.key )
+	{
+	case Keys::Mouse_WheelUp:return EventResult::Handled;
+	case Keys::Mouse_WheelDown:return EventResult::Handled;
+	default:
+		break;
+	}
 	return HandleEvent( args.native_event );
 }
 
