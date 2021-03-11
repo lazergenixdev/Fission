@@ -21,21 +21,20 @@ To make a Visual Studio Solution run `GenWindowsProj.bat` in the `scripts` direc
 - Included 2D renderer with support for fonts
 - Runtime Texture Atlas creation utility
 - ImGui integration for debugging
+- Basic Sound support (mp3,wav,...)
 
 ## Short-Term Goals
 - OpenGL support
 - (not buggy) Fullscreen functionality + monitor picking
-- Sound (mp3,wav,ogg)
 - Application Icon/Cursor loading from Memory or File
-- UI System
 - Complete 2D renderer
+- UI System
 
 ## Long-Term Goals
 ### Platform support for:
 - Mac
 - IOS
 - Andriod
-- Linux ?
 ### Native Rendering APIs:
 - DirectX 11 and 12
 - Vulkan
