@@ -33,7 +33,7 @@ namespace Fission::Platform
 
 	private:
 		IXAudio2SourceVoice * m_pVoice;
-		bool m_bPlaying = true;
+		bool m_bPlaying;
 	};
 
 	struct SoundEngineXAudio2 : public SoundEngine

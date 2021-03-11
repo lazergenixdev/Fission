@@ -23,24 +23,26 @@ namespace Fission::Platform {
 
 SoundEngineXAudio2::SoundEngineXAudio2( const CreateInfo & info )
 {
-	HRESULT hr = XAudio2Create( &m_pXAudio2Engine, 0, XAUDIO2_ANY_PROCESSOR );
+	HRESULT hr;
+	// todo: better error handling
 
-	if( FAILED( hr ) ) 
+	if( FAILED( hr = XAudio2Create( &m_pXAudio2Engine, 0, XAUDIO2_ANY_PROCESSOR ) ) )
 		throw exception( "XAudio2 Exception", _lazer_exception_msg.append( "Failed to Initialize Sound Engine." ) );
 
-	hr = m_pXAudio2Engine->CreateMasteringVoice( &m_pMaster );
-
-	if( FAILED( hr ) )
+	if( FAILED( hr = m_pXAudio2Engine->CreateMasteringVoice( &m_pMaster ) ) )
 		throw exception( "XAudio2 Exception", _lazer_exception_msg.append( "Failed to Create Mastering Voice." ) );
 
 	m_vpSubmixVoices.resize( info.nOutputs );
 	for( auto && submix : m_vpSubmixVoices )
 	{
-		hr = m_pXAudio2Engine->CreateSubmixVoice( &submix, 2, 44100 );
-	if( FAILED( hr ) )
-		throw exception( "XAudio2 Exception", _lazer_exception_msg.append( "Failed to Create Submix Voice." ) );
+		if( FAILED( hr = m_pXAudio2Engine->CreateSubmixVoice( &submix, 2, 44100 ) ) )
+			throw exception( "XAudio2 Exception", _lazer_exception_msg.append( "Failed to Create Submix Voice." ) );
 	}
-	m_pXAudio2Engine->StartEngine();
+
+	if( FAILED(hr = m_pXAudio2Engine->StartEngine() ) )
+		throw exception( "XAudio2 Exception", _lazer_exception_msg.append( "Failed to start audio processing thread." ) );
+
+	Console::WriteLine( Colors::Blanchedalmond, L"Using XAudio2" );
 }
 
 ref<Fission::ISound> SoundEngineXAudio2::CreateSound( const file::path & filepath )
@@ -83,7 +85,9 @@ float SoundEngineXAudio2::GetMasterVolume()
 
 SoundEngineXAudio2::~SoundEngineXAudio2()
 {
+	if( m_pXAudio2Engine )
 	m_pXAudio2Engine->StopEngine();
+	if( m_pMaster )
 	m_pMaster->DestroyVoice();
 }
 
@@ -94,6 +98,7 @@ bool SoundXAudio2::empty()
 
 uint32_t SoundXAudio2::length()
 {
+	if( m_Sound.m_samples.empty() ) return 0u;
 	uint64_t nBitsPSample = m_Sound.m_format.wBitsPerSample;
 	uint64_t nBytes = m_Sound.m_samples.size();
 	uint64_t nTotalSamplesPSec = (uint64_t)m_Sound.m_format.nSamplesPerSec * (uint64_t)m_Sound.m_format.nChannels;
@@ -101,7 +106,9 @@ uint32_t SoundXAudio2::length()
 }
 
 SoundSourceXAudio2::SoundSourceXAudio2( SoundXAudio2 * sound, IXAudio2 * engine, IXAudio2SubmixVoice * pOutput )
+	: m_bPlaying(false), m_pVoice(nullptr)
 {
+	if( sound->empty() ) return;
 	XAUDIO2_SEND_DESCRIPTOR Send = { 0, pOutput };
 	XAUDIO2_VOICE_SENDS SendList = { 1, &Send };
 
@@ -120,7 +127,7 @@ SoundSourceXAudio2::SoundSourceXAudio2( SoundXAudio2 * sound, IXAudio2 * engine,
 
 void SoundSourceXAudio2::SetPlaying( bool playing )
 {
-	if( m_bPlaying == playing ) return;
+	if( !m_pVoice || m_bPlaying == playing ) return;
 	m_bPlaying = playing;
 	if( m_bPlaying )
 	{
@@ -139,6 +146,7 @@ bool SoundSourceXAudio2::GetPlaying()
 
 SoundSourceXAudio2::~SoundSourceXAudio2()
 {
+	if( m_pVoice )
 	m_pVoice->DestroyVoice();
 }
 
@@ -167,7 +175,7 @@ LoadSoundResult LoadSoundDataFromFile( const file::path & filepath, SoundData * 
 
 	if( FAILED( hr ) )
 	{
-		DEBUG_WPRINT( L"\nCould not open [%s]\n", filepath.c_str() );
+		Console::Warning( L"Could not load [%s] as a sound!", filepath.c_str() );
 		return LoadSoundResult::Failure;
 	}
 	else DEBUG_WPRINT( L"\nBegin read [%s]\n", filepath.c_str() );
