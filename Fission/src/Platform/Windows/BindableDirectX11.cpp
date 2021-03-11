@@ -6,6 +6,7 @@
 
 namespace Fission::Platform {
 
+	// glorious meta-programming
 #define DEFINE_HLSL_TYPE(N,T,HT,HC,C,R) \
 	struct N { \
         using type = T; \
@@ -26,7 +27,10 @@ namespace Fission::Platform {
 	DEFINE_HLSL_TYPE( HLSLInt4, vec4i, D3D_SVT_INT, D3D_SVC_VECTOR, 4, 1 );
 
 	using mat4x4f = Resource::Shader::mat4x4f; // todo: remove this
+	using mat3x3f = Resource::Shader::mat3x3f; // todo: remove this
 	DEFINE_HLSL_TYPE( HLSLFloat2x2, mat2x2f, D3D_SVT_FLOAT, D3D_SVC_MATRIX_COLUMNS, 2, 2 );
+	DEFINE_HLSL_TYPE( HLSLFloat3x2, mat3x2f, D3D_SVT_FLOAT, D3D_SVC_MATRIX_COLUMNS, 3, 2 );
+	DEFINE_HLSL_TYPE( HLSLFloat3x3, mat3x3f, D3D_SVT_FLOAT, D3D_SVC_MATRIX_COLUMNS, 3, 3 );
 	DEFINE_HLSL_TYPE( HLSLMatrix, mat4x4f, D3D_SVT_FLOAT, D3D_SVC_MATRIX_COLUMNS, 4, 4 );
 
 #undef DEFINE_HLSL_TYPE
@@ -78,8 +82,7 @@ namespace Fission::Platform {
 
 	void VertexBufferDX11::SetData( const void * pVertexData, uint32_t vtxCount )
 	{
-		if( m_Type != Type::Dynamic )
-			throw std::logic_error( "Cannot edit an vertex buffer that is static." );
+		FISSION_ASSERT( m_Type == Type::Dynamic );
 
 		if( vtxCount == 0 ) return;
 
@@ -156,8 +159,7 @@ namespace Fission::Platform {
 
 	void IndexBufferDX11::SetData( const void * pIndexData, uint32_t idxCount )
 	{
-		if( m_Type != Type::Dynamic )
-			throw std::logic_error("Cannot edit an index buffer that is static.");
+		FISSION_ASSERT( m_Type == Type::Dynamic );
 
 		if( idxCount == 0 ) return;
 
@@ -184,23 +186,29 @@ namespace Fission::Platform {
 		HRESULT hr;
 
 		com_ptr<ID3D11ShaderReflection> pShaderReflection;
+		// this function SHOULD never fail, since we only pass shaders we create
 		hr = D3DReflect( pBlob->GetBufferPointer(), pBlob->GetBufferSize(), __uuidof( ID3D11ShaderReflection ), &pShaderReflection );
 
 		D3D11_SHADER_DESC shader_desc;
 		pShaderReflection->GetDesc( &shader_desc );
+
+		// Search through all buffer to find any constant buffers
 		for( int i = 0; i < (int)shader_desc.BoundResources; ++i )
 		{
 			D3D11_SHADER_INPUT_BIND_DESC bind_desc;
 			pShaderReflection->GetResourceBindingDesc( i, &bind_desc );
-			if( bind_desc.Type != D3D_SIT_CBUFFER ) continue;
+			if( bind_desc.Type != D3D_SIT_CBUFFER ) continue; // continue to next bound resource if not constant buffer
 
-			auto pConstantBuffer = pShaderReflection->GetConstantBufferByName( bind_desc.Name );
-
+			// Get constant buffer description
 			D3D11_SHADER_BUFFER_DESC desc;
+			auto pConstantBuffer = pShaderReflection->GetConstantBufferByName( bind_desc.Name );
 			pConstantBuffer->GetDesc( &desc );
+
+			// Add constant buffer to our own list of buffers
 			pBuffers->emplace_back( pDevice, pContext, bind_desc.BindPoint, desc.Size );
 			auto & cb = pBuffers->back();
 
+			// search through all variables held in the buffer to add to our own buffer
 			for( int i = 0; i < (int)desc.Variables; ++i )
 			{
 				D3D11_SHADER_VARIABLE_DESC vdesc;
@@ -210,6 +218,7 @@ namespace Fission::Platform {
 				pVar->GetDesc( &vdesc );
 				pType->GetDesc( &tdesc );
 
+				// Add variable to our constant buffer
 				ConstantBufferDX11::Variable var;
 				var.m_class = tdesc.Class;
 				var.m_type = tdesc.Type;
@@ -259,8 +268,22 @@ namespace Fission::Platform {
 			std::wstring vsPath = info.name + L"VS.cso";
 			std::wstring psPath = info.name + L"PS.cso";
 
-			D3DReadFileToBlob( vsPath.c_str(), &pVSBlob );
-			D3DReadFileToBlob( psPath.c_str(), &pPSBlob );
+			using namespace std::string_literals;
+
+			if( FAILED( hr = D3DReadFileToBlob( vsPath.c_str(), &pVSBlob ) ) )
+				throw exception( 
+					"DirectX11 Shader Exception", 
+					_lazer_exception_msg
+					.append( "Failed to Load Shader into memory." )
+					.append( "File", "["s + wstring_to_utf8( vsPath ) + "]"s ) 
+				);
+			if( FAILED( hr = D3DReadFileToBlob( psPath.c_str(), &pPSBlob ) ) )
+				throw exception(
+					"DirectX11 Shader Exception",
+					_lazer_exception_msg
+					.append( "Failed to Load Shader into memory." )
+					.append( "File", "["s + wstring_to_utf8( psPath ) + "]"s )
+				);
 		}
 		// compile from source code
 		else
@@ -312,6 +335,7 @@ namespace Fission::Platform {
 		}
 
 		// Create Shaders
+		// todo: check for errors!
 		hr = pDevice->CreateVertexShader( pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &m_pVertexShader );
 		hr = pDevice->CreatePixelShader( pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &m_pPixelShader );
 		create_input_layout();
@@ -347,8 +371,8 @@ namespace Fission::Platform {
 	bool ShaderDX11::SetVariable( const char * name, vec4i val ) { return _Set<HLSLInt4>( name, val ); }
 
 	bool ShaderDX11::SetVariable( const char * name, mat2x2f val ) { return _Set<HLSLFloat2x2>( name, val ); }
-	//bool ShaderDX11::SetVariable( const char * name, mat3x2f val ) { return _Set<HLSLMatrix>( name, val ); }
-	//bool ShaderDX11::SetVariable( const char * name, mat3x3f val ) { return _Set<HLSLMatrix>( name, val ); }
+	bool ShaderDX11::SetVariable( const char * name, mat3x2f val ) { return _Set<HLSLFloat3x2>( name, val ); }
+	bool ShaderDX11::SetVariable( const char * name, mat3x3f val ) { return _Set<HLSLFloat3x3>( name, val ); }
 	bool ShaderDX11::SetVariable( const char * name, mat4x4f val ) { return _Set<HLSLMatrix>( name, val ); }
 
 	DXGI_FORMAT ShaderDX11::get_format( Resource::VertexLayoutTypes::Type type )

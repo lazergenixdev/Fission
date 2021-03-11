@@ -139,13 +139,13 @@ namespace Fission::Platform {
 		virtual bool SetVariable( const char * name, vec4i val ) override;
 
 		virtual bool SetVariable( const char * name, mat2x2f val ) override;
-		virtual bool SetVariable( const char * name, mat3x2f val ) {return false;}
-		virtual bool SetVariable( const char * name, mat3x3f val ) {return false;}
+		virtual bool SetVariable( const char * name, mat3x2f val ) override;
+		virtual bool SetVariable( const char * name, mat3x3f val ) override;
 		virtual bool SetVariable( const char * name, mat4x4f val ) override;
 
 	private:
 		template <typename T>
-		bool _Set( const char * name, const typename T::type & val )
+		inline bool _Set( const char * name, const typename T::type & val )
 		{
 			for( auto && cb : m_VertexCBuffers )
 				if( cb.Set<T>( name, val ) ) return true;
