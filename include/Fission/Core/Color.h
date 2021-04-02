@@ -167,6 +167,18 @@ namespace Fission
 	} // namespace Fission::Colors
 
 
+
+	//template <int _BitDepth>
+	//struct color
+	//{
+	//	static constexpr int bit_depth = _BitDepth;
+
+
+	//};
+	//static void f() {
+	//	color<8> nice;
+	//}
+
 	struct colorf_hsv { 
 		float h, s, v, a; 
 

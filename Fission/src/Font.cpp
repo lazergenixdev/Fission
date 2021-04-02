@@ -126,9 +126,9 @@ namespace Fission {
 		font.height = float( face->size->metrics.height >> 6 );
 
 		Surface::CreateInfo surf_info;
-		surf_info.Width = 1024;
-		surf_info.Height = 256;
-		surf_info.FillColor = coloru( 0, 0, 0, 0 );
+		surf_info.width = 1024;
+		surf_info.height = 256;
+		surf_info.fillColor = coloru( 0, 0, 0, 0 );
 		auto pSurface = Surface::Create( surf_info );
 
 		Node root;

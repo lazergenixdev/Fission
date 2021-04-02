@@ -54,9 +54,12 @@ ref<Fission::ISound> SoundEngineXAudio2::CreateSound( const file::path & filepat
 
 ref<ISoundSource> SoundEngineXAudio2::Play( ISound * _Sound, Sound::OutputID _Output, bool _Play_Looped, bool _Start_Playing, bool _Track )
 {
-	auto sound = static_cast<SoundXAudio2 *>( _Sound );
-
-	return CreateRef<SoundSourceXAudio2>( sound, m_pXAudio2Engine.Get(), m_vpSubmixVoices[_Output] );
+	SoundSourceXAudio2::CreateInfo info = {};
+	info.bIsLooped = _Play_Looped;
+	info.bStartPlaying = _Start_Playing;
+	info.bTrack = _Track;
+	info.sound = static_cast<SoundXAudio2 *>( _Sound );
+	return CreateRef<SoundSourceXAudio2>( m_pXAudio2Engine.Get(), m_vpSubmixVoices[_Output], info );
 }
 
 void SoundEngineXAudio2::SetVolume( Sound::OutputID _Output, float _Volume )
@@ -105,37 +108,24 @@ uint32_t SoundXAudio2::length()
 	return uint32_t( 8000u * ( nBytes / nBitsPSample ) / nTotalSamplesPSec );
 }
 
-SoundSourceXAudio2::SoundSourceXAudio2( SoundXAudio2 * sound, IXAudio2 * engine, IXAudio2SubmixVoice * pOutput )
-	: m_bPlaying(false), m_pVoice(nullptr)
+void SoundSourceXAudio2::SetPlaying( bool play )
 {
-	if( sound->empty() ) return;
-	XAUDIO2_SEND_DESCRIPTOR Send = { 0, pOutput };
-	XAUDIO2_VOICE_SENDS SendList = { 1, &Send };
-
-	engine->CreateSourceVoice( &m_pVoice, &sound->m_Sound.m_format,
-		0, XAUDIO2_DEFAULT_FREQ_RATIO, nullptr, &SendList );
-
-	XAUDIO2_BUFFER xaBuffer = {};
-	xaBuffer.pAudioData = sound->m_Sound.m_samples.data();
-	xaBuffer.AudioBytes = (uint32_t)sound->m_Sound.m_samples.size();
-	xaBuffer.LoopCount = XAUDIO2_LOOP_INFINITE;
-
-	m_pVoice->SubmitSourceBuffer( &xaBuffer );
-
-	m_pVoice->Start();
-}
-
-void SoundSourceXAudio2::SetPlaying( bool playing )
-{
-	if( !m_pVoice || m_bPlaying == playing ) return;
-	m_bPlaying = playing;
-	if( m_bPlaying )
+	HRESULT hr;
+	if( play && !m_bPlaying )
 	{
-		m_pVoice->Start();
+		if( !m_bIsConsuming )
+		{
+			hr = m_pVoice->SubmitSourceBuffer( &m_XAudioBuffer );
+			m_bIsConsuming = true;
+		}
+		m_bPlaying = true;
+		SetPosition( GetPosition() );
+		//hr = m_pVoice->Start();
 	}
-	else
+	else if( m_bPlaying )
 	{
-		m_pVoice->Stop();
+		hr = m_pVoice->Stop();
+		m_bPlaying = false;
 	}
 }
 
@@ -144,10 +134,100 @@ bool SoundSourceXAudio2::GetPlaying()
 	return m_bPlaying;
 }
 
+void SoundSourceXAudio2::ChannelCallback::OnBufferStart( void * pBufferContext )
+{
+	//Console::Message( L"XAudio2::OnBufferStart" );
+	auto pSource = reinterpret_cast<SoundSourceXAudio2 *>( pBufferContext );
+	pSource->m_bPlaying = true;
+	pSource->m_bIsConsuming = true;
+}
+
+void SoundSourceXAudio2::ChannelCallback::OnBufferEnd( void * pBufferContext )
+{
+	//Console::Message( L"XAudio2::OnBufferEnd" );
+	auto pSource = reinterpret_cast<SoundSourceXAudio2 *>( pBufferContext );
+	pSource->m_bPlaying = false;
+	pSource->m_bIsConsuming = false;
+}
+
+SoundSourceXAudio2::SoundSourceXAudio2( IXAudio2 * engine, IXAudio2SubmixVoice * pOutput, const CreateInfo & info )
+	: m_bPlaying( false ), m_bIsConsuming( false ), m_pVoice( nullptr ), m_pSound( info.sound ), m_XAudioBuffer()
+{
+	if( m_pSound->empty() ) return;
+	XAUDIO2_SEND_DESCRIPTOR Send = { 0, pOutput };
+	XAUDIO2_VOICE_SENDS SendList = { 1, &Send };
+
+	static ChannelCallback callback;
+
+	engine->CreateSourceVoice( &m_pVoice, &m_pSound->m_Sound.m_format,
+		0, XAUDIO2_DEFAULT_FREQ_RATIO, &callback, &SendList );
+
+	m_XAudioBuffer.pContext = this;
+	m_XAudioBuffer.pAudioData = m_pSound->m_Sound.m_samples.data();
+	m_XAudioBuffer.AudioBytes = (uint32_t)m_pSound->m_Sound.m_samples.size();
+	//m_XAudioBuffer.LoopCount = ( info.bIsLooped ? XAUDIO2_LOOP_INFINITE : 0u );
+
+	m_pVoice->SubmitSourceBuffer( &m_XAudioBuffer );
+	m_bIsConsuming = true;
+
+	//if( info.bStartPlaying )
+	//{
+		m_pVoice->Start();
+		m_bPlaying = true;
+	//}
+}
+
 SoundSourceXAudio2::~SoundSourceXAudio2()
 {
 	if( m_pVoice )
 	m_pVoice->DestroyVoice();
+}
+
+void SoundSourceXAudio2::SetPlaybackSpeed( float speed )
+{
+	HRESULT hr;
+	hr = m_pVoice->SetFrequencyRatio( speed );
+#if FISSION_DEBUG
+	if( FAILED( hr ) ) throw std::runtime_error( "Failed to set Frequency Ratio" );
+#endif
+}
+
+float SoundSourceXAudio2::GetPlaybackSpeed()
+{
+	float ratio;
+	m_pVoice->GetFrequencyRatio( &ratio );
+	return ratio;
+}
+
+void SoundSourceXAudio2::SetPosition( uint32_t position )
+{
+	if( m_bPlaying )
+	{
+		m_pVoice->Stop();
+		m_pVoice->FlushSourceBuffers();
+		XAUDIO2_VOICE_STATE vs;
+		m_pVoice->GetState( &vs );
+		m_XAudioBuffer.PlayBegin = ( (uint64_t)position * (uint64_t)m_pSound->m_Sound.m_format.nSamplesPerSec ) / 1000u;
+		nSampleOffset = vs.SamplesPlayed - m_XAudioBuffer.PlayBegin;
+		m_pVoice->SubmitSourceBuffer( &m_XAudioBuffer );
+		m_pVoice->Start();
+	}
+	else
+	{
+		XAUDIO2_VOICE_STATE vs;
+		m_pVoice->GetState( &vs );
+		m_XAudioBuffer.PlayBegin = ( (uint64_t)position * (uint64_t)m_pSound->m_Sound.m_format.nSamplesPerSec ) / 1000u;
+		nSampleOffset = vs.SamplesPlayed - m_XAudioBuffer.PlayBegin;
+		m_pVoice->FlushSourceBuffers();
+	}
+}
+
+uint32_t SoundSourceXAudio2::GetPosition()
+{
+	XAUDIO2_VOICE_STATE vs;
+	m_pVoice->GetState( &vs );
+	if( m_pSound->m_Sound.m_format.nSamplesPerSec == 0 ) return 0;
+	return (uint32_t)( ( 1000u * ( vs.SamplesPlayed - nSampleOffset ) ) / m_pSound->m_Sound.m_format.nSamplesPerSec );
 }
 
 

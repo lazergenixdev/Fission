@@ -1,7 +1,38 @@
+/**
+*
+* @file: SurfaceMap.h
+* @author: lazergenixdev@gmail.com
+*
+*
+* This file is provided under the MIT License:
+*
+* Copyright (c) 2021 Lazergenix Software
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+*
+*/
+
 #pragma once
 #include "Fission/config.h"
-
 #include "Surface.h"
+
+// todo: documentation
 
 namespace Fission {
 
@@ -58,12 +89,12 @@ namespace Fission {
         FISSION_API bool as_boolean() const;
 
         // helpers
-        inline bool is_number() const { return ( m_Type == number || m_Type == integer ); }
-        inline bool is_integer() const { return ( m_Type == number || m_Type == integer ); }
-        inline bool is_boolean() const { return ( m_Type == boolean || m_Type == integer ); }
-        inline bool is_string() const { return ( m_Type == string ); }
-        inline bool is_table() const { return ( m_Type == table ); }
-        inline bool is_array() const { return ( m_Type == array ); }
+        inline bool is_number() const { return ( m_Type == value_t::number || m_Type == value_t::integer ); }
+        inline bool is_integer() const { return ( m_Type == value_t::number || m_Type == value_t::integer ); }
+        inline bool is_boolean() const { return ( m_Type == value_t::boolean || m_Type == value_t::integer ); }
+        inline bool is_string() const { return ( m_Type == value_t::string ); }
+        inline bool is_table() const { return ( m_Type == value_t::table ); }
+        inline bool is_array() const { return ( m_Type == value_t::array ); }
         inline bool is_empty() const { return ( m_Type == value_t::empty ); }
 
     private:

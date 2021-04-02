@@ -5,7 +5,7 @@
 namespace Fission {
 
 	std::unique_ptr<Surface> Surface::Create( const CreateInfo & info ) {
-		switch( info.Format )
+		switch( info.format )
 		{
 		case Texture::Format_RGBA8_UNORM:
 			return std::make_unique<SurfaceRGBA8_UNormImpl>( info );
@@ -15,72 +15,73 @@ namespace Fission {
 
 	SurfaceRGBA8_UNormImpl::SurfaceRGBA8_UNormImpl( const Surface::CreateInfo & info )
 	{
-		FISSION_ASSERT( info.Width < 16384u, "Texture Width too big!" );
-		FISSION_ASSERT( info.Height < 16384u, "Texture Height too big!" );
+		FISSION_ASSERT( info.width < 16384u, "Texture Width too big!" );
+		FISSION_ASSERT( info.height < 16384u, "Texture Height too big!" );
 
-		if( info.Width > 0u && info.Height > 0u )
+		if( info.width > 0u && info.height > 0u )
 		{
 			// width * height should never overflow, but make sure it doesn't otherwise stupid compiler won't shutup
-			m_pData = std::make_unique<coloru[]>( (size_t)info.Width * (size_t)info.Height );
-			m_Width = info.Width;
-			m_Height = info.Height;
+			m_pData = std::make_unique<coloru[]>( (size_t)info.width * (size_t)info.height );
+			m_Width = info.width;
+			m_Height = info.height;
 			m_pxCount = m_Width * m_Height;
 			m_cbSize = m_pxCount * sizeof( coloru );
-			if( info.FillColor.has_value() )
+			if( info.fillColor.has_value() )
 			{
-				coloru fill = (coloru)info.FillColor.value();
+				coloru fill = (coloru)info.fillColor.value();
 				for( size_t i = 0; i < m_pxCount; i++ ) m_pData[i] = fill;
 			}
 		}
 	}
 
-	void SurfaceRGBA8_UNormImpl::resize( vec2u new_size, ResizeOptions_ options )
-	{
+	void SurfaceRGBA8_UNormImpl::resize( vec2i _New_Size, ResizeOptions_ _Options ) {
+		_lazer_throw_not_implemented;
+	}
+	void SurfaceRGBA8_UNormImpl::set_width( int _New_Width, ResizeOptions_ _Options ) {
+		_lazer_throw_not_implemented;
+	}
+	void SurfaceRGBA8_UNormImpl::set_height( int _New_Height, ResizeOptions_ _Options ) {
 		_lazer_throw_not_implemented;
 	}
 
-	void SurfaceRGBA8_UNormImpl::set_width( uint32_t new_width, ResizeOptions_ options )
-	{
-		_lazer_throw_not_implemented;
-	}
 
-	void SurfaceRGBA8_UNormImpl::set_height( uint32_t new_height, ResizeOptions_ options )
+	void SurfaceRGBA8_UNormImpl::insert( int _X, int _Y, PixelCallback _Source, vec2u _Source_Size )
 	{
-		_lazer_throw_not_implemented;
-	}
+		assert( _X + _Source_Size.x <= m_Width );
+		assert( _Y + _Source_Size.y <= m_Height );
 
-	void SurfaceRGBA8_UNormImpl::insert( uint32_t x, uint32_t y, PixelCallback src, vec2u src_size )
-	{
-		assert( x + src_size.x <= m_Width );
-		assert( y + src_size.y <= m_Height );
-
-		for( uint32_t py = 0; py < src_size.y; py++ )
+		for( uint32_t py = 0; py < _Source_Size.y; py++ )
 		{
-			uint32_t dst_y = py + y;
-			coloru * copy_dest = &( (coloru *)this->m_pData.get() )[dst_y * this->m_Width + x];
+			uint32_t dst_y = py + _Y;
+			coloru * copy_dest = &( (coloru *)this->m_pData.get() )[dst_y * this->m_Width + _X];
 
-			for( uint32_t x = 0; x < src_size.x; x++ )
-				copy_dest[x] = src( x, py );
+			for( uint32_t x = 0; x < _Source_Size.x; x++ )
+				copy_dest[x] = _Source( x, py );
 		}
 	}
 
-	void SurfaceRGBA8_UNormImpl::insert( uint32_t x, uint32_t y, const Surface * src, std::optional<recti> src_region )
+	void SurfaceRGBA8_UNormImpl::insert( int _X, int _Y, const Surface * _Source, std::optional<recti> _Source_Rect )
 	{
-		vec2u start, size;
-		if( src_region.has_value() )
-			size = (vec2u)src_region->size(), start = (vec2u)src_region->get_tl();
-		else
-			size = src->size();
+		if( _Source->format() == Texture::Format_RGBA8_UNORM )
+		{
+			// implement this
+		}
 
-		FISSION_ASSERT( x + size.x <= m_Width );
-		FISSION_ASSERT( y + size.y <= m_Height );
+		vec2u start, size;
+		if( _Source_Rect.has_value() )
+			size = (vec2u)_Source_Rect->size(), start = (vec2u)_Source_Rect->get_tl();
+		else
+			size = _Source->size();
+
+		FISSION_ASSERT( _X + size.x <= m_Width );
+		FISSION_ASSERT( _Y + size.y <= m_Height );
 
 		for( uint32_t py = start.y; py < size.y; py++ )
 		{
-			coloru * copy_dest = &this->m_pData[( py + y ) * this->m_Width + x];
+			coloru * copy_dest = &this->m_pData[( py + _Y ) * this->m_Width + _X];
 
 			for( uint32_t x = 0; x < size.x; x++ )
-				copy_dest[x] = (coloru)src->GetPixel( x + start.x, py );
+				copy_dest[x] = (coloru)_Source->GetPixel( x + start.x, py );
 		}
 	}
 
@@ -89,17 +90,17 @@ namespace Fission {
 		return Texture::Format_RGBA8_UNORM;
 	}
 
-	Fission::color SurfaceRGBA8_UNormImpl::GetPixel( uint32_t x, uint32_t y ) const
+	color SurfaceRGBA8_UNormImpl::GetPixel( int _X, int _Y ) const
 	{
-		return (color)m_pData[y * m_Width + x];
+		return (color)m_pData[_Y * m_Width + _X];
 	}
 
-	void SurfaceRGBA8_UNormImpl::PutPixel( uint32_t x, uint32_t y, color color )
+	void SurfaceRGBA8_UNormImpl::PutPixel( int _X, int _Y, color _Color )
 	{
-		FISSION_ASSERT( x < m_Width, "X out of range" );
-		FISSION_ASSERT( y < m_Height, "Y out of range" );
+		FISSION_ASSERT( _X < m_Width, "X out of range" );
+		FISSION_ASSERT( _Y < m_Height, "Y out of range" );
 
-		m_pData[y * m_Width + x] = color;
+		m_pData[_Y * m_Width + _X] = _Color;
 	}
 
 	void SurfaceRGBA8_UNormImpl::shrink_to_fit( color clear_color )

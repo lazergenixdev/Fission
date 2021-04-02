@@ -856,9 +856,9 @@ bool surface_map::build( BuildFlags flags )
 
 	{
 		Surface::CreateInfo info;
-		info.FillColor = Colors::Transparent;
-		info.Width = (uint32_t)m_MaxSize.x;
-		info.Height = (uint32_t)m_MaxSize.y;
+		info.fillColor = Colors::Transparent;
+		info.width = (uint32_t)m_MaxSize.x;
+		info.height = (uint32_t)m_MaxSize.y;
 		m_Surface = Surface::Create( info );
 	}
 
@@ -1133,7 +1133,7 @@ metadata metadata::from_JSON( const std::string & json_str )
 	metadata meta;
 	try
 	{
-		meta = from_json( nlohmann::json::parse( json_str ) );
+		meta = from_json( nlohmann::json::parse( json_str, {}, true, true ) );
 	}
 	catch (nlohmann::json::parse_error & e)
 	{

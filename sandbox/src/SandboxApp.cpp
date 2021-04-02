@@ -17,11 +17,6 @@
 #include "imgui.h"
 using namespace Fission;
 
-#define MOVE_UP_BIT 0b0001
-#define MOVE_DOWN_BIT 0b0010
-#define MOVE_LEFT_BIT 0b0100
-#define MOVE_RIGHT_BIT 0b1000
-
 class SandboxLayer : public ILayer 
 {
 public:
@@ -34,33 +29,6 @@ public:
 
 		soundengine = SoundEngine::Create();
 		sound = soundengine->CreateSound( "assets/sound.mp3" );
-	}
-
-	virtual EventResult OnKeyDown( KeyDownEventArgs & args ) override { 
-		if( !args.repeat )
-		switch( args.key )
-		{
-		case Keys::Up: moveFlags |= MOVE_UP_BIT; break;
-		case Keys::Down: moveFlags |= MOVE_DOWN_BIT; break;
-		case Keys::Left: moveFlags |= MOVE_LEFT_BIT; break;
-		case Keys::Right: moveFlags |= MOVE_RIGHT_BIT; break;
-		default:
-			break;
-		}
-		return FISSION_EVENT_HANDLED;
-	}
-
-	virtual EventResult OnKeyUp( KeyUpEventArgs & args ) override { 
-		switch( args.key )
-		{
-		case Keys::Up: moveFlags &=~ MOVE_UP_BIT; break;
-		case Keys::Down: moveFlags &=~ MOVE_DOWN_BIT; break;
-		case Keys::Left: moveFlags &=~ MOVE_LEFT_BIT; break;
-		case Keys::Right: moveFlags &=~ MOVE_RIGHT_BIT; break;
-		default:
-			break;
-		}
-		return FISSION_EVENT_HANDLED;
 	}
 
 	virtual void OnCreate() override
@@ -86,11 +54,6 @@ public:
 	}
 	virtual void OnUpdate() override
 	{
-		if( moveFlags & MOVE_UP_BIT ) off.y -= 1.0f;
-		if( moveFlags & MOVE_DOWN_BIT ) off.y += 1.0f;
-		if( moveFlags & MOVE_LEFT_BIT ) off.x -= 1.0f;
-		if( moveFlags & MOVE_RIGHT_BIT ) off.x += 1.0f;
-
 		if( timer.peeks() > 1.0f/(float)animationFR ) ++frame, timer.reset();
 
 		sub_surface::region_uv * region;
@@ -100,10 +63,7 @@ public:
 		if( auto subs = map[frameIndex] )
 			region = &subs->region;
 		else
-		{
-			region = &first->region;
-			frame = 1;
-		}
+			region = &first->region, frame = 1;
 
 		vec2f res = { 1280,720 };
 
@@ -118,27 +78,48 @@ public:
 		ImGui::SliderFloat2( "Size", (float *)&size, 20.0f, 500.0f, "%.1f" );
 		if( ImGui::SliderFloat( "Animation FPS", &animationFR, 2.0f, 30.0f, "%.1f" ) )
 			animationFR = std::clamp( animationFR, 2.0f, 30.0f );
+		// could be dynamically loaded from surface map metadata, but too lazy, nobody got time for that.
 		static int item = 1;
-		static const char * items[] = {
-			"Idle",
-			"Walk",
-			"Run",
-			"Jump",
-			"Dead",
-		};
-		if( ImGui::Combo( "Animation", &item, items, (int)std::size( items ) ) )
+		static const char * items[] = { "Idle", "Walk", "Run", "Jump", "Dead" };
+		ImGui::PushItemWidth( 50.0f );
+		ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, { 8.0f, 0.0f } );
+		if( ImGui::BeginCombo( "Animation", items[item], ImGuiComboFlags_NoArrowButton ) )
 		{
-			std::string str = items[item];
-			action = std::move( str );
-			frame = 1, timer.reset();
-			first = map[action + " (1)"];
+			for( int n = 0; n < std::size( items ); n++ )
+			{
+				const bool is_selected = ( item == n );
+				if( ImGui::Selectable( items[n], is_selected ) )
+				{
+					item = n;
+					std::string str = items[item];
+					action = std::move( str );
+					frame = 1, timer.reset();
+					first = map[action + " (1)"];
+				}
+
+				// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+				if( is_selected )
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
 		}
+		ImGui::PopStyleVar();
+		ImGui::PopItemWidth();
 		ImGui::Checkbox( "Show Image Size", &show_hitbox );
-		static char buffer[1000] = {};
-		ImGui::InputTextMultiline( "Text\nthing", buffer, 1000 );
 		float volume = soundengine->GetMasterVolume();
 		if( ImGui::SliderFloat( "Volume", &volume, 0.0f, 1.0f ) )
 			soundengine->SetMasterVolume( std::clamp( volume, 0.0f, 1.0f ) );
+		{
+			float position = source->GetPosition()/1000.0f;
+			if( ImGui::SliderFloat( "Position", &position, 0.0f, (float)sound->length() / 1000.0f ) )
+				source->SetPosition( position *1000.0f );
+		}
+		{
+			float speed = source->GetPlaybackSpeed();
+			if( ImGui::SliderFloat( "", &speed, 0.25f, 4.0f ) )
+				source->SetPlaybackSpeed( speed );
+		}
+		ImGui::SameLine();
 		bool playing = source->GetPlaying();
 		if( ImGui::Button( playing ? "Pause" : "Play" ) )
 			source->SetPlaying( !playing );
@@ -148,13 +129,11 @@ public:
 		ImGui::End();
 		ImGui::ShowDemoWindow();
 #endif
-		auto sz = size;
-		if( moveFlags & MOVE_LEFT_BIT ) sz.x = -size.x;
-		r2d->DrawImage( tex.get(), rectf::from_center( res/2.0f+off, sz ), region->rel );
+		r2d->DrawImage( tex.get(), rectf::from_center( res/2.0f, size ), region->rel );
 
 #ifndef IMGUI_DISABLE
 		if( show_hitbox )
-			r2d->DrawRect( rectf::from_center( res/2.0f+off, size ), Colors::OrangeRed, 2.0f );
+			r2d->DrawRect( rectf::from_center( res/2.0f, size ), Colors::OrangeRed, 2.0f );
 #endif
 
 		r2d->Render();
@@ -171,8 +150,6 @@ private:
 	simple_timer timer;
 	int frame = 1;
 	float animationFR = 12.3f;
-	vec2f off;
-	unsigned int moveFlags = 0;
 };
 
 class SandboxApp : public Application

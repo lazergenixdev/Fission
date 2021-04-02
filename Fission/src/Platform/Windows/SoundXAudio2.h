@@ -22,18 +22,42 @@ namespace Fission::Platform
 	struct SoundSourceXAudio2 : public ISoundSource
 	{
 	public:
-		SoundSourceXAudio2( SoundXAudio2 * sound, IXAudio2 * engine, IXAudio2SubmixVoice * pOutput );
+		struct CreateInfo
+		{
+			SoundXAudio2 * sound;
+			bool bIsLooped = false;
+			bool bStartPlaying = true;
+			bool bTrack = false; // this should really not be here >:(
+		};
+
+		SoundSourceXAudio2( IXAudio2 * engine, IXAudio2SubmixVoice * pOutput, const CreateInfo & info = {} );
 		~SoundSourceXAudio2();
 
-		virtual void SetPosition( uint32_t position ) override {}
-		virtual uint32_t GetPosition() override { return 0u; }
+		virtual void SetPlaybackSpeed( float speed ) override;
+		virtual float GetPlaybackSpeed() override;
+
+		virtual void SetPosition( uint32_t position ) override;
+		virtual uint32_t GetPosition() override;
 
 		virtual void SetPlaying( bool playing ) override;
 		virtual bool GetPlaying() override;
 
+		struct ChannelCallback : public IXAudio2VoiceCallback {
+			virtual void CALLBACK OnVoiceProcessingPassStart( UINT32 BytesRequired ) override {}
+			virtual void CALLBACK OnVoiceProcessingPassEnd( void ) override {}
+			virtual void CALLBACK OnStreamEnd( void ) override {}
+			virtual void CALLBACK OnBufferStart( void * pBufferContext ) override;
+			virtual void CALLBACK OnBufferEnd( void * pBufferContext ) override;
+			virtual void CALLBACK OnLoopEnd( void * pBufferContext ) override {}
+			virtual void CALLBACK OnVoiceError( void * pBufferContext, HRESULT Error ) override {}
+		};
+
 	private:
 		IXAudio2SourceVoice * m_pVoice;
-		bool m_bPlaying;
+		XAUDIO2_BUFFER m_XAudioBuffer;
+		bool m_bPlaying, m_bIsConsuming;
+		uint64_t nSampleOffset = 0u;
+		SoundXAudio2 * m_pSound;
 	};
 
 	struct SoundEngineXAudio2 : public SoundEngine

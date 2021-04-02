@@ -1,11 +1,43 @@
+/**
+*
+* @file: Surface.h
+* @author: lazergenixdev@gmail.com
+*
+*
+* This file is provided under the MIT License:
+*
+* Copyright (c) 2021 Lazergenix Software
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+*
+*/
+
 #pragma once
 #include "Fission/config.h"
 #include "Color.h"
 #include "Serializable.h"
 
+// todo: add documentation
+
 namespace Fission
 {
-	using PixelCallback = std::function<colorf( uint32_t x, uint32_t y)>;
+	using PixelCallback = std::function<colorf( int x, int y )>;
 
 	namespace Texture {
 		typedef enum Format_ {
@@ -19,9 +51,9 @@ namespace Fission
 	{
 	public:
 		struct CreateInfo {
-			uint32_t Width = 0, Height = 0;
-			std::optional<color> FillColor = {};
-			Texture::Format Format = Texture::Format_RGBA8_UNORM;
+			int width = 0, height = 0;
+			std::optional<color> fillColor = {};
+			Texture::Format format = Texture::Format_RGBA8_UNORM;
 		};
 
 		enum ResizeOptions_ {
@@ -29,22 +61,22 @@ namespace Fission
 			ResizeOptions_Stretch,
 		};
 	public:
-		FISSION_API static std::unique_ptr<Surface> Create( const CreateInfo & info = {} );
+		FISSION_API static std::unique_ptr<Surface> Create( const CreateInfo & _Info = {} );
 
 
-		virtual void resize( vec2u new_size, ResizeOptions_ options = ResizeOptions_Clip ) = 0;
-		virtual void set_width( uint32_t new_width, ResizeOptions_ options = ResizeOptions_Clip ) = 0;
-		virtual void set_height( uint32_t new_height, ResizeOptions_ options = ResizeOptions_Clip ) = 0;
+		virtual void resize( vec2i _New_Size, ResizeOptions_ _Options = ResizeOptions_Clip ) = 0;
+		virtual void set_width( int _New_Width, ResizeOptions_ _Options = ResizeOptions_Clip ) = 0;
+		virtual void set_height( int _New_Height, ResizeOptions_ _Options = ResizeOptions_Clip ) = 0;
 
 		// seems familiar
-		virtual void PutPixel( uint32_t x, uint32_t y, color color ) = 0;
-		virtual color GetPixel( uint32_t x, uint32_t y ) const = 0;
+		virtual void PutPixel( int _X, int _Y, color _Color ) = 0;
+		virtual color GetPixel( int _X, int _Y ) const = 0;
 
-		virtual void insert( uint32_t x, uint32_t y, PixelCallback src, vec2u src_size ) = 0;
-		virtual void insert( uint32_t x, uint32_t y, const Surface * src, std::optional<recti> src_region = {} ) = 0;
+		virtual void insert( int _X, int _Y, PixelCallback _Source, vec2u _Source_Size ) = 0;
+		virtual void insert( int _X, int _Y, const Surface * _Source, std::optional<recti> _Source_Rect = {} ) = 0;
 
 		// shrink the surface if there is any 'clear_color' on any side
-		virtual void shrink_to_fit( color clear_color = coloru(0,0,0,0) ) = 0;
+		virtual void shrink_to_fit( color _Clear_Color = coloru(0,0,0,0) ) = 0;
 
 		virtual Texture::Format format() const = 0;
 

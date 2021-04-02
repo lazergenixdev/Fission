@@ -1,3 +1,33 @@
+/**
+*
+* @file: config.h
+* @author: lazergenixdev@gmail.com
+*
+*
+* This file is provided under the MIT License:
+*
+* Copyright (c) 2021 Lazergenix Software
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+*
+*/
+
 #pragma once
 #include "Platform/Platform.h" /*!< Determine Target Platform */
 
@@ -11,9 +41,11 @@
 #define FISSION_API extern
 #endif
 
-#define FISSION_ENGINE "Fission" /*!< Engine Name */
+/*! @brief Engine Name */
+#define FISSION_ENGINE "Fission"
 
-#define FISSION_THREAD_SAFE /*!< Functions that should be thread safe */
+/*! @brief Functions that should be thread safe */
+#define FISSION_THREAD_SAFE
 
 /**
  * standard library includes
@@ -39,9 +71,12 @@
  * External helper library
  */
 #include "lazer/lazer.h"
+namespace Fission {
+	using namespace lazer;
+}
 
 /**
- * convenient type aliases 
+ * Pointer Types
  */
 namespace Fission {
 
@@ -87,7 +122,7 @@ namespace Fission {
  */
 #ifndef FISSION_IMGUI_ENABLE // ImGui only available on debug and release builds by default
 #if defined(FISSION_DIST)
-#define IMGUI_DISABLE //  Disable everything: all headers and source files will be empty.
+#define IMGUI_DISABLE //  Disable everything ImGui: all headers and source files will be empty.
 #endif
 #endif
 

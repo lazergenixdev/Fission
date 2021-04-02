@@ -12,18 +12,20 @@ namespace Fission
 		// Inherited via Surface
 		virtual bool Load( const file::path & _FilePath ) override;
 		virtual bool Save( const file::path & _FilePath ) const override;
-		virtual void resize( vec2u new_size, ResizeOptions_ options = ResizeOptions_Clip ) override;
-		virtual void set_width( uint32_t new_width, ResizeOptions_ options = ResizeOptions_Clip ) override;
-		virtual void set_height( uint32_t new_height, ResizeOptions_ options = ResizeOptions_Clip ) override;
 
+		virtual void resize( vec2i _New_Size, ResizeOptions_ _Options ) override;
+		virtual void set_width( int _New_Width, ResizeOptions_ _Options ) override;
+		virtual void set_height( int _New_Height, ResizeOptions_ _Options ) override;
 
-		virtual void insert( uint32_t x, uint32_t y, PixelCallback src, vec2u src_size ) override;
-		virtual void insert( uint32_t x, uint32_t y, const Surface * src, std::optional<recti> src_region ) override;
+		virtual void insert( int _X, int _Y, PixelCallback _Source, vec2u _Source_Size ) override;
+		virtual void insert( int _X, int _Y, const Surface * _Source, std::optional<recti> _Source_Rect ) override;
+
+		virtual void PutPixel( int _X, int _Y, color _Color ) override;
+		virtual color GetPixel( int _X, int _Y ) const override;
+
+		virtual void shrink_to_fit( color clear_color = coloru( 0, 0, 0, 0 ) ) override;
 
 		virtual Texture::Format format() const override;
-		virtual color GetPixel( uint32_t x, uint32_t y ) const override;
-		virtual void PutPixel( uint32_t x, uint32_t y, color color ) override;
-		virtual void shrink_to_fit( color clear_color = coloru( 0, 0, 0, 0 ) ) override;
 		virtual const void * data() const override;
 		virtual void * data() override;
 		virtual uint32_t width() const override;

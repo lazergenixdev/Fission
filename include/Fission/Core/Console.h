@@ -1,3 +1,33 @@
+/**
+* 
+* @file: Console.h
+* @author: lazergenixdev@gmail.com
+* 
+* 
+* This file is provided under the MIT License:
+* 
+* Copyright (c) 2021 Lazergenix Software
+* 
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+* 
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+* 
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+* 
+*/
+
 #pragma once
 #include "Fission/config.h"
 #include "Color.h"
@@ -88,7 +118,7 @@ namespace Fission {
 
 		//! @brief Writes a line to the Console.
 		//! @param _Color: Color of the line of text outputted.
-		//! @param _Text: Text to be put onto the Console.
+		//! @param _Text: [in] Text to be put onto the Console.
 		FISSION_THREAD_SAFE FISSION_API static void WriteLine( color _Color, const wchar_t * _Text );
 
 
@@ -109,17 +139,17 @@ namespace Fission {
 		//! @return Number of lines of text in the Console.
 		FISSION_THREAD_SAFE FISSION_API static int GetLineCount();
 
-	// This might be needed for thread safety when reading console. todo:
+	// todo: This might be needed for thread safety when reading console.
 	//	FISSION_API static std::lock_guard<std::mutex> Lock();
 
 
 
 /* ------------------------------------------ Begin Console Helpers ----------------------------------------------- */
 
-		static void WriteLine( const wchar_t * _Text ) { WriteLine( FISSION_MESSAGE_COLOR, _Text ); }
+		static inline void WriteLine( const wchar_t * _Text ) { WriteLine( FISSION_MESSAGE_COLOR, _Text ); }
 
 		template <size_t _Format_Buffer_Size = Default_Format_Buffer_Size, typename...T>
-		static void WriteLine( color _Color, const wchar_t * const _Text, T&&...t )
+		static inline void WriteLine( color _Color, const wchar_t * const _Text, T&&...t )
 		{
 			wchar_t buffer[_Format_Buffer_Size] = {};
 			swprintf_s( (wchar_t *)buffer, _Format_Buffer_Size, _Text, std::forward<T>( t )... );
@@ -127,7 +157,7 @@ namespace Fission {
 		}
 
 		template <size_t _Format_Buffer_Size = Default_Format_Buffer_Size, typename...T>
-		static void WriteLine( const wchar_t * const _Text, T&&...t )
+		static inline void WriteLine( const wchar_t * const _Text, T&&...t )
 		{
 			wchar_t buffer[_Format_Buffer_Size];
 			swprintf_s( (wchar_t *)buffer, _Format_Buffer_Size, _Text, std::forward<T>( t )... );
@@ -135,17 +165,17 @@ namespace Fission {
 		}
 
 		template <size_t _Format_Buffer_Size = Default_Format_Buffer_Size, typename...T>
-		static void Error( const wchar_t * _Text, T&&...t ) {
+		static inline void Error( const wchar_t * _Text, T&&...t ) {
 			WriteLine( FISSION_ERROR_COLOR, _Text, std::forward<T>( t )... );
 		}
 
 		template <size_t _Format_Buffer_Size = Default_Format_Buffer_Size, typename...T>
-		static void Warning( const wchar_t * _Text, T&&...t ) {
+		static inline void Warning( const wchar_t * _Text, T&&...t ) {
 			WriteLine( FISSION_WARNING_COLOR, _Text, std::forward<T>( t )... );
 		}
 
 		template <size_t _Format_Buffer_Size = Default_Format_Buffer_Size, typename...T>
-		static void Message( const wchar_t * _Text, T&&...t ) {
+		static inline void Message( const wchar_t * _Text, T&&...t ) {
 			WriteLine( FISSION_MESSAGE_COLOR, _Text, std::forward<T>( t )... );
 		}
 
