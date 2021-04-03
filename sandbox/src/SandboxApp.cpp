@@ -28,6 +28,7 @@ public:
 		first = map[action+" (1)"];
 
 		soundengine = SoundEngine::Create();
+		soundengine->SetMasterVolume( 0.5f );
 		sound = soundengine->CreateSound( "assets/sound.mp3" );
 	}
 
@@ -106,13 +107,15 @@ public:
 		ImGui::PopStyleVar();
 		ImGui::PopItemWidth();
 		ImGui::Checkbox( "Show Image Size", &show_hitbox );
-		float volume = soundengine->GetMasterVolume();
-		if( ImGui::SliderFloat( "Volume", &volume, 0.0f, 1.0f ) )
-			soundengine->SetMasterVolume( std::clamp( volume, 0.0f, 1.0f ) );
+		{
+			float volume = soundengine->GetMasterVolume();
+			if( ImGui::SliderFloat( "Volume", &volume, 0.0f, 1.0f ) )
+				soundengine->SetMasterVolume( std::clamp( volume, 0.0f, 1.0f ) );
+		}
 		{
 			float position = source->GetPosition()/1000.0f;
 			if( ImGui::SliderFloat( "Position", &position, 0.0f, (float)sound->length() / 1000.0f ) )
-				source->SetPosition( position *1000.0f );
+				source->SetPosition( (uint32_t)(position * 1000.0f) );
 		}
 		{
 			float speed = source->GetPlaybackSpeed();
@@ -120,12 +123,16 @@ public:
 				source->SetPlaybackSpeed( speed );
 		}
 		ImGui::SameLine();
-		bool playing = source->GetPlaying();
-		if( ImGui::Button( playing ? "Pause" : "Play" ) )
-			source->SetPlaying( !playing );
-		bool vsync = GetApp()->GetGraphics()->GetVSync();
-		if( ImGui::Checkbox( "v-sync", &vsync ) )
-			GetApp()->GetGraphics()->SetVSync( vsync );
+		{
+			bool playing = source->GetPlaying();
+			if( ImGui::Button( playing ? "Pause" : "Play" ) )
+				source->SetPlaying( !playing );
+		}
+		{
+			bool vsync = GetApp()->GetGraphics()->GetVSync();
+			if( ImGui::Checkbox( "v-sync", &vsync ) )
+				GetApp()->GetGraphics()->SetVSync( vsync );
+		}
 		ImGui::End();
 		ImGui::ShowDemoWindow();
 #endif
@@ -143,8 +150,8 @@ private:
 	ref<ISound> sound;
 	ref<ISoundSource> source;
 	surface_map map;
-	std::unique_ptr<Renderer2D> r2d;
-	std::unique_ptr<Resource::Texture2D> tex;
+	scoped<Renderer2D> r2d;
+	scoped<Resource::Texture2D> tex;
 	std::string action;
 	sub_surface * first;
 	simple_timer timer;

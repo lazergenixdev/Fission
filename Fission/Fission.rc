@@ -52,7 +52,7 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,0,1
+ FILEVERSION FISSION_VERSION_MAJ, FISSION_VERSION_MIN, FISSION_VERSION_PAT, 0
  PRODUCTVERSION FISSION_VERSION_MAJ, FISSION_VERSION_MIN, FISSION_VERSION_PAT, 69
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -70,10 +70,10 @@ BEGIN
         BEGIN
             VALUE "CompanyName", FISSION_COMPANY_NAME
             VALUE "FileDescription", "Fission Game Engine"
-            VALUE "FileVersion", "1.0.0.1"
-            VALUE "InternalName", "Fission"
+            VALUE "FileVersion", FISSION_VERSION_STRING ".0"
+            VALUE "InternalName", FISSION_ENGINE
             VALUE "LegalCopyright", FISSION_COPYRIGHT
-            VALUE "OriginalFilename", "Fission.dll"
+            VALUE "OriginalFilename", FISSION_ENGINE ".dll"
             VALUE "ProductName", "Fission Engine"
             VALUE "ProductVersion", FISSION_VERSION_STRING
         END

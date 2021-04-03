@@ -209,7 +209,7 @@ namespace Fission {
 	{
 		if( _New_Count > m_BufferCapacity )
 		{
-			while( _New_Count > m_BufferCapacity )
+			while( _New_Count > m_BufferCapacity ) // could be implemented better, but realisticly there should not be more than 2000 chars written at a time
 				m_BufferCapacity += 2000u;
 			wchar_t * temp = (wchar_t *)_aligned_malloc( m_BufferCapacity * sizeof( wchar_t ), 16u );
 

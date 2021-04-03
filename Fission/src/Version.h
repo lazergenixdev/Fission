@@ -4,6 +4,10 @@
 #define FISSION_MK_STR(X) #X
 #endif
 
+#ifndef FISSION_ENGINE
+#define FISSION_ENGINE "Fission"
+#endif
+
 #define FISSION_VERSION_MAJ 0
 #define FISSION_VERSION_MIN 4
 #define FISSION_VERSION_PAT 0
