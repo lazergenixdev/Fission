@@ -23,22 +23,19 @@ To make a Visual Studio Solution run `GenWindowsProj.bat` in the `scripts` direc
 - ImGui integration for debugging
 - Basic Sound support (mp3,wav,...)
 
-## Short-Term Goals
-- OpenGL support
-- (not buggy) Fullscreen functionality + monitor picking
-- Application Icon/Cursor loading from Memory or File
-- Complete 2D renderer
-- UI System
-
-## Long-Term Goals
-### Platform support for:
-- Mac
-- IOS
-- Andriod
-### Native Rendering APIs:
-- DirectX 11 and 12
-- Vulkan
-- OpenGL
-### Engine
-- Simple + Fast 2D Physics library
-- Powerful UI System
+# RoadMap
+### *Fission-v0.4.0*
+- basic support for sound (loading + playing + variable playback speed)
+- built in functionality for dynamic texture atlases (+serialization)
+- ImGui included for development builds
+### *Fission-v0.5.0*
+- Implement more window functionality
+- Add Child Windows (preparation for UI system)
+- Add scene system
+- Add loading screen functionality (fission logo?)
+### *Fission-v0.6.0*
+- Add general purpose UI system
+### *Fission-v0.6.1*
+- Add opengl support
+## Future releases
+- new platforms will be implemented after the official version 1.0 is released and all base features are available
