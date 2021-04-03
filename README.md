@@ -24,10 +24,6 @@ To make a Visual Studio Solution run `GenWindowsProj.bat` in the `scripts` direc
 - Basic Sound support (mp3,wav,...)
 
 # RoadMap
-### *Fission-v0.4.0*
-- basic support for sound (loading + playing + variable playback speed)
-- built in functionality for dynamic texture atlases (+serialization)
-- ImGui included for development builds
 ### *Fission-v0.5.0*
 - Implement more window functionality
 - Add Child Windows (preparation for UI system)
