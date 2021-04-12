@@ -32,14 +32,14 @@ namespace Fission {
 		}
 	}
 
-	std::unique_ptr<Graphics> Graphics::Create( Window * _Ptr_Window, const Properties & _Properties )
+	std::unique_ptr<Graphics> Graphics::Create( const Properties & _Properties )
 	{
 		switch( _Properties.api )
 		{
 	#ifdef FISSION_PLATFORM_WINDOWS
 		case Graphics::API::Default:
 		case Graphics::API::DirectX11:
-			return std::make_unique<Platform::GraphicsDirectX11>( _Ptr_Window, _Properties.resolution );
+			return std::make_unique<Platform::GraphicsDirectX11>();
 		//case Graphics::API::OpenGL:
 		//	return std::make_unique<Platform::GraphicsOpenGL>( _Ptr_Window, _Properties.resolution );
 		//case Graphics::API::DirectX12:

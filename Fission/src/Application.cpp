@@ -14,6 +14,8 @@ Application * ILayer::GetApp() {
 	return s_pInstance;
 }
 
+static scoped<Resource::FrameBuffer> g_pFrameBuffer; //!< For Testing purposes only
+
 
 static void RegisterConsoleCommands()
 {
@@ -67,8 +69,12 @@ Application::Application( const CreateInfo & info )
 	Window::Properties wndProps = info.window;
 	wndProps.flags = wndProps.flags | Window::Flags::IsMainWindow;
 	m_State->m_pMainWindow = Window::Create( wndProps, this );
+	m_State->m_pGraphics = Graphics::Create( info.graphics );
 
-	m_State->m_pGraphics = Graphics::Create( m_State->m_pMainWindow.get(), info.graphics );
+	Resource::FrameBuffer::CreateInfo fbi = {};
+	fbi.pWindow = m_State->m_pMainWindow.get();
+	g_pFrameBuffer = m_State->m_pGraphics->CreateFrameBuffer( fbi );
+	m_State->m_pGraphics->SetFrameBuffer( g_pFrameBuffer.get() );
 }
 
 Application::~Application() noexcept 
@@ -126,7 +132,8 @@ create:
 			m_State->m_PauseCondition.wait( lock );
 		}
 
-		m_State->m_pGraphics->BeginFrame();
+		g_pFrameBuffer->Clear( Colors::Black );
+		//m_State->m_pGraphics->SetFrameBuffer( g_pFrameBuffer.get() );
 
 		// Update all layers from back to top*
 		for( auto && layer : m_State->m_vMainLayers )
@@ -138,7 +145,8 @@ create:
 		m_State->m_ConsoleLayer.OnUpdate();
 		m_State->m_DebugLayer.OnUpdate();
 
-		m_State->m_pGraphics->EndFrame();
+		//m_State->m_pGraphics->EndFrame();
+		g_pFrameBuffer->Present();
 		s_LastDelta = s_AppTimer.gets(); // temp
 
 		// Graphics configuration has changed, so all resources must be created again
