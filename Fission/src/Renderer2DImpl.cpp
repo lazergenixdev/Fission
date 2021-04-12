@@ -90,7 +90,8 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 				info.source_code = _fission_renderer2d_shader_code_hlsl;
 			m_pShader = pGraphics->CreateShader( info );
 
-			vec2f res = (vec2f)pGraphics->GetResolution();
+			vec2f res = vec2f( 1280.0f, 720.0f ); // todo: this is a bug, please fix as soon as possible
+
 			float matrix[16] = {
 				2.0f / res.x,	0.0f,		   -1.0f, 0.0f,
 				0.0f,		   -2.0f / res.y,	1.0f, 0.0f,
@@ -151,7 +152,12 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 
 	void Renderer2DImpl::FillTriangle( vec2f p0, vec2f p1, vec2f p2, colorf color )
 	{
-		m_CommandBuffer.back().AddTriangle( p0, p1, p2, color );
+		m_CommandBuffer.back().AddTriangle( p0, p1, p2, color, color, color );
+	}
+
+	void Renderer2DImpl::FillTriangleGrad( vec2f p0, vec2f p1, vec2f p2, colorf c0, colorf c1, colorf c2 )
+	{
+		m_CommandBuffer.back().AddTriangle( p0, p1, p2, c0, c1, c2 );
 	}
 
 	void Renderer2DImpl::FillTriangleUV( vec2f p0, vec2f p1, vec2f p2, vec2f uv0, vec2f uv1, vec2f uv2, Resource::Texture2D * pTexture, colorf tint )
@@ -219,7 +225,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			const vec2f perp = par.perp() * ( sqrtf( lensq ) * 0.5f );
 			const vec2f l = center - perp, r = center + perp;
 
-			m_CommandBuffer.back().AddTriangle( end, l, r, color );
+			m_CommandBuffer.back().AddTriangle( end, l, r, color, color, color );
 		}
 		else
 		{
@@ -227,7 +233,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			const vec2f center = end + par * width;
 			const vec2f l = center - perp, r = center + perp;
 
-			m_CommandBuffer.back().AddTriangle( end, l, r, color );
+			m_CommandBuffer.back().AddTriangle( end, l, r, color, color, color );
 			m_CommandBuffer.back().AddLine( start, center, 0.4f * width, color, color );
 		}
 
@@ -527,15 +533,15 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		pVtxData[vtxCount++] = vertex( *mat * vec2( center.x + trig.sin * rad, center.y - trig.cos * rad ), c );
 	}
 
-	void Renderer2DImpl::DrawCommand::AddTriangle( vec2f p0, vec2f p1, vec2f p2, colorf c )
+	void Renderer2DImpl::DrawCommand::AddTriangle( vec2f p0, vec2f p1, vec2f p2, colorf c0, colorf c1, colorf c2 )
 	{
 		pIdxData[idxCount++] = vtxCount;
 		pIdxData[idxCount++] = vtxCount + 1u;
 		pIdxData[idxCount++] = vtxCount + 2u;
 
-		pVtxData[vtxCount++] = vertex( *mat * p0, c );
-		pVtxData[vtxCount++] = vertex( *mat * p1, c );
-		pVtxData[vtxCount++] = vertex( *mat * p2, c );
+		pVtxData[vtxCount++] = vertex( *mat * p0, c0 );
+		pVtxData[vtxCount++] = vertex( *mat * p1, c1 );
+		pVtxData[vtxCount++] = vertex( *mat * p2, c2 );
 	}
 
 	void Renderer2DImpl::DrawCommand::AddTriangleUV( vec2f p0, vec2f p1, vec2f p2, vec2f uv0, vec2f uv1, vec2f uv2, colorf c )

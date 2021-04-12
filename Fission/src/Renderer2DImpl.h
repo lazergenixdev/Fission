@@ -17,6 +17,8 @@ namespace Fission {
 
 		virtual void FillTriangle( vec2f p0, vec2f p1, vec2f p2, colorf color ) override;
 
+		virtual void FillTriangleGrad( vec2f p0, vec2f p1, vec2f p2, colorf c0, colorf c1, colorf c2 ) override;
+
 		virtual void FillTriangleUV( vec2f p0, vec2f p1, vec2f p2, vec2f uv0, vec2f uv1, vec2f uv2, Resource::Texture2D * pTexture, colorf tint ) override;
 
 		virtual void FillRect( rectf rect, colorf color ) override;
@@ -100,7 +102,7 @@ namespace Fission {
 			void AddRect( rectf rect, colorf color, float stroke_width, StrokeStyle stroke );
 			void AddMesh( const Mesh * mesh );
 			void AddCircleFilled( vec2f center, float rad, colorf c );
-			void AddTriangle( vec2f p0, vec2f p1, vec2f p2, colorf c );
+			void AddTriangle( vec2f p0, vec2f p1, vec2f p2, colorf c0, colorf c1, colorf c2 );
 			void AddTriangleUV( vec2f p0, vec2f p1, vec2f p2, vec2f uv0, vec2f uv1, vec2f uv2, colorf c );
 			void AddLine( vec2f start, vec2f end, float stroke, colorf startColor, colorf endColor );
 

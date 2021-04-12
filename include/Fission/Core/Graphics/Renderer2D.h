@@ -86,6 +86,8 @@ namespace Fission
 
 		virtual void FillTriangle( vec2f p0, vec2f p1, vec2f p2, colorf color ) = 0;
 
+		virtual void FillTriangleGrad( vec2f p0, vec2f p1, vec2f p2, colorf c0, colorf c1, colorf c2 ) = 0;
+
 		virtual void FillTriangleUV( vec2f p0, vec2f p1, vec2f p2, vec2f uv0, vec2f uv1, vec2f uv2, Resource::Texture2D * pTexture, colorf tint = Colors::White ) = 0;
 
 		virtual void FillRectGrad( rectf rect, colorf color_topleft, colorf color_topright, colorf color_bottomleft, colorf color_bottomright ) = 0;
