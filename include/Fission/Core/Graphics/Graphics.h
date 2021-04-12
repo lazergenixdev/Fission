@@ -48,6 +48,8 @@ public:
 	using Shader =				Resource::Shader;
 	using Blender =				Resource::Blender;
 
+	using FrameBuffer =			Resource::FrameBuffer;
+
 public:
 	enum class API {
 		DirectX11, /*!< DirectX 11 */
@@ -62,14 +64,20 @@ public:
 	struct Properties
 	{
 		API api = API::Default;
-		vec2i resolution = { 1280, 720 };
+	};
+
+	struct State
+	{
+		API api;
+		Resource::FrameBuffer * pFrameBuffers;
+		int nFrameBuffers;
 	};
 		
 public:
 
 	static bool IsSupported( API _GFX_API );
 
-	static scoped<Graphics> Create( Window * _Ptr_Window, const Properties & _Properties );
+	static scoped<Graphics> Create( const Properties & _Properties = {} );
 
 
 /* ------------------------------------ Begin Base API Functions ----------------------------------- */
@@ -77,20 +85,15 @@ public:
 	//! @brief Get the internal API
 	virtual API GetAPI() = 0;
 
-	//! @todo: rename these
-	virtual void BeginFrame() = 0;
-	virtual void EndFrame() = 0;
-
 	virtual void SetVSync( bool vsync ) = 0;
 
 	virtual bool GetVSync() = 0;
 
-	//! @note THESE WILL BE REPLACED WITH A RENDER TARGET API
-	virtual void SetResolution( vec2i ) { ( void )0; }; // Not Implemented
-	virtual vec2i GetResolution() = 0;
+	//virtual void SetProperties( const Properties * props ) = 0;
 
-	//! @brief conversion from window space to screen space
-	virtual vec2f to_screen( vec2i mouse_pos ) = 0; // TODO: Keep?? unsure
+	virtual void SetFrameBuffer( Resource::FrameBuffer * buffer ) = 0;
+
+	virtual void GetState( State * _Ptr_Dest_State ) {};
 
 	virtual void Draw( uint32_t vertexCount, uint32_t vertexOffset = 0u ) = 0;
 
@@ -100,6 +103,8 @@ public:
 
 
 /* ------------------------------------ Begin Graphics Primitives ----------------------------------- */
+
+	virtual scoped<FrameBuffer> CreateFrameBuffer( const FrameBuffer::CreateInfo & info ) = 0;
 
 	virtual scoped<VertexBuffer> CreateVertexBuffer( const VertexBuffer::CreateInfo & info ) = 0;
 

@@ -36,6 +36,8 @@
 #include "Fission/Core/Surface.h"
 #include "VertexLayout.h"
 
+namespace Fission { class Window; }
+
 namespace Fission::Resource
 {
 	struct IBindable
@@ -55,13 +57,31 @@ namespace Fission::Resource
 			Type type = Type::Static;
 			const wchar_t * filePath = nullptr;
 			Surface * pSurface = nullptr;
-			Texture::Format format = Texture::Format_Unkown;
+			Texture::Format format = Texture::Format_RGBA8_UNORM;
 			int width = 0, height = 0;
 		};
 	public:
 		virtual uint32_t GetWidth() = 0;
 		virtual uint32_t GetHeight() = 0;
 		virtual void Bind( int slot ) = 0;
+	//	virtual Surface GetSurface() = 0;
+	};
+
+	class FrameBuffer
+	{
+	public:
+		struct CreateInfo {
+			vec2i size = {};
+			Window * pWindow = nullptr;
+			Texture::Format format = Texture::Format_RGBA8_UNORM;
+		};
+	public:
+		virtual uint32_t GetWidth() = 0;
+		virtual uint32_t GetHeight() = 0;
+
+		virtual void Clear( color clear_color ) = 0;
+
+		virtual void Present() = 0;
 	//	virtual Surface GetSurface() = 0;
 	};
 

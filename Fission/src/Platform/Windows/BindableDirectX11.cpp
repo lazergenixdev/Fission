@@ -1,5 +1,5 @@
 #include "BindableDirectX11.h"
-//#include "hr_Exception.h"
+#include "Fission/Core/Window.h"
 #include <filesystem>
 #include <d3dcompiler.h>
 #include "lazer/matrix.h"
@@ -545,6 +545,98 @@ namespace Fission::Platform {
 	{
 		const FLOAT blend_factor = 1.0f;
 		m_pContext->OMSetBlendState( nullptr, &blend_factor, UINT_MAX );
+	}
+
+	FrameBufferDX11::FrameBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const Resource::FrameBuffer::CreateInfo & info )
+		: m_Resolution( info.size ), m_pParentWindow( info.pWindow ), m_pContext( pContext )
+	{
+		HRESULT hr;
+
+		if( m_pParentWindow )
+		{
+			if( info.format != Texture::Format_RGBA8_UNORM )
+				throw std::logic_error( "FrameBuffer: Format not supported by Engine!" );
+
+			DXGI_SWAP_CHAIN_DESC dSwapChain = {};
+			dSwapChain.BufferDesc.Width = m_Resolution.x;
+			dSwapChain.BufferDesc.Height = m_Resolution.y;
+			dSwapChain.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+			dSwapChain.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+			dSwapChain.OutputWindow = m_pParentWindow->native_handle();
+			dSwapChain.BufferCount = 2u;
+			dSwapChain.SampleDesc.Count = 1u;
+			dSwapChain.SampleDesc.Quality = 0u;
+			dSwapChain.Windowed = TRUE;
+			
+			com_ptr<IDXGIFactory> pDXGIFactory;
+			hr = CreateDXGIFactory( __uuidof( IDXGIFactory ), &pDXGIFactory );
+			if( FAILED( hr ) ) throw exception( "DXGI Error", _lazer_exception_msg.append( "Failed to create DXGI Factory." ) );
+
+			hr = pDXGIFactory->CreateSwapChain( pDevice, &dSwapChain, &m_pSwapChain );
+			if( FAILED( hr ) ) throw exception( "DXGI Error", _lazer_exception_msg.append( "Failed to create Swapchain." ) );
+
+			com_ptr<ID3D11Texture2D> pBackBuffer;
+			hr = m_pSwapChain->GetBuffer( 0u, IID_PPV_ARGS( &pBackBuffer ) );
+			hr = pDevice->CreateRenderTargetView( pBackBuffer.Get(), nullptr, &m_pRenderTargetView );
+
+			D3D11_TEXTURE2D_DESC dBuffer;
+			pBackBuffer->GetDesc( &dBuffer );
+
+			m_ViewPort.Width = (FLOAT)dBuffer.Width;
+			m_ViewPort.Height = (FLOAT)dBuffer.Height;
+			m_ViewPort.MinDepth = 0.0f;
+			m_ViewPort.MaxDepth = 1.0f;
+			m_ViewPort.TopLeftX = 0.0f;
+			m_ViewPort.TopLeftY = 0.0f;
+		}
+		else
+		{
+			if( m_Resolution.x <= 0 || m_Resolution.y <= 0 )
+				throw exception( "FrameBuffer Exception", _lazer_exception_msg.append( "The resolution width and height cannot be less than 1." ) );
+
+			throw std::logic_error( "FrameBuffer: Branch Not Implemented!" );
+		}
+	}
+
+	uint32_t FrameBufferDX11::GetWidth()
+	{
+		return uint32_t( m_Resolution.x );
+	}
+
+	uint32_t FrameBufferDX11::GetHeight()
+	{
+		return uint32_t( m_Resolution.y );
+	}
+
+	void FrameBufferDX11::Clear( color c )
+	{
+		FLOAT color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+		m_pContext->ClearRenderTargetView( m_pRenderTargetView.Get(), color );
+	}
+
+	void FrameBufferDX11::Present()
+	{
+		if( FAILED( m_pSwapChain->Present( 1u, 0u ) ) ) 
+			throw exception("DirectX Exception", 
+			_lazer_exception_msg
+				.append("Failed to Present Swapchain.")
+				.append("Reason","Honestly don't know, I should have checked the HRESULT, my bad dude.") 
+			);
+	}
+
+	ID3D11RenderTargetView * FrameBufferDX11::GetRenderTargetView()
+	{
+		return m_pRenderTargetView.Get();
+	}
+
+	IDXGISwapChain * FrameBufferDX11::GetSwapChain()
+	{
+		return m_pSwapChain.Get();
+	}
+
+	D3D11_VIEWPORT * FrameBufferDX11::GetViewPort()
+	{
+		return &m_ViewPort;
 	}
 
 }

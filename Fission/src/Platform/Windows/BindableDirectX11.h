@@ -200,4 +200,28 @@ namespace Fission::Platform {
 		com_ptr<ID3D11BlendState> m_pBlendState;
 	};
 
+	class FrameBufferDX11 : public Resource::FrameBuffer
+	{
+	public:
+		FrameBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const Resource::FrameBuffer::CreateInfo & info );
+
+		virtual uint32_t GetWidth() override;
+		virtual uint32_t GetHeight() override;
+
+		virtual void Clear( color clear_color ) override;
+
+		virtual void Present() override;
+
+		ID3D11RenderTargetView * GetRenderTargetView();
+		IDXGISwapChain * GetSwapChain();
+		D3D11_VIEWPORT * GetViewPort();
+	private:
+		vec2i								m_Resolution;
+		D3D11_VIEWPORT						m_ViewPort;
+		ID3D11DeviceContext *				m_pContext;
+		com_ptr<ID3D11RenderTargetView>		m_pRenderTargetView;
+		com_ptr<IDXGISwapChain>				m_pSwapChain;
+		class Window *						m_pParentWindow;
+	};
+
 }

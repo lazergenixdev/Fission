@@ -3,49 +3,34 @@
 #include "WindowsWindow.h"
 #include "Fission/Core/Console.h"
 
-// todo: this is not epic
-#define ThrowFailedHR( func, garbo ) func
-
 namespace Fission::Platform {
 
-	GraphicsDirectX11::GraphicsDirectX11( Window * pWindow, vec2i resolution )
-		: m_Resolution( resolution ), m_pParentWindow( pWindow )
+	GraphicsDirectX11::GraphicsDirectX11()
 	{
-		assert( pWindow );
-
 		HRESULT hr = S_OK;
-
-		DXGI_SWAP_CHAIN_DESC dSwapChain = {};
-		dSwapChain.BufferDesc.Width = resolution.x;
-		dSwapChain.BufferDesc.Height = resolution.y;
-		dSwapChain.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		dSwapChain.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-		dSwapChain.OutputWindow = pWindow->native_handle();
-		dSwapChain.BufferCount = 2u;
-		dSwapChain.SampleDesc.Count = 8u;
-		dSwapChain.SampleDesc.Quality = 0u;
-		dSwapChain.Windowed = TRUE;
-	//	dSwapChain.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH; // not needed
 
 		static constexpr D3D_FEATURE_LEVEL FeatureLevelsWant[] = { D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0 };
 		D3D_FEATURE_LEVEL FeatureLevelGot;
 
-		hr = D3D11CreateDeviceAndSwapChain(
+		UINT uCreateFlags = 0u;
+
+#ifdef FISSION_DEBUG
+		uCreateFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
+		hr = D3D11CreateDevice(
 			nullptr,								/* Graphics Adapter */
 			D3D_DRIVER_TYPE_HARDWARE,				/* Driver Type */
 			nullptr,								/* Software */
-			0u,										/* Create Flags */
+			uCreateFlags,							/* Create Flags */
 			FeatureLevelsWant,						/* Feature Levels requested */
 			(UINT)std::size( FeatureLevelsWant ),	/* Number of Feature Levels requested */
 			D3D11_SDK_VERSION,						/* SDK Version */
-			&dSwapChain,							/* pp Swap Chain Descriptor */
-			&m_pSwapChain,							/* pp Swap Chain */
 			&m_pDevice,								/* pp Device */
 			&FeatureLevelGot,						/* Feature Level received */
 			&m_pImmediateContext					/* pp Device Context */
 		);
 
-		if( FAILED( hr ) ) throw exception("DirectX Exception", _lazer_exception_msg.append("Failed to Create Device and SwapChain."));
+		if( FAILED( hr ) ) throw exception("DirectX Exception", _lazer_exception_msg.append("Failed to Create Device."));
 
 		m_NativeHandle.pDevice = m_pDevice.Get();
 		m_NativeHandle.pDeviceContext = m_pImmediateContext.Get();
@@ -60,23 +45,6 @@ namespace Fission::Platform {
 			break;
 		default:
 			throw std::logic_error("this don't make no fucking sense");
-		}
-
-		{
-			com_ptr<ID3D11Resource> pBackBuffer;
-			hr = m_pSwapChain->GetBuffer( 0u, IID_PPV_ARGS( &pBackBuffer ) );
-			hr = m_pDevice->CreateRenderTargetView( pBackBuffer.Get(), nullptr, &m_pRenderTargetView );
-		}
-
-		{
-			D3D11_VIEWPORT vp;
-			vp.TopLeftX = 0;
-			vp.TopLeftY = 0;
-			vp.MinDepth = 0.0f;
-			vp.MaxDepth = 1.0f;
-			vp.Width = (FLOAT)m_Resolution.x;
-			vp.Height = (FLOAT)m_Resolution.y;
-			m_pImmediateContext->RSSetViewports( 1u, &vp );
 		}
 
 		// this all needs to be moved !epic
@@ -99,6 +67,7 @@ namespace Fission::Platform {
 		// todo: find where the best place to have this is
 		m_pImmediateContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
 
+		// Set Sampler | todo: move to texture?
 		ID3D11SamplerState * ss;
 		D3D11_SAMPLER_DESC sdesc = CD3D11_SAMPLER_DESC{};
 		sdesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
@@ -109,27 +78,27 @@ namespace Fission::Platform {
 		m_pDevice->CreateSamplerState( &sdesc, &ss );
 		m_pImmediateContext->PSSetSamplers( 0u, 1u, &ss );
 
+		// Enable Clip Rects in the Raster State
 		ID3D11RasterizerState * rs;
 		D3D11_RASTERIZER_DESC rdesc = CD3D11_RASTERIZER_DESC{};
 		rdesc.FillMode = D3D11_FILL_SOLID;
 		rdesc.CullMode = D3D11_CULL_NONE;
-		rdesc.ScissorEnable = true;
+		rdesc.ScissorEnable = false;
 		rdesc.DepthClipEnable = false;
 		m_pDevice->CreateRasterizerState( &rdesc, &rs );
 		m_pImmediateContext->RSSetState( rs );
 
-		D3D11_RECT r;
-		r.left = r.top = 0;
-		r.bottom = 720;
-		r.right = 1280;
-		m_pImmediateContext->RSSetScissorRects( 1, &r );
+		//// Set Clip Rect to where we render
+		//D3D11_RECT r;
+		//r.left = r.top = 0;
+		//r.bottom = m_Resolution.y;
+		//r.right = m_Resolution.x;
+		//m_pImmediateContext->RSSetScissorRects( 1, &r );
 
 	}
 
 	GraphicsDirectX11::~GraphicsDirectX11()
 	{
-		m_pRenderTargetView.Reset();
-		m_pSwapChain.Reset();
 		m_pImmediateContext.Reset();
 		m_pDevice.Reset();
 	}
@@ -143,31 +112,14 @@ namespace Fission::Platform {
 
 	bool GraphicsDirectX11::GetVSync() { return m_SyncInterval; }
 
-	vec2i GraphicsDirectX11::GetResolution() { return m_Resolution; }
-
-	vec2f GraphicsDirectX11::to_screen( vec2i mouse_pos )
+	void GraphicsDirectX11::SetFrameBuffer( Resource::FrameBuffer * buffer )
 	{
-		const vec2f window_size = (vec2f)m_pParentWindow->GetSize();
-		const vec2f pos_norm = (vec2f)mouse_pos / window_size;
-		return pos_norm * (vec2f)m_Resolution;
-	}
+		auto dx11_buffer = static_cast<FrameBufferDX11 *>( buffer );
 
-	// Todo: might not always want to clear the screen
-	void GraphicsDirectX11::BeginFrame()
-	{
-		FLOAT col[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+		ID3D11RenderTargetView * rtv = dx11_buffer->GetRenderTargetView();
 
-		m_pImmediateContext->ClearRenderTargetView( m_pRenderTargetView.Get(), col );
-
-		m_pImmediateContext->OMSetRenderTargets( 1u, m_pRenderTargetView.GetAddressOf(), nullptr );
-	}
-
-	void GraphicsDirectX11::EndFrame()
-	{
-		HRESULT hr;
-		hr = m_pSwapChain->Present( m_SyncInterval, 0u );
-		if( FAILED( hr ) ) throw exception("DirectX Exception", 
-			_lazer_exception_msg.append("Failed to present").append("Reason","Honestly don't know, I should have checked the HRESULT, my bad dude.") );
+		m_pImmediateContext->RSSetViewports( 1u, dx11_buffer->GetViewPort() );
+		m_pImmediateContext->OMSetRenderTargets( 1u, &rtv, nullptr );
 	}
 
 	void GraphicsDirectX11::Draw( uint32_t vertexCount, uint32_t vertexOffset )
@@ -178,6 +130,10 @@ namespace Fission::Platform {
 	void GraphicsDirectX11::DrawIndexed( uint32_t indexCount, uint32_t indexOffset, uint32_t vertexOffset )
 	{
 		m_pImmediateContext->DrawIndexed( indexCount, indexOffset, vertexOffset );
+	}
+
+	scoped<Resource::FrameBuffer> GraphicsDirectX11::CreateFrameBuffer( const FrameBuffer::CreateInfo & info ) {
+		return CreateScoped<FrameBufferDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info );
 	}
 
 	scoped<Resource::VertexBuffer> GraphicsDirectX11::CreateVertexBuffer( const VertexBuffer::CreateInfo & info ) {
