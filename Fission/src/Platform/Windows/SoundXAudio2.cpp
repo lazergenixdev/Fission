@@ -165,7 +165,7 @@ SoundSourceXAudio2::SoundSourceXAudio2( IXAudio2 * engine, IXAudio2SubmixVoice *
 	m_XAudioBuffer.pContext = this;
 	m_XAudioBuffer.pAudioData = m_pSound->m_Sound.m_samples.data();
 	m_XAudioBuffer.AudioBytes = (uint32_t)m_pSound->m_Sound.m_samples.size();
-	//m_XAudioBuffer.LoopCount = ( info.bIsLooped ? XAUDIO2_LOOP_INFINITE : 0u );
+	m_XAudioBuffer.LoopCount = ( info.bIsLooped ? XAUDIO2_LOOP_INFINITE : 0u );
 
 	m_pVoice->SubmitSourceBuffer( &m_XAudioBuffer );
 	m_bIsConsuming = true;
