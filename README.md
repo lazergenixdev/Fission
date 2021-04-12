@@ -1,12 +1,9 @@
 # Fission [![License](https://img.shields.io/github/license/lazergenixdev/Fission?color=dodgerblue&style=plastic)](https://github.com/lazergenixdev/Fission/blob/master/LICENSE)
 ### High performance game engine
 Game Engine I am developing on for a specific game that I am working on, but thought that some others could also find some use in this project :)
-\
-\
-This Engine mainly focuses on 2D graphics, but the rendering API is not limited to 2D (however some concepts are missing, such as depth stencils).
-If you really want 3D graphics, then you would have to query the `Graphics` object for its native handle.
-\
-\
+### Why this game engine ?
+I developing this engine to fully take advantage of the hardware on most modern machines to make a competitively **Fast**, **Efficient**, and **Stable** engine with no compromises. To do this I will be using the native toolsets for each platform and implement most graphics APIs; all abstracted away from the user of *Fission* to make game development easier than coding everything from scratch, but with all of the benefits.
+### Development
 Only focusing on the Windows build for now, but after I got the main features stable I will move to work on an Andriod build as the next platform.
 
 ## Getting Started
