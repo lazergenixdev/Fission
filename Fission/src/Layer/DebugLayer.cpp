@@ -67,10 +67,45 @@ void DebugLayerImpl::Text( const char * what )
 	m_CurrentInfo->emplace_back( what );
 }
 
+static std::string cpu_name;
+static std::string memory_str;
+#include <intrin.h>
+
 void DebugLayerImpl::OnCreate() {
 	m_pRenderer2D = Renderer2D::Create( GetApp()->GetGraphics() );
 
-	FontManager::SetFont( "$debug", RobotoRegularTTF::data, RobotoRegularTTF::size, 10.0f );
+	FontManager::SetFont( "$debug", RobotoRegularTTF::data, RobotoRegularTTF::size, 9.0f );
+
+	int CPUInfo[4] = { -1 };
+	unsigned   nExIds, i = 0;
+	char CPUBrandString[0x40] = {};
+	// Get the information associated with each extended ID.
+	__cpuid( CPUInfo, 0x80000000 );
+	nExIds = CPUInfo[0];
+	for( i = 0x80000000; i <= nExIds; ++i )
+	{
+		__cpuid( CPUInfo, i );
+		// Interpret CPU brand string
+		if( i == 0x80000002 )
+			memcpy( CPUBrandString, CPUInfo, sizeof( CPUInfo ) );
+		else if( i == 0x80000003 )
+			memcpy( CPUBrandString + 16, CPUInfo, sizeof( CPUInfo ) );
+		else if( i == 0x80000004 )
+			memcpy( CPUBrandString + 32, CPUInfo, sizeof( CPUInfo ) );
+	}
+	//string includes manufacturer, model and clockspeed
+	cpu_name = (const char *)CPUBrandString;
+
+	//SYSTEM_INFO sysInfo;
+	//GetSystemInfo( &sysInfo );
+	//cout << "Number of Cores: " << sysInfo.dwNumberOfProcessors << endl;
+
+	MEMORYSTATUSEX statex;
+	statex.dwLength = sizeof( statex );
+	GlobalMemoryStatusEx( &statex );
+	char buf[30];
+	sprintf( buf, "%.1f", float( ( statex.ullTotalPhys / 1024 ) / ( 1024 * 1000 ) ) );
+	memory_str = "Total System Memory: " + std::string(buf) + "GB";
 }
 
 void DebugLayerImpl::OnUpdate() {
@@ -93,13 +128,21 @@ void DebugLayerImpl::OnUpdate() {
 
 		auto tl = m_pRenderer2D->CreateTextLayout( L"Fission v" FISSION_VERSION_STRING " - Debug Layer" );
 
-		m_pRenderer2D->FillRect( rectf( 0.0f, tl.width, 0.0f, 2.0f * diff ), color( Colors::Black, 0.7f ) );
+		m_pRenderer2D->FillRect( rectf( 0.0f, tl.width, 0.0f, 2.0f * diff ), color( 0.25f, 0.25f, 0.25f, 0.7f ) );
 
 		m_pRenderer2D->DrawString( L"Fission v" FISSION_VERSION_STRING " - Debug Layer", { 0.0f, 0.0f }, Colors::White );
 
 		m_pRenderer2D->DrawString( L"(F3)", { tl.width + 4.0f, 0.0f }, color( 0xFFFFFF, 0.5f ) );
 
 		m_pRenderer2D->DrawString( buf, { 0.0f, diff }, Colors::White );
+		
+		tl = m_pRenderer2D->CreateTextLayout( cpu_name.c_str() );
+		m_pRenderer2D->FillRect( rectf( 0.0f, tl.width, diff * 2.0f, diff * 2.0f + tl.height ), color( 0.25f, 0.25f, 0.25f, 0.7f ) );
+		m_pRenderer2D->DrawString( cpu_name.c_str(), { 0.0f, diff*2.0f }, Colors::White );
+
+		tl = m_pRenderer2D->CreateTextLayout( cpu_name.c_str() );
+		m_pRenderer2D->FillRect( rectf( 0.0f, tl.width, diff * 3.0f, diff * 3.0f + tl.height ), color( 0.25f, 0.25f, 0.25f, 0.7f ) );
+		m_pRenderer2D->DrawString( memory_str.c_str(), { 0.0f, diff*3.0f }, Colors::White );
 
 		float start = 50.0f;
 
