@@ -126,9 +126,6 @@ namespace Fission {
 		vertex * vertex_data = nullptr;
 		uint32_t * index_data = nullptr;
 
-		uint32_t vertex_count = 0;
-		uint32_t index_count = 0;
-
 		static constexpr int vertex_max_count = 100000;
 		static constexpr int index_max_count = 200000;
 	};

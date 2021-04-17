@@ -28,7 +28,23 @@
 *
 */
 
-// todo: more development needed, methods used here I don't see as being scalable
+/**
+ *
+ * All application configuration settings are stored in a YAML file.
+ * 
+ * Config files include how windows will act when first created, and the
+ * settings for the graphics (Multi-Sampling, V-Sync, Texture Filtering, ...)
+ * 
+ * Applications will automatically call `Load()` on startup
+ * to get a user's saved settings and `Save()` when the app exits.
+ * Default Path: "<user save directory>/etc/appconfig.yml"
+ * 
+ * It is the programmer's responsibility to call these functions accordingly
+ * when the user decides to import new settings, or in the case of a program crash,
+ * save the settings after changed so that the user's settings are kept intact.
+ * But this is by no means a requirement.
+ * 
+ */
 
 #pragma once
 #include <Fission/config.h>
@@ -36,40 +52,21 @@
 
 namespace Fission {
 
-    class Configuration
+    class Config
     {
     public:
-        struct WindowConfig
-        {
-            std::optional<std::string>      Style;
-            std::optional<vec2i>            Position;
-            std::optional<vec2i>            Size;
-            std::optional<bool>             SavePosition;
-            std::optional<bool>             SaveSize;
-            std::optional<bool>             Fullscreen;
-        };
+        static constexpr const char * DefaultSaveFile = "appconfig";
 
-        struct GraphicsConfig
-        {
-            std::optional<vec2i>            Resolution;
-            std::optional<std::string>      API;
-            std::optional<std::string>      FrameRate;
-            std::optional<std::string>      FSAA;
-        };
+        //! @brief Load configuration data from a file to the application context
+        //! @note It is not sufficient to just load in new settings for them to be applied,
+        //!         for graphics settings the application will need to call `Recreate()` for
+        //!         them to take effect.
+        //!       Also, window configuration data only apply for newly created windows after `Load()` was called.
+        //! @return 
+        FISSION_API static bool Load( file::path _Save_Location = DefaultSaveFile ) noexcept;
 
-        FISSION_API static void Load() noexcept;
-
-        FISSION_API static void Save() noexcept;
-
-
-        FISSION_API static void SetWindowConfig( const Window::Properties & ) noexcept;
-
-        FISSION_API static Window::Properties GetWindowConfig( const Window::Properties & fallback ) noexcept;
-
-        FISSION_API static void SetGraphicsConfig( const GraphicsConfig & ) noexcept;
-
-        FISSION_API static GraphicsConfig GetGraphicsConfig() noexcept;
-
+        //! @brief Saves all settings in the application context.
+        FISSION_API static bool Save( file::path _Save_Location = DefaultSaveFile ) noexcept;
 
     };
 

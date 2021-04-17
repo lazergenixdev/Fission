@@ -14,7 +14,7 @@ namespace Fission::Platform
 	{
 	public:
 
-		WindowsWindow( const Properties & props, IEventHandler * event_handler );
+		WindowsWindow( const Properties & props, Graphics * pGraphics, IEventHandler * event_handler );
 		~WindowsWindow();
 
 		virtual void SetEventHandler( IEventHandler * handler ) override;
@@ -37,11 +37,15 @@ namespace Fission::Platform
 
 		virtual native_handle_type native_handle() override;
 
+		virtual Resource::SwapChain * GetSwapChain() override;
+
+		virtual MonitorPtr GetMonitor() override;
+
+		virtual void SetMonitor( MonitorPtr ) override;
+
 		virtual void Close() override;
 
-		vec2i GetPosition() const {
-			return m_Properties.position.value();
-		}
+		vec2i GetPosition() const { return m_Properties.position; }
 
 	private:
 		class WindowClass
@@ -92,14 +96,19 @@ namespace Fission::Platform
 		short m_MouseWheelDelta = 0;
 
 		Cursor * m_Cursor = Cursor::Get( Cursor::Default_Arrow );
+		ref<Resource::SwapChain> m_pSwapChain;
 
 		Properties m_Properties;
 		bool m_bRestrictAR = false;
+		bool m_bFullscreenMode = false;
 
 		WindowHandle m_Handle = NULL;
 
 		IEventHandler * pEventHandler = IEventHandler::Default();
 		MouseTrackEvents m_MouseTracker;
+
+		Monitor * m_pMonitor;
+		Graphics * m_pGraphics;
 
 		std::mutex m_AccessMutex;
 		std::condition_variable m_AccessCV;

@@ -45,4 +45,10 @@ namespace Fission
  */
 FISSION_API void GetVersion( int *_Maj, int *_Min, int *_Pat );
 
+FISSION_API void GetVersionString( wchar_t * _Buffer );
+
+//! @brief Gets version in format: "Fission v000.000.000"
+//! @note buffer of size 21 characters should be fine.
+FISSION_API void GetVersionString( char * _Buffer );
+
 }

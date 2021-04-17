@@ -14,8 +14,6 @@ Application * ILayer::GetApp() {
 	return s_pInstance;
 }
 
-static scoped<Resource::FrameBuffer> g_pFrameBuffer; //!< For Testing purposes only
-
 
 static void RegisterConsoleCommands()
 {
@@ -31,12 +29,12 @@ static void RegisterConsoleCommands()
 		[] ( std::wstring s ) -> std::wstring {
 		if( s == L"on" )
 		{
-			Application::Get()->GetGraphics()->SetVSync( true );
+			Application::Get()->GetGraphics()->SetVSync( vsync_On );
 			return L"vsync turned on";
 		}
 		else if( s == L"off" )
 		{
-			Application::Get()->GetGraphics()->SetVSync( false );
+			Application::Get()->GetGraphics()->SetVSync( vsync_Off );
 			return L"vsync turned off";
 		}
 		else
@@ -64,17 +62,13 @@ Application::Application( const CreateInfo & info )
 
 	RegisterConsoleCommands();
 
-	Configuration::Load();
+	Config::Load();
 
-	Window::Properties wndProps = info.window;
-	wndProps.flags = wndProps.flags | Window::Flags::IsMainWindow;
-	m_State->m_pMainWindow = Window::Create( wndProps, this );
 	m_State->m_pGraphics = Graphics::Create( info.graphics );
 
-	Resource::FrameBuffer::CreateInfo fbi = {};
-	fbi.pWindow = m_State->m_pMainWindow.get();
-	g_pFrameBuffer = m_State->m_pGraphics->CreateFrameBuffer( fbi );
-	m_State->m_pGraphics->SetFrameBuffer( g_pFrameBuffer.get() );
+	Window::Properties wndProps = info.window;
+	wndProps.save = Fission::MainWindowID;
+	m_State->m_pMainWindow = Window::Create( wndProps, m_State->m_pGraphics.get(), this );
 }
 
 Application::~Application() noexcept 
@@ -82,7 +76,7 @@ Application::~Application() noexcept
 	for( auto && layer : m_State->m_vMainLayers )
 		delete layer;
 
-	Configuration::Save();
+	Config::Save();
 
 	delete m_State;
 }
@@ -132,8 +126,8 @@ create:
 			m_State->m_PauseCondition.wait( lock );
 		}
 
-		g_pFrameBuffer->Clear( Colors::Black );
-		//m_State->m_pGraphics->SetFrameBuffer( g_pFrameBuffer.get() );
+		m_State->m_pMainWindow->GetSwapChain()->Bind();
+		m_State->m_pMainWindow->GetSwapChain()->Clear( Colors::Black );
 
 		// Update all layers from back to top*
 		for( auto && layer : m_State->m_vMainLayers )
@@ -146,7 +140,8 @@ create:
 		m_State->m_DebugLayer.OnUpdate();
 
 		//m_State->m_pGraphics->EndFrame();
-		g_pFrameBuffer->Present();
+		m_State->m_pMainWindow->GetSwapChain()->Present( Graphics::GetVSync() );
+
 		s_LastDelta = s_AppTimer.gets(); // temp
 
 		// Graphics configuration has changed, so all resources must be created again

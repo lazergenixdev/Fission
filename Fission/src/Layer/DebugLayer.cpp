@@ -2,6 +2,8 @@
 #include "Fission/Core/Application.h"
 #include "../Version.h"
 
+// todo: move system info gathering to Fission::System
+
 namespace RobotoRegularTTF {
 #include "Static Fonts/Roboto-Regular.inl"
 }
@@ -117,7 +119,6 @@ void DebugLayerImpl::OnUpdate() {
 
 	float msAvgFrameTime = [&, sum = 0.0f]()mutable{ for( auto && f : m_LastFrameTimes ) sum += f; return sum; }( ) / (float)std::size( m_LastFrameTimes );
 
-
 	if( m_bShow )
 	{
 		wchar_t buf[32];
@@ -144,7 +145,7 @@ void DebugLayerImpl::OnUpdate() {
 		m_pRenderer2D->FillRect( rectf( 0.0f, tl.width, diff * 3.0f, diff * 3.0f + tl.height ), color( 0.25f, 0.25f, 0.25f, 0.7f ) );
 		m_pRenderer2D->DrawString( memory_str.c_str(), { 0.0f, diff*3.0f }, Colors::White );
 
-		float start = 50.0f;
+		float start = 80.0f;
 
 		for( auto && [key,text] : m_InfoMap )
 		{

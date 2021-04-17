@@ -24,7 +24,6 @@ namespace Fission::Platform {
 SoundEngineXAudio2::SoundEngineXAudio2( const CreateInfo & info )
 {
 	HRESULT hr;
-	// todo: better error handling
 
 	if( FAILED( hr = XAudio2Create( &m_pXAudio2Engine, 0, XAUDIO2_ANY_PROCESSOR ) ) )
 		throw exception( "XAudio2 Exception", _lazer_exception_msg.append( "Failed to Initialize Sound Engine." ) );

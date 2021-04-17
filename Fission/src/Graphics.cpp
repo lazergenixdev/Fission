@@ -2,11 +2,24 @@
 
 #ifdef FISSION_PLATFORM_WINDOWS
 #include "Platform/Windows/GraphicsDirectX11.h"
-//#include "Platform/Windows/GraphicsOpenGL.h"
+#include "Platform/Windows/GraphicsOpenGL.h"
 #endif // FISSION_PLATFORM_WINDOWS
 
+#include <gl/GL.h>
 
 namespace Fission {
+
+	namespace Private
+	{
+		enum {
+			msaa_Off = 0
+		};
+
+		static Graphics::API Settings_API = Graphics::API::Default;
+		static vsync_ Setting_VSync = vsync_On;
+		static int Setting_MSAA = msaa_Off;
+
+	}
 
 	bool Graphics::IsSupported( API api )
 	{
@@ -32,9 +45,11 @@ namespace Fission {
 		}
 	}
 
-	std::unique_ptr<Graphics> Graphics::Create( const Properties & _Properties )
+	std::unique_ptr<Graphics> Graphics::Create( const State & _State )
 	{
-		switch( _Properties.api )
+		Private::Settings_API = _State.api;
+
+		switch( Private::Settings_API )
 		{
 	#ifdef FISSION_PLATFORM_WINDOWS
 		case Graphics::API::Default:
@@ -56,6 +71,16 @@ namespace Fission {
 		default:
 			return nullptr;
 		}
+	}
+
+	void Graphics::SetVSync( vsync_ vsync_interval )
+	{
+		Private::Setting_VSync = vsync_interval;
+	}
+
+	vsync_ Graphics::GetVSync()
+	{
+		return Private::Setting_VSync;
 	}
 
 }

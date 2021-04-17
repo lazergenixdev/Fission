@@ -32,7 +32,6 @@
 // todo: add RenderTarget(framebuffer) API
 
 #pragma once
-#include "Fission/Core/Window.h"
 #include "Bindable.h"
 #include "Renderer.h"
 
@@ -47,37 +46,40 @@ public:
 	using Texture2D =			Resource::Texture2D;
 	using Shader =				Resource::Shader;
 	using Blender =				Resource::Blender;
-
 	using FrameBuffer =			Resource::FrameBuffer;
+
+	using SwapChain =			Resource::SwapChain;
 
 public:
 	enum class API {
 		DirectX11, /*!< DirectX 11 */
 		DirectX12, /*!< DirectX 12 */
 		Vulkan,    /*!< Vulkan */
-		OpenGL,    /*!< OpenGL */
+		OpenGL4,   /*!< OpenGL 4 */
 
 		__count__, /*!< Number of Graphics APIs available */
 		Default    /*!< @Graphics will decide which api is best to use */
 	};
 
-	struct Properties
-	{
-		API api = API::Default;
-	};
-
 	struct State
 	{
-		API api;
-		Resource::FrameBuffer * pFrameBuffers;
-		int nFrameBuffers;
+		API api = API::Default;
+		vsync_ vsync = vsync_On;
+		int msaa = 1;
 	};
-		
+
 public:
 
 	static bool IsSupported( API _GFX_API );
 
-	static scoped<Graphics> Create( const Properties & _Properties = {} );
+	static scoped<Graphics> Create( const State & _State = {} );
+
+	//! @param vsync_interval: VSYNC OFF (0), 1 FRAME VSYNC (1) (recommended), 2 FRAME VSYNC (2)
+	static void SetVSync( vsync_ vsync_interval );
+
+	static vsync_ GetVSync();
+
+	static State GetState();
 
 
 /* ------------------------------------ Begin Base API Functions ----------------------------------- */
@@ -85,13 +87,14 @@ public:
 	//! @brief Get the internal API
 	virtual API GetAPI() = 0;
 
-	virtual void SetVSync( bool vsync ) = 0;
-
-	virtual bool GetVSync() = 0;
+	//! @brief All framebuffers that have been invalidated will be created again,
+	//!			this includes all framebuffers created on a now deleted graphics context.
+//	virtual void RecreateFrameBuffers() = 0;
 
 	//virtual void SetProperties( const Properties * props ) = 0;
 
-	virtual void SetFrameBuffer( Resource::FrameBuffer * buffer ) = 0;
+	//! @brief sets which window we are currently drawing to.
+	virtual void SetContext( Window * pWindow ) {};
 
 	virtual void GetState( State * _Ptr_Dest_State ) {};
 
@@ -104,7 +107,7 @@ public:
 
 /* ------------------------------------ Begin Graphics Primitives ----------------------------------- */
 
-	virtual scoped<FrameBuffer> CreateFrameBuffer( const FrameBuffer::CreateInfo & info ) = 0;
+	virtual ref<FrameBuffer> CreateFrameBuffer( const FrameBuffer::CreateInfo & info ) = 0;
 
 	virtual scoped<VertexBuffer> CreateVertexBuffer( const VertexBuffer::CreateInfo & info ) = 0;
 
@@ -118,6 +121,8 @@ public:
 
 /* ------------------------------------ End Graphics Primitives ----------------------------------- */
 
+	virtual ref<SwapChain> CreateSwapChain( const SwapChain::CreateInfo & info ) = 0;
+
 public:
 
 	using native_handle_type = void *;
@@ -125,8 +130,13 @@ public:
 	/*!< @brief Only returned by `native_handle()` when `GetAPI() == DirectX11` */
 	struct native_type_dx11
 	{
-		void * pDevice; /*!< d3d11device */
-		void * pDeviceContext; /*!< immediate mode context */
+		void * pDevice;			/*!< d3d11device */
+		void * pDeviceContext;	/*!< immediate mode context */
+	};
+
+	/*!< @brief Only returned by `native_handle()` when `GetAPI() == OpenGL` */
+	struct native_type_opengl3
+	{
 	};
 
 	virtual native_handle_type native_handle() = 0;

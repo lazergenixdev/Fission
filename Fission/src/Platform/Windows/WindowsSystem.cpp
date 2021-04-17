@@ -1,5 +1,6 @@
 #pragma once
 #include "Fission/Platform/System.h"
+#include "WindowsMonitor.h"
 
 #ifdef FISSION_PLATFORM_WINDOWS
 
@@ -19,6 +20,8 @@ namespace Fission {
 			DXGetErrorDescriptionA( hr, errorbuffer, std::size( errorbuffer ) );
 			throw exception( "COM Error", _lazer_exception_msg.append( "Failed to Initialize COM", errorbuffer ) );
 		}
+
+		Platform::EnumMonitors();
 	}
 
 	void System::Shutdown()

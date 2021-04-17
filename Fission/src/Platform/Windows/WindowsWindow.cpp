@@ -3,6 +3,8 @@
 #include <Fission/Core/Configuration.h>
 #include <Xinput.h>
 
+#include "../../ConfigurationImpl.h"
+
 // application defined window messages
 #define FISSION_WINEVENT_MSGBOX       ( WM_USER + 0 )
 #define FISSION_WINEVENT_CLOSE        ( WM_USER + 1 )
@@ -15,57 +17,57 @@
 // TODO: Fix Sizing of window when switching Window styles
 // TODO: Use raw input for keyboard and mouse
 
-WPARAM g_ImGuiWin32WheelData = 0;
-
 namespace Fission::Platform {
 
-    static bool SetFullscreen( HWND hwnd, WindowsWindow * pwnd, bool fullscreen )
-    {
-        if( fullscreen ) 
-        {
-            DEVMODE fullscreenSettings;
-            bool isChangeSuccessful;
-           // RECT windowBoundary;
+    //static bool SetFullscreen( HWND hwnd, WindowsWindow * pwnd, bool fullscreen )
+    //{
+    //    if( fullscreen ) 
+    //    {
+    //        DEVMODE fullscreenSettings;
+    //        bool isChangeSuccessful;
+    //       // RECT windowBoundary;
 
-            vec2i res = { 1280, 720 };
+    //        vec2i res = { 1280, 720 };
+    //        //vec2i res = { 1920, 1080 };
 
-            EnumDisplaySettingsW( NULL, 0, &fullscreenSettings );
-            fullscreenSettings.dmPelsWidth = res.x;
-            fullscreenSettings.dmPelsHeight = res.y;
-            fullscreenSettings.dmBitsPerPel = 32;
-            fullscreenSettings.dmDisplayFrequency = 60;
-            fullscreenSettings.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;
+    //        EnumDisplaySettingsW( NULL, 0, &fullscreenSettings );
+    //        fullscreenSettings.dmPelsWidth = res.x;
+    //        fullscreenSettings.dmPelsHeight = res.y;
+    //        fullscreenSettings.dmBitsPerPel = 32;
+    //        fullscreenSettings.dmDisplayFrequency = 60;
+    //        fullscreenSettings.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;
 
-            SetWindowPos( hwnd, HWND_TOP, 0, 0, res.x, res.y, SWP_SHOWWINDOW );
-            isChangeSuccessful = ChangeDisplaySettings( &fullscreenSettings, CDS_FULLSCREEN ) == DISP_CHANGE_SUCCESSFUL;
-            SetWindowLongPtr( hwnd, GWL_EXSTYLE, WS_EX_APPWINDOW | WS_EX_TOPMOST );
-            SetWindowLongPtr( hwnd, GWL_STYLE, WS_POPUP | WS_VISIBLE );
-            ShowWindow( hwnd, SW_SHOW );
+    //        isChangeSuccessful = ChangeDisplaySettings( &fullscreenSettings, CDS_FULLSCREEN ) == DISP_CHANGE_SUCCESSFUL;
+    //        SetWindowLongPtr( hwnd, GWL_STYLE, WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_POPUP );
+    //    //    SetWindowLongPtr( hwnd, GWL_EXSTYLE, WS_EX_APPWINDOW | WS_EX_TOPMOST );
+    //        SetWindowPos( hwnd, HWND_TOPMOST, 0, 0, res.x, res.y, SWP_NOCOPYBITS | SWP_NOACTIVATE | SWP_NOZORDER );
+    //        ShowWindow( hwnd, SW_SHOW );
 
-            return ( isChangeSuccessful );
-        }
-        else
-        {
-            bool isChangeSuccessful;
+    //        return ( isChangeSuccessful );
+    //    }
+    //    else
+    //    {
+    //        bool isChangeSuccessful;
 
-            SetWindowLongPtr( hwnd, GWL_EXSTYLE, WS_EX_LEFT );
-            SetWindowLongPtr( hwnd, GWL_STYLE, WS_MINIMIZEBOX | WS_SYSMENU | WS_CAPTION | WS_VISIBLE );
-            isChangeSuccessful = ChangeDisplaySettings( NULL, CDS_RESET ) == DISP_CHANGE_SUCCESSFUL;
-            auto size = pwnd->GetWindowsSize();
-            auto pos = pwnd->GetPosition();
-            SetWindowPos( hwnd, HWND_NOTOPMOST, pos.x, pos.y, size.x, size.y, SWP_SHOWWINDOW );
-            ShowWindow( hwnd, SW_RESTORE );
+    //        SetWindowLongPtr( hwnd, GWL_EXSTYLE, WS_EX_LEFT );
+    //        SetWindowLongPtr( hwnd, GWL_STYLE, WS_MINIMIZEBOX | WS_SYSMENU | WS_CAPTION | WS_VISIBLE );
+    //        isChangeSuccessful = ChangeDisplaySettings( NULL, CDS_RESET ) == DISP_CHANGE_SUCCESSFUL;
+    //        auto size = pwnd->GetWindowsSize();
+    //        auto pos = pwnd->GetPosition();
+    //        SetWindowPos( hwnd, HWND_NOTOPMOST, pos.x, pos.y, size.x, size.y, SWP_SHOWWINDOW );
+    //        ShowWindow( hwnd, SW_RESTORE );
 
-            return ( isChangeSuccessful );
-        }
-    }
+    //        return ( isChangeSuccessful );
+    //    }
+    //}
 
-    WindowsWindow::WindowsWindow( const Properties & props, IEventHandler * event_handler )
-        : m_Properties( props ), pEventHandler( event_handler )
+    WindowsWindow::WindowsWindow( const Properties & props, Graphics * pGraphics, IEventHandler * event_handler )
+        : m_Properties( props ), pEventHandler( event_handler ),  m_pGraphics( pGraphics )
     {
         std::unique_lock lock( m_AccessMutex );
-    //    m_bRestrictAR = ( props.aspectRatio == vec2i{} );
+
         m_WindowThread = std::thread( Run, this );
+
         // Wait for window to be created on separate thread
         m_AccessCV.wait( lock );
     }
@@ -134,6 +136,21 @@ namespace Fission::Platform {
         return m_Handle;
     }
 
+    Resource::SwapChain * WindowsWindow::GetSwapChain()
+    {
+        return m_pSwapChain.get();
+    }
+
+    MonitorPtr WindowsWindow::GetMonitor()
+    {
+        return m_pMonitor;
+    }
+
+    void WindowsWindow::SetMonitor( MonitorPtr a )
+    {
+        m_pMonitor = a;
+    }
+
     void WindowsWindow::Close()
     {
         SendMessageW( m_Handle, FISSION_WINEVENT_CLOSE, 0, 0 );
@@ -152,16 +169,14 @@ namespace Fission::Platform {
 
                 std::lock_guard lock( pthis->m_AccessMutex );
 
-                MONITORINFO info = {};
-                info.cbSize = sizeof MONITORINFO;
-                GetMonitorInfoW( MonitorFromPoint( { -1, -1 }, MONITOR_DEFAULTTOPRIMARY ), &info );
+                if( pthis->m_Properties.save != NoSaveID )
+                    ConfigImpl::Get().GetWindowProperties( &pthis->m_Properties );
+
+                pthis->m_pMonitor = Monitor::GetMonitors()[0];
 
                 auto size = pthis->GetWindowsSize();
 
-                if( !pthis->m_Properties.position )
-                    pthis->m_Properties.position = vec2i{ info.rcMonitor.right - size.x, info.rcMonitor.bottom - size.y } / 2;
-
-                vec2i & pos = pthis->m_Properties.position.value();
+                vec2i & pos = pthis->m_Properties.position;
 
                 pos.x = std::max( pos.x, 0 );
                 pos.y = std::max( pos.y, 0 );
@@ -177,6 +192,9 @@ namespace Fission::Platform {
                     WindowClass::GetInstance(),
                     nullptr
                 );
+
+                Resource::SwapChain::CreateInfo scInfo = { pthis };
+                pthis->m_pSwapChain = pthis->m_pGraphics->CreateSwapChain( scInfo );
 
                 SetWindowLongPtrW( pthis->m_Handle, GWLP_USERDATA, (LONG_PTR)pthis );
 
@@ -199,6 +217,7 @@ namespace Fission::Platform {
 
             // Tell Constructor to exit, window should be created now
             pthis->m_AccessCV.notify_one();
+
 
             MSG msg = {};
             BOOL bRet;
@@ -230,10 +249,8 @@ namespace Fission::Platform {
         DestroyWindow( pthis->m_Handle );
         pthis->m_Handle = NULL;
 
-        if( bool( pthis->m_Properties.flags & Flags::IsMainWindow ) )
-        {
-            Configuration::SetWindowConfig( pthis->m_Properties );
-        }
+        if( pthis->m_Properties.save != NoSaveID )
+            ConfigImpl::Get().SetWindowProperties( pthis->m_Properties );
     }
 
     void WindowsWindow::PollGamePad( WindowsWindow * pthis )
@@ -269,8 +286,8 @@ namespace Fission::Platform {
         }
         case WM_ACTIVATE:
         {
-            if( wParam == WA_INACTIVE && bool( pWindow->m_Properties.flags & Flags::Fullscreen ) )
-                ShowWindow( hWnd, SW_MINIMIZE );
+            //if( wParam == WA_INACTIVE && bool( pWindow->m_Properties.flags & Flags::Fullscreen ) )
+            //    ShowWindow( hWnd, SW_MINIMIZE );
             break;
 		}
         case WM_SYSKEYDOWN:
@@ -283,15 +300,33 @@ namespace Fission::Platform {
             ev.key = key_from_win32( (int)wParam );
 
             if( ev.key == Keys::F11 )
-                if( bool( pWindow->m_Properties.flags & Flags::Fullscreen ) )
+                if( pWindow->m_Properties.style == Style::Fullscreen )
                 {
-                    if( SetFullscreen( hWnd, pWindow, false ) )
-                        utility::remove_flag<(size_t)Flags::Fullscreen>( pWindow->m_Properties.flags );
+                    SetWindowLongPtr( pWindow->m_Handle, GWL_EXSTYLE, WS_EX_LEFT );
+                    SetWindowLongPtr( pWindow->m_Handle, GWL_STYLE, WS_MINIMIZEBOX | WS_SYSMENU | WS_CAPTION | WS_VISIBLE );
+                    auto size = pWindow->GetWindowsSize();
+                    auto pos = pWindow->GetPosition();
+                //    pWindow->m_pSwapChain->SetFullscreen( false, pWindow->m_pMonitor );
+                    pWindow->m_pMonitor->RevertDisplayMode();
+                    SetWindowPos( pWindow->m_Handle, HWND_NOTOPMOST, pos.x, pos.y, size.x, size.y, SWP_SHOWWINDOW );
+                    ShowWindow( pWindow->m_Handle, SW_RESTORE );
+                    pWindow->m_Properties.style = Style::Border;
+                    pWindow->m_bFullscreenMode = false;
                 }
                 else
                 {
-                    if( SetFullscreen( hWnd, pWindow, true ) )
-                        utility::set_flag<(size_t)Flags::Fullscreen>( pWindow->m_Properties.flags );
+                    pWindow->m_Properties.style = Style::Fullscreen;
+                    pWindow->m_bFullscreenMode = true;
+                    SetWindowLongPtr( pWindow->m_Handle, GWL_EXSTYLE, WS_EX_APPWINDOW | WS_EX_TOPMOST );
+                    SetWindowLongPtr( pWindow->m_Handle, GWL_STYLE, WS_POPUP | WS_VISIBLE );
+                //    SetWindowLongPtr( pWindow->m_Handle, GWL_STYLE, WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_POPUP );
+                 //   auto mode = pWindow->m_pMonitor->GetCurrentDisplayMode();
+                    DisplayMode mode = { {1280,720}, 60 };
+                    pWindow->m_pMonitor->SetDisplayMode( &mode );
+                //    pWindow->m_pSwapChain->SetFullscreen( true, pWindow->m_pMonitor );
+                    SetWindowPos( pWindow->m_Handle, HWND_TOPMOST, 0, 0, mode.resolution.x, mode.resolution.y, SWP_SHOWWINDOW );
+                //    SetWindowPos( pWindow->m_Handle, HWND_TOPMOST, 0, 0, mode->resolution.x, mode->resolution.y, SWP_SHOWWINDOW );
+                    ShowWindow( pWindow->m_Handle, SW_MAXIMIZE );
                 }
 
             pWindow->pEventHandler->OnKeyDown( ev );
@@ -349,7 +384,7 @@ namespace Fission::Platform {
             KeyDownEventArgs downEvent{ &native_event };
             KeyUpEventArgs upEvent{ &native_event };
             pWindow->m_MouseWheelDelta += GET_WHEEL_DELTA_WPARAM( wParam );
-            g_ImGuiWin32WheelData = wParam;
+
             downEvent.key = upEvent.key = Keys::Mouse_WheelUp;
             while( pWindow->m_MouseWheelDelta >= WHEEL_DELTA ) {
                 pWindow->pEventHandler->OnKeyDown( downEvent );
@@ -435,7 +470,7 @@ namespace Fission::Platform {
         case WM_MOVE:
         {
             auto point = MAKEPOINTS( lParam );
-            if( pWindow )
+            if( pWindow && !pWindow->m_bFullscreenMode )
                 pWindow->m_Properties.position = vec2i::from( point );
             break;
         }
@@ -536,10 +571,7 @@ namespace Fission::Platform {
         case WM_DESTROY:
             if( pWindow )
             {
-            PostQuitMessage( 0 );
-            extern bool MAIN_APPICATION_EXITING;
-            if( bool ( pWindow->m_Properties.flags & Window::Flags::IsMainWindow ) )
-                MAIN_APPICATION_EXITING = true;
+                PostQuitMessage( 0 );
             }
            break;
 

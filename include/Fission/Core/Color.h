@@ -3,7 +3,6 @@
 
 // todo:
 // [ ] - make a saturate function
-// ~~[ ] - use saturate so color values are never >1.0~~
 // maybe add to lazerlib?
 
 namespace Fission
@@ -166,18 +165,6 @@ namespace Fission
 
 	} // namespace Fission::Colors
 
-
-
-	//template <int _BitDepth>
-	//struct color
-	//{
-	//	static constexpr int bit_depth = _BitDepth;
-
-
-	//};
-	//static void f() {
-	//	color<8> nice;
-	//}
 
 	struct colorf_hsv { 
 		float h, s, v, a; 

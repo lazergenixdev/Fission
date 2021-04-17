@@ -58,6 +58,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 	Renderer2DImpl::Renderer2DImpl( Graphics * pGraphics )
 		: m_pGraphics( pGraphics )
 	{
+		// Allocate aligned memory for faster access
 		vertex_data = (vertex *)_aligned_malloc( vertex_max_count * sizeof vertex, 32 );
 		index_data = (uint32_t *)_aligned_malloc( index_max_count * sizeof uint32_t, 32 );
 
@@ -91,6 +92,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			m_pShader = pGraphics->CreateShader( info );
 
 			vec2f res = vec2f( 1280.0f, 720.0f ); // todo: this is a bug, please fix as soon as possible
+			//vec2f res = vec2f( 1920.0f, 1080.0f ); // todo: this is a bug, please fix as soon as possible
 
 			float matrix[16] = {
 				2.0f / res.x,	0.0f,		   -1.0f, 0.0f,
@@ -141,9 +143,6 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			if( cmd.Texture ) cmd.Texture->Bind(0);
 			m_pGraphics->DrawIndexed( cmd.idxCount, cmd.idxStart, cmd.vtxStart );
 		}
-
-		vertex_count = 0;
-		index_count = 0;
 
 		m_CommandBuffer.clear();
 		m_CommandBuffer.emplace_back( this, 0u, 0u );

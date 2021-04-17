@@ -7,7 +7,7 @@ namespace Fission::Platform {
 	class VertexBufferDX11 : public Resource::VertexBuffer
 	{
 	public:
-		VertexBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const Resource::VertexBuffer::CreateInfo & info );
+		VertexBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info );
 
 		virtual void Bind() override;
 		virtual void Unbind() override;
@@ -29,7 +29,7 @@ namespace Fission::Platform {
 	class IndexBufferDX11 : public Resource::IndexBuffer
 	{
 	public:
-		IndexBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const Resource::IndexBuffer::CreateInfo & info );
+		IndexBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info );
 
 		virtual void Bind() override;
 		virtual void Unbind() override;
@@ -123,7 +123,7 @@ namespace Fission::Platform {
 	class ShaderDX11 : public Resource::Shader
 	{
 	public:
-		ShaderDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const Resource::Shader::CreateInfo & info );
+		ShaderDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info );
 
 		virtual void Bind() override;
 		virtual void Unbind() override;
@@ -170,7 +170,7 @@ namespace Fission::Platform {
 	class Texture2DDX11 : public Resource::Texture2D
 	{
 	public:
-		Texture2DDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const Resource::Texture2D::CreateInfo & info );
+		Texture2DDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info );
 
 		virtual void Bind( int slot ) override;
 		virtual void Bind() override;
@@ -190,7 +190,7 @@ namespace Fission::Platform {
 	class BlenderDX11 : public Resource::Blender
 	{
 	public:
-		BlenderDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const Resource::Blender::CreateInfo & info );
+		BlenderDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info );
 
 		virtual void Bind() override;
 		virtual void Unbind() override;
@@ -200,28 +200,53 @@ namespace Fission::Platform {
 		com_ptr<ID3D11BlendState> m_pBlendState;
 	};
 
-	class FrameBufferDX11 : public Resource::FrameBuffer
+	class SwapChainDX11 : public Resource::SwapChain
 	{
 	public:
-		FrameBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const Resource::FrameBuffer::CreateInfo & info );
+		SwapChainDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info );
 
-		virtual uint32_t GetWidth() override;
-		virtual uint32_t GetHeight() override;
+		virtual vec2i GetSize() override;
+
+	//	virtual Resource::FrameBuffer * GetBackBuffer() override;
+
+		virtual void SetFullscreen( bool fullscreen, Monitor * pMonitor ) override;
 
 		virtual void Clear( color clear_color ) override;
 
-		virtual void Present() override;
+		virtual void Present( vsync_ vsync ) override;
 
-		ID3D11RenderTargetView * GetRenderTargetView();
-		IDXGISwapChain * GetSwapChain();
-		D3D11_VIEWPORT * GetViewPort();
+		virtual void Bind() override;
+
+		virtual void Unbind() override {}
+
 	private:
+		uint32_t *							m_pSyncInterval = nullptr;
 		vec2i								m_Resolution;
 		D3D11_VIEWPORT						m_ViewPort;
 		ID3D11DeviceContext *				m_pContext;
 		com_ptr<ID3D11RenderTargetView>		m_pRenderTargetView;
 		com_ptr<IDXGISwapChain>				m_pSwapChain;
-		class Window *						m_pParentWindow;
 	};
+	//class FrameBufferDX11 : public Resource::FrameBuffer
+	//{
+	//public:
+	//	FrameBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const Resource::FrameBuffer::CreateInfo & info );
 
-}
+	//	virtual vec2i GetSize() override;
+
+	//	virtual void Clear( color clear_color ) override;
+
+	//	ID3D11RenderTargetView * GetRenderTargetView();
+	//	IDXGISwapChain * GetSwapChain();
+	//	D3D11_VIEWPORT * GetViewPort();
+	//private:
+	//	uint32_t *							m_pSyncInterval = nullptr;
+	//	vec2i								m_Resolution;
+	//	D3D11_VIEWPORT						m_ViewPort;
+	//	ID3D11DeviceContext *				m_pContext;
+	//	com_ptr<ID3D11RenderTargetView>		m_pRenderTargetView;
+	//	com_ptr<IDXGISwapChain>				m_pSwapChain;
+	//	class Window *						m_pParentWindow;
+	//};
+
+} // namespace Fission::Platform

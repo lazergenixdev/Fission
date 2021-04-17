@@ -25,7 +25,8 @@ namespace Fission {
 		{
 			extend += ( 200.0f - extend ) * dt * extend_rate;
 
-			vec2f size = vec2f( 1280.0f, 720.0f ); // todo: this is a bug, please fix as soon as possible
+			//vec2f size = vec2f( 1280.0f, 720.0f ); // todo: this is a bug, please fix as soon as possible
+			vec2f size = vec2f( 1920.0f, 720.0f ); // todo: this is a bug, please fix as soon as possible
 
 			// Draw Background
 			m_pRenderer2D->FillRectGrad( rectf( 0.0f, size.x, 0.0f, extend ), Colors::Black, Colors::Black, color( 0x0, 0.7f ), color( 0x0, 0.7f ) );

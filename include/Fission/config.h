@@ -80,8 +80,6 @@ namespace Fission {
  */
 namespace Fission {
 
-	using namespace lazer;
-
 	template <typename T>
 	using ref = std::shared_ptr<T>;
 	template <typename T>
@@ -114,16 +112,47 @@ namespace Fission {
  * macro helpers
  */
 #define FISSION_MK_STR(X) #X
-#define FISSION_MK_WSTR(X) L#X
-#define FISSION_MK_WIDE(X) L##X
 
 /**
  * ImGui
  */
 #ifndef FISSION_IMGUI_ENABLE // ImGui only available on debug and release builds by default
-#if defined(FISSION_DIST)
+#if 1//defined(FISSION_DIST)
 #define IMGUI_DISABLE //  Disable everything ImGui: all headers and source files will be empty.
 #endif
 #endif
 
 #define IMGUI_API FISSION_API
+
+/**
+* Important Web Address
+*/
+#define FISSION_RR "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+
+/**
+* Stuff that haven't been added to 'lazerlib' yet
+*/
+
+namespace lazer {
+	template <typename T>
+	class list_view
+	{
+	public:
+		using iterator = T *;
+		using const_iterator = const T *;
+
+		list_view( iterator begin, iterator end ) : m_pBegin( begin ), m_pEnd( end ) {}
+
+		const T & operator[]( int index ) const { return m_pBegin[index]; }
+		T & operator[]( int index ) { return m_pBegin[index]; }
+
+		iterator begin() { return m_pBegin; }
+		iterator end() { return m_pEnd; }
+
+		const_iterator begin() const { return m_pBegin; }
+		const_iterator end() const { return m_pEnd; }
+	private:
+		iterator m_pBegin;
+		iterator m_pEnd;
+	};
+}

@@ -72,7 +72,7 @@ namespace Fission {
 		struct CreateInfo
 		{
 			Window::Properties window = {};
-			Graphics::Properties graphics = {};
+			Graphics::State graphics = {};
 		};
 
 	public:

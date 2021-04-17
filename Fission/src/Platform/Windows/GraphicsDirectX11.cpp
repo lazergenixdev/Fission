@@ -1,5 +1,4 @@
 #include "GraphicsDirectX11.h"
-#include "BindableDirectX11.h"
 #include "WindowsWindow.h"
 #include "Fission/Core/Console.h"
 
@@ -47,6 +46,9 @@ namespace Fission::Platform {
 			throw std::logic_error("this don't make no fucking sense");
 		}
 
+		UINT nquality = 0;
+		hr = m_pDevice->CheckMultisampleQualityLevels( DXGI_FORMAT_R8G8B8A8_UNORM, 8u, &nquality );
+
 		// this all needs to be moved !epic
 
 		// disable depth testing
@@ -78,7 +80,6 @@ namespace Fission::Platform {
 		m_pDevice->CreateSamplerState( &sdesc, &ss );
 		m_pImmediateContext->PSSetSamplers( 0u, 1u, &ss );
 
-		// Enable Clip Rects in the Raster State
 		ID3D11RasterizerState * rs;
 		D3D11_RASTERIZER_DESC rdesc = CD3D11_RASTERIZER_DESC{};
 		rdesc.FillMode = D3D11_FILL_SOLID;
@@ -105,23 +106,6 @@ namespace Fission::Platform {
 
 	Graphics::API GraphicsDirectX11::GetAPI() { return API::DirectX11; }
 
-	void GraphicsDirectX11::SetVSync( bool vsync )
-	{
-		m_SyncInterval = vsync ? 1 : 0;
-	}
-
-	bool GraphicsDirectX11::GetVSync() { return m_SyncInterval; }
-
-	void GraphicsDirectX11::SetFrameBuffer( Resource::FrameBuffer * buffer )
-	{
-		auto dx11_buffer = static_cast<FrameBufferDX11 *>( buffer );
-
-		ID3D11RenderTargetView * rtv = dx11_buffer->GetRenderTargetView();
-
-		m_pImmediateContext->RSSetViewports( 1u, dx11_buffer->GetViewPort() );
-		m_pImmediateContext->OMSetRenderTargets( 1u, &rtv, nullptr );
-	}
-
 	void GraphicsDirectX11::Draw( uint32_t vertexCount, uint32_t vertexOffset )
 	{
 		m_pImmediateContext->Draw( vertexCount, vertexOffset );
@@ -132,9 +116,10 @@ namespace Fission::Platform {
 		m_pImmediateContext->DrawIndexed( indexCount, indexOffset, vertexOffset );
 	}
 
-	scoped<Resource::FrameBuffer> GraphicsDirectX11::CreateFrameBuffer( const FrameBuffer::CreateInfo & info ) {
-		return CreateScoped<FrameBufferDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info );
-	}
+	//ref<Resource::FrameBuffer> GraphicsDirectX11::CreateFrameBuffer( const FrameBuffer::CreateInfo & info ) {
+	//	m_vFrameBuffers.emplace_back( CreateRef<FrameBufferDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info ) );
+	//	return Global_FrameBuffers::AddBuffer( m_vFrameBuffers.back() );
+	//}
 
 	scoped<Resource::VertexBuffer> GraphicsDirectX11::CreateVertexBuffer( const VertexBuffer::CreateInfo & info ) {
 		return CreateScoped<VertexBufferDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info );
@@ -154,6 +139,10 @@ namespace Fission::Platform {
 
 	scoped<Resource::Blender> GraphicsDirectX11::CreateBlender( const Blender::CreateInfo & info ) {
 		return CreateScoped<BlenderDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info );
+	}
+
+	ref<Resource::SwapChain> GraphicsDirectX11::CreateSwapChain( const SwapChain::CreateInfo & info ) {
+		return CreateRef<SwapChainDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info );
 	}
 
 	bool GraphicsDirectX11::CheckSupport()

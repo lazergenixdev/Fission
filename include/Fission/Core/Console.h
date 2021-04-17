@@ -95,13 +95,10 @@ namespace Fission {
 		FISSION_THREAD_SAFE FISSION_API static void Clear();
 
 
-	   /**
-		* @brief  Registers a command name to a callback.
-		* @param  _Command_Name: Name the command will be referred as.
-		* @param  _Callback: Command callback function that will be called when the command is executed.
-		* 
-		* @note This function cannot fail, and will simply override commands that already exist.
-		*/
+		//! @brief  Registers a command name to a callback.
+		//! @param  _Command_Name: Name the command will be referred as.
+		//! @param  _Callback: Command callback function that will be called when the command is executed.
+		//! @note This function cannot fail, and will simply override commands that already exist.
 		FISSION_THREAD_SAFE FISSION_API static void RegisterCommand( const std::wstring & _Command_Name, CommandCallback _Callback );
 
 
@@ -139,8 +136,9 @@ namespace Fission {
 		//! @return Number of lines of text in the Console.
 		FISSION_THREAD_SAFE FISSION_API static int GetLineCount();
 
-	// todo: This might be needed for thread safety when reading console.
-	//	FISSION_API static std::lock_guard<std::mutex> Lock();
+		//! @warning THIS FUNCTION IS NOT IMPLEMENTED AS OF v0.1.0
+		//! @note: This might be needed for thread safety when reading console.
+		FISSION_API static std::lock_guard<std::mutex> Lock();
 
 
 

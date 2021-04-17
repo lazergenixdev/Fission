@@ -32,14 +32,14 @@
 #include "Fission/config.h"
 #include "Input/Event.h"
 #include "lazer/utility.h"
+#include "Fission/Core/Monitor.h"
+#include "Fission/Core/Graphics/Graphics.h"
 
-// todo: change comment style to be consistant with rest of project
 // todo: implement fixed aspect-ratio flag
 // todo: implement fullscreen (will need a monitor API to pick what screen to fullscreen on)
 
 namespace Fission
 {
-
 	class Window
 	{
 	public:
@@ -47,12 +47,17 @@ namespace Fission
 		/*! @brief Native window handle type */
 		using native_handle_type = Platform::WindowHandle;
 
+		using SaveID = int;
+
+		static constexpr SaveID NoSaveID = -1; /*!< Window properties will not be saved. */
+
 
 		enum class Style
 		{
-			Borderless,			// Window has no border
+			Borderless,			// Window has no border or title bar
 			Border,				// Window has a border around it with a close button
 			BorderSizeable,		// Window how a border with min/max and able to be resized
+			Fullscreen,			// Window is fullscreen
 
 			Default = Border
 		};
@@ -60,35 +65,30 @@ namespace Fission
 		enum class Flags : utility::flag
 		{
 			None					= 0,
-			Fullscreen				= utility::make_flag<0>, /* Window is in fullscreen mode. */
-			RestrictAspectRatio		= utility::make_flag<1>, /* Restrict the window to only have one AspectRatio. */
-		//	CenterWindow			= utility::make_flag<2>, /* Center the window to the screen when created. */
-			SavePosition			= utility::make_flag<3>, /* Saves the window position when closed. */
-			SaveSize				= utility::make_flag<4>, /* Saves the window size when closed. */
-			IsMainWindow			= utility::make_flag<5>, /* The window is the Main Window. */
+			RestrictAspectRatio		= utility::make_flag<0>, /* Restrict the window to only have one aspect ratio. */
+			CenterWindow			= utility::make_flag<1>, /* Center the window to the screen when created. */
+			SavePosition			= utility::make_flag<2>, /* Saves the window position when closed. */
+			SaveSize				= utility::make_flag<3>, /* Saves the window size when closed. */
 
-			Default					= RestrictAspectRatio | SavePosition,
+			Default					= RestrictAspectRatio | SavePosition | SaveSize,
 		};
 
 
-		/// <summary>
-		/// struct defining the properties of a given Window
-		/// </summary>
+		//! @brief struct defining the properties of a given Window
 		struct Properties
 		{
 			std::wstring title = L"Window Title";
 			Style style = Style::Default;
 			Flags flags = Flags::Default;
-			std::optional<vec2i> position;
+			vec2i position;
 			vec2i size = { 1280, 720 }; // size always refers to client size
+			int monitor_idx = 0; // which monitor to use. (0 is always the primary)
+			SaveID save = NoSaveID;
 		};
 
 	public:
 
-		/// <summary>
-		/// Window::Create Summary.
-		/// </summary>
-		FISSION_API static std::unique_ptr<Window> Create( const Properties & props, IEventHandler * event_handler );
+		FISSION_API static std::unique_ptr<Window> Create( const Properties & props, Graphics * pGraphics, IEventHandler * event_handler );
 
 		virtual ~Window() = default;
 	public:
@@ -107,21 +107,39 @@ namespace Fission
 
 		virtual void SetSize( const vec2i & size ) = 0;
 
+		virtual Resource::SwapChain * GetSwapChain() = 0;
+
 		virtual vec2i GetSize() = 0;
 
+		//! @brief Destroy the platform window and exit it's event loop.
+		//! @note This function evokes the `IEventHandler::OnClose` function
+		//!			before destroying the window.
 		virtual void Close() = 0;
+
+		//! @note For entering fullscreen mode, THIS is the monitor that will be used.
+		virtual MonitorPtr GetMonitor() = 0;
+
+		//! @brief Set which monitor the window will prefer for fullscreen mode
+		virtual void SetMonitor( MonitorPtr ) = 0;
 
 		virtual void DisplayMessageBox( const std::wstring & title, const std::wstring & text ) = 0;
 		
-		// experimental, this function might seem pointless, 
-		// but this is necessary for calling platform functions within the same thread of a window
+		//! experimental: this function might seem pointless, but this is necessary 
+		//! for calling platform functions within the same thread of a window
 		virtual void Call( std::function<void()> function ) = 0;
 
 		//! @brief Get a Handle to the native window
 		virtual native_handle_type native_handle() = 0;
 
-	};
+	}; // class Fission::Window
 
-}
+	//! @brief Settings for the Main Window.
+	//! @warning Used by Fission's internal API, do not use for save id.
+	static constexpr Window::SaveID MainWindowID = 0; 
+
+	//! @brief Start of valid Window ID's
+	static constexpr Window::SaveID WindowSaveID_Begin = 1; 
+
+} // namespace Fission
 
 _lazer_Define_Flag_Enum_Operators( Fission::Window::Flags );

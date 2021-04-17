@@ -28,15 +28,24 @@
 *
 */
 
-// todo: shader API gonna need an overhaul in preparation for Vulkan
-// todo: dynamic textures (textures that can be accessed by CPU)
-
 #pragma once
 #include "Fission/config.h"
 #include "Fission/Core/Surface.h"
+#include "Fission/Core/Monitor.h"
 #include "VertexLayout.h"
 
-namespace Fission { class Window; }
+namespace Fission 
+{ 
+	class Window; 
+
+	enum vsync_ {
+		vsync_Off = 0,
+		vsync_OneFrame = 1,
+		vsync_TwoFrame = 2,
+
+		vsync_On = vsync_OneFrame,
+	};
+}
 
 namespace Fission::Resource
 {
@@ -64,25 +73,53 @@ namespace Fission::Resource
 		virtual uint32_t GetWidth() = 0;
 		virtual uint32_t GetHeight() = 0;
 		virtual void Bind( int slot ) = 0;
-	//	virtual Surface GetSurface() = 0;
+		
+		//! @brief Put texture onto system memory for CPU access
+		virtual Surface * GetSurface() { return nullptr; }
 	};
 
-	class FrameBuffer
+	class FrameBuffer : public IBindable
 	{
 	public:
+
 		struct CreateInfo {
 			vec2i size = {};
-			Window * pWindow = nullptr;
 			Texture::Format format = Texture::Format_RGBA8_UNORM;
 		};
+
+		using Properties = CreateInfo; // optional alias
+
 	public:
-		virtual uint32_t GetWidth() = 0;
-		virtual uint32_t GetHeight() = 0;
+		virtual vec2i GetSize() = 0;
 
 		virtual void Clear( color clear_color ) = 0;
 
-		virtual void Present() = 0;
-	//	virtual Surface GetSurface() = 0;
+		virtual Texture2D * GetTexture2D() = 0;
+	};
+
+	//! @note SwapChains are created internally when a new window is created;
+	//!			SwapChains may not exist independent of a window.
+	class SwapChain : public IBindable
+	{
+	public:
+
+		struct CreateInfo {
+			Window * pWindow;
+			vec2i size = {};
+			Texture::Format format = Texture::Format_RGBA8_UNORM;
+		};
+
+	public:
+
+		virtual vec2i GetSize() = 0;
+
+	//	virtual FrameBuffer * GetBackBuffer() = 0;
+
+		virtual void SetFullscreen( bool fullscreen, Monitor * pMonitor ) = 0;
+
+		virtual void Clear( color clear_color ) = 0;
+
+		virtual void Present( vsync_ vsync ) = 0;
 	};
 
 	class VertexBuffer : public IBindable

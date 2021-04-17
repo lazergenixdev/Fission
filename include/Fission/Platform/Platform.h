@@ -79,6 +79,7 @@ namespace Fission::Platform
 	using ExitCode = int;
 
 	using WindowHandle = HWND;
+	using MonitorHandle = HMONITOR;
 
 	using Event = struct {
 		HWND hWnd;

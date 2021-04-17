@@ -14,6 +14,7 @@
 #include <Fission/Core/SurfaceMap.h>
 #include <Fission/Core/UI/UI.h>
 #include <Fission/Core/Sound.h>
+#include <Fission/Core/Monitor.h>
 #include "imgui.h"
 using namespace Fission;
 
@@ -25,147 +26,6 @@ using namespace Fission;
 #include <fstream>
 #include <random>
 #include "lazer/physics.h"
-
-#include <tchar.h>
-#include <initguid.h>
-#include <wmistr.h>
-DEFINE_GUID( WmiMonitorID_GUID, 0x671a8285, 0x4edb, 0x4cae, 0x99, 0xfe, 0x69, 0xa1, 0x5c, 0x48, 0xc0, 0xbc );
-DEFINE_GUID( PhysicalMemory_GUID, 0xFAF76B93, 0x798C, 0x11D2, 0xAA, 0xD1, 0x00, 0x60, 0x08, 0xC7, 0x8B, 0xC7 );
-typedef struct WmiMonitorID {
-	USHORT ProductCodeID[16];
-	USHORT SerialNumberID[16];
-	USHORT ManufacturerName[16];
-	UCHAR WeekOfManufacture;
-	USHORT YearOfManufacture;
-	USHORT UserFriendlyNameLength;
-	USHORT UserFriendlyName[1];
-} WmiMonitorID, * PWmiMonitorID;
-#define OFFSET_TO_PTR(Base, Offset) ((PBYTE)((PBYTE)Base + Offset))
-
-typedef HRESULT( WINAPI * WOB ) ( IN LPGUID lpGUID, IN DWORD nAccess, OUT PVOID );
-WOB WmiOpenBlock;
-typedef HRESULT( WINAPI * WQAD ) ( IN LONG hWMIHandle, ULONG * nBufferSize, OUT UCHAR * pBuffer );
-WQAD WmiQueryAllData;
-typedef HRESULT( WINAPI * WCB ) ( IN LONG );
-WCB WmiCloseBlock;
-
-std::vector<std::wstring> monitor_names;
-
-void printMonitorNames()
-{
-	HRESULT hr = E_FAIL;
-	LONG_PTR hWmiHandle = 0;
-	PWmiMonitorID MonitorID = nullptr;
-	HINSTANCE hDLL = LoadLibrary( L"Advapi32.dll" );
-	WmiOpenBlock = (WOB)GetProcAddress( hDLL, "WmiOpenBlock" );
-	WmiQueryAllData = (WQAD)GetProcAddress( hDLL, "WmiQueryAllDataW" );
-	WmiCloseBlock = (WCB)GetProcAddress( hDLL, "WmiCloseBlock" );
-
-	if( WmiOpenBlock != NULL && WmiQueryAllData && WmiCloseBlock )
-	{
-		WCHAR pszDeviceId[256] = L"";
-		hr = WmiOpenBlock( (LPGUID)&WmiMonitorID_GUID, GENERIC_READ, &hWmiHandle );
-		if( hr == ERROR_SUCCESS )
-		{
-			ULONG nBufferSize = 0;
-			UCHAR * pAllDataBuffer = 0;
-			UCHAR * ptr = 0;
-			PWNODE_ALL_DATA pWmiAllData;
-			hr = WmiQueryAllData( hWmiHandle, &nBufferSize, 0 );
-			if( hr == ERROR_INSUFFICIENT_BUFFER )
-			{
-				pAllDataBuffer = (UCHAR *)malloc( nBufferSize );
-				ptr = pAllDataBuffer;
-				hr = WmiQueryAllData( hWmiHandle, &nBufferSize, pAllDataBuffer );
-				if( hr == ERROR_SUCCESS )
-				{
-					while( 1 )
-					{
-						pWmiAllData = (PWNODE_ALL_DATA)pAllDataBuffer;
-						if( pWmiAllData->WnodeHeader.Flags & WNODE_FLAG_FIXED_INSTANCE_SIZE )
-							MonitorID = (PWmiMonitorID)&pAllDataBuffer[pWmiAllData->DataBlockOffset];
-						else
-							MonitorID = (PWmiMonitorID)&pAllDataBuffer[pWmiAllData->OffsetInstanceDataAndLength[0].OffsetInstanceData];
-
-						ULONG nOffset = 0;
-						WCHAR * pwsInstanceName = 0;
-						nOffset = (ULONG)pAllDataBuffer[pWmiAllData->OffsetInstanceNameOffsets];
-						pwsInstanceName = (WCHAR *)OFFSET_TO_PTR( pWmiAllData, nOffset + sizeof( USHORT ) );
-						WCHAR wsText[255] = L"";
-						swprintf( wsText, 255, L"Instance Name = %s\r\n", pwsInstanceName );
-						OutputDebugString( wsText );
-
-						WCHAR * pwsUserFriendlyName;
-						pwsUserFriendlyName = (WCHAR *)MonitorID->UserFriendlyName;
-						swprintf( wsText, 255, L"User Friendly Name = %s\r\n", pwsUserFriendlyName );
-						monitor_names.emplace_back( pwsUserFriendlyName );
-						OutputDebugString( wsText );
-
-						WCHAR * pwsManufacturerName;
-						pwsManufacturerName = (WCHAR *)MonitorID->ManufacturerName;
-						swprintf( wsText, 255, L"Manufacturer Name = %s\r\n", pwsManufacturerName );
-						OutputDebugString( wsText );
-
-						WCHAR * pwsProductCodeID;
-						pwsProductCodeID = (WCHAR *)MonitorID->ProductCodeID;
-						swprintf( wsText, 255, L"Product Code ID = %s\r\n", pwsProductCodeID );
-						OutputDebugString( wsText );
-
-						WCHAR * pwsSerialNumberID;
-						pwsSerialNumberID = (WCHAR *)MonitorID->SerialNumberID;
-						swprintf( wsText, 255, L"Serial Number ID = %s\r\n", pwsSerialNumberID );
-						OutputDebugString( wsText );
-
-						if( !pWmiAllData->WnodeHeader.Linkage )
-							break;
-						pAllDataBuffer += pWmiAllData->WnodeHeader.Linkage;
-					}
-					free( ptr );
-				}
-			}
-			WmiCloseBlock( hWmiHandle );
-		}
-	}
-}
-
-BOOL CALLBACK MonitorEnum( HMONITOR hMon, HDC, LPRECT pRect, LPARAM pi )
-{
-	BOOL bRetVal;
-	int iMode = 0;
-	DEVMODEW devmode;
-	devmode.dmSize = sizeof( devmode );
-
-	MONITORINFOEXW mi;
-	mi.cbSize = sizeof( mi );
-	GetMonitorInfoW( hMon, &mi );
-
-	int & i = *(int*)pi;
-
-	do
-	{
-		bRetVal = ::EnumDisplaySettingsW( mi.szDevice, iMode, &devmode );
-		iMode++;
-		if( bRetVal )
-		{
-			if( devmode.dmDisplayFrequency == 30 || devmode.dmDisplayFrequency >= 60 )
-			Console::WriteLine( L"Monitor #%i : %s : %d x %d, %d bits %dhz", 
-				i, monitor_names[i-1].c_str(), 
-				devmode.dmPelsWidth, devmode.dmPelsHeight,
-				devmode.dmBitsPerPel, devmode.dmDisplayFrequency );
-		}
-	} while( bRetVal );
-	++i;
-
-	return TRUE;
-}
-
-// test code for getting display setup information
-void ShowMonitorInfo() {
-	printMonitorNames();
-
-	int i = 1;
-	EnumDisplayMonitors( NULL, nullptr, MonitorEnum, (LPARAM)&i );
-}
 
 //static vec2f res = { 1920,1080 };
 static vec2f res = { 1280,720 };
@@ -421,8 +281,8 @@ public:
 		alpha *= m_fAlpha;
 
 		r2d->DrawString( m_sWhat.c_str(), pos + vec2f( -tl.width - 10.0f, tl.height * -0.5f ), color( m_Color, alpha * m_Color.a * 2.0f ) );
-		r2d->FillRect( progress_rect, color( m_Color, alpha * m_Color.a * 0.75f ) );
-		//r2d->DrawRect( progress_rect, color( m_Color, alpha * m_Color.a ), 1.0f );
+		r2d->FillRect( progress_rect, color( m_Color, alpha * m_Color.a * 0.5f ) );
+	  //r2d->DrawRect( progress_rect, color( m_Color, alpha * m_Color.a ), 1.0f );
 		r2d->DrawLine( progress_rect.get_bl(), progress_rect.get_br(), color( m_Color, alpha * m_Color.a ), 1.0f );
 
 		{ // End of progress bar thing
@@ -482,7 +342,7 @@ public:
 			g_Alpha = Colors::Transparent;
 			status.emplace_back( "Loading Textures" );
 			status.emplace_back( "Loading Other things" );
-			status.emplace_back( "Loading 'non of yo businis'" );
+			status.emplace_back( "Loading 'non of yo buinis'" );
 			status.emplace_back( "Loading Shaders" );
 			status.emplace_back( "Loading Sounds" );
 			soundengine->SetVolume( 0, 0.5f );
@@ -499,7 +359,7 @@ public:
 		}
 		case Keys::Q:
 		{
-			ShellExecuteA( NULL, "open", "https://www.youtube.com/watch?v=dQw4w9WgXcQ", 0, 0, SW_SHOW );
+			ShellExecuteA( NULL, "open", FISSION_RR, 0, 0, SW_SHOW );
 			return EventResult::Handled;
 		}
 		default:break;
@@ -532,7 +392,16 @@ public:
 	{
 		r2d = Renderer2D::Create( GetApp()->GetGraphics() );
 
-		ShowMonitorInfo();
+		for( auto && pm : Monitor::GetMonitors() )
+		{
+			Console::WriteLine( 
+				L"%s - [%ix%i] @ %ihz", 
+				pm->GetName(), 
+				pm->GetCurrentDisplayMode()->resolution.x, 
+				pm->GetCurrentDisplayMode()->resolution.y, 
+				pm->GetCurrentDisplayMode()->refresh_rate 
+			);
+		}
 
 		r2d->SetBlendMode( BlendMode::Add );
 
@@ -698,18 +567,17 @@ public:
 
 				r2d->DrawString( sScore.c_str(), { 0.0f, 0.0f }, Colors::LightYellow );
 
-				r2d->FillRect( rc, Colors::White );
+				r2d->DrawRect( rc, Colors::White, 2.0f, StrokeStyle::Inside ); // player
 				float x = ( sinf( t * 5.0f ) * 0.5f + 0.5f );
 				float true_width = (coinsize.x-2.0f)*x + 2.0f;
-				r2d->FillRect( rectf( rangef::from_center( crc.x.get_average(), true_width ), crc.y ), Colors::Yellow );
+				r2d->FillRect( rectf( rangef::from_center( crc.x.get_average(), true_width ), crc.y ), Colors::Yellow ); // coin
 
 				glowmesh.set_color( 0, color( Colors::Yellow, 0.2f ) );
-
 				r2d->PushTransform( mat3x2f::Transform( vec2f{ std::max( true_width * 3.0f, 18.0f ), coinsize.y * 3.0f }, coinpos.x, coinpos.y ) );
 				r2d->DrawMesh( &glowmesh );
 				r2d->PopTransform();
 
-				r2d->FillRect( { 0.0f, res.x, 620.0f, res.y }, Colors::White );
+				r2d->FillRect( { 0.0f, res.x, 620.0f, 622.0f }, Colors::White );
 			}
 		}
 
