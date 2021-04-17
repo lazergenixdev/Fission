@@ -17,7 +17,6 @@ To make a Visual Studio Solution run `GenWindowsProj.bat` in the `scripts` direc
 - DirectX11 support
 - Included 2D renderer with support for fonts
 - Runtime Texture Atlas creation utility
-- ImGui integration for debugging
 - Basic Sound support (mp3,wav,...)
 
 # RoadMap
