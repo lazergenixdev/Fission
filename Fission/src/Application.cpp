@@ -108,9 +108,6 @@ create:
 	}
 
 	m_State->m_UILayer.OnCreate();
-#ifndef IMGUI_DISABLE
-	m_State->m_ImGuiLayer.OnCreate();
-#endif
 	m_State->m_ConsoleLayer.OnCreate();
 	m_State->m_DebugLayer.OnCreate();
 	for( auto && layer : m_State->m_vMainLayers )
@@ -133,9 +130,6 @@ create:
 		for( auto && layer : m_State->m_vMainLayers )
 			layer->OnUpdate();
 		m_State->m_UILayer.OnUpdate();
-#ifndef IMGUI_DISABLE
-		m_State->m_ImGuiLayer.OnUpdate();
-#endif
 		m_State->m_ConsoleLayer.OnUpdate();
 		m_State->m_DebugLayer.OnUpdate();
 
@@ -148,19 +142,6 @@ create:
 		if( m_State->m_bRecreate )
 			goto create;
 	}
-
-#ifndef IMGUI_DISABLE
-	{
-		std::unique_lock lock( m_State->m_PauseMutex );
-		m_State->m_bReadyToExit = true;
-	}
-	m_State->m_PauseCondition.notify_all();
-
-	{
-		std::unique_lock lock( m_State->m_PauseMutex );
-		m_State->m_PauseCondition.wait( lock, [this] { return !m_State->m_bReadyToExit; } );
-	}
-#endif
 
 	return m_State->m_ExitCode;
 }

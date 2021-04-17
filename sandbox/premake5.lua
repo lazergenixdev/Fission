@@ -14,7 +14,6 @@ project 'sandbox'
 	{
         '%{wks.location}/include',
         "%{IncludeDir.lazerlib}",
-        "%{IncludeDir.imgui}",
         '%{wks.location}/resources'
 	}
     

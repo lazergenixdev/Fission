@@ -31,11 +31,6 @@
 #pragma once
 #include <Fission/config.h>
 
-struct ImGuiContext;
-namespace Fission {
-FISSION_API ImGuiContext * GetImGuiContext();
-}
-
 namespace Fission::UI
 {
 	// 404 NOT FOUND

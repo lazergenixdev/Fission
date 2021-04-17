@@ -15,7 +15,6 @@
 #include <Fission/Core/UI/UI.h>
 #include <Fission/Core/Sound.h>
 #include <Fission/Core/Monitor.h>
-#include "imgui.h"
 using namespace Fission;
 
 #include <shellapi.h>
@@ -582,16 +581,6 @@ public:
 		}
 
 		r2d->Render();
-
-#ifndef IMGUI_DISABLE
-		if( ImGui::Begin( "Test" ) )
-		{
-			ImGui::SliderFloat( "alpha0", &alpha0, 0.0f, 1.0f );
-			ImGui::SliderFloat( "alpha1", &alpha1, 0.0f, 1.0f );
-			ImGui::SliderFloat( "alpha2", &alpha2, 0.0f, 1.0f );
-		}
-		ImGui::End();
-#endif
 	}
 private:
 	scoped<Renderer2D> r2d;

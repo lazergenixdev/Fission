@@ -114,17 +114,6 @@ namespace Fission {
 #define FISSION_MK_STR(X) #X
 
 /**
- * ImGui
- */
-#ifndef FISSION_IMGUI_ENABLE // ImGui only available on debug and release builds by default
-#if 1//defined(FISSION_DIST)
-#define IMGUI_DISABLE //  Disable everything ImGui: all headers and source files will be empty.
-#endif
-#endif
-
-#define IMGUI_API FISSION_API
-
-/**
 * Important Web Address
 */
 #define FISSION_RR "https://www.youtube.com/watch?v=dQw4w9WgXcQ"

@@ -16,26 +16,11 @@ namespace Fission {
 
 		m_State->m_ExitCode = args.ExitCode;
 
-#ifndef IMGUI_DISABLE
-	{
-		std::unique_lock lock( m_State->m_PauseMutex );
 		m_State->m_bRunning = false;
-		m_State->m_PauseCondition.wait( lock, [this] { return m_State->m_bReadyToExit; } );
-
-		m_State->m_ImGuiLayer.OnClose( args );
-#else
-		m_State->m_bRunning = false;
-#endif
 
 		// notify layers that application will exit
 		for( auto && layer : m_State->m_vMainLayers )
 			layer->OnClose( args );
-
-#ifndef IMGUI_DISABLE
-		m_State->m_bReadyToExit = false;
-	}
-		m_State->m_PauseCondition.notify_all();
-#endif
 
 		return EventResult::Handled;
 	}
@@ -72,11 +57,6 @@ namespace Fission {
 		if( m_State->m_ConsoleLayer.OnKeyDown( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-#ifndef IMGUI_DISABLE
-		if( m_State->m_ImGuiLayer.OnKeyDown( args ) == EventResult::Handled )
-			return EventResult::Handled;
-#endif
-
 		if( m_State->m_UILayer.OnKeyDown( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
@@ -94,11 +74,6 @@ namespace Fission {
 
 		if( m_State->m_ConsoleLayer.OnKeyUp( args ) == EventResult::Handled )
 			return EventResult::Handled;
-
-#ifndef IMGUI_DISABLE
-		if( m_State->m_ImGuiLayer.OnKeyUp( args ) == EventResult::Handled )
-			return EventResult::Handled;
-#endif
 
 		if( m_State->m_UILayer.OnKeyUp( args ) == EventResult::Handled )
 			return EventResult::Handled;
@@ -118,11 +93,6 @@ namespace Fission {
 		if( m_State->m_ConsoleLayer.OnTextInput( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-#ifndef IMGUI_DISABLE
-		if( m_State->m_ImGuiLayer.OnTextInput( args ) == EventResult::Handled )
-			return EventResult::Handled;
-#endif
-
 		if( m_State->m_UILayer.OnTextInput( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
@@ -140,11 +110,6 @@ namespace Fission {
 
 		if( m_State->m_ConsoleLayer.OnMouseMove( args ) == EventResult::Handled )
 			return EventResult::Handled;
-
-#ifndef IMGUI_DISABLE
-		if( m_State->m_ImGuiLayer.OnMouseMove( args ) == EventResult::Handled )
-			return EventResult::Handled;
-#endif
 
 		if( m_State->m_UILayer.OnMouseMove( args ) == EventResult::Handled )
 			return EventResult::Handled;
@@ -164,11 +129,6 @@ namespace Fission {
 		if( m_State->m_ConsoleLayer.OnMouseLeave( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-#ifndef IMGUI_DISABLE
-		if( m_State->m_ImGuiLayer.OnMouseLeave( args ) == EventResult::Handled )
-			return EventResult::Handled;
-#endif
-
 		if( m_State->m_UILayer.OnMouseLeave( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
@@ -186,11 +146,6 @@ namespace Fission {
 
 		if( m_State->m_ConsoleLayer.OnSetCursor( args ) == EventResult::Handled )
 			return EventResult::Handled;
-
-#ifndef IMGUI_DISABLE
-		if( m_State->m_ImGuiLayer.OnSetCursor( args ) == EventResult::Handled )
-			return EventResult::Handled;
-#endif
 
 		if( m_State->m_UILayer.OnSetCursor( args ) == EventResult::Handled )
 			return EventResult::Handled;

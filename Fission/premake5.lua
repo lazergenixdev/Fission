@@ -22,7 +22,6 @@ project 'Fission'
 	{
         "%{wks.location}/include",
         "%{IncludeDir.yaml}",
-        "%{IncludeDir.imgui}",
         "%{IncludeDir.lazerlib}",
         '%{prj.location}/vendor/freetype/include',
         '%{prj.location}/vendor/json/single_include',
