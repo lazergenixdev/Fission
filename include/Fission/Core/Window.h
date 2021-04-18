@@ -36,7 +36,7 @@
 #include "Fission/Core/Graphics/Graphics.h"
 
 // todo: implement fixed aspect-ratio flag
-// todo: implement fullscreen (will need a monitor API to pick what screen to fullscreen on)
+// todo: implement fullscreen
 
 namespace Fission
 {

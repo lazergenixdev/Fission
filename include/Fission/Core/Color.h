@@ -159,6 +159,7 @@ namespace Fission
 			Sienna           = 0xa0522d,
 			Brown            = 0xa52a2a,
 			Maroon           = 0x800000,
+			DogeHouse		 = 0x1e1e1e,
 		}; // enum Fission::Colors::KnownColor
 
 		static constexpr color make_color( const color & color, float value, float alpha = 1.0f );

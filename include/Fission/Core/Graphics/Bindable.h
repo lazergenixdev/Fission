@@ -74,7 +74,8 @@ namespace Fission::Resource
 		virtual uint32_t GetHeight() = 0;
 		virtual void Bind( int slot ) = 0;
 		
-		//! @brief Put texture onto system memory for CPU access
+		//! @brief Put texture onto system memory for CPU access.
+		//! @note Function only succeeds for Textures created with `Dynamic` Type.
 		virtual Surface * GetSurface() { return nullptr; }
 	};
 

@@ -29,7 +29,6 @@
 */
 
 // todo: add documentation
-// todo: add RenderTarget(framebuffer) API
 
 #pragma once
 #include "Bindable.h"
@@ -55,7 +54,7 @@ public:
 		DirectX11, /*!< DirectX 11 */
 		DirectX12, /*!< DirectX 12 */
 		Vulkan,    /*!< Vulkan */
-		OpenGL4,   /*!< OpenGL 4 */
+		OpenGL,	   /*!< OpenGL */
 
 		__count__, /*!< Number of Graphics APIs available */
 		Default    /*!< @Graphics will decide which api is best to use */
@@ -79,24 +78,14 @@ public:
 
 	static vsync_ GetVSync();
 
-	static State GetState();
-
 
 /* ------------------------------------ Begin Base API Functions ----------------------------------- */
 
 	//! @brief Get the internal API
 	virtual API GetAPI() = 0;
 
-	//! @brief All framebuffers that have been invalidated will be created again,
-	//!			this includes all framebuffers created on a now deleted graphics context.
-//	virtual void RecreateFrameBuffers() = 0;
-
-	//virtual void SetProperties( const Properties * props ) = 0;
-
 	//! @brief sets which window we are currently drawing to.
 	virtual void SetContext( Window * pWindow ) {};
-
-	virtual void GetState( State * _Ptr_Dest_State ) {};
 
 	virtual void Draw( uint32_t vertexCount, uint32_t vertexOffset = 0u ) = 0;
 
@@ -121,6 +110,7 @@ public:
 
 /* ------------------------------------ End Graphics Primitives ----------------------------------- */
 
+	//! @note Used by the internal api.
 	virtual ref<SwapChain> CreateSwapChain( const SwapChain::CreateInfo & info ) = 0;
 
 public:
@@ -131,12 +121,14 @@ public:
 	struct native_type_dx11
 	{
 		void * pDevice;			/*!< d3d11device */
-		void * pDeviceContext;	/*!< immediate mode context */
+		void * pDeviceContext;	/*!< d3d11devicecontext */
 	};
 
 	/*!< @brief Only returned by `native_handle()` when `GetAPI() == OpenGL` */
-	struct native_type_opengl3
+	struct native_type_opengl
 	{
+		//! @brief: HGLRC for windows
+		void * hContext;
 	};
 
 	virtual native_handle_type native_handle() = 0;

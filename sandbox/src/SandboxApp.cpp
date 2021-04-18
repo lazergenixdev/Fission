@@ -18,9 +18,7 @@
 using namespace Fission;
 
 #include <shellapi.h>
-#pragma comment(lib, "user32")
 #pragma comment(lib, "shell32")
-#pragma comment(lib, "Dxva2")
 
 #include <fstream>
 #include <random>

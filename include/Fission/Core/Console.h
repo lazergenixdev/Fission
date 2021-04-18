@@ -32,11 +32,9 @@
 #include "Fission/config.h"
 #include "Color.h"
 
-#ifndef FISSION_CREATE_CONSOLE_WINDOW
-#ifdef FISSION_DEBUG
+#if defined(FISSION_DEBUG) and not defined(FISSION_CREATE_CONSOLE_WINDOW)
 #define FISSION_CREATE_CONSOLE_WINDOW
-#endif // FISSION_DEBUG
-#endif // FISSION_CREATE_CONSOLE_WINDOW
+#endif
 
 #ifndef FISSION_ERROR_COLOR
 #define FISSION_ERROR_COLOR Fission::Colors::Red
