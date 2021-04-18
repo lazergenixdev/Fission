@@ -172,7 +172,11 @@ namespace Fission::Platform {
                 if( pthis->m_Properties.save != NoSaveID )
                     ConfigImpl::Get().GetWindowProperties( &pthis->m_Properties );
 
-                pthis->m_pMonitor = Monitor::GetMonitors()[0];
+                auto monitors = Monitor::GetMonitors();
+                if( pthis->m_Properties.monitor_idx < monitors.size() )
+                    pthis->m_pMonitor = monitors[pthis->m_Properties.monitor_idx];
+                else
+                    pthis->m_pMonitor = monitors[0], pthis->m_Properties.monitor_idx = 0;
 
                 auto size = pthis->GetWindowsSize();
 
@@ -180,6 +184,15 @@ namespace Fission::Platform {
 
                 pos.x = std::max( pos.x, 0 );
                 pos.y = std::max( pos.y, 0 );
+
+                if( bool( pthis->m_Properties.flags & Flags::CenterWindow ) )
+                {
+                    auto mode = pthis->m_pMonitor->GetCurrentDisplayMode();
+                    auto hMonitor = pthis->m_pMonitor->native_handle();
+                    MONITORINFO info; info.cbSize = sizeof( info );
+                    GetMonitorInfoA( hMonitor, &info );
+                    pos = vec2i(info.rcMonitor.left,info.rcMonitor.top) + ( mode->resolution - size ) / 2;
+                }
 
                 pthis->m_Handle = CreateWindowExW(
                     0L,

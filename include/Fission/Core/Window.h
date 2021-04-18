@@ -70,7 +70,7 @@ namespace Fission
 			SavePosition			= utility::make_flag<2>, /* Saves the window position when closed. */
 			SaveSize				= utility::make_flag<3>, /* Saves the window size when closed. */
 
-			Default					= RestrictAspectRatio | SavePosition | SaveSize,
+			Default					= RestrictAspectRatio | SavePosition | SaveSize | CenterWindow,
 		};
 
 
@@ -126,6 +126,7 @@ namespace Fission
 		
 		//! experimental: this function might seem pointless, but this is necessary 
 		//! for calling platform functions within the same thread of a window
+		//! @warning This function will probably be removed.
 		virtual void Call( std::function<void()> function ) = 0;
 
 		//! @brief Get a Handle to the native window

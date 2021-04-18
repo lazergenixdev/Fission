@@ -130,7 +130,7 @@ namespace lazer {
 		using iterator = T *;
 		using const_iterator = const T *;
 
-		list_view( iterator begin, iterator end ) : m_pBegin( begin ), m_pEnd( end ) {}
+		list_view( iterator begin, iterator end ) : m_pBegin( begin ), m_pEnd( end ), m_Size( end - begin ) {}
 
 		const T & operator[]( int index ) const { return m_pBegin[index]; }
 		T & operator[]( int index ) { return m_pBegin[index]; }
@@ -140,8 +140,11 @@ namespace lazer {
 
 		const_iterator begin() const { return m_pBegin; }
 		const_iterator end() const { return m_pEnd; }
+
+		size_t size() const { return m_Size; }
 	private:
 		iterator m_pBegin;
 		iterator m_pEnd;
+		size_t m_Size;
 	};
 }
