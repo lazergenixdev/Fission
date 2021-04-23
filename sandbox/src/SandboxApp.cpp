@@ -43,7 +43,7 @@ static std::uniform_real_distribution<float> coinxdist(0.0f+10.0f, res.x-10.0f);
 
 static color g_Alpha = Colors::Transparent;
 
-#define TAU 6.28318531
+#define TAU 6.28318531f
 #define sq(X) ((X)*(X))
 
 static Mesh glowmesh = [] {
@@ -307,9 +307,9 @@ private:
 	float sped = 0.1f * (float)(rand()%8+1) + 0.004f * (float)( rand() % 50 + 1 );
 };
 
-static float alpha0 = 0.262;
-static float alpha1 = 0.502;
-static float alpha2 = 0.867;
+static float alpha0 = 0.262f;
+static float alpha1 = 0.502f;
+static float alpha2 = 0.867f;
 
 std::string versionstring = [] {
 	char buf[100] = {};
@@ -382,7 +382,7 @@ public:
 	}
 	virtual EventResult OnSetCursor(SetCursorEventArgs&args) override
 	{
-		args.cursor = Cursor::Get( Cursor::Default_Hidden );
+		//args.cursor = Cursor::Get( Cursor::Default_Hidden );
 		return EventResult::Handled;
 	}
 	virtual void OnCreate() override
@@ -408,7 +408,7 @@ public:
 		soundengine = SoundEngine::Create( {2} );
 		soundengine->SetVolume( 0, 0.5f ); // loading music output
 		soundengine->SetVolume( 1, 0.4f ); // game sound fx output
-		sound = soundengine->CreateSound( "assets/geoffplaysguitar - Hades Medley (in the Style of Doom Eternal).mp3" );
+		sound = soundengine->CreateSound( "assets/loading.mp3" );
 		coinsound = soundengine->CreateSound( "assets/Pickup_Coin4.wav" );
 		source = soundengine->Play( sound.get(), 0, true );
 
@@ -428,10 +428,15 @@ public:
 		}
 
 		timer.reset();
+
+		//Fission::UI::Debug::Window( "Debug Window" );
+		//Fission::UI::Debug::SliderFloat( "what", &m );
+		//Fission::UI::Debug::Button( "OK", [] {} );
 	}
 	virtual void OnUpdate() override
 	{
 		float dt = m*timer.gets();
+		r2d->SetBlendMode( BlendMode::Add );
 		//if( dt < 0.2f )
 			t += dt;
 		if( t > 0.1f )
@@ -488,7 +493,7 @@ public:
 			{
 				r2d->SelectFont( FontManager::GetFont( "$console" ) );
 				vec2f pos = { res.x / 2.0f, 200.0f };
-				for( int i = status.size()-1; i >= 0; --i )
+				for( int i = (int)status.size()-1; i >= 0; --i )
 				{
 					auto & s = status[i];
 					s.update( dt );
@@ -545,7 +550,7 @@ public:
 					spawncoin();
 					++score;
 				}
-				for( int i = soundfx.size() - 1; i >= 0; --i )
+				for( int i = (int)soundfx.size() - 1; i >= 0; --i )
 				{
 					if( !soundfx[i]->GetPlaying() )
 						soundfx.erase( soundfx.begin() + i );
@@ -577,7 +582,6 @@ public:
 				r2d->FillRect( { 0.0f, res.x, 620.0f, 622.0f }, Colors::White );
 			}
 		}
-
 		r2d->Render();
 	}
 private:
@@ -616,6 +620,158 @@ private:
 	std::vector<ref<ISoundSource>> soundfx;
 };
 
+#define _lazer_has_vector
+#define _lazer_has_point
+#define _lazer_has_rect
+namespace lazer::ui { 
+	template <typename T> using vector = std::vector<T>; 
+	using point = vec2i; 
+	using rect = recti; 
+}
+#define _lazer_char_type wchar_t
+#define _lazer_key_type Keys::Key
+#define _lazer_key_left_mouse_ Keys::Mouse_Left
+#define _lazer_key_right_mouse_ Keys::Mouse_Right
+#define _lazer_cursor_type Cursor *
+#include "lazerui.h"
+
+class DogeWindow : public lazer::ui::DynamicWindow
+{
+public:
+	DogeWindow( Renderer2D * pr2d ) : DynamicWindow( { 100, 212, 100, 198 } ), m_pr2d(pr2d) {
+		id.resize( 64 );
+		swprintf_s( &id[0], 64, L"Debug Window"/*, getuid().high, getuid().low */);
+		id.shrink_to_fit();
+	}
+	virtual lazer::ui::Result OnSetCursor( lazer::ui::SetCursorEventArgs & args ) override
+	{
+		if( DynamicWindow::OnSetCursor( args ) )
+		{
+			auto pos = lazer::ui::GetRectPos( Rect, lazer::ui::g_MousePosition, 8, 4, 8 );
+			switch( pos )
+			{
+			case lazer::ui::rect_pos_left:			args.cursor = Cursor::Get( Cursor::Default_SizeX ); break;
+			case lazer::ui::rect_pos_right:			args.cursor = Cursor::Get( Cursor::Default_SizeX ); break;
+			case lazer::ui::rect_pos_top:			args.cursor = Cursor::Get( Cursor::Default_SizeY ); break;
+			case lazer::ui::rect_pos_bottom:		args.cursor = Cursor::Get( Cursor::Default_SizeY ); break;
+			case lazer::ui::rect_pos_top_left:		args.cursor = Cursor::Get( Cursor::Default_SizeTLBR ); break;
+			case lazer::ui::rect_pos_top_right:		args.cursor = Cursor::Get( Cursor::Default_SizeBLTR ); break;
+			case lazer::ui::rect_pos_bottom_left:	args.cursor = Cursor::Get( Cursor::Default_SizeBLTR ); break;
+			case lazer::ui::rect_pos_bottom_right:	args.cursor = Cursor::Get( Cursor::Default_SizeTLBR ); break;
+			default: break;
+			}
+		}
+		return lazer::ui::Handled;
+	}
+
+	virtual void OnUpdate(float) override
+	{
+		m_pr2d->FillRect( (rectf)( Rect ), Colors::DogeHouse );
+		if( parent->GetFocus() == this )
+		m_pr2d->DrawRect( (rectf)( Rect ), Colors::Gray, 1.0f, StrokeStyle::Outside );
+
+		m_pr2d->DrawString( id.c_str(), (vec2f)Rect.get_tl(), Colors::Gray );
+
+		m_pr2d->PushTransform( mat3x2f::Translation( (vec2f)Rect.get_tl() ) );
+		DynamicWindow::OnUpdate(0.0f);
+		m_pr2d->PopTransform();
+	}
+private:
+	Renderer2D * m_pr2d;
+	std::wstring id;
+};
+
+class Button : public lazer::ui::Button
+{
+public:
+	Button( const wchar_t * label, Renderer2D * pr2d, std::function<void()> f, vec2i pos = { 10, 30 } ) : 
+		Rect( recti::from_tl( pos, 90, 20 ) ), m_pr2d( pr2d ), label( label ) , on_press(f)
+	{}
+	virtual bool isInside( lazer::ui::point pos ) override { return Rect[pos]; }
+	virtual void OnPressed() override { on_press(); }
+
+	virtual lazer::ui::Result OnSetCursor( lazer::ui::SetCursorEventArgs & args ) override
+	{
+		args.cursor = Cursor::Get( Cursor::Default_Hand );
+		return lazer::ui::Handled;
+	}
+	virtual void OnUpdate(float) override
+	{
+		if( active )
+		m_pr2d->FillRect( (rectf)Rect, color(0.2f, 0.2f, 0.2f)*1.4f );
+		else if( parent->GetHover() == this )
+		m_pr2d->FillRect( (rectf)Rect, color(0.2f, 0.2f, 0.2f)*1.2f );
+		else
+		m_pr2d->FillRect( (rectf)Rect, color( 0.2f, 0.2f, 0.2f ) );
+		if( parent->GetFocus() == this )
+		m_pr2d->DrawRect( (rectf)Rect, color(Colors::White,0.1f), 1.0f );
+
+		vec2f size = (vec2f)Rect.size();
+		auto tl = m_pr2d->CreateTextLayout( label.c_str() );
+
+		m_pr2d->DrawString( label.c_str(), (size - vec2f( tl.width, tl.height ))*0.5f + (vec2f)Rect.get_tl(), Colors::Gray );
+	}
+private:
+	recti Rect;
+	Renderer2D * m_pr2d;
+	std::wstring label;
+	std::function<void()> on_press;
+};
+
+class UILayer : public ILayer
+{
+public:
+	UILayer() : wm( (int)res.x, (int)res.y ) {}
+
+	virtual EventResult OnMouseMove(MouseMoveEventArgs&args) override
+	{
+		lazer::ui::MouseMoveEventArgs m;
+		m.pos = args.position;
+		return (EventResult)wm.OnMouseMove( m );
+	}
+	virtual EventResult OnKeyDown( KeyDownEventArgs&args) override
+	{
+		lazer::ui::KeyDownEventArgs m;
+		m.key = args.key;
+		return (EventResult)wm.OnKeyDown( m );
+	}
+	virtual EventResult OnKeyUp( KeyUpEventArgs&args) override
+	{
+		lazer::ui::KeyUpEventArgs m;
+		m.key = args.key;
+		return (EventResult)wm.OnKeyUp( m );
+	}
+	virtual EventResult OnSetCursor( SetCursorEventArgs&args) override
+	{
+		lazer::ui::SetCursorEventArgs m;
+		m.cursor = args.cursor;
+		EventResult r = (EventResult)wm.OnSetCursor( m );
+		args.cursor = m.cursor;
+		return r;
+	}
+
+	virtual void OnCreate() override
+	{
+		r2d = Renderer2D::Create( GetApp()->GetGraphics() );
+
+		r2d->SelectFont( FontManager::GetFont( "$console" ) );
+
+		auto wnd = new DogeWindow( r2d.get() );
+		wnd->addWidget( new Button( L"Exit", r2d.get(), [] { Fission::Application::Get()->Exit(); } ) );
+		wnd->addWidget( new Button( L"Nothing", r2d.get(), [] {}, { 10,60 } ) );
+		wm.addWindow( wnd );
+	}
+	virtual void OnUpdate() override
+	{
+		wm.OnUpdate( 0.0f );
+		r2d->Render();
+	}
+
+private:
+	lazer::ui::WindowManager wm;
+	scoped<Renderer2D> r2d;
+};
+
 class SandboxApp : public Application
 {
 public:
@@ -623,6 +779,7 @@ public:
 
 	virtual void OnCreate() override {
 		PushLayer( "sandbox", new SandboxLayer );
+		PushLayer( "ui", new UILayer );
 	}
 };
 

@@ -1,6 +1,6 @@
 /**
 *
-* @file: Layer.h
+* @file: Scene.h
 * @author: lazergenixdev@gmail.com
 *
 *
@@ -84,6 +84,46 @@ namespace Fission {
 
 	interface IUILayer : public ILayer
 	{
+		
 	};
 	
-} // namespace Fission
+	class Scene : public IEventHandler
+	{
+	public:
+		virtual void OnCreate() = 0;
+		virtual void OnDestroy() = 0;
+
+		void OnUpdate()
+		{
+		}
+
+		void PushLayer( ILayer * );
+
+		void Close();
+		void Open( Scene * scene );
+
+	private:
+		std::vector<ILayer *> m_vLayerStack;
+	};
+
+	class SceneStack : public IEventHandler
+	{
+	public:
+
+		void OnUpdate()
+		{
+			m_vSceneStack.back()->OnUpdate();
+		}
+
+		Scene * front();
+
+
+	private:
+		float m_SceneSwitchCooldownDuration = 1.0f;
+		simple_timer m_SceneSwitchTimer;
+		bool m_bSceneSwitch = false;
+
+		std::vector<Scene *> m_vSceneStack;
+	};
+
+} // nanespace Fission

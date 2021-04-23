@@ -32,7 +32,7 @@
 #include "Fission/config.h"
 #include "Window.h"
 #include "Graphics/Graphics.h"
-#include "Layer.h"
+#include "Scene.h"
 
 namespace Fission {
 
