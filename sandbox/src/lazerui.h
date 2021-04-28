@@ -458,6 +458,7 @@ public:
 	virtual void OnUpdate( float dt ) override;
 	virtual bool isInside( point pos ) override;
 	virtual void OnMove( point & new_pos );
+	virtual void OnResize() {};
 
 #ifndef _lazer_ui_no_cursor
 	Result OnSetCursor( SetCursorEventArgs & args ) override;
@@ -737,6 +738,7 @@ inline Result DynamicWindow::OnMouseMove( MouseMoveEventArgs & args ) {
 		default:
 			break;
 		}
+		OnResize();
 	//	auto size = Rect.size();
 	//	Rect = rect::from_tl( p - last, size );
 	}

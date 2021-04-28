@@ -664,6 +664,33 @@ public:
 		return lazer::ui::Handled;
 	}
 
+	virtual void OnResize() override
+	{
+		static constexpr int min_w = 110;
+		static constexpr int min_h = 90;
+		switch( state & State_Sizing )
+		{
+		case State_SizingL: Rect.x.low = std::min( Rect.x.low, Rect.x.high - min_w ); break;
+		case State_SizingR: Rect.x.high = std::max( Rect.x.high, Rect.x.low + min_w ); break;
+		case State_SizingT: Rect.y.low = std::min( Rect.y.low, Rect.y.high - min_h ); break;
+		case State_SizingB: Rect.y.high = std::max( Rect.y.high, Rect.y.low + min_h ); break;
+		case ( State_SizingL | State_SizingT ): 
+			Rect.x.low = std::min( Rect.x.low, Rect.x.high - min_w ), Rect.y.low = std::min( Rect.y.low, Rect.y.high - min_h );
+			break;
+		case ( State_SizingR | State_SizingT ): 
+			Rect.x.high = std::max( Rect.x.high, Rect.x.low + min_w ), Rect.y.low = std::min( Rect.y.low, Rect.y.high - min_h );
+			break;
+		case ( State_SizingL | State_SizingB ): 
+			Rect.x.low = std::min( Rect.x.low, Rect.x.high - min_w ), Rect.y.high = std::max( Rect.y.high, Rect.y.low + min_h );
+			break;
+		case ( State_SizingR | State_SizingB ): 
+			Rect.x.high = std::max( Rect.x.high, Rect.x.low + min_w ), Rect.y.high = std::max( Rect.y.high, Rect.y.low + min_h );
+			break;
+		default:
+			break;
+		}
+	}
+
 	virtual void OnUpdate(float) override
 	{
 		m_pr2d->FillRect( (rectf)( Rect ), Colors::DogeHouse );
