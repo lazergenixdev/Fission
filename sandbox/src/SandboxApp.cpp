@@ -799,14 +799,23 @@ private:
 	scoped<Renderer2D> r2d;
 };
 
+class LoadingScene : public Fission::Scene
+{
+public:
+	LoadingScene()
+	{
+		PushLayer( new SandboxLayer );
+		PushLayer( new UILayer );
+	}
+};
+
 class SandboxApp : public Application
 {
 public:
-	SandboxApp() : Application( { L"sandbox (demo loading screen)" } ) {}
+	SandboxApp() : Application( { new LoadingScene, L"sandbox (demo loading screen)" } ) {}
 
-	virtual void OnCreate() override {
-		PushLayer( "sandbox", new SandboxLayer );
-		PushLayer( "ui", new UILayer );
+	virtual void OnCreate() override 
+	{
 	}
 };
 

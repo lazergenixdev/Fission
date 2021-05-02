@@ -37,11 +37,9 @@ namespace Fission::UI
 	class Debug
 	{
 	public:
-		FISSION_API static void Window( const char * label );
-		FISSION_API static void Button( const char * label, std::function<void()> f );
-		FISSION_API static void SliderFloat( const char * label, float * value );
-
-		FISSION_API static void SetSize( vec2i sz );
+		FISSION_API static bool Window( const char * label );
+		FISSION_API static bool Button( const char * label );
+		FISSION_API static bool SliderFloat( const char * label, float * value );
 	};
 
 } // namespace Fission::UI

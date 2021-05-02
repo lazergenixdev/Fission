@@ -1,5 +1,6 @@
 #pragma once
 #include "Fission/Core/Application.h"
+#include "SceneStack.h"
 
 #include "Layer/UILayer.h"
 #include "Layer/DebugLayer.h"
@@ -9,24 +10,32 @@ namespace Fission {
 
 	struct ApplicationState {
 
-		std::unique_ptr<Window> m_pMainWindow;
-		std::unique_ptr<Graphics> m_pGraphics;
+		std::unique_ptr<Window>		pMainWindow;
+		std::unique_ptr<Graphics>	pGraphics;
 
-		ConsoleLayer m_ConsoleLayer;
-		DebugLayerImpl m_DebugLayer;
-		UILayer m_UILayer;
-		std::vector<ILayer *> m_vMainLayers;
+		SceneStack					SceneStack;
 
-		bool m_bRunning = false;
-		bool m_bMinimized = false;
+		ConsoleLayer				ConsoleLayer;
+		DebugLayerImpl				DebugLayer;
+		UILayer						UILayer;
 
-		std::mutex m_PauseMutex;
-		std::condition_variable m_PauseCondition;
+		bool						bRunning = false;
+		bool						bMinimized = false;
 
-		bool m_bRecreate = false;
-		bool m_bReadyToExit = false;
+		std::mutex					PauseMutex;
+		std::condition_variable		PauseCondition;
 
-		Platform::ExitCode m_ExitCode = 0;
+		bool						bRecreate = false;
+		bool						bReadyToExit = false;
+
+		Platform::ExitCode			ExitCode = 0;
+
+
+		ApplicationState( const Application::CreateInfo & info )
+			: SceneStack( info.startScene )
+		{
+
+		}
 
 	};
 

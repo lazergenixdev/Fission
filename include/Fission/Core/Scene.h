@@ -38,23 +38,28 @@ namespace Fission {
 
 	class Application;
 
-	interface ILayer : public IEventHandler
+	fission_Interface ILayer : public IEventHandler
 	{
+		//! @note If you got any resources that need to be sent to the GPU, 
+		//!			now is the time to do them
 		virtual void OnCreate() = 0;
+
+		//! @brief Function to update what is displayed on a frame
 		virtual void OnUpdate() = 0;
 
 		virtual ~ILayer() noexcept = default;
 
 	protected:
 		
-		FISSION_API Application * GetApp();
+		//! @brief Helper function to get the application from a layer
+		static FISSION_API Application * GetApp();
 		
 	}; // interface Fission::ILayer
 
 
-	///////////////////////////////////////////////////////////////////////
-	// Default Layers /////////////////////////////////////////////////////
-	///////////////////////////////////////////////////////////////////////
+/* =================================================================================================== */
+/* ----------------------------------------- Default Layers ------------------------------------------ */
+/* =================================================================================================== */
 
 	using DebugDrawCallback = std::function<void( Renderer2D * pr2d )>;
 
@@ -78,52 +83,63 @@ namespace Fission {
 		}
 	};
 
-	interface IConsoleLayer : public ILayer
-	{
-	};
+	fission_Interface IConsoleLayer : public ILayer {};
 
-	interface IUILayer : public ILayer
-	{
-		
-	};
-	
+	fission_Interface IUILayer : public ILayer {};
+
+/* =================================================================================================== */
+/* ------------------------------------------ Scene System ------------------------------------------- */
+/* =================================================================================================== */
+
 	class Scene : public IEventHandler
 	{
 	public:
-		virtual void OnCreate() = 0;
-		virtual void OnDestroy() = 0;
-
-		void OnUpdate()
+		inline void OnCreate()
 		{
+			for( auto && l : m_vLayerStack )
+				l->OnCreate();
+			m_bCreated = true;
+		}
+		
+		inline void OnUpdate()
+		{
+			for( auto && l : m_vLayerStack )
+				l->OnUpdate();
 		}
 
-		void PushLayer( ILayer * );
+		inline void PushLayer( ILayer * layer )
+		{
+			if( m_bCreated ) layer->OnCreate();
+			m_vLayerStack.emplace_back( layer );
+		}
 
-		void Close();
-		void Open( Scene * scene );
+		FISSION_API virtual EventResult OnKeyDown( KeyDownEventArgs & args ) override;
+
+		FISSION_API virtual EventResult OnKeyUp( KeyUpEventArgs & args ) override;
+
+		FISSION_API virtual EventResult OnTextInput( TextInputEventArgs & ) override FISSION_EVENT_DEFAULT
+
+		FISSION_API virtual EventResult OnMouseMove( MouseMoveEventArgs & ) override;
+
+		FISSION_API virtual EventResult OnMouseLeave( MouseLeaveEventArgs & ) override;
+
+		FISSION_API virtual EventResult OnSetCursor( SetCursorEventArgs & ) override;
+
+		FISSION_API virtual EventResult OnHide() override FISSION_EVENT_DEFAULT
+
+		FISSION_API virtual EventResult OnShow() override FISSION_EVENT_DEFAULT
+
+		FISSION_API virtual EventResult OnClose( CloseEventArgs & ) override FISSION_EVENT_DEFAULT
+
+		void Exit() {  };
 
 	private:
 		std::vector<ILayer *> m_vLayerStack;
+		class SceneStack * pParent;
+		bool m_bCreated = false;
 	};
-
-	class SceneStack : public IEventHandler
-	{
-	public:
-
-		void OnUpdate()
-		{
-			m_vSceneStack.back()->OnUpdate();
-		}
-
-		Scene * front();
-
-
-	private:
-		float m_SceneSwitchCooldownDuration = 1.0f;
-		simple_timer m_SceneSwitchTimer;
-		bool m_bSceneSwitch = false;
-
-		std::vector<Scene *> m_vSceneStack;
-	};
+	
+	using ScenePtr = Scene *;
+	using SceneList = std::vector<Scene *>;
 
 } // nanespace Fission

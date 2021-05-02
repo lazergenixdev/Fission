@@ -47,6 +47,9 @@
 /*! @brief Functions that should be thread safe */
 #define FISSION_THREAD_SAFE
 
+/* @brief This structure only contains pure function definitions */
+#define fission_Interface struct
+
 /**
  * standard library includes
  */
