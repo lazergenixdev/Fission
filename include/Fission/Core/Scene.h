@@ -133,7 +133,15 @@ namespace Fission {
 
 		void Exit() {  };
 
+		virtual ~Scene()
+		{
+			for( auto && l : m_vLayerStack ) delete l;
+		}
+
 	private:
+
+		friend class SceneStack;
+
 		std::vector<ILayer *> m_vLayerStack;
 		class SceneStack * pParent;
 		bool m_bCreated = false;

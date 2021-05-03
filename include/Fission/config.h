@@ -119,7 +119,7 @@ namespace Fission {
 /**
 * Important Web Address
 */
-#define FISSION_RR "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+#define FISSION_RR "https://youtu.be/dQw4w9WgXcQ"
 
 /**
 * Stuff that haven't been added to 'lazerlib' yet

@@ -161,6 +161,7 @@ namespace Fission {
 		 *
 		 */
 		FISSION_API void PushScene( const char * _Name, Scene * _Ptr_Scene );
+		FISSION_API void CloseScene();
 		
 
 		/********************************************************************

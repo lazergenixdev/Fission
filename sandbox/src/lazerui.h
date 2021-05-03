@@ -721,6 +721,7 @@ inline Result DynamicWindow::OnMouseMove( MouseMoveEventArgs & args ) {
 	if( state & State_Moving ) {
 		auto size = Rect.size();
 		point p = parent->Rect.clamp( args.pos );
+		OnMove( p );
 		Rect = rect::from_tl( p - last, size );
 	}
 	else if( state & State_Sizing ) {

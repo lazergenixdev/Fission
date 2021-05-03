@@ -88,7 +88,15 @@ void Application::PushLayer( const char * name, ILayer * layer )
 void Application::PushScene( const char * _Name, Scene * _Ptr_Scene )
 {
 	(void)_Name;
+#ifdef FISSION_DEBUG
+	if( !_Ptr_Scene )
+		throw std::logic_error( "Scene cannot be nullptr!" );
+#endif
 	m_State->SceneStack.OpenScene( _Ptr_Scene );
+}
+void Application::CloseScene()
+{
+	m_State->SceneStack.CloseScene();
 }
 
 Window * Application::GetWindow()
@@ -112,9 +120,9 @@ create:
 		m_State->bRecreate = false;
 	}
 
-	m_State->UILayer.OnCreate();
-	m_State->ConsoleLayer.OnCreate();
 	m_State->DebugLayer.OnCreate();
+	m_State->ConsoleLayer.OnCreate();
+	m_State->UILayer.OnCreate();
 	m_State->SceneStack.OnCreate();
 
 	while( m_State->bRunning )
