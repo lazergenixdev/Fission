@@ -7,6 +7,9 @@
 #include "DXErr/dxerr.hpp"
 #include <thread>
 
+#include <shellapi.h>
+#pragma comment(lib, "shell32")
+
 namespace Fission {
 
 	void System::Initialize()
@@ -38,6 +41,16 @@ namespace Fission {
 		auto _msg_thread = std::thread( _show_message, title.c_str(), text.c_str() );
 
 		_msg_thread.join();
+	}
+
+	bool System::OpenURL( const std::string & _URL )
+	{
+		return (bool)ShellExecuteA( NULL, "open", _URL.c_str(), nullptr, nullptr, SW_SHOWDEFAULT );
+	}
+
+	bool System::OpenFile( const file::path & _File )
+	{
+		return (bool)ShellExecuteW( NULL, L"explore", _File.c_str(), nullptr, nullptr, SW_SHOWDEFAULT );
 	}
 
 }
