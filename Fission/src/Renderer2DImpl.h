@@ -91,9 +91,9 @@ namespace Fission {
 
 		void SetTexture( Resource::Texture2D * tex );
 
-		struct DrawCommand 
+		struct DrawData 
 		{
-			DrawCommand( Renderer2DImpl * parent, uint32_t vc, uint32_t ic );
+			DrawData( Renderer2DImpl * parent, uint32_t vc, uint32_t ic );
 
 			void AddRectFilled( vec2f tl, vec2f tr, vec2f bl, vec2f br, color c );
 			void AddRectFilled( rectf rect, color c );
@@ -121,7 +121,7 @@ namespace Fission {
 			const mat3x2f * mat;
 		};
 
-		std::vector<DrawCommand> m_CommandBuffer;
+		std::vector<DrawData> m_DrawBuffer;
 
 		vertex * vertex_data = nullptr;
 		uint32_t * index_data = nullptr;

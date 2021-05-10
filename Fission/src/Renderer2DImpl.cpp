@@ -9,8 +9,8 @@ namespace Fission {
 		return std::make_unique<Renderer2DImpl>( pGraphics );
 	}
 
-	std::vector<Renderer2DImpl::DrawCommand::sincos> Renderer2DImpl::DrawCommand::TrigCache = [] () {
-		using sincos = Renderer2DImpl::DrawCommand::sincos;
+	std::vector<Renderer2DImpl::DrawData::sincos> Renderer2DImpl::DrawData::TrigCache = [] () {
+		using sincos = Renderer2DImpl::DrawData::sincos;
 		std::vector<sincos> out;
 
 		int geometry_persision = 13;
@@ -115,8 +115,8 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			m_pUseBlender = m_pBlenders[(int)BlendMode::Normal].get();
 		}
 
-		m_CommandBuffer.reserve( 20 );
-		m_CommandBuffer.emplace_back( this, 0u, 0u );
+		m_DrawBuffer.reserve( 20 );
+		m_DrawBuffer.emplace_back( this, 0u, 0u );
 	}
 
 	Renderer2DImpl::~Renderer2DImpl() noexcept
@@ -127,9 +127,9 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 
 	void Renderer2DImpl::Render()
 	{
-		if( m_CommandBuffer.size() == 1u && m_CommandBuffer[0].vtxCount == 0u ) return;
+		if( m_DrawBuffer.size() == 1u && m_DrawBuffer[0].vtxCount == 0u ) return;
 
-		auto & end = m_CommandBuffer.back();
+		auto & end = m_DrawBuffer.back();
 
 		m_pShader->Bind();
 		m_pVertexBuffer->SetData( vertex_data, end.vtxCount + end.vtxStart );
@@ -138,46 +138,46 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		m_pIndexBuffer->Bind();
 		m_pUseBlender->Bind();
 
-		for( auto && cmd : m_CommandBuffer )
+		for( auto && cmd : m_DrawBuffer )
 		{
 			if( cmd.Texture ) cmd.Texture->Bind(0);
 			m_pGraphics->DrawIndexed( cmd.idxCount, cmd.idxStart, cmd.vtxStart );
 		}
 
-		m_CommandBuffer.clear();
-		m_CommandBuffer.emplace_back( this, 0u, 0u );
+		m_DrawBuffer.clear();
+		m_DrawBuffer.emplace_back( this, 0u, 0u );
 
 	}
 
 	void Renderer2DImpl::FillTriangle( vec2f p0, vec2f p1, vec2f p2, colorf color )
 	{
-		m_CommandBuffer.back().AddTriangle( p0, p1, p2, color, color, color );
+		m_DrawBuffer.back().AddTriangle( p0, p1, p2, color, color, color );
 	}
 
 	void Renderer2DImpl::FillTriangleGrad( vec2f p0, vec2f p1, vec2f p2, colorf c0, colorf c1, colorf c2 )
 	{
-		m_CommandBuffer.back().AddTriangle( p0, p1, p2, c0, c1, c2 );
+		m_DrawBuffer.back().AddTriangle( p0, p1, p2, c0, c1, c2 );
 	}
 
 	void Renderer2DImpl::FillTriangleUV( vec2f p0, vec2f p1, vec2f p2, vec2f uv0, vec2f uv1, vec2f uv2, Resource::Texture2D * pTexture, colorf tint )
 	{
 		SetTexture( pTexture );
-		m_CommandBuffer.back().AddTriangleUV( p0, p1, p2, uv0, uv1, uv2, tint );
+		m_DrawBuffer.back().AddTriangleUV( p0, p1, p2, uv0, uv1, uv2, tint );
 	}
 
 	void Renderer2DImpl::FillRect( rectf rect, colorf color )
 	{
-		m_CommandBuffer.back().AddRectFilled( rect, color );
+		m_DrawBuffer.back().AddRectFilled( rect, color );
 	}
 
 	void Renderer2DImpl::DrawRect( rectf rect, colorf color, float stroke_width, StrokeStyle stroke )
 	{
-		m_CommandBuffer.back().AddRect( rect, color, stroke_width, stroke );
+		m_DrawBuffer.back().AddRect( rect, color, stroke_width, stroke );
 	}
 
 	void Renderer2DImpl::FillRectGrad( rectf rect, colorf color_topleft, colorf color_topright, colorf color_bottomleft, colorf color_bottomright )
 	{
-		m_CommandBuffer.back().AddRectFilled( rect, color_topleft, color_topright, color_bottomleft, color_bottomright );
+		m_DrawBuffer.back().AddRectFilled( rect, color_topleft, color_topright, color_bottomleft, color_bottomright );
 	}
 
 	void Renderer2DImpl::FillRoundRect( rectf rect, float rad, colorf color )
@@ -193,12 +193,12 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 	void Renderer2DImpl::DrawLine( vec2f start, vec2f end, colorf color, float stroke_width, StrokeStyle stroke )
 	{
 		(void)stroke;
-		m_CommandBuffer.back().AddLine( start, end, stroke_width, color, color );
+		m_DrawBuffer.back().AddLine( start, end, stroke_width, color, color );
 	}
 
 	void Renderer2DImpl::FillCircle( vec2f point, float radius, colorf color )
 	{
-		m_CommandBuffer.back().AddCircleFilled( point, radius, color );
+		m_DrawBuffer.back().AddCircleFilled( point, radius, color );
 	}
 
 	void Renderer2DImpl::DrawCircle( vec2f point, float radius, colorf color, float stroke_width, StrokeStyle stroke )
@@ -210,7 +210,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 	{
 		if( start == end )
 		{
-			m_CommandBuffer.back().AddCircleFilled( start, width * 0.2f, color );
+			m_DrawBuffer.back().AddCircleFilled( start, width * 0.2f, color );
 			return;
 		}
 
@@ -224,7 +224,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			const vec2f perp = par.perp() * ( sqrtf( lensq ) * 0.5f );
 			const vec2f l = center - perp, r = center + perp;
 
-			m_CommandBuffer.back().AddTriangle( end, l, r, color, color, color );
+			m_DrawBuffer.back().AddTriangle( end, l, r, color, color, color );
 		}
 		else
 		{
@@ -232,8 +232,8 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			const vec2f center = end + par * width;
 			const vec2f l = center - perp, r = center + perp;
 
-			m_CommandBuffer.back().AddTriangle( end, l, r, color, color, color );
-			m_CommandBuffer.back().AddLine( start, center, 0.4f * width, color, color );
+			m_DrawBuffer.back().AddTriangle( end, l, r, color, color, color );
+			m_DrawBuffer.back().AddLine( start, center, 0.4f * width, color, color );
 		}
 
 	}
@@ -241,18 +241,18 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 	void Renderer2DImpl::DrawImage( Resource::Texture2D * pTexture, rectf rect, rectf uv, colorf tint )
 	{
 		SetTexture( pTexture );
-		m_CommandBuffer.back().AddRectFilledUV( rect, uv, tint );
+		m_DrawBuffer.back().AddRectFilledUV( rect, uv, tint );
 	}
 
 	void Renderer2DImpl::DrawImage( Resource::Texture2D * pTexture, rectf rect, colorf tint )
 	{
 		SetTexture( pTexture );
-		m_CommandBuffer.back().AddRectFilledUV( rect, { 0.0f, 1.0f, 0.0f, 1.0f }, tint );
+		m_DrawBuffer.back().AddRectFilledUV( rect, { 0.0f, 1.0f, 0.0f, 1.0f }, tint );
 	}
 
 	void Renderer2DImpl::DrawMesh( const Mesh * m )
 	{
-		m_CommandBuffer.back().AddMesh( m );
+		m_DrawBuffer.back().AddMesh( m );
 	}
 
 	void Renderer2DImpl::SelectFont( const Font * pFont )
@@ -291,7 +291,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			const auto bottom = top + glyph->size.y;
 #endif
 
-			m_CommandBuffer.back().AddRectFilledUV( { left, right, top, bottom }, glyph->rc, color );
+			m_DrawBuffer.back().AddRectFilledUV( { left, right, top, bottom }, glyph->rc, color );
 
 			start += glyph->advance;
 
@@ -349,7 +349,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			const auto bottom = top + glyph->size.y;
 #endif
 
-			m_CommandBuffer.back().AddRectFilledUV( { left, right, top, bottom }, glyph->rc, color );
+			m_DrawBuffer.back().AddRectFilledUV( { left, right, top, bottom }, glyph->rc, color );
 
 			start += glyph->advance;
 
@@ -410,22 +410,22 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 	{
 		FISSION_ASSERT( tex, "bruh" );
 
-		auto & end = m_CommandBuffer.back();
+		auto & end = m_DrawBuffer.back();
 		if( end.Texture == nullptr ) end.Texture = tex;
 		else if( end.Texture != tex )
 		{
-			m_CommandBuffer.emplace_back( this, end.vtxStart + end.vtxCount, end.idxStart + end.idxCount );
-			m_CommandBuffer.back().Texture = tex;
+			m_DrawBuffer.emplace_back( this, end.vtxStart + end.vtxCount, end.idxStart + end.idxCount );
+			m_DrawBuffer.back().Texture = tex;
 		}
 	}
 
-	Renderer2DImpl::DrawCommand::DrawCommand( Renderer2DImpl * parent, uint32_t vc, uint32_t ic )
+	Renderer2DImpl::DrawData::DrawData( Renderer2DImpl * parent, uint32_t vc, uint32_t ic )
 		: vtxStart( vc ), idxStart( ic ),
 		pVtxData( parent->vertex_data + vtxStart ), pIdxData( parent->index_data + idxStart ),
 		mat( &parent->m_accTransform )
 	{}
 
-	void Renderer2DImpl::DrawCommand::AddRect( rectf rect, colorf color, float stroke_width, StrokeStyle stroke )
+	void Renderer2DImpl::DrawData::AddRect( rectf rect, colorf color, float stroke_width, StrokeStyle stroke )
 	{
 		for( int i = 0; i < 8; i++ ) {
 		// I bet you've never seen code like this:
@@ -494,7 +494,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		pVtxData[vtxCount++] = vertex( *mat * vec2( in_r, in_b ), color );
 	}
 
-	void Renderer2DImpl::DrawCommand::AddMesh( const Mesh * m )
+	void Renderer2DImpl::DrawData::AddMesh( const Mesh * m )
 	{
 		const auto * colors = m->m_Data->color_buffer.data();
 
@@ -505,7 +505,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			pVtxData[vtxCount++] = vertex( *mat * v.pos, colors[v.color_index] );
 	}
 
-	void Renderer2DImpl::DrawCommand::AddCircleFilled( vec2f center, float rad, colorf c )
+	void Renderer2DImpl::DrawData::AddCircleFilled( vec2f center, float rad, colorf c )
 	{
 		const int count = ( (int)TrigCache.size() + 1u ) * 4u - 2;
 		for( int i = 0; i < count; i++ )
@@ -532,7 +532,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		pVtxData[vtxCount++] = vertex( *mat * vec2( center.x + trig.sin * rad, center.y - trig.cos * rad ), c );
 	}
 
-	void Renderer2DImpl::DrawCommand::AddTriangle( vec2f p0, vec2f p1, vec2f p2, colorf c0, colorf c1, colorf c2 )
+	void Renderer2DImpl::DrawData::AddTriangle( vec2f p0, vec2f p1, vec2f p2, colorf c0, colorf c1, colorf c2 )
 	{
 		pIdxData[idxCount++] = vtxCount;
 		pIdxData[idxCount++] = vtxCount + 1u;
@@ -543,7 +543,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		pVtxData[vtxCount++] = vertex( *mat * p2, c2 );
 	}
 
-	void Renderer2DImpl::DrawCommand::AddTriangleUV( vec2f p0, vec2f p1, vec2f p2, vec2f uv0, vec2f uv1, vec2f uv2, colorf c )
+	void Renderer2DImpl::DrawData::AddTriangleUV( vec2f p0, vec2f p1, vec2f p2, vec2f uv0, vec2f uv1, vec2f uv2, colorf c )
 	{
 		pIdxData[idxCount++] = vtxCount;
 		pIdxData[idxCount++] = vtxCount + 1u;
@@ -554,7 +554,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		pVtxData[vtxCount++] = vertex( *mat * p2, uv2, c );
 	}
 
-	void Renderer2DImpl::DrawCommand::AddLine( vec2f start, vec2f end, float stroke, colorf startColor, colorf endColor )
+	void Renderer2DImpl::DrawData::AddLine( vec2f start, vec2f end, float stroke, colorf startColor, colorf endColor )
 	{
 		const auto edge_vector = ( end - start ).perp().norm() * stroke / 2.0f;
 
@@ -571,7 +571,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		pVtxData[vtxCount++] = vertex( *mat * end - edge_vector, endColor );
 	}
 
-	void Renderer2DImpl::DrawCommand::AddRectFilledUV( rectf rect, rectf uv, color c )
+	void Renderer2DImpl::DrawData::AddRectFilledUV( rectf rect, rectf uv, color c )
 	{
 		pIdxData[idxCount++] = vtxCount;
 		pIdxData[idxCount++] = vtxCount + 1u;
@@ -586,7 +586,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		pVtxData[vtxCount++] = vertex( *mat * vec2( rect.x.high, rect.y.high ), vec2( uv.x.high, uv.y.high ), c );
 	}
 
-	void Renderer2DImpl::DrawCommand::AddRectFilled( vec2f tl, vec2f tr, vec2f bl, vec2f br, color c )
+	void Renderer2DImpl::DrawData::AddRectFilled( vec2f tl, vec2f tr, vec2f bl, vec2f br, color c )
 	{
 		pIdxData[idxCount++] = vtxCount;
 		pIdxData[idxCount++] = vtxCount + 1u;
@@ -601,7 +601,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		pVtxData[vtxCount++] = vertex( *mat * br, c );
 	}
 
-	void Renderer2DImpl::DrawCommand::AddRectFilled( rectf rect, color c )
+	void Renderer2DImpl::DrawData::AddRectFilled( rectf rect, color c )
 	{
 		pIdxData[idxCount++] = vtxCount;
 		pIdxData[idxCount++] = vtxCount + 1u;
@@ -616,7 +616,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		pVtxData[vtxCount++] = vertex( *mat * vec2( rect.x.high, rect.y.high ), c );
 	}
 
-	void Renderer2DImpl::DrawCommand::AddRectFilled( rectf rect, color tl, color tr, color bl, color br )
+	void Renderer2DImpl::DrawData::AddRectFilled( rectf rect, color tl, color tr, color bl, color br )
 	{
 		pIdxData[idxCount++] = vtxCount;
 		pIdxData[idxCount++] = vtxCount + 1u;
