@@ -13,7 +13,7 @@ namespace Fission {
 		using sincos = Renderer2DImpl::DrawData::sincos;
 		std::vector<sincos> out;
 
-		int geometry_persision = 13;
+		int geometry_persision = 10;
 
 		assert( geometry_persision >= 1 && geometry_persision < 100 ); // restrict the amount of persision to a reasonable range
 
@@ -182,12 +182,12 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 
 	void Renderer2DImpl::FillRoundRect( rectf rect, float rad, colorf color )
 	{
-		_lazer_throw_not_implemented;
+		m_DrawBuffer.back().AddRoundRectFilled( rect, rad, color );
 	}
 
 	void Renderer2DImpl::DrawRoundRect( rectf rect, float rad, colorf color, float stroke_width, StrokeStyle stroke )
 	{
-		_lazer_throw_not_implemented;
+		m_DrawBuffer.back().AddRoundRect( rect, rad, color, stroke_width, stroke );
 	}
 
 	void Renderer2DImpl::DrawLine( vec2f start, vec2f end, colorf color, float stroke_width, StrokeStyle stroke )
@@ -203,7 +203,12 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 
 	void Renderer2DImpl::DrawCircle( vec2f point, float radius, colorf color, float stroke_width, StrokeStyle stroke )
 	{
-		_lazer_throw_not_implemented;
+		m_DrawBuffer.back().AddCircle( point, radius, color, color, stroke_width, stroke );
+	}
+
+	void Renderer2DImpl::DrawCircle( vec2f point, float radius, colorf inner_color, colorf outer_color, float stroke_width, StrokeStyle stroke )
+	{
+		m_DrawBuffer.back().AddCircle( point, radius, inner_color, outer_color, stroke_width, stroke );
 	}
 
 	void Renderer2DImpl::FillArrow( vec2f start, vec2f end, float width, colorf color )
@@ -494,6 +499,16 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		pVtxData[vtxCount++] = vertex( *mat * vec2( in_r, in_b ), color );
 	}
 
+	void Renderer2DImpl::DrawData::AddRoundRectFilled( rectf rect, float rad, color c )
+	{
+		_lazer_throw_not_implemented;
+	}
+
+	void Renderer2DImpl::DrawData::AddRoundRect( rectf rect, float rad, colorf color, float stroke_width, StrokeStyle stroke )
+	{
+		_lazer_throw_not_implemented;
+	}
+
 	void Renderer2DImpl::DrawData::AddMesh( const Mesh * m )
 	{
 		const auto * colors = m->m_Data->color_buffer.data();
@@ -530,6 +545,59 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		pVtxData[vtxCount++] = vertex( *mat * vec2( center.x, center.y - rad ), c );
 		for( auto && trig : TrigCache )
 		pVtxData[vtxCount++] = vertex( *mat * vec2( center.x + trig.sin * rad, center.y - trig.cos * rad ), c );
+	}
+
+	void Renderer2DImpl::DrawData::AddCircle( vec2f center, float rad, colorf inc, colorf outc, float stroke_width, StrokeStyle stroke )
+	{
+		const int count = ( (int)TrigCache.size() + 1u ) * 4u;
+		float hw = stroke_width * 0.5f;
+		float inner_rad, outer_rad;
+		switch( stroke )
+		{
+		case Fission::StrokeStyle::Center: { float hsw = stroke_width * 0.5f; inner_rad= rad - hsw; outer_rad= rad + hsw; break; }
+		case Fission::StrokeStyle::Inside:	inner_rad= rad - stroke_width, outer_rad= rad; break;
+		case Fission::StrokeStyle::Outside: inner_rad= rad, outer_rad= rad + stroke_width; break;
+		default: throw std::logic_error( "this don't make no fucking sense" );
+		}
+
+		// This algorithm could probably be a heck of a lot more optimized,
+		// but honesty this is good enough and I don't feel like wasting any more time on this.
+
+		int count2 = count * 2;
+		for( int i = 0; i < count; i++ )
+		{
+			pIdxData[idxCount++] = vtxCount + (i * 2u	  )%count2;
+			pIdxData[idxCount++] = vtxCount + (i * 2u + 1u)%count2;
+			pIdxData[idxCount++] = vtxCount + (i * 2u + 2u)%count2;
+
+			pIdxData[idxCount++] = vtxCount + (i * 2u + 1u)%count2;
+			pIdxData[idxCount++] = vtxCount + (i * 2u + 3u)%count2;
+			pIdxData[idxCount++] = vtxCount + (i * 2u + 2u)%count2;
+		}
+
+		pVtxData[vtxCount++] = vertex( *mat * vec2( center.x + inner_rad, center.y ), inc );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( center.x + outer_rad, center.y ), outc );
+		for( auto && trig : TrigCache )
+			pVtxData[vtxCount++] = vertex( *mat * vec2( center.x + trig.cos * inner_rad, center.y + trig.sin * inner_rad ), inc ),
+			pVtxData[vtxCount++] = vertex( *mat * vec2( center.x + trig.cos * outer_rad, center.y + trig.sin * outer_rad ), outc );
+
+		pVtxData[vtxCount++] = vertex( *mat * vec2( center.x, center.y + inner_rad ), inc );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( center.x, center.y + outer_rad ), outc );
+		for( auto && trig : TrigCache )
+			pVtxData[vtxCount++] = vertex( *mat * vec2( center.x - trig.sin * inner_rad, center.y + trig.cos * inner_rad ), inc ),
+			pVtxData[vtxCount++] = vertex( *mat * vec2( center.x - trig.sin * outer_rad, center.y + trig.cos * outer_rad ), outc );
+
+		pVtxData[vtxCount++] = vertex( *mat * vec2( center.x - inner_rad, center.y ), inc );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( center.x - outer_rad, center.y ), outc );
+		for( auto && trig : TrigCache )
+			pVtxData[vtxCount++] = vertex( *mat * vec2( center.x - trig.cos * inner_rad, center.y - trig.sin * inner_rad ), inc ),
+			pVtxData[vtxCount++] = vertex( *mat * vec2( center.x - trig.cos * outer_rad, center.y - trig.sin * outer_rad ), outc );
+
+		pVtxData[vtxCount++] = vertex( *mat * vec2( center.x, center.y - inner_rad ), inc );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( center.x, center.y - outer_rad ), outc );
+		for( auto && trig : TrigCache )
+			pVtxData[vtxCount++] = vertex( *mat * vec2( center.x + trig.sin * inner_rad, center.y - trig.cos * inner_rad ), inc ),
+			pVtxData[vtxCount++] = vertex( *mat * vec2( center.x + trig.sin * outer_rad, center.y - trig.cos * outer_rad ), outc );
 	}
 
 	void Renderer2DImpl::DrawData::AddTriangle( vec2f p0, vec2f p1, vec2f p2, colorf c0, colorf c1, colorf c2 )

@@ -56,6 +56,8 @@
 
 #pragma once
 
+#include<algorithm>
+
 /* begin/end header macros for 3rd-party integration */
 #ifndef _lazer_ui_begin_header_
 #define _lazer_ui_begin_header_ namespace lazer { namespace ui {
@@ -324,6 +326,7 @@ _lazer_ui_begin_header_
 		if( ++uid.low == 0llu ) ++uid.high; return uid;
 	}
 
+	static constexpr window_uid null_window_uid = {0,0}; // null
 	static window_uid g_NextWindow_uid = { 0x45, 0x1a4 }; // perfect
 
 #endif /* _lazer_ui_config_ */
@@ -376,6 +379,9 @@ struct IEventHandler {
 	inline virtual void OnFocusGain()
 		_lazer_ui_Empty_Expression_
 
+	inline virtual void OnParentResize( rect rc )
+		_lazer_ui_Empty_Expression_
+
 	inline virtual void OnFocusLost()
 		_lazer_ui_Empty_Expression_
 
@@ -416,7 +422,7 @@ public:
 	void Release();
 	inline virtual ~Window() = default;
 	virtual bool isInside( point pos );
-	window_uid getuid();
+	const window_uid getuid() const;
 private:
 	window_uid uid;
 };
@@ -560,7 +566,12 @@ public:
 	void addWindow( Window * window );
 	void Release( Window * window ) override;
 
-//	Window * findWindow( window_uid uid );
+	Window * findWindow( const window_uid & uid )
+	{
+		auto it = std::find_if( windowStack.begin(), windowStack.end(), [uid] ( const Window * w ) { return w->getuid() == uid; } );
+		if( it == windowStack.end() ) return nullptr;
+		return *it;
+	}
 };
 
 
@@ -573,7 +584,7 @@ inline Window::Window() : uid( ++g_NextWindow_uid ) {}
 inline Window::Window( const Window & src ) : uid( ++g_NextWindow_uid ) {}
 inline void Window::Release() { if( parent ) parent->Release( this ); }
 inline bool Window::isInside( point pos ) { return false; }
-inline window_uid Window::getuid() { return uid; }
+inline const window_uid Window::getuid() const { return uid; }
 
 
 inline WindowManager::WindowManager( int width, int height ) { Rect = rect::from_tl( {}, { width, height } ); }
@@ -688,7 +699,7 @@ void DynamicWindow::OnMove( point & new_pos ) {}
 void DynamicWindow::OnResize()
 {
 	static constexpr int min_w = 110;
-	static constexpr int min_h = 150;
+	static constexpr int min_h = 80;
 	switch( state & State_Sizing )
 	{
 	case State_SizingL: Rect.x.low = std::min( Rect.x.low, Rect.x.high - min_w ); break;
@@ -712,7 +723,7 @@ void DynamicWindow::OnResize()
 }
 
 inline Result DynamicWindow::OnSetCursor( SetCursorEventArgs & args ) {
-	if( hover ) { if( !hover->OnSetCursor( args ) ) return Handled; }
+	if( hover ) { return hover->OnSetCursor( args ); }
 	return Pass;
 }
 
@@ -766,6 +777,8 @@ inline Result DynamicWindow::OnMouseMove( MouseMoveEventArgs & args ) {
 			break;
 		}
 		OnResize();
+		for( auto && w : widgets )
+			w->OnParentResize( Rect );
 	//	auto size = Rect.size();
 	//	Rect = rect::from_tl( p - last, size );
 	}
@@ -776,10 +789,12 @@ inline Result DynamicWindow::OnMouseMove( MouseMoveEventArgs & args ) {
 		for( auto && w : widgets )
 			if( w->isInside( args.pos - Rect.get_tl() ) )
 			{
+				if( hover ) hover->OnMouseLeave();
 				hover = w;
 				w->OnMouseMove( args );
 				return Handled;
 			}
+		if( hover ) hover->OnMouseLeave();
 		hover = nullptr;
 	}
 	return Handled;
@@ -800,7 +815,7 @@ inline Result DynamicWindow::OnKeyDown( KeyDownEventArgs & args ) {
 		return Handled;
 	}
 	if( args.key == g_KeyLeftMouse && flags & Flags_Movable ) {
-		auto P = GetRectPos( Rect, g_MousePosition, 8, 4, 8 );
+		auto P = GetRectPos( Rect, g_MousePosition, 8, 0, 8 );
 		switch( P )
 		{
 		case rect_pos_inside:

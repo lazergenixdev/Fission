@@ -47,7 +47,7 @@
 /*! @brief Functions that should be thread safe */
 #define FISSION_THREAD_SAFE
 
-/* @brief This structure only contains pure function definitions */
+/* @brief Interface */
 #define fission_Interface struct
 
 /**
@@ -119,7 +119,7 @@ namespace Fission {
 /**
 * Important Web Address
 */
-#define FISSION_RR "https://youtu.be/dQw4w9WgXcQ"
+#define FISSION_Rx2 "https://youtu.be/dQw4w9WgXcQ"
 
 /**
 * Stuff that haven't been added to 'lazerlib' yet

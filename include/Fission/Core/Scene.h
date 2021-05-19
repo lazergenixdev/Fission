@@ -94,8 +94,11 @@ namespace Fission {
 	class Scene : public IEventHandler
 	{
 	public:
-		inline void OnCreate()
+		virtual void OnCreate() {}
+
+		inline void CreateAll()
 		{
+			OnCreate();
 			for( auto && l : m_vLayerStack )
 				l->OnCreate();
 			m_bCreated = true;
@@ -117,7 +120,7 @@ namespace Fission {
 
 		FISSION_API virtual EventResult OnKeyUp( KeyUpEventArgs & args ) override;
 
-		FISSION_API virtual EventResult OnTextInput( TextInputEventArgs & ) override FISSION_EVENT_DEFAULT
+		FISSION_API virtual EventResult OnTextInput( TextInputEventArgs & ) override;
 
 		FISSION_API virtual EventResult OnMouseMove( MouseMoveEventArgs & ) override;
 
@@ -125,11 +128,11 @@ namespace Fission {
 
 		FISSION_API virtual EventResult OnSetCursor( SetCursorEventArgs & ) override;
 
-		FISSION_API virtual EventResult OnHide() override FISSION_EVENT_DEFAULT
+		FISSION_API virtual EventResult OnHide() override;
 
-		FISSION_API virtual EventResult OnShow() override FISSION_EVENT_DEFAULT
+		FISSION_API virtual EventResult OnShow() override;
 
-		FISSION_API virtual EventResult OnClose( CloseEventArgs & ) override FISSION_EVENT_DEFAULT
+		FISSION_API virtual EventResult OnClose( CloseEventArgs & ) override;
 
 		void Exit() {  };
 

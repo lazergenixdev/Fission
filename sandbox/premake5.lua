@@ -8,12 +8,18 @@ project 'sandbox'
 
     files { "%{prj.location}/src/**.cpp" }
 
-    links { 'Fission' }
+    links { 'Fission', 'freetype' }
+
+    libdirs
+    {
+        '%{wks.location}/Fission/vendor/freetype/' .. OutputDir
+    }
 
 	includedirs
 	{
         '%{wks.location}/include',
         "%{IncludeDir.lazerlib}",
+        "%{IncludeDir.freetype}",
         '%{wks.location}/resources'
 	}
     

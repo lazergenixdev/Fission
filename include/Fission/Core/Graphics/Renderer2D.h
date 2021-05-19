@@ -102,6 +102,8 @@ namespace Fission
 
 		virtual void DrawCircle( vec2f point, float radius, colorf color, float stroke_width, StrokeStyle stroke = StrokeStyle::Default ) = 0;
 
+		virtual void DrawCircle( vec2f point, float radius, colorf inner_color, colorf outer_color, float stroke_width, StrokeStyle stroke = StrokeStyle::Default ) = 0;
+
 		virtual void FillArrow( vec2f start, vec2f end, float width, colorf color ) = 0;
 
 		virtual void DrawImage( Resource::Texture2D * pTexture, rectf rect, rectf uv, colorf tint = Colors::White ) = 0;

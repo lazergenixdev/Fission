@@ -16,6 +16,7 @@ workspace 'Fission'
     IncludeDir = {}
     IncludeDir["yaml"] = "%{wks.location}/Fission/vendor/yaml-cpp/include"
     IncludeDir["lazerlib"] = "%{wks.location}/Fission/vendor/lazerlib"
+    IncludeDir["freetype"] = '%{wks.location}/Fission/vendor/freetype/include'
 
 
 group "Dependencies"

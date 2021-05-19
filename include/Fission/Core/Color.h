@@ -160,6 +160,20 @@ namespace Fission
 			Brown            = 0xa52a2a,
 			Maroon           = 0x800000,
 			DogeHouse		 = 0x1e1e1e,
+
+			Gray_10_Percent  = 0xe6e6e6,
+			Gray_20_Percent  = 0xcdcdcd,
+			Gray_30_Percent  = 0xb4b4b4,
+			Gray_40_Percent  = 0x9a9a9a,
+			Gray_50_Percent  = 0x818181,
+			Gray_60_Percent  = 0x666666,
+			Gray_65_Percent  = 0x595959,
+			Gray_70_Percent  = 0x4b4b4b,
+			Gray_75_Percent  = 0x3e3e3e,
+			Gray_80_Percent  = 0x303030,
+			Gray_85_Percent  = 0x212121,
+			Gray_90_Percent  = 0x131313,
+			Gray_95_Percent  = 0x050505,
 		}; // enum Fission::Colors::KnownColor
 
 		static constexpr color make_color( const color & color, float value, float alpha = 1.0f );
