@@ -67,8 +67,6 @@ private:
 	std::function<void()> on_press;
 };
 
-#pragma comment(lib,"user32")
-
 class CreditLayer : public ILayer
 {
 public:
@@ -263,6 +261,9 @@ public:
 		static float scale = 16.0f;
 	//	UI::Debug::Window( "nice" );
 		UI::Debug::InputFloat( "scale", &scale );
+
+		static float asd = 41.3f;
+		UI::Debug::InputFloat( "test", &asd );
 
 		float k = std::fmodf( t*2.f, std::numbers::pi_v<float>*2.0f );
 		float d = std::numbers::pi_v<float> *2.0f - k;

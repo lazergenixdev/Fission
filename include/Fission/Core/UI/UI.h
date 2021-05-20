@@ -38,9 +38,9 @@ namespace Fission::UI
 	{
 	public:
 		FISSION_API static bool Window( const char * label );
-		FISSION_API static bool Button( const char * label );
+	//	FISSION_API static bool Button( const char * label );
 		FISSION_API static bool InputFloat( const char * label, float * value );
-		FISSION_API static bool InputInt( const char * label, int * value );
+	//	FISSION_API static bool InputInt( const char * label, int * value );
 	};
 
 } // namespace Fission::UI

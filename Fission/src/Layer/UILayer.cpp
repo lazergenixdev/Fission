@@ -2,6 +2,8 @@
 #include <Fission/Core/UI/UI.h>
 #include <Fission/Core/Application.h>
 
+// Everything about this code is awful, please avert your eyes for your own well being. You have been warned.
+
 using namespace Fission;
 
 #define _lazer_has_vector
@@ -55,7 +57,6 @@ enum class WidgetType
 
 	*/
 
-	none				= 0,
 	mask_type_bits		= 0b000000'11111111111111111111111111,
 	mask_subtype_bits	= ~mask_type_bits,
 
@@ -85,7 +86,7 @@ struct WidgetInfo
 	ui::window_uid uid = ui::null_window_uid;
 
 	// Internal Flags
-	WidgetType type = WidgetType::none;
+	WidgetType type;
 	int Flags = WidgetFlags_None;
 
 	// Pointer storage
@@ -187,6 +188,12 @@ public:
 		return lazer::ui::Handled;
 	}
 
+	DynamicWindow * addWidget(ui::Widget* widget)
+	{
+		offsetY += 18.0f; // this is bad
+		return DynamicWindow::addWidget( widget );
+	}
+
 	virtual void OnUpdate( float ) override
 	{
 		rectf rect = (rectf)Rect;
@@ -204,6 +211,8 @@ public:
 		DynamicWindow::OnUpdate( 0.0f );
 		g_pRenderer2D->PopTransform();
 	}
+public:
+	float offsetY = 5.0f;
 private:
 	std::string id;
 };
@@ -214,12 +223,28 @@ public:
 	static constexpr int s_PaddingX = 5;
 	static constexpr int s_PaddingY = 5;
 
-	Slider( std::string label, int window_width, int startY ) : ui::Slider() {
+	Slider( std::string label, int window_width, int startY, WidgetInfo * widget ) : ui::Slider(), pWidget(widget) {
 		auto tl = g_pRenderer2D->CreateTextLayout( L"A" ); // LOL
 		auto y = startY + s_PaddingY;
 		Rect = { s_PaddingX,window_width - s_PaddingX,y,y +(int)tl.height };
 		this->label = ( label );
-		this->numberText = "16.00";
+		this->numberText = std::to_string( (float&)widget->data3 );
+	}
+
+	void resolve_number()
+	{
+		float original = (float&)pWidget->data3;
+		try { original = std::stof( numberText ); }
+		catch( ... ) { return; }
+
+		(float &)pWidget->data3 = original;
+		pWidget->Flags |= WidgetFlags_Changed;
+		this->numberText = std::to_string( original );
+	}
+
+	virtual void OnFocusLost() override
+	{
+		resolve_number();
 	}
 
 	virtual lazer::ui::Result OnMouseMove( lazer::ui::MouseMoveEventArgs & args ) override
@@ -244,7 +269,7 @@ public:
 		switch( args.ch )
 		{
 		case '\b': if( numberText.size() ) numberText.pop_back(); break;
-		case '\r': parent->SetFocus( nullptr ); break;
+		case '\r': resolve_number(); parent->SetFocus( nullptr ); break;
 		case '0':
 		case '1':
 		case '2':
@@ -312,6 +337,8 @@ private:
 	std::string numberText;
 	recti Rect;
 	bool inTextBox = false;
+
+	WidgetInfo * pWidget;
 };
 
 
@@ -339,19 +366,19 @@ namespace Fission::UI {
 		return true;
 	}
 
-	bool Debug::Button( const char * label )
-	{
-		auto window = GetActiveWindow();
+	//bool Debug::Button( const char * label )
+	//{
+	//	auto window = GetActiveWindow();
 
-		std::string sLabel = label;
-		auto it = window->widgets.find( sLabel );
-		if( it == window->widgets.end() )
-		{
-			window->widgets.emplace( sLabel, sLabel );
-		}
+	//	std::string sLabel = label;
+	//	auto it = window->widgets.find( sLabel );
+	//	if( it == window->widgets.end() )
+	//	{
+	//		window->widgets.emplace( sLabel, sLabel );
+	//	}
 
-		return true;
-	}
+	//	return true;
+	//}
 
 	bool Debug::InputFloat( const char * label, float * value )
 	{
@@ -371,6 +398,7 @@ namespace Fission::UI {
 
 		if( it->second.Flags & WidgetFlags_Changed )
 		{
+			it->second.Flags = WidgetFlags_None;
 			float new_value = (float&)it->second.data3;
 			if( new_value != *value )
 			{
@@ -384,31 +412,31 @@ namespace Fission::UI {
 		return false;
 	}
 
-	bool Debug::InputInt( const char * label, int * value )
-	{
-		auto window = GetActiveWindow();
+	//bool Debug::InputInt( const char * label, int * value )
+	//{
+	//	auto window = GetActiveWindow();
 
-		std::string sLabel = label;
-		auto it = window->widgets.find( sLabel );
-		if( it == window->widgets.end() )
-		{
-			WidgetInfo widget;
-			widget.name = sLabel;
-			widget.type = WidgetType::input_int;
-			(int&)widget.data3 = *value; // don't store the pointer, we don't own this value!
-			window->widgets.emplace( sLabel, widget );
-			return false;
-		}
+	//	std::string sLabel = label;
+	//	auto it = window->widgets.find( sLabel );
+	//	if( it == window->widgets.end() )
+	//	{
+	//		WidgetInfo widget;
+	//		widget.name = sLabel;
+	//		widget.type = WidgetType::input_int;
+	//		(int&)widget.data3 = *value; // don't store the pointer, we don't own this value!
+	//		window->widgets.emplace( sLabel, widget );
+	//		return false;
+	//	}
 
-		int new_value = (int&)it->second.data3;
-		if( new_value != *value )
-		{
-			*value = new_value;
-			return false;
-		}
+	//	int new_value = (int&)it->second.data3;
+	//	if( new_value != *value )
+	//	{
+	//		*value = new_value;
+	//		return false;
+	//	}
 
-		return false;
-	}
+	//	return false;
+	//}
 
 }
 
@@ -418,10 +446,12 @@ UILayer::UILayer()
 	g_pWindowManager = std::make_unique<ui::WindowManager>( 1280, 720 );
 }
 
+static constexpr float fontSize = 8.0f;
+
 void UILayer::OnCreate()
 {
 	g_pRenderer2D = Renderer2D::Create( GetApp()->GetGraphics() );
-	FontManager::SetFont( "$ui", "../resources/Fonts/NunitoSans-Regular.ttf", 8.0f );
+	FontManager::SetFont( "$ui", "../resources/Fonts/NunitoSans-Regular.ttf", fontSize );
 	g_pRenderer2D->SelectFont( FontManager::GetFont( "$ui" ) );
 }
 
@@ -443,10 +473,8 @@ void UILayer::OnUpdate()
 		{
 			if( widget.uid == ui::null_window_uid )
 			{
-				int sz = (int)FontManager::GetFont( "$ui" )->GetSize();
-				auto w = new Slider( widget.name, window->Rect.width(), sz );
+				auto w = new Slider( widget.name, window->Rect.width(), int( fontSize + window->offsetY ), &widget );
 				window->addWidget( w );
-				window->addWidget( new Slider( "timeout", window->Rect.width(), sz*2+5 ) );
 				widget.uid = w->getuid();
 			}
 		}
@@ -469,10 +497,8 @@ void UILayer::OnUpdate()
 		{
 			if( widget.uid == ui::null_window_uid )
 			{
-				int sz = (int)FontManager::GetFont( "$ui" )->GetSize();
-				auto w = new Slider( widget.name, window->Rect.width(), sz );
+				auto w = new Slider( widget.name, window->Rect.width(), int( fontSize + window->offsetY ), &widget );
 				window->addWidget( w );
-				window->addWidget( new Slider( "timeout", window->Rect.width(), sz * 2 + 5 ) );
 				widget.uid = w->getuid();
 			}
 		}
