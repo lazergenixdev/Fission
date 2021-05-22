@@ -263,13 +263,16 @@ public:
 		UI::Debug::InputFloat( "scale", &scale );
 
 		static float asd = 41.3f;
-		UI::Debug::InputFloat( "test", &asd );
+		if( scale > 15.0f )
+		UI::Debug::InputFloat( "aaa", &asd );
 
 		float k = std::fmodf( t*2.f, std::numbers::pi_v<float>*2.0f );
 		float d = std::numbers::pi_v<float> *2.0f - k;
 		colorf cc = color( Colors::White, map( d, 0.0f, std::numbers::pi_v<float>*2.0f, 0.0f, 1.0f ) );
 		renderer2d->DrawCircle( { 424.0f,214.0f }, k*scale,Colors::Transparent, cc*0.9f, k*10.0f, StrokeStyle::Outside );
 		renderer2d->DrawCircle( { 424.0f,214.0f }, k*scale+ k * 10.0f,cc, cc, d*2.0f, StrokeStyle::Outside );
+
+		renderer2d->DrawCircle( ( mouse[19] - center ) * 0.75f + center, 0.0f, color( col, 0.2f ), Colors::Transparent, 100.0f, StrokeStyle::Outside );
 
 		renderer2d->Render();
 	}

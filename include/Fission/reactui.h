@@ -227,7 +227,7 @@ _lazer_ui_begin_header_
 	// | BL  | BOTTOM |  BR |  \ - Expand 
 	// +--------------------+  /
 	//
-	rect_pos_ GetRectPos( rect rect, const point & pos, const int & expand, const int & inflate, const int & corner_tolerance )
+	static constexpr rect_pos_ GetRectPos( rect rect, const point & pos, const int & expand, const int & inflate, const int & corner_tolerance )
 	{
 		const auto & [x, y] = pos;
 
@@ -694,9 +694,9 @@ inline DynamicWindow::DynamicWindow( rect rc, Flags_ Flags ) : flags( Flags ) { 
 inline DynamicWindow * DynamicWindow::addWidget( Widget * widget ) { widget->parent = this; widgets.emplace_back( widget ); return this; }
 inline void DynamicWindow::OnUpdate( float dt ) { for( auto && w : widgets ) w->OnUpdate( dt ); }
 inline bool DynamicWindow::isInside( point pos ) { return Rect.get_expanded( 8 )[pos]; }
-void DynamicWindow::OnMove( point & new_pos ) {}
+inline void DynamicWindow::OnMove( point & new_pos ) {}
 
-void DynamicWindow::OnResize()
+inline void DynamicWindow::OnResize()
 {
 	static constexpr int min_w = 110;
 	static constexpr int min_h = 80;
