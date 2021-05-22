@@ -1,6 +1,7 @@
 #include "DebugLayer.h"
 #include "Fission/Core/Application.h"
 #include "../Version.h"
+#include "Fission/Core/Console.h"
 
 // todo: move system info gathering to Fission::System
 
@@ -71,12 +72,33 @@ void DebugLayerImpl::Text( const char * what )
 
 static std::string cpu_name;
 static std::string memory_str;
+static std::string platform_str;
 #include <intrin.h>
+
+typedef LONG NTSTATUS;
+
+typedef NTSTATUS( WINAPI * RtlGetVersionPtr )( PRTL_OSVERSIONINFOW );
+
+RTL_OSVERSIONINFOW GetRealOSVersion() {
+	HMODULE hMod = ::GetModuleHandleW( L"ntdll.dll" );
+	if( hMod ) {
+		RtlGetVersionPtr fxPtr = ( RtlGetVersionPtr )::GetProcAddress( hMod, "RtlGetVersion" );
+		if( fxPtr != nullptr ) {
+			RTL_OSVERSIONINFOW rovi = { 0 };
+			rovi.dwOSVersionInfoSize = sizeof( rovi );
+			if( 0 == fxPtr( &rovi ) ) {
+				return rovi;
+			}
+		}
+	}
+	RTL_OSVERSIONINFOW rovi = { 0 };
+	return rovi;
+}
 
 void DebugLayerImpl::OnCreate() {
 	m_pRenderer2D = Renderer2D::Create( GetApp()->GetGraphics() );
 
-	FontManager::SetFont( "$debug", RobotoRegularTTF::data, RobotoRegularTTF::size, 9.0f );
+	FontManager::SetFont( "$debug", RobotoRegularTTF::data, RobotoRegularTTF::size, 12.0f );
 
 	int CPUInfo[4] = { -1 };
 	unsigned   nExIds, i = 0;
@@ -97,6 +119,9 @@ void DebugLayerImpl::OnCreate() {
 	}
 	//string includes manufacturer, model and clockspeed
 	cpu_name = (const char *)CPUBrandString;
+	for( size_t i = cpu_name.size()-1; i > 0u; --i )
+		if( cpu_name[i] != ' ' )
+		{ cpu_name.resize(i+1); break; }
 
 	//SYSTEM_INFO sysInfo;
 	//GetSystemInfo( &sysInfo );
@@ -105,12 +130,21 @@ void DebugLayerImpl::OnCreate() {
 	MEMORYSTATUSEX statex;
 	statex.dwLength = sizeof( statex );
 	GlobalMemoryStatusEx( &statex );
-	char buf[30];
+	char buf[128];
 	sprintf( buf, "%.1f", float( ( statex.ullTotalPhys / 1024 ) / ( 1024 * 1000 ) ) );
 	memory_str = "Total System Memory: " + std::string(buf) + "GB";
+
+	auto ver = GetRealOSVersion();
+
+	sprintf( buf, "Windows 10 64-bit (%u.%u.%u)", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber );
+
+	platform_str = buf;
 }
 
 void DebugLayerImpl::OnUpdate() {
+	
+	static constexpr auto c = color( 0.0f, 0.0f, 0.0f, 0.7f );
+	vec2f size = vec2f( 1280.0f, 720.0f ); // todo: this is a bug, please fix as soon as possible
 
 	auto pFont = FontManager::GetFont( "$debug" );
 	float diff = pFont->GetSize();
@@ -125,25 +159,41 @@ void DebugLayerImpl::OnUpdate() {
 		memset( buf, 0, sizeof buf );
 		swprintf( buf, std::size( buf ), L"%.1f FPS (%.2fms)", 1000.0f / msAvgFrameTime, msAvgFrameTime );
 
-
-
 		auto tl = m_pRenderer2D->CreateTextLayout( L"Fission v" FISSION_VERSION_STRING " - Debug Layer" );
 
-		m_pRenderer2D->FillRect( rectf( 0.0f, tl.width, 0.0f, 2.0f * diff ), color( 0.25f, 0.25f, 0.25f, 0.7f ) );
+		m_pRenderer2D->FillRect( rectf( 0.0f, tl.width, 0.0f, diff ), c );
 
 		m_pRenderer2D->DrawString( L"Fission v" FISSION_VERSION_STRING " - Debug Layer", { 0.0f, 0.0f }, Colors::White );
 
 		m_pRenderer2D->DrawString( L"(F3)", { tl.width + 4.0f, 0.0f }, color( 0xFFFFFF, 0.5f ) );
 
-		m_pRenderer2D->DrawString( buf, { 0.0f, diff }, Colors::White );
+		{ // FPS
+			tl = m_pRenderer2D->CreateTextLayout( buf );
+			vec2f pos = { 0.0f, diff };
+			m_pRenderer2D->FillRect( rectf::from_tl( pos, { tl.width, diff } ), c );
+			m_pRenderer2D->DrawString( buf, pos, Colors::White );
+		}
 		
-		tl = m_pRenderer2D->CreateTextLayout( cpu_name.c_str() );
-		m_pRenderer2D->FillRect( rectf( 0.0f, tl.width, diff * 2.0f, diff * 2.0f + tl.height ), color( 0.25f, 0.25f, 0.25f, 0.7f ) );
-		m_pRenderer2D->DrawString( cpu_name.c_str(), { 0.0f, diff*2.0f }, Colors::White );
+		{ // CPU
+			tl = m_pRenderer2D->CreateTextLayout( cpu_name.c_str() );
+			vec2f pos = { size.x - tl.width, 0.0f };
+			m_pRenderer2D->FillRect( rectf::from_tl( pos, { tl.width, diff } ), c );
+			m_pRenderer2D->DrawString( cpu_name.c_str(), pos, Colors::White );
+		}
 
-		tl = m_pRenderer2D->CreateTextLayout( cpu_name.c_str() );
-		m_pRenderer2D->FillRect( rectf( 0.0f, tl.width, diff * 3.0f, diff * 3.0f + tl.height ), color( 0.25f, 0.25f, 0.25f, 0.7f ) );
-		m_pRenderer2D->DrawString( memory_str.c_str(), { 0.0f, diff*3.0f }, Colors::White );
+		{ // Memory
+			tl = m_pRenderer2D->CreateTextLayout( memory_str.c_str() );
+			vec2f pos = { size.x - tl.width, diff };
+			m_pRenderer2D->FillRect( rectf::from_tl( pos, { tl.width, diff } ), c );
+			m_pRenderer2D->DrawString( memory_str.c_str(), pos, Colors::White );
+		}
+
+		{ // Platform
+			tl = m_pRenderer2D->CreateTextLayout( platform_str.c_str() );
+			vec2f pos = { size.x - tl.width, diff * 2.0f };
+			m_pRenderer2D->FillRect( rectf::from_tl( pos, { tl.width, diff } ), c );
+			m_pRenderer2D->DrawString( platform_str.c_str(), pos, Colors::White );
+		}
 
 		float start = 80.0f;
 
@@ -153,7 +203,7 @@ void DebugLayerImpl::OnUpdate() {
 			{
 				auto tl = m_pRenderer2D->CreateTextLayout( s.c_str() );
 
-				m_pRenderer2D->FillRect( rectf( 0.0f, tl.width, start, start + tl.height ), color( Colors::Black, 0.5f ) );
+				m_pRenderer2D->FillRect( rectf( 0.0f, tl.width, start, start + tl.height ), c );
 				m_pRenderer2D->DrawString( s.c_str(), { 0.0f, start }, Colors::White );
 
 				start += tl.height;

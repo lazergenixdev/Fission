@@ -37,17 +37,17 @@ namespace Fission
 /**
  * @brief  Get Fission Engine Version
  * 
- * @warning NO ARGUMENTS PASSED SHOULD BE NULL
- * 
  * @param  _Maj: [out] Major Version Number.
  * @param  _Min: [out] Minor Version Number.
  * @param  _Pat: [out] Patch Version Number.
  */
 FISSION_API void GetVersion( int *_Maj, int *_Min, int *_Pat );
 
+//! @brief Gets version in format: "Fission vX.Y.Z"
+//! @note buffer of size 21 characters should be fine.
 FISSION_API void GetVersionString( wchar_t * _Buffer );
 
-//! @brief Gets version in format: "Fission v000.000.000"
+//! @brief Gets version in format: "Fission vX.Y.Z"
 //! @note buffer of size 21 characters should be fine.
 FISSION_API void GetVersionString( char * _Buffer );
 

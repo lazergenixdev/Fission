@@ -64,6 +64,9 @@ namespace Fission {
 		/// <param name="Text">- utf8 string to put onto the clipboard.</param>
 		FISSION_API static void SaveToClipboard( const std::string & _Text );
 
+		FISSION_API static bool OpenURL( const std::string & _URL );
+		FISSION_API static bool OpenFile( const file::path & _File );
+
 		/// <summary>
 		/// Writes out information about the system to the console.
 		/// </summary>

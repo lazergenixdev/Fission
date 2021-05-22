@@ -1,408 +1,595 @@
-#include "UILayer.h"
-//#include "Fission/Core/Application.h"
-//
-//#define _lazer_key_type Fission::Keys::Key
-//#define _lazer_key_left_mouse_ Fission::Keys::Mouse_Left
-//#define _lazer_key_right_mouse_ Fission::Keys::Mouse_Right
-//#define _lazer_char_type wchar_t
-//#define _lazer_cursor_type Fission::Cursor *
-//#include "lazerui.h"
-//
-//#include <Fission/Core/UI/UI.h>
-//#include "Fission/Core/Console.h"
-//
-//namespace NunitoSemiBoldTTF {
-//#include "Static Fonts/Nunito-SemiBold.inl"
-//}
-//
-//using namespace lazer;
-//
-//static std::unique_ptr<ui::WindowManager> g_pWindowManager;
-//
-//static std::unique_ptr<Renderer2D> g_pRenderer2D;
-//
-//
-//class SandboxWindow : public lazer::ui::DynamicWindow
-//{
-//public:
-//	SandboxWindow( const char * name, int x, int y, int width, int height, lazer::color col ) :
-//		lazer::ui::DynamicWindow( { x, x + width, y, y + height } ),
-//		window_color( col ),
-//		title( utf8_to_wstring( name ) )
-//	{}
-//
-//	virtual void OnUpdate( float dt ) override
-//	{
-//		using namespace lazer;
-//
-//		g_pRenderer2D->FillRect( (rectf)Rect, Colors::make_color( window_color, 0.1f, 0.94f ) );
-//
-//		auto tl = g_pRenderer2D->CreateTextLayout( title.c_str() );
-//		auto titleRc = (rectf)Rect;
-//		titleRc.y.high = titleRc.y.low + tl.height;
-//		if( parent->GetFocus() == this )
-//			g_pRenderer2D->FillRect( (rectf)titleRc, Colors::make_color( window_color, 0.5f ) * coloru( 255, 255, 255, 100 ) );
-//		else
-//			g_pRenderer2D->FillRect( (rectf)titleRc, coloru( 0, 0, 0, 100 ) );
-//
-//		color c0 = Colors::make_color( window_color, 0.7f );
-//		color c1 = window_color;
-//		g_pRenderer2D->DrawRect( (rectf)Rect, ( ( parent->GetHover() == this ) ? c1 : c0 ), 2.0f );
-//
-//		g_pRenderer2D->DrawString( title.c_str(), (vec2f)Rect.get_tl() + vec2f( 2.0f, 2.0f ), Colors::White );
-//
-//		starty = tl.height;
-//
-//		g_pRenderer2D->PushTransform( mat3x2f::Translation( (vec2f)Rect.get_tl() ) );
-//		DynamicWindow::OnUpdate( dt );
-//		g_pRenderer2D->PopTransform();
-//	}
-//
-//	float starty;
-//	float padding = 5.0f;
-//private:
-//	std::wstring title;
-//	lazer::color window_color;
-//};
-//
-//class SandboxTextEdit : public lazer::ui::TextEdit
-//{
-//public:
-//	SandboxTextEdit( lazer::vec2i pos, lazer::vec2i size ) :
-//		pos( pos ), size( size )
-//	{}
-//
-//	virtual void OnFinishEdit() override {
-//	//	ShellExecuteA( NULL, "open", lazer::wstring_to_utf8( searchText + text ).c_str(), NULL, NULL, 5 );
-//	}
-//
-//	virtual bool isInside( lazer::vec2i pos ) override {
-//		return lazer::recti::from_tl( parent->Rect.get_tl() + this->pos, size )[pos];
-//	}
-//
-//	virtual lazer::ui::Result OnKeyDown( lazer::ui::KeyDownEventArgs & args ) override {
-//		switch( args.key )
-//		{
-//		case lazer::Keys::Mouse_Left:
-//		{
-//			if( !text.empty() )
-//			{
-//				//auto p = (lazer::vec2f)( lazer::ui::GetMousePosition() - parent->Rect.get_tl() - pos - lazer::vec2(2,0) );
-//				//if( auto i = tl.test_intersection( p ) )
-//				//{
-//				//	curPos = i.value();
-//				//	if( curPos < tl.ch_divisions.size() )
-//				//		cursorOffset = tl.ch_divisions[curPos].start;
-//				//	else cursorOffset = tl.width;
-//				//}
-//				//else { curPos = (int)text.size(); cursorOffset = tl.width; }
-//			}
-//			break;
-//		}
-//		default:break;
-//		}
-//		return Widget::OnKeyDown( args );
-//	}
-//
-//	lazer::ui::Result OnSetCursor( lazer::ui::SetCursorEventArgs & args ) override {
-//		args.cursor = lazer::Cursor::Get( lazer::Cursor::Default_TextInput );
-//		return lazer::ui::Handled;
-//	}
-//
-//	virtual lazer::ui::Result OnTextInput( lazer::ui::TextInputEventArgs & args ) override {
-//		switch( args.ch )
-//		{
-//		case '\b':
-//			if( !text.empty() ) {
-//				text.pop_back();
-//			}
-//			break;
-//		case '\r':
-//			parent->SetFocus( nullptr );
-//			OnFinishEdit();
-//			break;
-//		default:
-//		{
-//			if( text.size() < 25u ) {
-//				text.push_back( args.ch );
-//			}
-//			break;
-//		}
-//		}
-//		return lazer::ui::Handled;
-//	}
-//
-//	virtual void OnUpdate( float dt ) override
-//	{
-//		auto owner = static_cast<SandboxWindow *>( parent );
-//		pos.y = (int)( owner->starty + owner->padding );
-//		pos.x = (int)owner->padding;
-//		owner->starty += ( (float)size.y + owner->padding );
-//
-//		color c0 = { 1.0f, 1.0f, 1.0f, 0.1f };
-//		color c1 = { 1.0f, 1.0f, 1.0f, 0.2f };
-//
-//		auto rect = rectf::from_tl( (vec2f)pos, (vec2f)size );
-//
-//		g_pRenderer2D->FillRect( rect, parent->GetHover() == this ? c1 : c0 );
-//		g_pRenderer2D->DrawRect( rect, parent->GetFocus() == this ? c1 * 3.0f : c0 * 2.0f, 1.0f );
-//
-//		if( text.empty() && parent->GetFocus() != this )
-//			g_pRenderer2D->DrawString( L"Search . . .", rect.get_tl() + vec2( 2.0f, 0.0f ), coloru( 255, 255, 255, 100 ) );
-//		else
-//		{
-//			auto tl = g_pRenderer2D->DrawString( text.c_str(), rect.get_tl() + vec2( 2.0f, 0.0f ), Colors::White );
-//			if( parent->GetFocus() == this )
-//			{
-//				vec2f cur_size = { 1.0f, size.y * 0.8f };
-//				g_pRenderer2D->FillRect( rectf::from_tl( rect.get_tl() + vec2f{ 2.0f + tl.width, size.y * 0.1f }, cur_size ), Colors::White );
-//			}
-//		}
-//
-//	}
-//private:
-//	vec2i pos, size;
-//	std::wstring text;
-//};
-//
-//class SandboxSlider : public ui::Slider
-//{
-//public:
-//	SandboxSlider( const char * name, float * pvar, float min, float max, vec2i size ) :
-//		title( utf8_to_wstring( name ) ), pValue( pvar ), min( min ), max( max ), size( size )
-//	{}
-//
-//	virtual bool isInside( vec2i pos ) override {
-//		return recti::from_tl( parent->Rect.get_tl() + this->pos, size )[pos];
-//	}
-//
-//	virtual void UpdateSlidePosition( vec2i mouse ) override {
-//		auto rect = rectf::from_tl( (vec2f)pos, (vec2f)size );
-//		float padding = slide_size.x * 0.5f - rect.height() * 0.2f;
-//		vec2f p = vec2f( mouse - parent->Rect.get_tl() );
-//		auto temp = map( p.x, (float)pos.x + padding, (float)( pos.x + size.x ) - padding, min, max );
-//		*pValue = std::clamp( temp, min, max );
-//	}
-//
-//	virtual void OnUpdate( float dt ) override
-//	{
-//		color c0 = { 1.0f, 1.0f, 1.0f, 0.1f };
-//		color c1 = { 1.0f, 1.0f, 1.0f, 0.2f };
-//
-//		auto owner = static_cast<SandboxWindow *>( parent );
-//		pos.y = (int)( owner->starty + owner->padding );
-//		pos.x = (int)owner->padding;
-//		owner->starty += ( (float)size.y + owner->padding );
-//
-//		auto rect = rectf::from_tl( (vec2f)pos, (vec2f)size );
-//
-//		if( active )
-//			g_pRenderer2D->FillRect( rect, color( 0.5f, 0.8f, 1.0f, 0.4f ) );
-//		else
-//			g_pRenderer2D->FillRect( rect, parent->GetHover() == this ? c1 : c0 );
-//
-//		if( parent->GetFocus() == this )
-//			g_pRenderer2D->DrawRect( rect, c0 * 2.0f, 1.0f );
-//
-//		float effective_width = rect.width() - slide_size.x - rect.height() * 0.4f;
-//
-//		float slide_pos = map( *pValue, min, max, 0.0f, 1.0f );
-//
-//
-//		wchar_t buffer[20];
-//		swprintf_s( buffer, L"%.4f", *pValue );
-//		auto tl = g_pRenderer2D->CreateTextLayout( buffer );
-//		g_pRenderer2D->DrawString( buffer,
-//			vec2(
-//				rect.get_l() + ( rect.width() - tl.width ) * 0.5f,
-//				rect.get_t() + ( rect.height() - tl.height ) * 0.5f ),
-//			coloru( 255, 255, 255, 150 )
-//		);
-//		tl = g_pRenderer2D->CreateTextLayout( title.c_str() );
-//		g_pRenderer2D->DrawString( title.c_str(), vec2( rect.get_r() + 4.0f, rect.y.get_average() - tl.height * 0.5f ), Colors::White );
-//
-//		g_pRenderer2D->FillRect( rectf::from_center( { rect.get_l() + slide_size.x * 0.5f + slide_pos * effective_width + rect.height() * 0.2f, rect.y.get_average() }, { slide_size } ), c0 * 3.0f );
-//
-//	}
-//private:
-//	std::wstring title;
-//	vec2i pos, size;
-//	vec2f slide_size = { 6.0f, (float)size.y * 0.60f };
-//	float min, max;
-//	float * pValue;
-//};
-//
-//class SandboxButton : public ui::Button
-//{
-//public:
-//	SandboxButton( const char * name, std::function<void()> action ) :
-//		title( utf8_to_wstring( name ) ), action( action )
-//	{}
-//
-//	virtual void OnPressed() override {
-//		action();
-//	}
-//
-//	virtual bool isInside( vec2i pos ) override {
-//		return recti::from_tl( parent->Rect.get_tl() + this->pos, size )[pos];
-//	}
-//
-//	ui::Result OnSetCursor( ui::SetCursorEventArgs & args ) override {
-//		args.cursor = Cursor::Get( Cursor::Default_Hand );
-//		return ui::Handled;
-//	}
-//
-//	virtual void OnUpdate( float dt ) override
-//	{
-//		color c0 = { 1.0f, 1.0f, 1.0f, 0.1f };
-//		color c1 = { 1.0f, 1.0f, 1.0f, 0.2f };
-//		auto tl = g_pRenderer2D->CreateTextLayout( title.c_str() );
-//
-//		auto owner = static_cast<SandboxWindow *>( parent );
-//		pos.y = (int)( owner->starty + owner->padding );
-//		pos.x = (int)owner->padding;
-//		owner->starty += ( (float)size.y + owner->padding );
-//		size.x = (int)( tl.width + owner->padding * 2.0f );
-//		size.y = (int)( tl.height );
-//
-//		auto rect = rectf::from_tl( (vec2f)pos, (vec2f)size );
-//
-//		if( active && parent->GetHover() == this )
-//			g_pRenderer2D->FillRect( rect, color( 1.0f, 1.0f, 1.0f, 0.5f ) );
-//		else
-//			g_pRenderer2D->FillRect( rect, parent->GetHover() == this ? c1 : c0 );
-//
-//		g_pRenderer2D->DrawRect( rect, c0 * 2.0f, parent->GetFocus() == this ? 1.5f : 0.5f );
-//
-//		g_pRenderer2D->DrawString( title.c_str(),
-//			vec2( 
-//				rect.get_l() + ( rect.width() - tl.width ) * 0.5f, 
-//				rect.get_t() + ( rect.height() - tl.height ) * 0.5f ),
-//			coloru( 255, 255, 255, 200 ) 
-//		);
-//	}
-//private:
-//	std::wstring title;
-//	vec2i pos, size;
-//	std::function<void()> action;
-//};
-//
+﻿#include "UILayer.h"
+#include <Fission/Core/UI/UI.h>
+#include <Fission/Core/Application.h>
+
+// Everything about this code is awful, please avert your eyes for your own well being. You have been warned.
+
 using namespace Fission;
+
+static scoped<Renderer2D>			g_pRenderer2D;
+static std::mutex					g_Mutex;
+
+namespace NunitoSemiBoldTTF
+{
+#include <Static Fonts/Nunito-SemiBold.inl>
+}
+
+
+enum WidgetFlags
+{
+	WidgetFlags_None = 0x0,
+
+	WidgetFlags_Changed = 0x1,
+};
+
+enum class WidgetType
+{
+#define TYPE /* This is a type (IDE helper) */
+#define SUBTYPE /* This is a sub type (IDE helper) */
+
+#define MAKE_SUBTYPE(N) (N<<26)
+
+	/*
+	* 
+	// USAGE:
+	
+	// Getting Sub-Type:
+		switch( _type & mask_subtype_bits )
+		{
+		case type_input_number: { break; }
+		case type_input_string: { break; }
+		...
+		};
+
+	*/
+
+	mask_type_bits		= 0b000000'11111111111111111111111111,
+	mask_subtype_bits	= ~mask_type_bits,
+
+
+	/*==========================================================*/
+	// For these types `data3` is used to store the numeric value
+	SUBTYPE type_input_number = MAKE_SUBTYPE(1),
+
+	TYPE input_float		= type_input_number | 0x0,
+	TYPE input_int			= type_input_number | 0x1,
+	TYPE input_int64		= type_input_number | 0x2,
+	TYPE input_float64		= type_input_number | 0x3,
+
+	/*==========================================================*/
+	// Not implemented
+	SUBTYPE type_toggle = MAKE_SUBTYPE(2),
+
+	TYPE checkbox			= type_toggle | 0x0,
+
+	/*==========================================================*/
+	// Not implemented
+	SUBTYPE type_input_string = MAKE_SUBTYPE(3),
+
+	TYPE input_string		= type_input_string | 0x0,
+	TYPE input_ml_string	= type_input_string | 0x1,
+
+
+#undef MAKE_SUBTYPE
+
+#undef SUBTYPE
+#undef TYPE
+};
+
+struct WidgetInfo
+{
+	std::string name;
+	int use_count = 0;
+	ui::window_uid uid = ui::null_window_uid;
+
+	// Internal Flags
+	WidgetType type;
+	int Flags = WidgetFlags_None;
+
+	// Pointer storage
+	void * data1;
+	void * data2;
+
+	// Flags & Number storage
+	uint64_t data3;
+	uint64_t data4;
+};
+
+struct WindowInfo
+{
+	std::string name;
+	int use_count = 0;
+	ui::window_uid uid = ui::null_window_uid;
+	std::unordered_map<std::string,WidgetInfo> widgets;
+};
+
+struct FallbackWindowInfo : public WindowInfo
+{};
+
+static std::unordered_map<std::string, WindowInfo> g_WindowContext;
+static WindowInfo * g_pActiveWindow;
+static FallbackWindowInfo g_FallbackWindow = {"Debug"};
+
+
+namespace Fission
+{
+	EventResult UILayer::OnMouseMove( MouseMoveEventArgs & args )
+	{
+		ui::MouseMoveEventArgs m;
+		m.pos = args.position;
+		std::scoped_lock lock( g_Mutex );
+		return (EventResult)pWindowManager->OnMouseMove( m );
+	}
+	EventResult UILayer::OnKeyDown( KeyDownEventArgs & args )
+	{
+		ui::KeyDownEventArgs m;
+		m.key = args.key;
+		std::scoped_lock lock( g_Mutex );
+		return (EventResult)pWindowManager->OnKeyDown( m );
+	}
+	EventResult UILayer::OnKeyUp( KeyUpEventArgs & args )
+	{
+		ui::KeyUpEventArgs m;
+		m.key = args.key;
+		std::scoped_lock lock( g_Mutex );
+		return (EventResult)pWindowManager->OnKeyUp( m );
+	}
+	EventResult UILayer::OnTextInput( TextInputEventArgs & args )
+	{
+		ui::TextInputEventArgs m;
+		m.ch = args.character;
+		std::scoped_lock lock( g_Mutex );
+		return (EventResult)pWindowManager->OnTextInput( m );
+	}
+	EventResult UILayer::OnSetCursor( SetCursorEventArgs & args )
+	{
+		lazer::ui::SetCursorEventArgs m;
+		m.cursor = args.cursor;
+		std::scoped_lock lock( g_Mutex );
+		EventResult r = (EventResult)pWindowManager->OnSetCursor( m );
+		args.cursor = m.cursor;
+		return r;
+	}
+	EventResult UILayer::OnMouseLeave( MouseLeaveEventArgs & args )
+	{
+		std::scoped_lock lock( g_Mutex );
+		return (EventResult)pWindowManager->OnMouseLeave();
+	}
+}
+
+static color g_ColorBackground = Colors::Gray_80_Percent;
+
+class DogeWindow : public lazer::ui::DynamicWindow
+{
+public:
+	DogeWindow( std::string label ) : DynamicWindow( { 100, 212, 100, 258 } ), id(label) {}
+	virtual lazer::ui::Result OnSetCursor( lazer::ui::SetCursorEventArgs & args ) override
+	{
+		if( DynamicWindow::OnSetCursor( args ) )
+		{
+			auto pos = lazer::ui::GetRectPos( Rect, lazer::ui::g_MousePosition, 8, 0, 8 );
+			switch( pos )
+			{
+			case lazer::ui::rect_pos_left:			args.cursor = Cursor::Get( Cursor::Default_SizeX ); break;
+			case lazer::ui::rect_pos_right:			args.cursor = Cursor::Get( Cursor::Default_SizeX ); break;
+			case lazer::ui::rect_pos_top:			args.cursor = Cursor::Get( Cursor::Default_SizeY ); break;
+			case lazer::ui::rect_pos_bottom:		args.cursor = Cursor::Get( Cursor::Default_SizeY ); break;
+			case lazer::ui::rect_pos_top_left:		args.cursor = Cursor::Get( Cursor::Default_SizeTLBR ); break;
+			case lazer::ui::rect_pos_top_right:		args.cursor = Cursor::Get( Cursor::Default_SizeBLTR ); break;
+			case lazer::ui::rect_pos_bottom_left:	args.cursor = Cursor::Get( Cursor::Default_SizeBLTR ); break;
+			case lazer::ui::rect_pos_bottom_right:	args.cursor = Cursor::Get( Cursor::Default_SizeTLBR ); break;
+			default: break;
+			}
+		}
+		return lazer::ui::Handled;
+	}
+
+	virtual void OnUpdate( float dt ) override
+	{
+		rectf rect = (rectf)Rect;
+
+		auto tl = g_pRenderer2D->CreateTextLayout( id.c_str() );
+
+		g_pRenderer2D->FillRect( rect, g_ColorBackground );
+		g_pRenderer2D->FillRect( rectf::from_tl({rect.get_l()+60.0f,rect.get_t()},{rect.width()-60.0f,tl.height}), Colors::Gray_90_Percent );
+		
+		g_pRenderer2D->DrawString( id.c_str(), rect.get_tl()+vec2f((60.0f-tl.width)*0.5f,0.0f), Colors::Snow );
+
+		g_pRenderer2D->DrawRect( rect, Colors::Black, 2.0f, StrokeStyle::Outside );
+
+		g_pRenderer2D->PushTransform( mat3x2f::Translation( rect.get_tl() ) );
+		DynamicWindow::OnUpdate( dt );
+		g_pRenderer2D->PopTransform();
+	}
+public:
+	float offsetY = 14.0f;
+private:
+	std::string id;
+};
+
+class Slider : public lazer::ui::Slider
+{
+public:
+	static constexpr int s_PaddingX = 5;
+	static constexpr int s_PaddingY = 5;
+
+	Slider( std::string label, int window_width, int startY, WidgetInfo * widget ) : ui::Slider(), pWidget(widget) {
+		auto tl = g_pRenderer2D->CreateTextLayout( L"A" ); // LOL
+		auto y = startY + s_PaddingY;
+		Rect = { s_PaddingX,window_width - s_PaddingX,y,y +(int)tl.height };
+		this->label = ( label );
+		this->numberText = std::to_string( (float&)widget->data3 );
+	}
+
+	void drag_number( float value )
+	{
+		(float &)pWidget->data3 = value;
+		pWidget->Flags |= WidgetFlags_Changed;
+		this->numberText = std::to_string( value );
+	}
+	void resolve_number()
+	{
+		float original = (float&)pWidget->data3;
+		try { original = std::stof( numberText ); }
+		catch( ... ) { return; }
+
+		(float &)pWidget->data3 = original;
+		pWidget->Flags |= WidgetFlags_Changed;
+		this->numberText = std::to_string( original );
+	}
+
+	virtual void OnFocusLost() override
+	{
+		resolve_number();
+	}
+
+	virtual lazer::ui::Result OnMouseMove( lazer::ui::MouseMoveEventArgs & args ) override
+	{
+		if( dragging )
+		{
+			vec2i offset = args.pos - startDrag;
+			drag_number( startNumber + float(offset.x/2)*0.1f );
+			return lazer::ui::Handled;
+		}
+
+		rect dragRect = { Rect.get_l(), Rect.x.get_average(), Rect.get_t(), Rect.get_b() };
+
+		int center = Rect.x.get_average();
+		int pos = ui::GetMousePosition().x - parent->Rect.get_l();
+
+		inTextBox = ( pos > center );
+
+		return lazer::ui::Handled;
+	}
+	virtual lazer::ui::Result OnMouseLeave() override
+	{
+		inTextBox = false;
+		return lazer::ui::Handled;
+	}
+
+	virtual lazer::ui::Result OnKeyDown( lazer::ui::KeyDownEventArgs & args ) override
+	{
+		switch( args.key )
+		{
+		case Keys::Mouse_Left:
+		{
+			if( !this->inTextBox )
+			{
+				dragging = true;
+				startDrag = ui::GetMousePosition();
+				startNumber = std::stof( numberText );
+				parent->SetCapture( this );
+			}
+			break;
+		}
+		default: break;
+		}
+		return lazer::ui::Handled;
+	}
+	virtual lazer::ui::Result OnKeyUp( lazer::ui::KeyUpEventArgs & args ) override
+	{
+		switch( args.key )
+		{
+		case Keys::Mouse_Left:
+		{
+			if( dragging )
+			{
+				dragging = false;
+				parent->SetFocus( nullptr );
+				parent->SetCapture( nullptr );
+			}
+			break;
+		}
+		default: break;
+		}
+		return lazer::ui::Handled;
+	}
+
+	virtual lazer::ui::Result OnTextInput( lazer::ui::TextInputEventArgs & args ) override
+	{
+		switch( args.ch )
+		{
+		case '\b': if( numberText.size() ) numberText.pop_back(); break;
+		case '\r': resolve_number(); parent->SetFocus( nullptr ); break;
+		case '0':
+		case '1':
+		case '2':
+		case '3':
+		case '4':
+		case '5':
+		case '6':
+		case '7':
+		case '8':
+		case '9':
+		case '.':
+			numberText += (char)args.ch; break;
+		}
+		return lazer::ui::Handled;
+	}
+
+	virtual lazer::ui::Result OnSetCursor( lazer::ui::SetCursorEventArgs & args ) override
+	{
+		rect dragRect = { Rect.get_l(), Rect.x.get_average(), Rect.get_t(), Rect.get_b() };
+
+		int center = Rect.x.get_average();
+		int pos = ui::GetMousePosition().x - parent->Rect.get_l();
+
+		if( pos < center )
+			args.cursor = Cursor::Get( Cursor::Default_Arrow );
+		else
+			args.cursor = Cursor::Get( Cursor::Default_TextInput );
+
+
+		return lazer::ui::Pass;
+	}
+
+	virtual void OnParentResize( ui::rect r ) override
+	{
+		Rect.x.high = r.width() - s_PaddingX;
+	}
+
+	virtual bool isInside( ui::point p ) override
+	{
+		return Rect[p];
+	}
+
+	virtual void OnUpdate( float dt ) override
+	{
+		rectf rect = (rectf)Rect;
+
+		g_pRenderer2D->DrawString( label.c_str(), rect.get_tl(), this == parent->GetHover() ? Colors::White : Colors::Gray_30_Percent );
+
+		rectf numberbox = { rect.x.get_average(), rect.get_r(), rect.get_t(), rect.get_b() };
+
+		g_pRenderer2D->FillRect( numberbox, Colors::Gray_85_Percent );
+
+		if( inTextBox ) selectAlpha += ( 0.35f - selectAlpha ) * dt * 5.0f;
+		else			selectAlpha += ( 0.00f - selectAlpha ) * dt * 5.0f;
+
+		if( selectAlpha > 0.0f )
+		g_pRenderer2D->DrawRect( numberbox, color(1.0f, 1.0f, 1.0f, selectAlpha), 1.0f, StrokeStyle::Outside );
+
+		auto tl = g_pRenderer2D->DrawString( numberText.c_str(), numberbox.get_tl(), Colors::White );
+
+		if( this == parent->GetFocus() && not dragging )
+			g_pRenderer2D->FillRect(
+				rectf::from_center( vec2f( (float)(int)(numberbox.get_l() + tl.width) + 0.5f, numberbox.y.get_average() ), 1.0f, tl.height-4.0f ),
+				Colors::White );
+	}
+private:
+	std::string label;
+	std::string numberText;
+	recti Rect;
+	bool inTextBox = false;
+	float selectAlpha = 0.0f;
+
+	bool dragging = false;
+	vec2i startDrag = {};
+	float startNumber = 0.0f;
+
+	WidgetInfo * pWidget;
+};
+
+
+namespace Fission::UI {
+
+	inline WindowInfo * GetActiveWindow() { 
+		if( g_pActiveWindow ) { ++g_pActiveWindow->use_count; return g_pActiveWindow; } ++g_FallbackWindow.use_count; return &g_FallbackWindow;
+	}
+
+	inline void Reset() { if( g_pActiveWindow ) g_pActiveWindow = nullptr; }
+
+
+	bool Debug::Window( const char * label )
+	{
+		if( !label ) { g_pActiveWindow= &g_FallbackWindow; ++g_FallbackWindow.use_count; return true; }
+
+		std::string sLabel = label;
+		auto it = g_WindowContext.find( sLabel );
+		if( it == g_WindowContext.end() )
+		{
+			g_WindowContext.emplace( sLabel, sLabel );
+			g_pActiveWindow = &g_WindowContext[sLabel];
+			++g_pActiveWindow->use_count;
+			return true;
+		}
+
+		g_pActiveWindow = &it->second;
+		++g_pActiveWindow->use_count;
+		return true;
+	}
+
+	//bool Debug::Button( const char * label )
+	//{
+	//	auto window = GetActiveWindow();
+
+	//	std::string sLabel = label;
+	//	auto it = window->widgets.find( sLabel );
+	//	if( it == window->widgets.end() )
+	//	{
+	//		window->widgets.emplace( sLabel, sLabel );
+	//	}
+
+	//	return true;
+	//}
+
+	bool Debug::InputFloat( const char * label, float * value )
+	{
+		auto window = GetActiveWindow();
+
+		std::string sLabel = label;
+		auto it = window->widgets.find( sLabel );
+		if( it == window->widgets.end() ) // If this widget does not exist, then create it's context
+		{
+			WidgetInfo widget;
+			widget.name = sLabel;
+			widget.type = WidgetType::input_float;
+			(float&)widget.data3 = *value; // don't store the pointer, we don't own this value!
+			widget.use_count = 1;
+			window->widgets.emplace( sLabel, widget );
+			return false;
+		}
+
+		++it->second.use_count;
+		if( it->second.Flags & WidgetFlags_Changed )
+		{
+			it->second.Flags = WidgetFlags_None;
+			float new_value = (float&)it->second.data3;
+			if( new_value != *value )
+			{
+				*value = new_value;
+				return true;
+			}
+			return false;
+		}
+		else( float & ) it->second.data3 = *value; // I love this!
+
+		return false;
+	}
+
+}
+
 
 UILayer::UILayer()
 {
-	//g_pWindowManager = std::make_unique<ui::WindowManager>( 1280, 720 );
+	pWindowManager = CreateScoped<ui::WindowManager>( 1280, 720 );
 }
-//
+
+static constexpr float fontSize = 8.0f;
+static simple_timer gtimer;
+
 void UILayer::OnCreate()
 {
-	//g_pRenderer2D = Renderer2D::Create( GetApp()->GetGraphics() );
-	//FontManager::SetFont( "$ui", NunitoSemiBoldTTF::data, NunitoSemiBoldTTF::size, 10.0f );
-	//g_pRenderer2D->SelectFont( FontManager::GetFont( "$ui" ) );
+	g_pRenderer2D = Renderer2D::Create( GetApp()->GetGraphics() );
+	FontManager::SetFont( "$ui", "../resources/Fonts/NunitoSans-Regular.ttf", fontSize );
+	g_pRenderer2D->SelectFont( FontManager::GetFont( "$ui" ) );
+
+	gtimer.reset();
 }
+
+	void UILayer::RemoveInActive()
+	{
+		for( auto && [k, w] : g_WindowContext )
+		{
+			if( w.uid == ui::null_window_uid ) continue;
+
+			auto window = (DogeWindow *)pWindowManager->findWindow( w.uid );
+
+			for( auto && [wk, widget] : w.widgets )
+			{
+				if( widget.uid != ui::null_window_uid && widget.use_count-- <= 0 )
+				{
+					using namespace ui;
+					auto it = std::find_if( window->widgets.begin(), window->widgets.end(), [widget] ( ui::Widget * w ) { return ( w->getuid() == widget.uid ); } );
+					ui::Window * wnd = * it;
+					if( it != window->widgets.end() )
+					{
+						wnd->Release();
+						delete wnd;
+						widget.uid = ui::null_window_uid;
+					}
+				}
+			}
+		}
+		
+		auto & w = g_FallbackWindow;
+
+		if( w.uid == ui::null_window_uid ) return;
+
+		auto window = (DogeWindow *)pWindowManager->findWindow( w.uid );
+
+		for( auto && [wk, widget] : w.widgets )
+		{
+			if( widget.uid != ui::null_window_uid && widget.use_count-- <= 0 )
+			{
+				using namespace ui;
+				auto it = std::find_if( window->widgets.begin(), window->widgets.end(), [widget] ( ui::Widget * w ) { return ( w->getuid() == widget.uid ); } );
+				ui::Window * wnd = *it;
+				if( it != window->widgets.end() )
+				{
+					wnd->Release();
+					delete wnd;
+					widget.uid = ui::null_window_uid;
+				}
+			}
+		}
+	}
+
+	void UILayer::CreateActive()
+	{
+		for( auto && [k, w] : g_WindowContext )
+		{
+			DogeWindow * window = nullptr;
+			if( w.uid == ui::null_window_uid )
+			{
+				window = new DogeWindow( w.name );
+				pWindowManager->addWindow( window );
+				w.uid = window->getuid();
+			}
+			else window = (DogeWindow *)pWindowManager->findWindow( w.uid );
+
+			for( auto && [wk, widget] : w.widgets )
+			{
+				if( widget.uid == ui::null_window_uid && widget.use_count > 0 )
+				{
+					auto w = new Slider( widget.name, window->Rect.width(), int( fontSize + window->offsetY+19*window->widgets.size() ), &widget );
+					window->addWidget( w );
+					widget.uid = w->getuid();
+				}
+			}
+		}
+
+		auto & w = g_FallbackWindow;
+
+		DogeWindow * window = nullptr;
+		if( w.uid == ui::null_window_uid )
+		{
+			window = new DogeWindow( w.name );
+			pWindowManager->addWindow( window );
+			w.uid = window->getuid();
+		}
+		else window = (DogeWindow *)pWindowManager->findWindow( w.uid );
+
+		for( auto && [wk, widget] : w.widgets )
+		{
+			if( widget.uid == ui::null_window_uid && widget.use_count > 0 )
+			{
+				auto w = new Slider( widget.name, window->Rect.width(), int( fontSize + window->offsetY + 19 * window->widgets.size() ), &widget );
+				window->addWidget( w );
+				widget.uid = w->getuid();
+			}
+		}
+	}
 
 void UILayer::OnUpdate()
 {
-	//g_pWindowManager->OnUpdate( 0.0f );
-	//g_pRenderer2D->Render();
+	g_Mutex.lock();
+
+	RemoveInActive();
+	CreateActive();
+
+	g_Mutex.unlock();
+
+	pWindowManager->OnUpdate( gtimer.gets() );
+	g_pRenderer2D->Render();
 }
-//
-//EventResult UILayer::OnKeyDown( KeyDownEventArgs & args )
-//{
-//	ui::KeyDownEventArgs _ui_args{ args.key };
-//	return (EventResult)g_pWindowManager->OnKeyDown( _ui_args );
-//}
-//
-//EventResult UILayer::OnKeyUp( KeyUpEventArgs & args )
-//{
-//	ui::KeyUpEventArgs _ui_args{ args.key };
-//	return (EventResult)g_pWindowManager->OnKeyUp( _ui_args );
-//}
-//
-//EventResult UILayer::OnTextInput( TextInputEventArgs & args )
-//{
-//	ui::TextInputEventArgs _ui_args{ args.character };
-//	return (EventResult)g_pWindowManager->OnTextInput( _ui_args );
-//}
-//
-//EventResult UILayer::OnMouseMove( MouseMoveEventArgs & args )
-//{
-//	ui::MouseMoveEventArgs _ui_args{ args.position };
-//	return (EventResult)g_pWindowManager->OnMouseMove( _ui_args );
-//}
-//
-//EventResult UILayer::OnMouseLeave( MouseLeaveEventArgs & args )
-//{
-//	return (EventResult)g_pWindowManager->OnMouseLeave();
-//}
-//
-//EventResult UILayer::OnSetCursor( SetCursorEventArgs & args )
-//{
-//	ui::SetCursorEventArgs _ui_args{ args.cursor };
-//	auto r = g_pWindowManager->OnSetCursor( _ui_args );
-//	args.cursor = _ui_args.cursor;
-//	return (EventResult)r;
-//}
-//
-//
-///* UI */
-//
-//UI::Key::Key() : context( nullptr ) {}
-//
-//UI::Key::Key(void * ptr) : context( ptr ) {}
-//
-//UI::WindowKey & UI::WindowKey::operator=( UI::WindowKey && src ) {
-//	context = src.context;
-//	src.context = nullptr;
-//	return *this;
-//}
-//UI::SliderKey & UI::SliderKey::operator=( UI::SliderKey && src ) {
-//	context = src.context;
-//	src.context = nullptr;
-//	return *this;
-//}
-//UI::ButtonKey & UI::ButtonKey::operator=( UI::ButtonKey && src ) {
-//	context = src.context;
-//	src.context = nullptr;
-//	return *this;
-//}
-//
-//UI::Key::~Key() {
-//	if( !context ) return;
-//	static_cast<ui::Window *>( context )->Release();
-//	delete context;
-//	context = nullptr;
-//}
-//
-//UI::WindowKey::WindowKey( void * ptr ) : Key( ptr ) {}
-//
-//UI::ButtonKey::ButtonKey( void * ptr ) : Key( ptr ) {}
-//
-//UI::SliderKey::SliderKey( void * ptr ) : Key( ptr ) {}
-//
-//UI::WindowKey::WindowKey( const WindowKey & src ) : Key( src.context ) { *(void**)&src.context = nullptr; }
-//
-//UI::ButtonKey::ButtonKey( const ButtonKey & src ) : Key( src.context ) { *(void**)&src.context = nullptr; }
-//
-//UI::SliderKey::SliderKey( const SliderKey & src ) : Key( src.context ) { *(void**)&src.context = nullptr; }
-//
-//UI::WindowKey UI::PushWindow( const char * name, int x, int y, int width, int height ) {
-//	auto w = new SandboxWindow( name, x, y, width, height, Colors::DodgerBlue );
-//	g_pWindowManager->addWindow( w );
-//	return UI::WindowKey( (void *)w );
-//}
-//
-//UI::ButtonKey UI::WindowKey::PushButton( const char * name, std::function<void()> action ) {
-//	if( !context ) return { nullptr };
-//	auto w = new SandboxButton( name, action );
-//	static_cast<ui::DynamicWindow *>( context )->addWidget( w );
-//	return w;
-//}
-//
-//UI::SliderKey UI::WindowKey::PushSliderFloat( const char * name, float * pvar, float min, float max, const char * fmt ) {
-//	if( !context ) return { nullptr };
-//	auto w = new SandboxSlider( name, pvar, min, max, { 150, 16 } );
-//	static_cast<ui::DynamicWindow *>( context )->addWidget( w );
-//	return w;
-//}
-//

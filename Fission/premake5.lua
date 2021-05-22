@@ -23,7 +23,7 @@ project 'Fission'
         "%{wks.location}/include",
         "%{IncludeDir.yaml}",
         "%{IncludeDir.lazerlib}",
-        '%{prj.location}/vendor/freetype/include',
+        '%{IncludeDir.freetype}',
         '%{prj.location}/vendor/json/single_include',
         '%{wks.location}/resources'
 	}

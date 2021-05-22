@@ -8,153 +8,125 @@ namespace Fission {
 
 	EventResult Application::OnClose( CloseEventArgs & args )
 	{
-		if( m_State->m_bMinimized )
+		if( m_State->bMinimized )
 		{
-			m_State->m_bMinimized = false;
-			m_State->m_PauseCondition.notify_one();
+			m_State->bMinimized = false;
+			m_State->PauseCondition.notify_one();
 		}
 
-		m_State->m_ExitCode = args.ExitCode;
+		m_State->ExitCode = args.ExitCode;
 
-		m_State->m_bRunning = false;
+		m_State->SceneStack.OnClose( args );
 
-		// notify layers that application will exit
-		for( auto && layer : m_State->m_vMainLayers )
-			layer->OnClose( args );
+		m_State->bRunning = false;
 
 		return EventResult::Handled;
 	}
 
 	EventResult Application::OnHide()
 	{
-		for( auto && layer : m_State->m_vMainLayers )
-			layer->OnHide();
+		m_State->SceneStack.OnHide();
 
 		// Pause the Main thread
-		m_State->m_bMinimized = true;
+		m_State->bMinimized = true;
 		return EventResult::Handled;
 	}
 
 	EventResult Application::OnShow()
 	{
-		for( auto && layer : m_State->m_vMainLayers )
-			layer->OnShow();
+		m_State->SceneStack.OnShow();
 
-		if( m_State->m_bMinimized )
+		if( m_State->bMinimized )
 		{
-			m_State->m_bMinimized = false;
+			m_State->bMinimized = false;
 			// Notify Main thread to continue rendering frames
-			m_State->m_PauseCondition.notify_one();
+			m_State->PauseCondition.notify_one();
 		}
 		return EventResult::Handled;
 	}
 
 	EventResult Application::OnKeyDown( KeyDownEventArgs & args )
 	{
-		if( m_State->m_DebugLayer.OnKeyDown( args ) == EventResult::Handled )
+		if( m_State->DebugLayer.OnKeyDown( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-		if( m_State->m_ConsoleLayer.OnKeyDown( args ) == EventResult::Handled )
+		if( m_State->ConsoleLayer.OnKeyDown( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-		if( m_State->m_UILayer.OnKeyDown( args ) == EventResult::Handled )
+		if( m_State->UILayer.OnKeyDown( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-		for( int i = (int)m_State->m_vMainLayers.size() - 1; i >= 0; i-- )
-			if( m_State->m_vMainLayers[i]->OnKeyDown( args ) == EventResult::Handled )
-				return EventResult::Handled;
-
-		return EventResult::Pass;
+		return m_State->SceneStack.OnKeyDown( args );
 	}
 
 	EventResult Application::OnKeyUp( KeyUpEventArgs & args )
 	{
-		if( m_State->m_DebugLayer.OnKeyUp( args ) == EventResult::Handled )
+		if( m_State->DebugLayer.OnKeyUp( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-		if( m_State->m_ConsoleLayer.OnKeyUp( args ) == EventResult::Handled )
+		if( m_State->ConsoleLayer.OnKeyUp( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-		if( m_State->m_UILayer.OnKeyUp( args ) == EventResult::Handled )
+		if( m_State->UILayer.OnKeyUp( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-		for( int i = (int)m_State->m_vMainLayers.size() - 1; i >= 0; i-- )
-			if( m_State->m_vMainLayers[i]->OnKeyUp( args ) == EventResult::Handled )
-				return EventResult::Handled;
-
-		return EventResult::Pass;
+		return m_State->SceneStack.OnKeyUp( args );
 	}
 
 	EventResult Application::OnTextInput( TextInputEventArgs & args )
 	{
-		if( m_State->m_DebugLayer.OnTextInput( args ) == EventResult::Handled )
+		if( m_State->DebugLayer.OnTextInput( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-		if( m_State->m_ConsoleLayer.OnTextInput( args ) == EventResult::Handled )
+		if( m_State->ConsoleLayer.OnTextInput( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-		if( m_State->m_UILayer.OnTextInput( args ) == EventResult::Handled )
+		if( m_State->UILayer.OnTextInput( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-		for( int i = (int)m_State->m_vMainLayers.size() - 1; i >= 0; i-- )
-			if( m_State->m_vMainLayers[i]->OnTextInput( args ) == EventResult::Handled )
-				return EventResult::Handled;
-
-		return EventResult::Pass;
+		return m_State->SceneStack.OnTextInput( args );
 	}
 
 	EventResult Application::OnMouseMove( MouseMoveEventArgs & args )
 	{
-		if( m_State->m_DebugLayer.OnMouseMove( args ) == EventResult::Handled )
+		if( m_State->DebugLayer.OnMouseMove( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-		if( m_State->m_ConsoleLayer.OnMouseMove( args ) == EventResult::Handled )
+		if( m_State->ConsoleLayer.OnMouseMove( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-		if( m_State->m_UILayer.OnMouseMove( args ) == EventResult::Handled )
+		if( m_State->UILayer.OnMouseMove( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-		for( int i = (int)m_State->m_vMainLayers.size() - 1; i >= 0; i-- )
-			if( m_State->m_vMainLayers[i]->OnMouseMove( args ) == EventResult::Handled )
-				return EventResult::Handled;
-
-		return EventResult::Pass;
+		return m_State->SceneStack.OnMouseMove( args );
 	}
 
 	EventResult Application::OnMouseLeave( MouseLeaveEventArgs & args )
 	{
-		if( m_State->m_DebugLayer.OnMouseLeave( args ) == EventResult::Handled )
+		if( m_State->DebugLayer.OnMouseLeave( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-		if( m_State->m_ConsoleLayer.OnMouseLeave( args ) == EventResult::Handled )
+		if( m_State->ConsoleLayer.OnMouseLeave( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-		if( m_State->m_UILayer.OnMouseLeave( args ) == EventResult::Handled )
+		if( m_State->UILayer.OnMouseLeave( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-		for( int i = (int)m_State->m_vMainLayers.size() - 1; i >= 0; i-- )
-			if( m_State->m_vMainLayers[i]->OnMouseLeave( args ) == EventResult::Handled )
-				return EventResult::Handled;
-
-		return EventResult::Pass;
+		return m_State->SceneStack.OnMouseLeave( args );
 	}
 
 	EventResult Application::OnSetCursor( SetCursorEventArgs & args )
 	{
-		if( m_State->m_DebugLayer.OnSetCursor( args ) == EventResult::Handled )
+		if( m_State->DebugLayer.OnSetCursor( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-		if( m_State->m_ConsoleLayer.OnSetCursor( args ) == EventResult::Handled )
+		if( m_State->ConsoleLayer.OnSetCursor( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-		if( m_State->m_UILayer.OnSetCursor( args ) == EventResult::Handled )
+		if( m_State->UILayer.OnSetCursor( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-		for( int i = (int)m_State->m_vMainLayers.size() - 1; i >= 0; i-- )
-			if( m_State->m_vMainLayers[i]->OnSetCursor( args ) == EventResult::Handled )
-				return EventResult::Handled;
-
-		return EventResult::Pass;
+		return m_State->SceneStack.OnSetCursor( args );
 	}
 
 }

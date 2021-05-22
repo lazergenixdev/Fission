@@ -33,8 +33,17 @@
 
 namespace Fission::UI
 {
-	// 404 NOT FOUND
 
-	// coming soon ;)
+	class Debug
+	{
+	public:
+		FISSION_API static bool Window( const char * label );
+
+	//	FISSION_API static void Text( const char * text );
+	//	FISSION_API static bool Button( const char * label );
+		FISSION_API static bool CheckBox( const char * label, bool * value );
+		FISSION_API static bool InputFloat( const char * label, float * value );
+	//	FISSION_API static bool InputInt( const char * label, int * value );
+	};
 
 } // namespace Fission::UI

@@ -32,7 +32,7 @@
 #include "Fission/config.h"
 #include "Window.h"
 #include "Graphics/Graphics.h"
-#include "Layer.h"
+#include "Scene.h"
 
 namespace Fission {
 
@@ -71,8 +71,9 @@ namespace Fission {
 		 */
 		struct CreateInfo
 		{
-			Window::Properties window = {};
-			Graphics::State graphics = {};
+			ScenePtr			startScene;
+			Window::Properties	window = {};
+			Graphics::State		graphics = {};
 		};
 
 	public:
@@ -152,6 +153,15 @@ namespace Fission {
 		 *
 		 */
 		FISSION_API void PushLayer( const char * _Name, ILayer * _Ptr_Layer );
+
+		/********************************************************************
+		 *
+		 * @function:
+		 *   PushScene
+		 *
+		 */
+		FISSION_API void PushScene( const char * _Name, Scene * _Ptr_Scene );
+		FISSION_API void CloseScene();
 		
 
 		/********************************************************************

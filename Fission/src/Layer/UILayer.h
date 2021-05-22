@@ -1,5 +1,20 @@
 #pragma once
-#include "Fission/Core/Layer.h"
+#include "Fission/Core/Scene.h"
+
+#define _lazer_has_vector
+#define _lazer_has_point
+#define _lazer_has_rect
+	namespace lazer::ui {
+		template <typename T> using vector = std::vector<T>;
+		using point = lazer::vec2i;
+		using rect = lazer::recti;
+	}
+#define _lazer_char_type wchar_t
+#define _lazer_key_type Fission::Keys::Key
+#define _lazer_key_left_mouse_ Fission::Keys::Mouse_Left
+#define _lazer_key_right_mouse_ Fission::Keys::Mouse_Right
+#define _lazer_cursor_type Fission::Cursor *
+#include <Fission/reactui.h>
 
 namespace Fission {
 
@@ -11,12 +26,22 @@ namespace Fission {
 		virtual void OnCreate();
 		virtual void OnUpdate();
 
-		//virtual EventResult OnKeyDown( KeyDownEventArgs & args );
-		//virtual EventResult OnKeyUp( KeyUpEventArgs & args );
-		//virtual EventResult OnTextInput( TextInputEventArgs & args );
-		//virtual EventResult OnMouseMove( MouseMoveEventArgs & args );
-		//virtual EventResult OnMouseLeave( MouseLeaveEventArgs & args );
-		//virtual EventResult OnSetCursor( SetCursorEventArgs & args );
+		virtual EventResult OnMouseMove( MouseMoveEventArgs & args ) override;
+		virtual EventResult OnKeyDown( KeyDownEventArgs & args ) override;
+		virtual EventResult OnKeyUp( KeyUpEventArgs & args ) override;
+		virtual EventResult OnSetCursor( SetCursorEventArgs & args ) override;
+		virtual EventResult OnTextInput( TextInputEventArgs & args ) override;
+		virtual EventResult OnMouseLeave( MouseLeaveEventArgs & args ) override;
+
+	private:
+		// Removes any widgets or windows that should not be visible.
+		void RemoveInActive();
+
+		// Creates all the windows and widgets.
+		void CreateActive();
+
+	private:
+		scoped<ui::WindowManager> pWindowManager;
 	};
 
 }

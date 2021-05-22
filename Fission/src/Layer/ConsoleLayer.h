@@ -1,5 +1,5 @@
 #pragma once
-#include "Fission\Core\Layer.h"
+#include "Fission\Core\Scene.h"
 
 namespace Fission {
 

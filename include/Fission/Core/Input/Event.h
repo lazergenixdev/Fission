@@ -97,18 +97,16 @@ namespace Fission {
 /* -------------------------------------- Event Handler --------------------------------------------- */
 /* ================================================================================================== */
 	
-	struct IEventHandler
+	fission_Interface IEventHandler
 	{
 
 		/****************************************************************************************
 		* @brief 
-		*   Get the Default Event Handler.
+		*   Get the Default Event Handler (does not respond to events).
 		* 
 		* @note:   
 		*   Allows for the ability to always call the event handler with no nullptr errors.
 		*   Use `IEventHandler::Default()` instead of `nullptr`.
-		* 
-		* @return: Default Event Handler (does not respond to events).
 		*/
 		FISSION_API static IEventHandler * Default();
 

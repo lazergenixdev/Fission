@@ -174,7 +174,6 @@ namespace Fission {
 		font.m_GlyphLookup.resize( 0xFF );
 
 		save_glyph( L'\0' );
-		font.pFallbackGlyph = &font.m_Glyphs.front();
 
 		// Glyph ranges for most english and latin, Todo: better font control (languages, storing fonts)
 		for( auto ch = 0x20; ch < 0x7F; ch++ )
@@ -202,7 +201,9 @@ namespace Fission {
 		tex_info.pSurface = pSurface.get();
 		font.m_pTexture = Application::Get()->GetGraphics()->CreateTexture2D( tex_info );
 
-		s_Fonts[key] = std::make_unique<_bm_Font>( std::move( font ) );
+		auto & pfont = s_Fonts[key];
+		pfont = std::make_unique<_bm_Font>( std::move( font ) );
+		((_bm_Font*)pfont.get())->pFallbackGlyph = &( (_bm_Font *)pfont.get() )->m_Glyphs.front();
 	}
 
 	void FontManager::SetFont( const char * key, const file::path & filepath, float pxsize )

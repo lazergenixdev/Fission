@@ -204,7 +204,7 @@ namespace Fission::Platform {
                     NULL, NULL,
                     WindowClass::GetInstance(),
                     nullptr
-                );
+                ); 
 
                 Resource::SwapChain::CreateInfo scInfo = { pthis };
                 pthis->m_pSwapChain = pthis->m_pGraphics->CreateSwapChain( scInfo );
@@ -568,17 +568,19 @@ namespace Fission::Platform {
             }
             break;
         }
-        case WM_COMMAND:
+        case WM_COMMAND: return 0;
         case WM_SYSCOMMAND:
         {
-            //Console::WriteLine( 
-            //    L"\"%s\" [WindowId:%x] wParam=%i lParam=%i", 
-            //    Colors::Gray, 
-            //    pWindow->m_Properties.title.c_str(), 
-            //    (int)hWnd, 
-            //    wParam, 
-            //    lParam 
-            //);
+            if( wParam == SC_CLOSE ) break;
+            switch( wParam & 0xFFF0 )
+            {
+            case SC_KEYMENU:
+            case SC_MOUSEMENU:
+            case SC_CLOSE:
+                return 0;
+            default:
+                break;
+            }
             break;
         }
         case WM_DESTROY:
@@ -651,7 +653,9 @@ namespace Fission::Platform {
         wc.hInstance = m_hInstance;
         wc.lpfnWndProc = WindowsWindow::BaseWindowsProc;
         wc.hbrBackground = (HBRUSH)GetStockObject( BLACK_BRUSH );
-        wc.hIcon = (HICON)LoadImageW( NULL, L"icon.ico", IMAGE_ICON, 0, 0, LR_LOADFROMFILE );
+
+        /* Load Image imbedded in DLL */
+    //    wc.hIcon = (HICON)LoadImageW( GetModuleHandleW( L"" FISSION_ENGINE "0" ), MAKEINTRESOURCE( FISSION_ICON ), IMAGE_ICON, 0, 0, LR_DEFAULTCOLOR );
 
         RegisterClassW( &wc );
     }

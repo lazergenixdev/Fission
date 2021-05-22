@@ -560,7 +560,7 @@ namespace Fission::Platform {
 		dSwapChain.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 		dSwapChain.OutputWindow = info.pWindow->native_handle();
 		dSwapChain.BufferCount = 2u;
-		dSwapChain.SampleDesc.Count = 8u;
+		dSwapChain.SampleDesc.Count = 4u;
 		dSwapChain.SampleDesc.Quality = 0u;
 		dSwapChain.Windowed = TRUE;
 		dSwapChain.BufferDesc.RefreshRate.Numerator = 200;

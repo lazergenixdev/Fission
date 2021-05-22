@@ -37,6 +37,8 @@ namespace Fission {
 
 		virtual void DrawCircle( vec2f point, float radius, colorf color, float stroke_width, StrokeStyle stroke ) override;
 
+		virtual void DrawCircle( vec2f point, float radius, colorf inner_color, colorf outer_color, float stroke_width, StrokeStyle stroke ) override;
+
 		virtual void FillArrow( vec2f start, vec2f end, float width, colorf color ) override;
 
 		virtual void DrawImage( Resource::Texture2D * pTexture, rectf rect, rectf uv, colorf tint ) override;
@@ -91,17 +93,22 @@ namespace Fission {
 
 		void SetTexture( Resource::Texture2D * tex );
 
-		struct DrawCommand 
+		struct DrawData 
 		{
-			DrawCommand( Renderer2DImpl * parent, uint32_t vc, uint32_t ic );
+			DrawData( Renderer2DImpl * parent, uint32_t vc, uint32_t ic );
 
 			void AddRectFilled( vec2f tl, vec2f tr, vec2f bl, vec2f br, color c );
 			void AddRectFilled( rectf rect, color c );
 			void AddRectFilled( rectf rect, color tl, color tr, color bl, color br );
 			void AddRectFilledUV( rectf rect, rectf uv, color c );
 			void AddRect( rectf rect, colorf color, float stroke_width, StrokeStyle stroke );
+
+			void AddRoundRectFilled( rectf rect, float rad, color c );
+			void AddRoundRect( rectf rect, float rad, colorf color, float stroke_width, StrokeStyle stroke );
+
 			void AddMesh( const Mesh * mesh );
 			void AddCircleFilled( vec2f center, float rad, colorf c );
+			void AddCircle( vec2f center, float rad, colorf inc, colorf outc, float stroke_width, StrokeStyle stroke );
 			void AddTriangle( vec2f p0, vec2f p1, vec2f p2, colorf c0, colorf c1, colorf c2 );
 			void AddTriangleUV( vec2f p0, vec2f p1, vec2f p2, vec2f uv0, vec2f uv1, vec2f uv2, colorf c );
 			void AddLine( vec2f start, vec2f end, float stroke, colorf startColor, colorf endColor );
@@ -121,7 +128,7 @@ namespace Fission {
 			const mat3x2f * mat;
 		};
 
-		std::vector<DrawCommand> m_CommandBuffer;
+		std::vector<DrawData> m_DrawBuffer;
 
 		vertex * vertex_data = nullptr;
 		uint32_t * index_data = nullptr;
