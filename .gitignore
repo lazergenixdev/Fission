@@ -17,6 +17,9 @@ sandbox/etc/
 **.vcxproj.user
 **.vcxproj.filters
 
+# get tf outta here "Visual Studio Code"
+**.vscode
+
 # Build Binaries
 bin/
 bin-int/
