@@ -29,8 +29,8 @@ namespace Fission {
 			vec2f size = vec2f( 1920.0f, 720.0f ); // todo: this is a bug, please fix as soon as possible
 
 			// Draw Background
-			m_pRenderer2D->FillRectGrad( rectf( 0.0f, size.x, 0.0f, extend ), Colors::Black, Colors::Black, color( 0x0, 0.7f ), color( 0x0, 0.7f ) );
-			m_pRenderer2D->FillRect( rectf( 0.0f, size.x, extend - m_FontSize - m_BottomPadding * 3.0f, extend ), color( 0x0, 0.40f ) );
+			m_pRenderer2D->FillRectGrad( rectf( 0.0f, size.x, 0.0f, extend ), Colors::Black, Colors::Black, color( 0.7f ), color( 0.7f ) );
+			m_pRenderer2D->FillRect( rectf( 0.0f, size.x, extend - m_FontSize - m_BottomPadding * 3.0f, extend ), color( 0.40f ) );
 			m_pRenderer2D->FillRect( rectf( 0.0f, size.x, extend - 1.0f, extend + 1.0f ), Colors::White );
 
 			// Draw Console Buffer

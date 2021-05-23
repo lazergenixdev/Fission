@@ -21,14 +21,14 @@ namespace Fission {
 		if( info.width > 0u && info.height > 0u )
 		{
 			// width * height should never overflow, but make sure it doesn't otherwise stupid compiler won't shutup
-			m_pData = std::make_unique<coloru[]>( (size_t)info.width * (size_t)info.height );
+			m_pData = std::make_unique<rgba_color8[]>( (size_t)info.width * (size_t)info.height );
 			m_Width = info.width;
 			m_Height = info.height;
 			m_pxCount = m_Width * m_Height;
-			m_cbSize = m_pxCount * sizeof( coloru );
+			m_cbSize = m_pxCount * sizeof( rgba_color8 );
 			if( info.fillColor.has_value() )
 			{
-				coloru fill = (coloru)info.fillColor.value();
+				rgba_color8 fill = info.fillColor.value();
 				for( size_t i = 0; i < m_pxCount; i++ ) m_pData[i] = fill;
 			}
 		}
@@ -53,7 +53,7 @@ namespace Fission {
 		for( uint32_t py = 0; py < _Source_Size.y; py++ )
 		{
 			uint32_t dst_y = py + _Y;
-			coloru * copy_dest = &( (coloru *)this->m_pData.get() )[dst_y * this->m_Width + _X];
+			rgba_color8 * copy_dest = &( (rgba_color8 *)this->m_pData.get() )[dst_y * this->m_Width + _X];
 
 			for( uint32_t x = 0; x < _Source_Size.x; x++ )
 				copy_dest[x] = _Source( x, py );
@@ -78,10 +78,10 @@ namespace Fission {
 
 		for( uint32_t py = start.y; py < size.y; py++ )
 		{
-			coloru * copy_dest = &this->m_pData[( py + _Y ) * this->m_Width + _X];
+			rgba_color8 * copy_dest = &this->m_pData[( py + _Y ) * this->m_Width + _X];
 
 			for( uint32_t x = 0; x < size.x; x++ )
-				copy_dest[x] = (coloru)_Source->GetPixel( x + start.x, py );
+				copy_dest[x] = (rgba_color8)_Source->GetPixel( x + start.x, py );
 		}
 	}
 

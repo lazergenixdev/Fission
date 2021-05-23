@@ -23,7 +23,7 @@ namespace Fission
 		virtual void PutPixel( int _X, int _Y, color _Color ) override;
 		virtual color GetPixel( int _X, int _Y ) const override;
 
-		virtual void shrink_to_fit( color clear_color = coloru( 0, 0, 0, 0 ) ) override;
+		virtual void shrink_to_fit( color clear_color ) override;
 
 		virtual Texture::Format format() const override;
 		virtual const void * data() const override;
@@ -38,7 +38,7 @@ namespace Fission
 	private:
 		uint32_t m_Width = 0, m_Height = 0, 
 				m_pxCount = 0, m_cbSize = 0;
-		std::unique_ptr<coloru[]> m_pData;
+		std::unique_ptr<rgba_color8[]> m_pData;
 	};
 
 }

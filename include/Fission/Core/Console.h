@@ -30,7 +30,7 @@
 
 #pragma once
 #include "Fission/config.h"
-#include "Color.h"
+#include "Fission/Base/Color.h"
 
 #if defined(FISSION_DEBUG) and not defined(FISSION_CREATE_CONSOLE_WINDOW)
 #define FISSION_CREATE_CONSOLE_WINDOW

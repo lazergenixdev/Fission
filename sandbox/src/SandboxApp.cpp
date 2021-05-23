@@ -242,7 +242,7 @@ public:
 		if( hue >= 1.0f )
 			hue = 0.0f;
 
-		auto col = colorf(colorf_hsv( hue, 1.0f, 1.0f ));
+		auto col = color(hsv_colorf( hue, 1.0f, 1.0f ));
 
 		for( auto i = 0; i < std::size( mouse ); ++i )
 		{
@@ -268,11 +268,11 @@ public:
 
 		float k = std::fmodf( t*2.f, std::numbers::pi_v<float>*2.0f );
 		float d = std::numbers::pi_v<float> *2.0f - k;
-		colorf cc = color( Colors::White, map( d, 0.0f, std::numbers::pi_v<float>*2.0f, 0.0f, 1.0f ) );
-		renderer2d->DrawCircle( { 424.0f,214.0f }, k*scale,Colors::Transparent, cc*0.9f, k*10.0f, StrokeStyle::Outside );
+		color cc = color( Colors::White, map( d, 0.0f, std::numbers::pi_v<float>*2.0f, 0.0f, 1.0f ) );
+		renderer2d->DrawCircle( { 424.0f,214.0f }, k * scale, color{ 0.0f }, cc * 0.9f, k * 10.0f, StrokeStyle::Outside );
 		renderer2d->DrawCircle( { 424.0f,214.0f }, k*scale+ k * 10.0f,cc, cc, d*2.0f, StrokeStyle::Outside );
 
-		renderer2d->DrawCircle( ( mouse[19] - center ) * 0.75f + center, 0.0f, color( col, 0.2f ), Colors::Transparent, 100.0f, StrokeStyle::Outside );
+		renderer2d->DrawCircle( ( mouse[19] - center ) * 0.75f + center, 0.0f, color( col, 0.2f ), color{ 0.0f }, 100.0f, StrokeStyle::Outside );
 
 		renderer2d->Render();
 	}

@@ -165,7 +165,7 @@ void DebugLayerImpl::OnUpdate() {
 
 		m_pRenderer2D->DrawString( L"Fission v" FISSION_VERSION_STRING " - Debug Layer", { 0.0f, 0.0f }, Colors::White );
 
-		m_pRenderer2D->DrawString( L"(F3)", { tl.width + 4.0f, 0.0f }, color( 0xFFFFFF, 0.5f ) );
+		m_pRenderer2D->DrawString( L"(F3)", { tl.width + 4.0f, 0.0f }, color( Colors::White, 0.5f ) );
 
 		{ // FPS
 			tl = m_pRenderer2D->CreateTextLayout( buf );

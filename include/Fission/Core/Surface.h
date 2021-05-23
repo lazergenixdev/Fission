@@ -30,19 +30,21 @@
 
 #pragma once
 #include "Fission/config.h"
-#include "Color.h"
+#include "Fission/Base/Color.h"
 #include "Serializable.h"
 
 // todo: add documentation
 
 namespace Fission
 {
-	using PixelCallback = std::function<colorf( int x, int y )>;
+	using PixelCallback = std::function<color( int x, int y )>;
 
 	namespace Texture {
 		typedef enum Format_ {
 			Format_Unkown,
+			Format_RGB8_UNORM,
 			Format_RGBA8_UNORM,
+			Format_RGB32_FLOAT,
 			Format_RGBA32_FLOAT,
 		} Format;
 	}
@@ -76,7 +78,7 @@ namespace Fission
 		virtual void insert( int _X, int _Y, const Surface * _Source, std::optional<recti> _Source_Rect = {} ) = 0;
 
 		// shrink the surface if there is any 'clear_color' on any side
-		virtual void shrink_to_fit( color _Clear_Color = coloru(0,0,0,0) ) = 0;
+		virtual void shrink_to_fit( color _Clear_Color = color{} ) = 0;
 
 		virtual Texture::Format format() const = 0;
 

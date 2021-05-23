@@ -157,7 +157,7 @@ namespace Fission
 	}
 }
 
-static color g_ColorBackground = Colors::Gray_80_Percent;
+static color g_ColorBackground = Colors::make_gray( 0.2f );
 
 class DogeWindow : public lazer::ui::DynamicWindow
 {
@@ -191,7 +191,7 @@ public:
 		auto tl = g_pRenderer2D->CreateTextLayout( id.c_str() );
 
 		g_pRenderer2D->FillRect( rect, g_ColorBackground );
-		g_pRenderer2D->FillRect( rectf::from_tl({rect.get_l()+60.0f,rect.get_t()},{rect.width()-60.0f,tl.height}), Colors::Gray_90_Percent );
+		g_pRenderer2D->FillRect( rectf::from_tl({rect.get_l()+60.0f,rect.get_t()},{rect.width()-60.0f,tl.height}), Colors::make_gray( 0.1f ) );
 		
 		g_pRenderer2D->DrawString( id.c_str(), rect.get_tl()+vec2f((60.0f-tl.width)*0.5f,0.0f), Colors::Snow );
 
@@ -357,11 +357,11 @@ public:
 	{
 		rectf rect = (rectf)Rect;
 
-		g_pRenderer2D->DrawString( label.c_str(), rect.get_tl(), this == parent->GetHover() ? Colors::White : Colors::Gray_30_Percent );
+		g_pRenderer2D->DrawString( label.c_str(), rect.get_tl(), this == parent->GetHover() ? Colors::White : Colors::make_gray( 0.7f ) );
 
 		rectf numberbox = { rect.x.get_average(), rect.get_r(), rect.get_t(), rect.get_b() };
 
-		g_pRenderer2D->FillRect( numberbox, Colors::Gray_85_Percent );
+		g_pRenderer2D->FillRect( numberbox, Colors::make_gray( 0.15f ) );
 
 		if( inTextBox ) selectAlpha += ( 0.35f - selectAlpha ) * dt * 5.0f;
 		else			selectAlpha += ( 0.00f - selectAlpha ) * dt * 5.0f;

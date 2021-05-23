@@ -15,45 +15,45 @@ namespace Fission {
 		// Inherited via Renderer2D
 		virtual void Render() override;
 
-		virtual void FillTriangle( vec2f p0, vec2f p1, vec2f p2, colorf color ) override;
+		virtual void FillTriangle( vec2f p0, vec2f p1, vec2f p2, color color ) override;
 
-		virtual void FillTriangleGrad( vec2f p0, vec2f p1, vec2f p2, colorf c0, colorf c1, colorf c2 ) override;
+		virtual void FillTriangleGrad( vec2f p0, vec2f p1, vec2f p2, color c0, color c1, color c2 ) override;
 
-		virtual void FillTriangleUV( vec2f p0, vec2f p1, vec2f p2, vec2f uv0, vec2f uv1, vec2f uv2, Resource::Texture2D * pTexture, colorf tint ) override;
+		virtual void FillTriangleUV( vec2f p0, vec2f p1, vec2f p2, vec2f uv0, vec2f uv1, vec2f uv2, Resource::Texture2D * pTexture, color tint ) override;
 
-		virtual void FillRect( rectf rect, colorf color ) override;
+		virtual void FillRect( rectf rect, color color ) override;
 
-		virtual void DrawRect( rectf rect, colorf color, float stroke_width, StrokeStyle stroke ) override;
+		virtual void DrawRect( rectf rect, color color, float stroke_width, StrokeStyle stroke ) override;
 
-		virtual void FillRectGrad( rectf rect, colorf color_topleft, colorf color_topright, colorf color_bottomleft, colorf color_bottomright ) override;
+		virtual void FillRectGrad( rectf rect, color color_topleft, color color_topright, color color_bottomleft, color color_bottomright ) override;
 
-		virtual void FillRoundRect( rectf rect, float rad, colorf color ) override;
+		virtual void FillRoundRect( rectf rect, float rad, color color ) override;
 
-		virtual void DrawRoundRect( rectf rect, float rad, colorf color, float stroke_width, StrokeStyle stroke ) override;
+		virtual void DrawRoundRect( rectf rect, float rad, color color, float stroke_width, StrokeStyle stroke ) override;
 
-		virtual void DrawLine( vec2f start, vec2f end, colorf color, float stroke_width, StrokeStyle stroke ) override;
+		virtual void DrawLine( vec2f start, vec2f end, color color, float stroke_width, StrokeStyle stroke ) override;
 
-		virtual void FillCircle( vec2f point, float radius, colorf color ) override;
+		virtual void FillCircle( vec2f point, float radius, color color ) override;
 
-		virtual void DrawCircle( vec2f point, float radius, colorf color, float stroke_width, StrokeStyle stroke ) override;
+		virtual void DrawCircle( vec2f point, float radius, color color, float stroke_width, StrokeStyle stroke ) override;
 
-		virtual void DrawCircle( vec2f point, float radius, colorf inner_color, colorf outer_color, float stroke_width, StrokeStyle stroke ) override;
+		virtual void DrawCircle( vec2f point, float radius, color inner_color, color outer_color, float stroke_width, StrokeStyle stroke ) override;
 
-		virtual void FillArrow( vec2f start, vec2f end, float width, colorf color ) override;
+		virtual void FillArrow( vec2f start, vec2f end, float width, color color ) override;
 
-		virtual void DrawImage( Resource::Texture2D * pTexture, rectf rect, rectf uv, colorf tint ) override;
+		virtual void DrawImage( Resource::Texture2D * pTexture, rectf rect, rectf uv, color tint ) override;
 
-		virtual void DrawImage( Resource::Texture2D * pTexture, rectf rect, colorf tint ) override;
+		virtual void DrawImage( Resource::Texture2D * pTexture, rectf rect, color tint ) override;
 
 		virtual void DrawMesh( const Mesh * m ) override;
 
 		virtual void SelectFont( const Font * pFont ) override;
 
-		virtual TextLayout DrawString( const wchar_t * wstr, vec2f pos, colorf color ) override;
+		virtual TextLayout DrawString( const wchar_t * wstr, vec2f pos, color color ) override;
 
 		virtual TextLayout CreateTextLayout( const wchar_t * wstr ) override;
 
-		virtual TextLayout DrawString( const char * str, vec2f pos, colorf color ) override;
+		virtual TextLayout DrawString( const char * str, vec2f pos, color color ) override;
 
 		virtual TextLayout CreateTextLayout( const char * str ) override;
 
@@ -84,11 +84,11 @@ namespace Fission {
 	private:
 		struct vertex {
 			vertex() = default;
-			vertex( vec2f pos, colorf c ) : pos( pos ), tc( -1.0f, 0.0f ), color( c ) {}
-			vertex( vec2f pos, vec2f tc, colorf c ) : pos( pos ), tc( tc ), color( c ) {}
+			vertex( vec2f pos, color c ) : pos( pos ), tc( -1.0f, 0.0f ), color( c ) {}
+			vertex( vec2f pos, vec2f tc, color c ) : pos( pos ), tc( tc ), color( c ) {}
 
 			vec2f pos, tc;
-			colorf color;
+			color color;
 		};
 
 		void SetTexture( Resource::Texture2D * tex );
@@ -101,17 +101,17 @@ namespace Fission {
 			void AddRectFilled( rectf rect, color c );
 			void AddRectFilled( rectf rect, color tl, color tr, color bl, color br );
 			void AddRectFilledUV( rectf rect, rectf uv, color c );
-			void AddRect( rectf rect, colorf color, float stroke_width, StrokeStyle stroke );
+			void AddRect( rectf rect, color color, float stroke_width, StrokeStyle stroke );
 
 			void AddRoundRectFilled( rectf rect, float rad, color c );
-			void AddRoundRect( rectf rect, float rad, colorf color, float stroke_width, StrokeStyle stroke );
+			void AddRoundRect( rectf rect, float rad, color color, float stroke_width, StrokeStyle stroke );
 
 			void AddMesh( const Mesh * mesh );
-			void AddCircleFilled( vec2f center, float rad, colorf c );
-			void AddCircle( vec2f center, float rad, colorf inc, colorf outc, float stroke_width, StrokeStyle stroke );
-			void AddTriangle( vec2f p0, vec2f p1, vec2f p2, colorf c0, colorf c1, colorf c2 );
-			void AddTriangleUV( vec2f p0, vec2f p1, vec2f p2, vec2f uv0, vec2f uv1, vec2f uv2, colorf c );
-			void AddLine( vec2f start, vec2f end, float stroke, colorf startColor, colorf endColor );
+			void AddCircleFilled( vec2f center, float rad, color c );
+			void AddCircle( vec2f center, float rad, color inc, color outc, float stroke_width, StrokeStyle stroke );
+			void AddTriangle( vec2f p0, vec2f p1, vec2f p2, color c0, color c1, color c2 );
+			void AddTriangleUV( vec2f p0, vec2f p1, vec2f p2, vec2f uv0, vec2f uv1, vec2f uv2, color c );
+			void AddLine( vec2f start, vec2f end, float stroke, color startColor, color endColor );
 
 
 			uint32_t vtxCount = 0, vtxStart;

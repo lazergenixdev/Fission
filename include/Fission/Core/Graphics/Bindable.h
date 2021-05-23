@@ -202,7 +202,7 @@ namespace Fission::Resource
 	//	virtual bool SetVariable( const char * name, float * pBegin, uint32_t count ) = 0;
 	//	virtual bool SetVariable( const char * name, int * pBegin, uint32_t count ) = 0;
 
-		inline bool SetVariable( const char * name, colorf val ) { return SetVariable( name, *(vec4f *)&val ); };
+		inline bool SetVariable( const char * name, color val ) { return SetVariable( name, *(vec4f *)&val ); };
 	};
 
 	//class Topology : public Bindable

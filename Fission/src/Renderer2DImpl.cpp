@@ -149,73 +149,73 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 
 	}
 
-	void Renderer2DImpl::FillTriangle( vec2f p0, vec2f p1, vec2f p2, colorf color )
+	void Renderer2DImpl::FillTriangle( vec2f p0, vec2f p1, vec2f p2, color color )
 	{
 		m_DrawBuffer.back().AddTriangle( p0, p1, p2, color, color, color );
 	}
 
-	void Renderer2DImpl::FillTriangleGrad( vec2f p0, vec2f p1, vec2f p2, colorf c0, colorf c1, colorf c2 )
+	void Renderer2DImpl::FillTriangleGrad( vec2f p0, vec2f p1, vec2f p2, color c0, color c1, color c2 )
 	{
 		m_DrawBuffer.back().AddTriangle( p0, p1, p2, c0, c1, c2 );
 	}
 
-	void Renderer2DImpl::FillTriangleUV( vec2f p0, vec2f p1, vec2f p2, vec2f uv0, vec2f uv1, vec2f uv2, Resource::Texture2D * pTexture, colorf tint )
+	void Renderer2DImpl::FillTriangleUV( vec2f p0, vec2f p1, vec2f p2, vec2f uv0, vec2f uv1, vec2f uv2, Resource::Texture2D * pTexture, color tint )
 	{
 		SetTexture( pTexture );
 		m_DrawBuffer.back().AddTriangleUV( p0, p1, p2, uv0, uv1, uv2, tint );
 	}
 
-	void Renderer2DImpl::FillRect( rectf rect, colorf color )
+	void Renderer2DImpl::FillRect( rectf rect, color color )
 	{
 		m_DrawBuffer.back().AddRectFilled( rect, color );
 	}
 
-	void Renderer2DImpl::DrawRect( rectf rect, colorf color, float stroke_width, StrokeStyle stroke )
+	void Renderer2DImpl::DrawRect( rectf rect, color color, float stroke_width, StrokeStyle stroke )
 	{
 		m_DrawBuffer.back().AddRect( rect, color, stroke_width, stroke );
 	}
 
-	void Renderer2DImpl::FillRectGrad( rectf rect, colorf color_topleft, colorf color_topright, colorf color_bottomleft, colorf color_bottomright )
+	void Renderer2DImpl::FillRectGrad( rectf rect, color color_topleft, color color_topright, color color_bottomleft, color color_bottomright )
 	{
 		m_DrawBuffer.back().AddRectFilled( rect, color_topleft, color_topright, color_bottomleft, color_bottomright );
 	}
 
-	void Renderer2DImpl::FillRoundRect( rectf rect, float rad, colorf color )
+	void Renderer2DImpl::FillRoundRect( rectf rect, float rad, color color )
 	{
 		m_DrawBuffer.back().AddRoundRectFilled( rect, rad, color );
 	}
 
-	void Renderer2DImpl::DrawRoundRect( rectf rect, float rad, colorf color, float stroke_width, StrokeStyle stroke )
+	void Renderer2DImpl::DrawRoundRect( rectf rect, float rad, color color, float stroke_width, StrokeStyle stroke )
 	{
 		m_DrawBuffer.back().AddRoundRect( rect, rad, color, stroke_width, stroke );
 	}
 
-	void Renderer2DImpl::DrawLine( vec2f start, vec2f end, colorf color, float stroke_width, StrokeStyle stroke )
+	void Renderer2DImpl::DrawLine( vec2f start, vec2f end, color color, float stroke_width, StrokeStyle stroke )
 	{
 		(void)stroke;
 		m_DrawBuffer.back().AddLine( start, end, stroke_width, color, color );
 	}
 
-	void Renderer2DImpl::FillCircle( vec2f point, float radius, colorf color )
+	void Renderer2DImpl::FillCircle( vec2f point, float radius, color color )
 	{
 		m_DrawBuffer.back().AddCircleFilled( point, radius, color );
 	}
 
-	void Renderer2DImpl::DrawCircle( vec2f point, float radius, colorf color, float stroke_width, StrokeStyle stroke )
+	void Renderer2DImpl::DrawCircle( vec2f point, float radius, color color, float stroke_width, StrokeStyle stroke )
 	{
 		m_DrawBuffer.back().AddCircle( point, radius, color, color, stroke_width, stroke );
 	}
 
-	void Renderer2DImpl::DrawCircle( vec2f point, float radius, colorf inner_color, colorf outer_color, float stroke_width, StrokeStyle stroke )
+	void Renderer2DImpl::DrawCircle( vec2f point, float radius, color inner_color, color outer_color, float stroke_width, StrokeStyle stroke )
 	{
 		m_DrawBuffer.back().AddCircle( point, radius, inner_color, outer_color, stroke_width, stroke );
 	}
 
-	void Renderer2DImpl::FillArrow( vec2f start, vec2f end, float width, colorf color )
+	void Renderer2DImpl::FillArrow( vec2f start, vec2f end, float width, color c )
 	{
 		if( start == end )
 		{
-			m_DrawBuffer.back().AddCircleFilled( start, width * 0.2f, color );
+			m_DrawBuffer.back().AddCircleFilled( start, width * 0.2f, c );
 			return;
 		}
 
@@ -229,7 +229,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			const vec2f perp = par.perp() * ( sqrtf( lensq ) * 0.5f );
 			const vec2f l = center - perp, r = center + perp;
 
-			m_DrawBuffer.back().AddTriangle( end, l, r, color, color, color );
+			m_DrawBuffer.back().AddTriangle( end, l, r, c, c, c );
 		}
 		else
 		{
@@ -237,19 +237,19 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			const vec2f center = end + par * width;
 			const vec2f l = center - perp, r = center + perp;
 
-			m_DrawBuffer.back().AddTriangle( end, l, r, color, color, color );
-			m_DrawBuffer.back().AddLine( start, center, 0.4f * width, color, color );
+			m_DrawBuffer.back().AddTriangle( end, l, r, c, c, c );
+			m_DrawBuffer.back().AddLine( start, center, 0.4f * width, c, c );
 		}
 
 	}
 
-	void Renderer2DImpl::DrawImage( Resource::Texture2D * pTexture, rectf rect, rectf uv, colorf tint )
+	void Renderer2DImpl::DrawImage( Resource::Texture2D * pTexture, rectf rect, rectf uv, color tint )
 	{
 		SetTexture( pTexture );
 		m_DrawBuffer.back().AddRectFilledUV( rect, uv, tint );
 	}
 
-	void Renderer2DImpl::DrawImage( Resource::Texture2D * pTexture, rectf rect, colorf tint )
+	void Renderer2DImpl::DrawImage( Resource::Texture2D * pTexture, rectf rect, color tint )
 	{
 		SetTexture( pTexture );
 		m_DrawBuffer.back().AddRectFilledUV( rect, { 0.0f, 1.0f, 0.0f, 1.0f }, tint );
@@ -265,7 +265,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		m_pSelectedFont = pFont;
 	}
 
-	TextLayout Renderer2DImpl::DrawString( const wchar_t * wstr, vec2f pos, colorf color )
+	TextLayout Renderer2DImpl::DrawString( const wchar_t * wstr, vec2f pos, color c )
 	{
 		FISSION_ASSERT( m_pSelectedFont, "you're not supposed to do that." );
 
@@ -296,7 +296,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			const auto bottom = top + glyph->size.y;
 #endif
 
-			m_DrawBuffer.back().AddRectFilledUV( { left, right, top, bottom }, glyph->rc, color );
+			m_DrawBuffer.back().AddRectFilledUV( { left, right, top, bottom }, glyph->rc, c );
 
 			start += glyph->advance;
 
@@ -323,7 +323,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		return out;
 	}
 
-	TextLayout Renderer2DImpl::DrawString( const char * str, vec2f pos, colorf color )
+	TextLayout Renderer2DImpl::DrawString( const char * str, vec2f pos, color c )
 	{
 		FISSION_ASSERT( m_pSelectedFont, "you're not supposed to do that." );
 
@@ -354,7 +354,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			const auto bottom = top + glyph->size.y;
 #endif
 
-			m_DrawBuffer.back().AddRectFilledUV( { left, right, top, bottom }, glyph->rc, color );
+			m_DrawBuffer.back().AddRectFilledUV( { left, right, top, bottom }, glyph->rc, c );
 
 			start += glyph->advance;
 
@@ -430,7 +430,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		mat( &parent->m_accTransform )
 	{}
 
-	void Renderer2DImpl::DrawData::AddRect( rectf rect, colorf color, float stroke_width, StrokeStyle stroke )
+	void Renderer2DImpl::DrawData::AddRect( rectf rect, color c, float stroke_width, StrokeStyle stroke )
 	{
 		for( int i = 0; i < 8; i++ ) {
 		// I bet you've never seen code like this:
@@ -486,17 +486,17 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		default:throw std::logic_error( "this don't make no fucking sense" );
 		}
 
-		pVtxData[vtxCount++] = vertex( *mat * vec2( out_l, out_b ), color );
-		pVtxData[vtxCount++] = vertex( *mat * vec2( in_l, in_b ), color );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( out_l, out_b ), c );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( in_l, in_b ), c );
 
-		pVtxData[vtxCount++] = vertex( *mat * vec2( out_l, out_t ), color );
-		pVtxData[vtxCount++] = vertex( *mat * vec2( in_l, in_t ), color );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( out_l, out_t ), c );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( in_l, in_t ), c );
 
-		pVtxData[vtxCount++] = vertex( *mat * vec2( out_r, out_t ), color );
-		pVtxData[vtxCount++] = vertex( *mat * vec2( in_r, in_t ), color );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( out_r, out_t ), c );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( in_r, in_t ), c );
 
-		pVtxData[vtxCount++] = vertex( *mat * vec2( out_r, out_b ), color );
-		pVtxData[vtxCount++] = vertex( *mat * vec2( in_r, in_b ), color );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( out_r, out_b ), c );
+		pVtxData[vtxCount++] = vertex( *mat * vec2( in_r, in_b ), c );
 	}
 
 	void Renderer2DImpl::DrawData::AddRoundRectFilled( rectf rect, float rad, color c )
@@ -504,7 +504,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		_lazer_throw_not_implemented;
 	}
 
-	void Renderer2DImpl::DrawData::AddRoundRect( rectf rect, float rad, colorf color, float stroke_width, StrokeStyle stroke )
+	void Renderer2DImpl::DrawData::AddRoundRect( rectf rect, float rad, color color, float stroke_width, StrokeStyle stroke )
 	{
 		_lazer_throw_not_implemented;
 	}
@@ -520,7 +520,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			pVtxData[vtxCount++] = vertex( *mat * v.pos, colors[v.color_index] );
 	}
 
-	void Renderer2DImpl::DrawData::AddCircleFilled( vec2f center, float rad, colorf c )
+	void Renderer2DImpl::DrawData::AddCircleFilled( vec2f center, float rad, color c )
 	{
 		const int count = ( (int)TrigCache.size() + 1u ) * 4u - 2;
 		for( int i = 0; i < count; i++ )
@@ -547,7 +547,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		pVtxData[vtxCount++] = vertex( *mat * vec2( center.x + trig.sin * rad, center.y - trig.cos * rad ), c );
 	}
 
-	void Renderer2DImpl::DrawData::AddCircle( vec2f center, float rad, colorf inc, colorf outc, float stroke_width, StrokeStyle stroke )
+	void Renderer2DImpl::DrawData::AddCircle( vec2f center, float rad, color inc, color outc, float stroke_width, StrokeStyle stroke )
 	{
 		const int count = ( (int)TrigCache.size() + 1u ) * 4u;
 		float hw = stroke_width * 0.5f;
@@ -600,7 +600,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			pVtxData[vtxCount++] = vertex( *mat * vec2( center.x + trig.sin * outer_rad, center.y - trig.cos * outer_rad ), outc );
 	}
 
-	void Renderer2DImpl::DrawData::AddTriangle( vec2f p0, vec2f p1, vec2f p2, colorf c0, colorf c1, colorf c2 )
+	void Renderer2DImpl::DrawData::AddTriangle( vec2f p0, vec2f p1, vec2f p2, color c0, color c1, color c2 )
 	{
 		pIdxData[idxCount++] = vtxCount;
 		pIdxData[idxCount++] = vtxCount + 1u;
@@ -611,7 +611,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		pVtxData[vtxCount++] = vertex( *mat * p2, c2 );
 	}
 
-	void Renderer2DImpl::DrawData::AddTriangleUV( vec2f p0, vec2f p1, vec2f p2, vec2f uv0, vec2f uv1, vec2f uv2, colorf c )
+	void Renderer2DImpl::DrawData::AddTriangleUV( vec2f p0, vec2f p1, vec2f p2, vec2f uv0, vec2f uv1, vec2f uv2, color c )
 	{
 		pIdxData[idxCount++] = vtxCount;
 		pIdxData[idxCount++] = vtxCount + 1u;
@@ -622,7 +622,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		pVtxData[vtxCount++] = vertex( *mat * p2, uv2, c );
 	}
 
-	void Renderer2DImpl::DrawData::AddLine( vec2f start, vec2f end, float stroke, colorf startColor, colorf endColor )
+	void Renderer2DImpl::DrawData::AddLine( vec2f start, vec2f end, float stroke, color startColor, color endColor )
 	{
 		const auto edge_vector = ( end - start ).perp().norm() * stroke / 2.0f;
 
