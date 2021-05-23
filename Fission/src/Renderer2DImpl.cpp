@@ -1,7 +1,7 @@
 #include "Renderer2DImpl.h"
 #include "Mesh.h"
 #include <numbers>
-#include "lazer/unfinished.h"
+#include <Fission/Base/Exception.h>
 
 namespace Fission {
 
@@ -501,12 +501,12 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 
 	void Renderer2DImpl::DrawData::AddRoundRectFilled( rectf rect, float rad, color c )
 	{
-		_lazer_throw_not_implemented;
+		FISSION_THROW_NOT_IMPLEMENTED();
 	}
 
 	void Renderer2DImpl::DrawData::AddRoundRect( rectf rect, float rad, color color, float stroke_width, StrokeStyle stroke )
 	{
-		_lazer_throw_not_implemented;
+		FISSION_THROW_NOT_IMPLEMENTED();
 	}
 
 	void Renderer2DImpl::DrawData::AddMesh( const Mesh * m )

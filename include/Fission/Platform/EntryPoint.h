@@ -35,6 +35,7 @@
 
 
 #pragma once
+#include "Fission/Base/Exception.h"
 #include "Fission/Core/Application.h"
 #include "Fission/Platform/System.h"
 
@@ -89,7 +90,7 @@ inline Fission::Platform::ExitCode _fission_main()
 		{
 			ec = _App->Run();
 		}
-		catch( exception & e ) {
+		catch( base::base_exception & e ) {
 			_App->GetWindow()->DisplayMessageBox( utf8_to_wstring( e.name() ) + L" caught", utf8_to_wstring( e.what() ) );
 			ec = FISSION_EXIT_FAILURE;
 		}
@@ -105,8 +106,8 @@ inline Fission::Platform::ExitCode _fission_main()
 
 		System::Shutdown();
 	}
-	catch( exception & e ) {
-		System::DisplayMessageBox( utf8_to_wstring( e.name() ) + L" caught", utf8_to_wstring( e.what() ) );
+	catch( base::base_exception * e ) {
+		System::DisplayMessageBox( utf8_to_wstring( e->name() ) + L" caught", utf8_to_wstring( e->what() ) );
 		ec = FISSION_EXIT_FAILURE;
 	}
 	catch( std::exception & e ) {

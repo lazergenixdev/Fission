@@ -4,10 +4,6 @@
 
 namespace freetype
 {
-	struct Exception : public lazer::exception {
-		Exception( const lazer::exception_message & msg ) noexcept;
-	};
-
 	class Face
 	{
 		friend class Library;

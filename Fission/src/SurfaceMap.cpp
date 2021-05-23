@@ -630,6 +630,7 @@ namespace rbp {
 /*                                         Start Implementation                                                                     */
 /************************************************************************************************************************************/
 
+#include <Fission/Base/Exception.h>
 using namespace Fission;
 
 static nlohmann::json to_json( const metadata & md )
@@ -1137,7 +1138,7 @@ metadata metadata::from_JSON( const std::string & json_str )
 	}
 	catch (nlohmann::json::parse_error & e)
 	{
-		throw lazer::exception("JSON parse error", _lazer_exception_msg.append(e.what()));
+		FISSION_THROW( "JSON parse error", .append(e.what()) );
 	}
 	catch (...)
 	{

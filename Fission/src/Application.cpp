@@ -2,8 +2,7 @@
 #include "Application.h"
 #include "Fission/Core/Console.h"
 #include "Fission/Core/Configuration.h"
-
-#include "lazer/unfinished.h"
+#include <Fission/Base/Exception.h>
 
 using namespace Fission;
 
@@ -148,7 +147,7 @@ create:
 		s_LastDelta = s_AppTimer.gets(); // temp
 
 		// Graphics configuration has changed, so all resources must be created again
-		if( m_State->bRecreate ) _lazer_throw_not_implemented;
+		if( m_State->bRecreate ) { FISSION_THROW_NOT_IMPLEMENTED(); }
 	}
 
 	return m_State->ExitCode;

@@ -1,9 +1,10 @@
 #include "freetype.h"
 
-#include "Fission/Core/Console.h"
+#include <Fission/Core/Console.h>
+#include <Fission/Base/Exception.h>
 
-#define _FREETYPE_THROW_FAILED( _ft_call, _Info )			if( _ft_call ) throw freetype::Exception(_lazer_exception_msg.append( _Info ))
-#define _FREETYPE_THROW_FAILED_EX( _ft_call, _Info, _Ex ) if( err = _ft_call ) throw freetype::Exception(_lazer_exception_msg.append("Error",FT_Error_String(err)).append(_Info,_Ex))
+#define _FREETYPE_THROW_FAILED( _ft_call, _Info )			if( _ft_call ) { FISSION_THROW("FreeType Exception",.append( _Info )); } (void)0
+#define _FREETYPE_THROW_FAILED_EX( _ft_call, _Info, _Ex ) if( err = _ft_call ) { FISSION_THROW("FreeType Exception",.append("Error",FT_Error_String(err)).append(_Info,_Ex)); } (void)0
 
 namespace freetype {
 
@@ -94,9 +95,5 @@ namespace freetype {
 		static Library s_ftLib;
 		return s_ftLib;
 	}
-
-	Exception::Exception( const lazer::exception_message & msg ) noexcept
-		: lazer::exception( "FreeType Exception", msg )
-	{}
 
 }

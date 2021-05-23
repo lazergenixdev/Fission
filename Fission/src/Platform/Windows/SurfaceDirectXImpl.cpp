@@ -2,6 +2,8 @@
 #include <DirectXTex/DirectXTex.h>
 #include <DXErr/dxerr.hpp>
 
+#include <Fission/Base/Exception.h>
+
 namespace Fission {
 
 	bool SurfaceRGBA8_UNormImpl::Load( const file::path & _FilePath )
@@ -14,7 +16,7 @@ namespace Fission {
 		{
 			static char desc[512];
 			DXGetErrorDescriptionA( hr, desc, std::size( desc ) );
-			throw lazer::exception( "Surface Exception", _lazer_exception_msg.append( "HRESULT", desc ) );
+			FISSION_THROW( "Surface Exception",.append( "HRESULT", desc ) );
 			return false;
 		}
 

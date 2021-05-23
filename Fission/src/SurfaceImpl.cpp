@@ -1,6 +1,5 @@
 #include "SurfaceImpl.h"
-//#include "Platform/Windows/hr_Exception.h"
-#include "lazer/unfinished.h"
+#include <Fission/Base/Exception.h>
 
 namespace Fission {
 
@@ -9,7 +8,7 @@ namespace Fission {
 		{
 		case Texture::Format_RGBA8_UNORM:
 			return std::make_unique<SurfaceRGBA8_UNormImpl>( info );
-		default: _lazer_throw_not_implemented;
+		default: FISSION_THROW_NOT_IMPLEMENTED();
 		}
 	}
 
@@ -35,13 +34,13 @@ namespace Fission {
 	}
 
 	void SurfaceRGBA8_UNormImpl::resize( vec2i _New_Size, ResizeOptions_ _Options ) {
-		_lazer_throw_not_implemented;
+		FISSION_THROW_NOT_IMPLEMENTED();
 	}
 	void SurfaceRGBA8_UNormImpl::set_width( int _New_Width, ResizeOptions_ _Options ) {
-		_lazer_throw_not_implemented;
+		FISSION_THROW_NOT_IMPLEMENTED();
 	}
 	void SurfaceRGBA8_UNormImpl::set_height( int _New_Height, ResizeOptions_ _Options ) {
-		_lazer_throw_not_implemented;
+		FISSION_THROW_NOT_IMPLEMENTED();
 	}
 
 
@@ -105,7 +104,7 @@ namespace Fission {
 
 	void SurfaceRGBA8_UNormImpl::shrink_to_fit( color clear_color )
 	{
-		_lazer_throw_not_implemented;
+		FISSION_THROW_NOT_IMPLEMENTED();
 	}
 
 	const void * SurfaceRGBA8_UNormImpl::data() const

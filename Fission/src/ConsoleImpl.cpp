@@ -1,7 +1,6 @@
 #include "ConsoleImpl.h"
 #include <fstream>
-
-#include "lazer/unfinished.h"
+#include <Fission/Base/Exception.h>
 
 #define _Fission_Console_Log_Location L"console.log"
 
@@ -171,7 +170,7 @@ namespace Fission {
 
 	void ConsoleImpl::Write( color _Color, const wchar_t * _Text )
 	{
-		_lazer_throw_not_implemented;
+		FISSION_THROW_NOT_IMPLEMENTED();
 	}
 
 	bool ConsoleImpl::GetLine( int _Line_Number, std::wstring * _Output_Text, color * _Output_Color )
