@@ -34,6 +34,7 @@
 #include "lazer/utility.h"
 #include "Fission/Core/Monitor.h"
 #include "Fission/Core/Graphics/Graphics.h"
+#include "Fission/Base/String.h"
 
 // todo: implement fixed aspect-ratio flag
 // todo: implement fullscreen
@@ -77,7 +78,7 @@ namespace Fission
 		//! @brief struct defining the properties of a given Window
 		struct Properties
 		{
-			std::wstring title = L"Window Title";
+			string title = "Window Title";
 			Style style = Style::Default;
 			Flags flags = Flags::Default;
 			vec2i position;
@@ -97,9 +98,9 @@ namespace Fission
 
 		virtual void SetEventHandler( IEventHandler * handler ) = 0;
 
-		virtual void SetTitle( const std::wstring & title ) = 0;
+		virtual void SetTitle( const string & title ) = 0;
 
-		virtual std::wstring GetTitle() = 0;
+		virtual string GetTitle() = 0;
 
 		virtual void SetStyle( Style style ) = 0;
 
@@ -122,7 +123,7 @@ namespace Fission
 		//! @brief Set which monitor the window will prefer for fullscreen mode
 		virtual void SetMonitor( MonitorPtr ) = 0;
 
-		virtual void DisplayMessageBox( const std::wstring & title, const std::wstring & text ) = 0;
+		virtual void DisplayMessageBox( const string & title, const string & text ) = 0;
 		
 		//! experimental: this function might seem pointless, but this is necessary 
 		//! for calling platform functions within the same thread of a window

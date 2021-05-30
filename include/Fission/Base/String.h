@@ -458,8 +458,17 @@ static constexpr size_t strlen( const _T * const _Buf )
 
 /* ===================== [String Definitions] ===================== */
 
+// Having each string type inherit from the base string class
+// allows for specialization between the types without having
+// the implementation copied into each class.
+// 
+// But this is still not perfect, as we need to repeat 
+// all the constructors and operators.
+
 class utf8_string : public _string_impl<char8_t>
 {
+	friend utf16_string;
+	friend utf32_string;
 public:
 	utf8_string() :_string_impl() {}
 	utf8_string( const _string_impl & _Parent ) :_string_impl( _Parent ) {}
@@ -490,6 +499,8 @@ public:
 
 class utf16_string : public _string_impl<char16_t>
 {
+	friend utf8_string;
+	friend utf32_string;
 public:
 	utf16_string() :_string_impl() {}
 	utf16_string( const _string_impl & _Parent ) :_string_impl( _Parent ) {}
@@ -507,6 +518,8 @@ public:
 
 class utf32_string : public _string_impl<char32_t>
 {
+	friend utf8_string;
+	friend utf16_string;
 public:
 	utf32_string() :_string_impl() {}
 	utf32_string( const _string_impl & _Parent ) :_string_impl( _Parent ) {}
@@ -568,8 +581,8 @@ static bool operator==( const utf8_string & _Left, const char * const _Right ) {
 
 /* ======================= [String Literals] ======================= */
 
-namespace string_literals {
-
+namespace string_literals
+{
 #ifdef __cpp_char8_t
 	static utf8_string operator"" _utf8(const char * const _Str, size_t _Size)
 	{
@@ -588,7 +601,6 @@ namespace string_literals {
 	{
 		return utf32_string( _Str, _Size );
 	}
-
 }
 
 
@@ -655,12 +667,15 @@ inline utf16_string utf8_string::utf16() const
 
 	*dst++ = char16_t( *src++ );
 
+	*dst = char16_t( 0 );
+	out.m_Size = dst - out.m_pData;
 	return out;
 }
 
 inline utf8_string utf16_string::utf8() const
 {
-	auto out = utf8_string( m_Size * 3u, '\0' );
+	utf8_string out;
+	out.reserve( m_Size * 3u );
 	char8_t * dst = out.data();
 
 	const char16_t * src = m_pData;
@@ -723,6 +738,8 @@ inline utf8_string utf16_string::utf8() const
 	*dst++ = char8_t( *src++ );
 	}
 
+	*dst = char8_t( 0 );
+	out.m_Size = dst - out.m_pData;
 	return out;
 }
 

@@ -19,28 +19,28 @@ Application * ILayer::GetApp() {
 static void RegisterConsoleCommands()
 {
 	Console::RegisterCommand(
-		L"exit",
-		[] ( std::wstring ) -> std::wstring {
+		"exit",
+		[] ( string ) -> string {
 			Application::Get()->Exit();
-			return L"exiting ..";
+			return "exiting ..";
 		}
 	);
 	Console::RegisterCommand(
-		L"vsync",
-		[] ( std::wstring s ) -> std::wstring {
-		if( s == L"on" )
+		"vsync",
+		[] ( string s ) -> string {
+		if( s == "on" )
 		{
 			Graphics::SetVSync( vsync_On );
-			return L"vsync turned on";
+			return "vsync turned on";
 		}
-		else if( s == L"off" )
+		else if( s == "off" )
 		{
 			Graphics::SetVSync( vsync_Off );
-			return L"vsync turned off";
+			return "vsync turned off";
 		}
 		else
-			return L"incorrect format";
-		return L"";
+			return "incorrect format";
+		return {};
 		}
 	);
 }
@@ -57,7 +57,7 @@ Application::Application( const CreateInfo & info )
 
 	s_pInstance = this;
 
-	Console::WriteLine( Colors::Aqua, L"Application started!" );
+	Console::WriteLine( Colors::Aqua, "Application started!" );
 
 //	System::WriteInfoToConsole();
 
@@ -147,7 +147,8 @@ create:
 		s_LastDelta = s_AppTimer.gets(); // temp
 
 		// Graphics configuration has changed, so all resources must be created again
-		if( m_State->bRecreate ) { FISSION_THROW_NOT_IMPLEMENTED(); }
+		if( m_State->bRecreate ) FISSION_THROW_NOT_IMPLEMENTED()
+			
 	}
 
 	return m_State->ExitCode;

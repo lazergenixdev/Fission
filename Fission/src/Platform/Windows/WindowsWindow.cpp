@@ -83,13 +83,14 @@ namespace Fission::Platform {
         pEventHandler = handler;
     }
 
-    void WindowsWindow::SetTitle( const std::wstring & title )
+    void WindowsWindow::SetTitle( const string & title )
     {
         m_Properties.title = title;
-        SendMessageW( m_Handle, FISSION_WINEVENT_SETTITLE, (WPARAM)m_Properties.title.c_str(), 0 );
+        auto _New_Title = m_Properties.title.utf16();
+        SendMessageW( m_Handle, FISSION_WINEVENT_SETTITLE, (WPARAM)_New_Title.c_str(), 0 );
     }
 
-    std::wstring WindowsWindow::GetTitle()
+    string WindowsWindow::GetTitle()
     {
         return m_Properties.title;
     }
@@ -126,9 +127,12 @@ namespace Fission::Platform {
         return m_Properties.size;
     }
 
-    void WindowsWindow::DisplayMessageBox( const std::wstring & title, const std::wstring & info )
+    void WindowsWindow::DisplayMessageBox( const string & title, const string & info )
     {
-        SendMessageW( m_Handle, FISSION_WINEVENT_MSGBOX, (WPARAM)title.c_str(), (LPARAM)info.c_str() );
+        auto _Title = title.utf16();
+        auto _Info = info.utf16();
+
+        SendMessageW( m_Handle, FISSION_WINEVENT_MSGBOX, (WPARAM)_Title.c_str(), (LPARAM)_Info.c_str() );
     }
 
     Window::native_handle_type WindowsWindow::native_handle()
@@ -197,7 +201,7 @@ namespace Fission::Platform {
                 pthis->m_Handle = CreateWindowExW(
                     0L,
                     WindowClass::GetName(),
-                    pthis->m_Properties.title.c_str(),
+                    (LPWSTR)pthis->m_Properties.title.utf16().c_str(),
                     pthis->GetWindowsStyle(),
                     pos.x, pos.y,
                     size.x, size.y,
@@ -211,20 +215,20 @@ namespace Fission::Platform {
 
                 SetWindowLongPtrW( pthis->m_Handle, GWLP_USERDATA, (LONG_PTR)pthis );
 
-                auto sStyle = L"";
+                auto sStyle = "";
                 switch( pthis->m_Properties.style )
                 {
-                case Style::Border: sStyle = L"Border"; break;
-                case Style::Borderless: sStyle = L"Borderless"; break;
-                case Style::BorderSizeable: sStyle = L"BorderSizeable"; break;
+                case Style::Border: sStyle = "Border"; break;
+                case Style::Borderless: sStyle = "Borderless"; break;
+                case Style::BorderSizeable: sStyle = "BorderSizeable"; break;
                 default:break;
                 }
 
-                Console::WriteLine( Colors::LightBlue, L"Created Window with properties:" );
-                Console::WriteLine( Colors::LightBlue, L" - Position: (%d, %d)", pos.x, pos.y );
+                Console::WriteLine( Colors::LightBlue, "Created Window with properties:" );
+                Console::WriteLine( Colors::LightBlue, " - Position: (%d, %d)", pos.x, pos.y );
 
-                Console::WriteLine( Colors::LightBlue, L" - Size: [%d x %d]", pthis->m_Properties.size.x, pthis->m_Properties.size.y );
-                Console::WriteLine( Colors::LightBlue, L" - Style: %s", sStyle );
+                Console::WriteLine( Colors::LightBlue, " - Size: [%d x %d]", pthis->m_Properties.size.x, pthis->m_Properties.size.y );
+                Console::WriteLine( Colors::LightBlue, " - Style: %s", sStyle );
 
             }
 
@@ -423,7 +427,7 @@ namespace Fission::Platform {
 		}
 		case FISSION_WINEVENT_SETTITLE:
 		{
-			SetWindowTextW( hWnd, (const wchar_t *)wParam );
+			SetWindowTextW( hWnd, (LPWSTR)wParam );
 			return 0;
 		}
         case FISSION_WINEVENT_SETSIZE:
@@ -442,9 +446,7 @@ namespace Fission::Platform {
         }
         case FISSION_WINEVENT_MSGBOX:
         {
-            const wchar_t * title = reinterpret_cast<const wchar_t *>( wParam );
-            const wchar_t * info = reinterpret_cast<const wchar_t *>( lParam );
-            MessageBoxW( hWnd, info, title, MB_OK );
+            MessageBoxW( hWnd, (LPWSTR)wParam, (LPWSTR)lParam, MB_OK );
             return 0;
         }
         case FISSION_WINEVENT_CLOSE:

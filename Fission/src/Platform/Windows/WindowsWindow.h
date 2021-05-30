@@ -19,9 +19,9 @@ namespace Fission::Platform
 
 		virtual void SetEventHandler( IEventHandler * handler ) override;
 
-		virtual void SetTitle( const std::wstring & title ) override;
+		virtual void SetTitle( const string & title ) override;
 
-		virtual std::wstring GetTitle() override;
+		virtual string GetTitle() override;
 
 		virtual void SetStyle( Style style ) override;
 
@@ -31,7 +31,7 @@ namespace Fission::Platform
 
 		virtual vec2i GetSize() override;
 
-		virtual void DisplayMessageBox( const std::wstring & title, const std::wstring & info ) override;
+		virtual void DisplayMessageBox( const string & title, const string & info ) override;
 
 		virtual void Call( std::function<void()> function ) override;
 

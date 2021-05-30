@@ -65,7 +65,7 @@ namespace Fission {
 	{
 		if( !file::exists( "etc" ) )
 		{
-			Console::WriteLine( L"'etc/' not found. Creating directory .." );
+			Console::WriteLine( "'etc/' not found. Creating directory .." );
 
 			file::create_directory( "etc" );
 
@@ -122,13 +122,12 @@ namespace Fission {
 		}
 		catch( YAML::BadFile & )
 		{
-			Console::WriteLine( L"'%s' not found. Using default configuration ..", _Save_Location.c_str() );
+			Console::WriteLine( "'%s' not found. Using default configuration ..", _Save_Location.string().c_str() );
 			return false;
 		}
 		catch( std::exception & e )
 		{
-			std::wstring what = utf8_to_wstring( e.what() );
-			Console::WriteLine<256>( L"Error reading '%s' [%s]", _Save_Location.c_str(), what.c_str() );
+			Console::WriteLine<256>( "Error reading '%s' [%s]", _Save_Location.string().c_str(), e.what() );
 			return false;
 		}
 
@@ -184,8 +183,7 @@ namespace Fission {
 		}
 		catch( std::exception & e )
 		{
-			std::wstring what = utf8_to_wstring( e.what() );
-			Console::WriteLine( L"Error writing to '%s' [%s]", _Save_Location.c_str(), what.c_str() );
+			Console::WriteLine( "Error writing to '%s' [%s]", _Save_Location.string().c_str(), e.what() );
 		}
 		return true;
 	}

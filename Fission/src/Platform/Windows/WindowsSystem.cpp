@@ -1,5 +1,6 @@
 #pragma once
 #include "Fission/Platform/System.h"
+#include "Fission/Base/Exception.h"
 #include "WindowsMonitor.h"
 
 #ifdef FISSION_PLATFORM_WINDOWS
@@ -21,7 +22,7 @@ namespace Fission {
 		{
 			static char errorbuffer[512];
 			DXGetErrorDescriptionA( hr, errorbuffer, std::size( errorbuffer ) );
-			throw exception( "COM Error", _lazer_exception_msg.append( "Failed to Initialize COM", errorbuffer ) );
+			FISSION_THROW( "COM Error",.append( "Failed to Initialize COM", errorbuffer ) );
 		}
 
 		Platform::EnumMonitors();
@@ -32,18 +33,20 @@ namespace Fission {
 		CoUninitialize();
 	}
 
-	void System::DisplayMessageBox( const std::wstring & title, const std::wstring & text )
+	void System::DisplayMessageBox( const string & title, const string & text )
 	{
 		auto _show_message = [] ( const wchar_t * title, const wchar_t * text ) {
 			MessageBoxW( NULL, text, title, MB_OK | MB_SYSTEMMODAL );
 		};
 
-		auto _msg_thread = std::thread( _show_message, title.c_str(), text.c_str() );
+		auto _Title = title.utf16();
+		auto _Text = text.utf16();
+		auto _msg_thread = std::thread( _show_message, (LPWSTR)_Title.c_str(), (LPWSTR)_Text.c_str() );
 
 		_msg_thread.join();
 	}
 
-	bool System::OpenURL( const std::string & _URL )
+	bool System::OpenURL( const string & _URL )
 	{
 		return (bool)ShellExecuteA( NULL, "open", _URL.c_str(), nullptr, nullptr, SW_SHOWDEFAULT );
 	}

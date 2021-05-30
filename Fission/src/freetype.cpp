@@ -46,8 +46,8 @@ namespace freetype {
 
 		FT_Library_Version( m_Library, &maj, &min, &pat );
 
-		static wchar_t buf[48] = {};
-		swprintf( buf, 48, L"FreeType Library Version %i.%i.%i", maj, min, pat );
+		static char buf[48] = {};
+		sprintf_s( buf, "FreeType Library Version %i.%i.%i", maj, min, pat );
 
 		Fission::Console::WriteLine( buf );
 	}

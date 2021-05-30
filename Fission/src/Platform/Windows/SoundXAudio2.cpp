@@ -1,5 +1,6 @@
 #include "SoundXAudio2.h"
 #include "Fission/Core/Console.h"
+#include "Fission/Base/Exception.h"
 
 #include <windows.h>
 #include <mfapi.h>
@@ -25,23 +26,24 @@ SoundEngineXAudio2::SoundEngineXAudio2( const CreateInfo & info )
 {
 	HRESULT hr;
 
+
 	if( FAILED( hr = XAudio2Create( &m_pXAudio2Engine, 0, XAUDIO2_ANY_PROCESSOR ) ) )
-		throw exception( "XAudio2 Exception", _lazer_exception_msg.append( "Failed to Initialize Sound Engine." ) );
+		FISSION_THROW( "XAudio2 Exception", .append( "Failed to Initialize Sound Engine." ) );
 
 	if( FAILED( hr = m_pXAudio2Engine->CreateMasteringVoice( &m_pMaster ) ) )
-		throw exception( "XAudio2 Exception", _lazer_exception_msg.append( "Failed to Create Mastering Voice." ) );
+		FISSION_THROW( "XAudio2 Exception", .append( "Failed to Create Mastering Voice." ) );
 
 	m_vpSubmixVoices.resize( info.nOutputs );
 	for( auto && submix : m_vpSubmixVoices )
 	{
 		if( FAILED( hr = m_pXAudio2Engine->CreateSubmixVoice( &submix, 2, 44100 ) ) )
-			throw exception( "XAudio2 Exception", _lazer_exception_msg.append( "Failed to Create Submix Voice." ) );
+			FISSION_THROW( "XAudio2 Exception", .append( "Failed to Create Submix Voice." ) );
 	}
 
 	if( FAILED(hr = m_pXAudio2Engine->StartEngine() ) )
-		throw exception( "XAudio2 Exception", _lazer_exception_msg.append( "Failed to start audio processing thread." ) );
+		FISSION_THROW( "XAudio2 Exception", .append( "Failed to start audio processing thread." ) );
 
-	Console::WriteLine( Colors::Blanchedalmond, L"Using XAudio2" );
+	Console::WriteLine( Colors::Blanchedalmond, "Using XAudio2" );
 }
 
 ref<Fission::ISound> SoundEngineXAudio2::CreateSound( const file::path & filepath )
@@ -254,7 +256,7 @@ LoadSoundResult LoadSoundDataFromFile( const file::path & filepath, SoundData * 
 
 	if( FAILED( hr ) )
 	{
-		Console::Warning( L"Could not load [%s] as a sound!", filepath.c_str() );
+		Console::Warning( "Could not load [%s] as a sound!", filepath.string().c_str() );
 		return LoadSoundResult::Failure;
 	}
 	else DEBUG_WPRINT( L"\nBegin read [%s]\n", filepath.c_str() );

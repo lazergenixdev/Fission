@@ -96,8 +96,8 @@ namespace Fission {
 
 	void SurfaceRGBA8_UNormImpl::PutPixel( int _X, int _Y, color _Color )
 	{
-		FISSION_ASSERT( _X < m_Width, "X out of range" );
-		FISSION_ASSERT( _Y < m_Height, "Y out of range" );
+		FISSION_ASSERT( _X < (int)m_Width, "X out of range" );
+		FISSION_ASSERT( _Y < (int)m_Height, "Y out of range" );
 
 		m_pData[_Y * m_Width + _X] = _Color;
 	}

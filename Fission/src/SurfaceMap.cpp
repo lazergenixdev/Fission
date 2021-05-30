@@ -1029,7 +1029,7 @@ metadata & metadata::operator[]( size_t index )
 
 const char * metadata::as_string() const
 {
-	if( m_Type != string ) return nullptr; // undefined behavior
+	if( m_Type != value_t::string ) return nullptr; // undefined behavior
 
 	return m_pData.m_string->c_str();
 }

@@ -10,7 +10,7 @@ namespace Fission {
 
 	void ConsoleLayer::OnCreate()
 	{
-		m_CommandText.reserve( s_MaxCommandSize );
+	//	m_CommandText.reserve( s_MaxCommandSize );
 		m_pRenderer2D = Renderer2D::Create( GetApp()->GetGraphics() );
 		FontManager::SetFont( "$console", JetBrainsMonoTTF::data, JetBrainsMonoTTF::size, 8.0f );
 		auto pFont = FontManager::GetFont( "$console" );
@@ -40,7 +40,7 @@ namespace Fission {
 			lineOffset = std::min( lineOffset, (uint32_t)maxIndex );
 			for( int i = maxIndex - (int)lineOffset; i >= 0; i-- )
 			{
-				std::wstring line;
+				string line;
 				color col;
 				Console::GetLine( i, &line, &col );
 
@@ -75,9 +75,9 @@ namespace Fission {
 			//float end = (float)m_CommandText.length();
 			//m_pRenderer2D->DrawRect( rectf( end * 6.6f + 22.0f, end * 6.6f + 29.0f, bottom - 7.0f, bottom - 5.0f ), color::White );
 
-			std::wstring consoleInput = L"] ";
+			std::string consoleInput = "] ";
 
-			consoleInput += m_CommandText;
+			consoleInput += m_CommandText.string();
 
 			m_pRenderer2D->DrawString( consoleInput.c_str(), vec2f( 8.0f, extend - m_FontSize - m_BottomPadding - 1.0f ), Colors::White );
 
@@ -165,7 +165,7 @@ namespace Fission {
 			}
 			default:
 				if( m_CommandText.size() < s_MaxCommandSize )
-					m_CommandText += args.character;
+					m_CommandText += string( 1, (char)args.character );
 				break;
 			}
 			return FISSION_EVENT_HANDLED;

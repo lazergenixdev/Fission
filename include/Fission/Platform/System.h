@@ -30,6 +30,7 @@
 
 #pragma once
 #include "Fission/config.h"
+#include "Fission/Base/String.h"
 
 // todo: change comment style to be consistant with rest of project
 
@@ -56,15 +57,15 @@ namespace Fission {
 		/// </summary>
 		/// <param name="Title">- What gets set as the title.</param>
 		/// <param name="Text">.</param>
-		FISSION_API static void DisplayMessageBox( const std::wstring & _Title, const std::wstring & _Text );
+		FISSION_API static void DisplayMessageBox( const string & _Title, const string & _Text );
 
 		/// <summary>
 		/// Save text to the Clipboard.
 		/// </summary>
 		/// <param name="Text">- utf8 string to put onto the clipboard.</param>
-		FISSION_API static void SaveToClipboard( const std::string & _Text );
+		FISSION_API static void SaveToClipboard( const string & _Text );
 
-		FISSION_API static bool OpenURL( const std::string & _URL );
+		FISSION_API static bool OpenURL( const string & _URL );
 		FISSION_API static bool OpenFile( const file::path & _File );
 
 		/// <summary>

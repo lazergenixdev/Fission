@@ -2,12 +2,12 @@
 #include <fstream>
 #include <Fission/Base/Exception.h>
 
-#define _Fission_Console_Log_Location L"console.log"
+#define _Fission_Console_Log_Location "console.log"
 
 namespace Fission {
 
 	namespace helpers {
-		int wstrlen( const wchar_t * str ) {
+		int strlen( const char * str ) {
 			int len = 0;
 		loop:
 			switch( str[len++] )
@@ -46,36 +46,36 @@ namespace Fission {
 #endif /* FISSION_CREATE_CONSOLE_WINDOW */
 
 		{ // Clear contexts of debug log for writing
-			auto f = std::wofstream( _Fission_Console_Log_Location, std::ios::trunc );
+			auto f = std::ofstream( _Fission_Console_Log_Location, std::ios::trunc );
 
-			f << L"===== " _Fission_Console_Log_Location L" =====\n\n";
+			f << "===== " _Fission_Console_Log_Location " =====\n\n";
 		}
 
-		m_CharacterBuffer = (wchar_t *)_aligned_malloc( m_BufferCapacity * sizeof( wchar_t ), 16u );
+		m_CharacterBuffer = (char *)_aligned_malloc( m_BufferCapacity, 16u );
 		m_Lines.reserve( 200 );
 
 		/* Default Console commands */
 
 		RegisterCommand(
-			L"help",
-			[] ( std::wstring s ) -> std::wstring {
-				return L"There shall be NO help! >:)";
+			"help",
+			[] ( string s ) -> string {
+				return "There shall be NO help! >:)";
 			}
 		);
 
 		RegisterCommand(
-			L"cls",
-			[] ( std::wstring ) {
+			"cls",
+			[] ( string ) {
 				Console::Clear();
-				return std::wstring();
+				return string();
 			}
 		);
 
 		RegisterCommand(
-			L"msg",
-			[] ( std::wstring s ) {
+			"msg",
+			[] ( string s ) {
 				Console::WriteLine( s.c_str(), Colors::White );
-				return std::wstring();
+				return string();
 			}
 		);
 	}
@@ -110,56 +110,60 @@ namespace Fission {
 		m_Lines.clear();
 	}
 
-	void ConsoleImpl::RegisterCommand( const std::wstring & _Command_Name, CommandCallback _Callback )
+	void ConsoleImpl::RegisterCommand( const string & _Command_Name, CommandCallback _Callback )
 	{
-		m_CommandMap.emplace( _Command_Name, _Callback );
+		m_CommandMap.emplace( _Command_Name.string(), _Callback );
 	}
 
-	void ConsoleImpl::UnregisterCommand( const std::wstring & _Command_Name )
+	void ConsoleImpl::UnregisterCommand( const string & _Command_Name )
 	{
-		m_CommandMap.erase( _Command_Name );
+		m_CommandMap.erase( _Command_Name.string() );
 	}
 
-	void ConsoleImpl::ExecuteCommand( const std::wstring & _Command )
+	void ConsoleImpl::ExecuteCommand( const string & _Command )
 	{
-		auto begin_parameters = _Command.find_first_of( ' ' );
+		std::string cmd = _Command.string();
 
-		std::wstring name = _Command.substr( 0u, begin_parameters );
+		auto begin_parameters = cmd.find_first_of( ' ' );
+
+		std::string name = cmd.substr( 0u, begin_parameters );
 
 		auto itt = m_CommandMap.find( name );
 		if( itt == m_CommandMap.end() )
 		{
-			std::wstring comment = L"Unknown command: '" + name + L"'";
+			std::string comment = "Unknown command: '" + name + "'";
 			WriteLine( Colors::DarkGray, comment.c_str() );
 			return;
 		}
 
-		std::wstring out;
+		string out;
 
-		if( begin_parameters < _Command.size() )
-			out = itt->second( _Command.substr( begin_parameters + 1 ) );
+		if( begin_parameters < cmd.size() )
+		{
+			out = itt->second( string( cmd.substr( begin_parameters + 1 ) ) );
+		}
 		else
-			out = itt->second( L"" );
+			out = itt->second( "" );
 
 		if( !out.empty() )
 			WriteLine( Colors::DarkGray, out.c_str() );
 	}
 
-	void ConsoleImpl::WriteLine( color _Color, const wchar_t * _Text )
+	void ConsoleImpl::WriteLine( color _Color, const char * _Text )
 	{
 		std::scoped_lock lock( m_WriteMutex );
 
 		m_Lines.emplace_back( m_BufferCount, _Color );
 
-		uint32_t len = (uint32_t)helpers::wstrlen( _Text );
+		uint32_t len = (uint32_t)helpers::strlen( _Text );
 
-		auto f = std::wofstream( _Fission_Console_Log_Location, std::ios::app );
+		auto f = std::ofstream( _Fission_Console_Log_Location, std::ios::app );
 		f.write( _Text, len );
-		f.write( L"\n", 1u );
+		f.write( "\n", 1u );
 		f.close();
 
 #ifdef FISSION_CREATE_CONSOLE_WINDOW
-		printf( "%ws\n", std::wstring( _Text, len ).c_str() );
+		printf( "%s\n", string( _Text, len ).c_str() );
 #endif
 
 		reserve( m_BufferCount + len );
@@ -168,26 +172,26 @@ namespace Fission {
 		memcpy( m_CharacterBuffer + start, _Text, len * sizeof( wchar_t ) );
 	}
 
-	void ConsoleImpl::Write( color _Color, const wchar_t * _Text )
+	void ConsoleImpl::Write( color _Color, const char * _Text )
 	{
 		FISSION_THROW_NOT_IMPLEMENTED();
 	}
 
-	bool ConsoleImpl::GetLine( int _Line_Number, std::wstring * _Output_Text, color * _Output_Color )
+	bool ConsoleImpl::GetLine( int _Line_Number, string * _Output_Text, color * _Output_Color )
 	{
 		if( _Line_Number >= m_Lines.size() )
 			return false;
 
 		const TextLine & Start = m_Lines[_Line_Number];
 
-		const wchar_t * str = m_CharacterBuffer + Start.start;
-		uint32_t length = m_BufferCount - Start.start;
+		const char * str = m_CharacterBuffer + Start.start;
+		size_t length = m_BufferCount - Start.start;
 
 		if( (size_t)_Line_Number + 1 < m_Lines.size() ) {
 			length = m_Lines[(size_t)_Line_Number + 1].start - Start.start;
 		}
 
-		*_Output_Text = std::wstring( str, (size_t)length );
+		*_Output_Text = string( str, length );
 		if( _Output_Color ) *_Output_Color = Start.color;
 
 		return true;
@@ -210,12 +214,12 @@ namespace Fission {
 		{
 			while( _New_Count > m_BufferCapacity ) // could be implemented better, but realisticly there should not be more than 2000 chars written at a time
 				m_BufferCapacity += 2000u;
-			wchar_t * temp = (wchar_t *)_aligned_malloc( m_BufferCapacity * sizeof( wchar_t ), 16u );
+			char * temp = (char *)_aligned_malloc( m_BufferCapacity, 16u );
 
 			if( temp == nullptr )
 				throw 0x45;
 
-			memcpy( temp, m_CharacterBuffer, m_BufferCount * sizeof( wchar_t ) );
+			memcpy( temp, m_CharacterBuffer, m_BufferCount );
 			_aligned_free( m_CharacterBuffer );
 			m_CharacterBuffer = temp;
 		}

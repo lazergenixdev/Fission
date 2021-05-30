@@ -297,7 +297,7 @@ MenuScene::MenuScene()
 class SandboxApp : public Application
 {
 public:
-	SandboxApp() : Application( { new MenuScene, L"sandbox (demo scene switching)" } ) {}
+	SandboxApp() : Application( { new MenuScene, u8"sandbox (\U0001f171emo) \U0001f525\U0001f525\U0001f525" } ) {}
 
 	virtual void OnCreate() override
 	{

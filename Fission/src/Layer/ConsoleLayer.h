@@ -1,5 +1,6 @@
 #pragma once
 #include "Fission\Core\Scene.h"
+#include "Fission\Base\String.h"
 
 namespace Fission {
 
@@ -17,7 +18,7 @@ private:
 private:
 	std::unique_ptr<Renderer2D> m_pRenderer2D;
 
-	std::wstring m_CommandText;
+	string m_CommandText;
 
 	static constexpr uint32_t s_MaxCommandSize = 69;
 

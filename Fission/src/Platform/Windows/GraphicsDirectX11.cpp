@@ -1,6 +1,7 @@
 #include "GraphicsDirectX11.h"
 #include "WindowsWindow.h"
 #include "Fission/Core/Console.h"
+#include "Fission/Base/Exception.h"
 
 namespace Fission::Platform {
 
@@ -29,7 +30,7 @@ namespace Fission::Platform {
 			&m_pImmediateContext					/* pp Device Context */
 		);
 
-		if( FAILED( hr ) ) throw exception("DirectX Exception", _lazer_exception_msg.append("Failed to Create Device."));
+		if( FAILED( hr ) ) { FISSION_THROW( "DirectX Exception", .append( "Failed to Create Device." ) ); }
 
 		m_NativeHandle.pDevice = m_pDevice.Get();
 		m_NativeHandle.pDeviceContext = m_pImmediateContext.Get();
@@ -37,10 +38,10 @@ namespace Fission::Platform {
 		switch( FeatureLevelGot ) 
 		{
 		case D3D_FEATURE_LEVEL_11_1:
-			Console::WriteLine( Colors::Lime, L"Using DirectX 11.1" );
+			Console::WriteLine( Colors::Lime, "Using DirectX 11.1" );
 			break;
 		case D3D_FEATURE_LEVEL_11_0:
-			Console::WriteLine( Colors::Lime, L"Using DirectX 11.0" );
+			Console::WriteLine( Colors::Lime, "Using DirectX 11.0" );
 			break;
 		default:
 			throw std::logic_error("this don't make no fucking sense");

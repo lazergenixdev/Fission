@@ -50,11 +50,11 @@
 
 //! @brief Creates User Application.
 //! @return Pointer to a Fission::Application.
-static Fission::Application * CreateApplication( void );
+extern Fission::Application * CreateApplication( void );
 
 //! @brief Runs main application loop.
 //! @return ExitCode from the status of how the application exited.
-inline Fission::Platform::ExitCode _fission_main( void );
+inline Fission::Platform::ExitCode _fission_main( void ) noexcept;
 
 
 /* =================================================================================================== */
@@ -74,9 +74,10 @@ int WINAPI wWinMain( _In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPWSTR, _In_ int )
 /* ------------------------------------ fission main definition -------------------------------------- */
 /* =================================================================================================== */
 
-inline Fission::Platform::ExitCode _fission_main()
+inline Fission::Platform::ExitCode _fission_main() noexcept
 {
 	using namespace Fission;
+	using namespace string_literals;
 
 	Platform::ExitCode ec = FISSION_EXIT_UNKNOWN;
 
@@ -90,32 +91,44 @@ inline Fission::Platform::ExitCode _fission_main()
 		{
 			ec = _App->Run();
 		}
-		catch( base::base_exception & e ) {
-			_App->GetWindow()->DisplayMessageBox( utf8_to_wstring( e.name() ) + L" caught", utf8_to_wstring( e.what() ) );
+
+		catch( base::base_exception & e )
+		{
+			_App->GetWindow()->DisplayMessageBox( string ( e.name() ) + " caught"_utf8, e.what() );
 			ec = FISSION_EXIT_FAILURE;
 		}
-		catch( std::exception & e ) {
-			_App->GetWindow()->DisplayMessageBox( L"C++ exception caught", utf8_to_wstring( e.what() ) );
+
+		catch( std::exception & e )
+		{
+			_App->GetWindow()->DisplayMessageBox( "C++ exception caught"_utf8, e.what() );
 			ec = FISSION_EXIT_FAILURE;
 		}
-		catch( ... ) {
-			_App->GetWindow()->DisplayMessageBox( L"Unknown Error", L"No information provided, lol" );
+
+		catch( ... ) 
+		{
+			_App->GetWindow()->DisplayMessageBox( "Unknown Error"_utf8, "No information provided, lol"_utf8 );
 		}
 
 		delete _App;
 
 		System::Shutdown();
 	}
-	catch( base::base_exception * e ) {
-		System::DisplayMessageBox( utf8_to_wstring( e->name() ) + L" caught", utf8_to_wstring( e->what() ) );
+
+	catch( base::base_exception & e )
+	{
+		System::DisplayMessageBox( string( e.name() ) + " caught"_utf8, e.what() );
 		ec = FISSION_EXIT_FAILURE;
 	}
-	catch( std::exception & e ) {
-		System::DisplayMessageBox( L"C++ exception caught", utf8_to_wstring( e.what() ) );
+
+	catch( std::exception & e )
+	{
+		System::DisplayMessageBox( "C++ exception caught"_utf8, e.what() );
 		ec = FISSION_EXIT_FAILURE;
 	}
-	catch( ... ) {
-		System::DisplayMessageBox( L"Unknown Error", L"No information provided, lol" );
+
+	catch( ... )
+	{
+		System::DisplayMessageBox( "Unknown Error"_utf8, "No information provided, lol"_utf8 );
 	}
 
 	return ec;

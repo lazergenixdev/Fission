@@ -15,17 +15,17 @@ public:
 
 	void Clear();
 
-	void RegisterCommand( const std::wstring & _Command_Name, CommandCallback _Callback );
+	void RegisterCommand( const string & _Command_Name, CommandCallback _Callback );
 
-	void UnregisterCommand( const std::wstring & _Command_Name );
+	void UnregisterCommand( const string & _Command_Name );
 
-	void ExecuteCommand( const std::wstring & _Command );
+	void ExecuteCommand( const string & _Command );
 
-	void WriteLine( color _Color, const wchar_t * _Text );
+	void WriteLine( color _Color, const char * _Text );
 
-	void Write( color _Color, const wchar_t * _Text );
+	void Write( color _Color, const char * _Text );
 
-	bool GetLine( int _Line_Number, std::wstring * _Output_Text, color * _Output_Color );
+	bool GetLine( int _Line_Number, string * _Output_Text, color * _Output_Color );
 
 	int GetLineCount();
 
@@ -39,9 +39,9 @@ private:
 	static constexpr uint32_t m_BufferCapacity_HardMax = 1000000u;
 
 private:
-	std::unordered_map<std::wstring, CommandCallback> m_CommandMap;
+	std::unordered_map<std::string, CommandCallback> m_CommandMap;
 
-	wchar_t * m_CharacterBuffer = nullptr;
+	char * m_CharacterBuffer = nullptr;
 	uint32_t m_BufferCount = 0u;
 	uint32_t m_BufferCapacity = 2000u;
 
