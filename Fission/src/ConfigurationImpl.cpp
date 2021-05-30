@@ -56,7 +56,7 @@ namespace Fission {
 
 	static void FormatConfigFilename( file::path & path )
 	{
-		path = "etc" / path;
+		path = "etc"/path;
 		path.replace_extension( ".yml" );
 	}
 
@@ -98,7 +98,7 @@ namespace Fission {
 
 					if( auto position = w.second["Position"] )
 					{
-						props.position = vec2i( position[0].as<int>(0), position[1].as<int>(0) );
+						props.position = base::vector2i( position[0].as<int>(0), position[1].as<int>(0) );
 					}
 					if( auto spos = w.second["Save Position"] )
 					{

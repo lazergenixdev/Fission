@@ -116,7 +116,7 @@ namespace Fission
 	EventResult UILayer::OnMouseMove( MouseMoveEventArgs & args )
 	{
 		ui::MouseMoveEventArgs m;
-		m.pos = args.position;
+		m.pos = vec2i::from( args.position );
 		std::scoped_lock lock( g_Mutex );
 		return (EventResult)pWindowManager->OnMouseMove( m );
 	}
@@ -193,7 +193,7 @@ public:
 		g_pRenderer2D->FillRect( rect, g_ColorBackground );
 		g_pRenderer2D->FillRect( rectf::from_tl({rect.get_l()+60.0f,rect.get_t()},{rect.width()-60.0f,tl.height}), Colors::make_gray( 0.1f ) );
 		
-		g_pRenderer2D->DrawString( id.c_str(), rect.get_tl()+vec2f((60.0f-tl.width)*0.5f,0.0f), Colors::Snow );
+		g_pRenderer2D->DrawString( id.c_str(), base::vector2f::from(rect.get_tl())+base::vector2f((60.0f-tl.width)*0.5f,0.0f), Colors::Snow );
 
 		g_pRenderer2D->DrawRect( rect, Colors::Black, 2.0f, StrokeStyle::Outside );
 
@@ -357,7 +357,7 @@ public:
 	{
 		rectf rect = (rectf)Rect;
 
-		g_pRenderer2D->DrawString( label.c_str(), rect.get_tl(), this == parent->GetHover() ? Colors::White : Colors::make_gray( 0.7f ) );
+		g_pRenderer2D->DrawString( label.c_str(), base::vector2f::from( rect.get_tl() ), this == parent->GetHover() ? Colors::White : Colors::make_gray( 0.7f ) );
 
 		rectf numberbox = { rect.x.get_average(), rect.get_r(), rect.get_t(), rect.get_b() };
 
@@ -369,7 +369,7 @@ public:
 		if( selectAlpha > 0.0f )
 		g_pRenderer2D->DrawRect( numberbox, color(1.0f, 1.0f, 1.0f, selectAlpha), 1.0f, StrokeStyle::Outside );
 
-		auto tl = g_pRenderer2D->DrawString( numberText.c_str(), numberbox.get_tl(), Colors::White );
+		auto tl = g_pRenderer2D->DrawString( numberText.c_str(), base::vector2f::from(numberbox.get_tl()), Colors::White );
 
 		if( this == parent->GetFocus() && not dragging )
 			g_pRenderer2D->FillRect(

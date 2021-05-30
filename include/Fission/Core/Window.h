@@ -35,6 +35,7 @@
 #include "Fission/Core/Monitor.h"
 #include "Fission/Core/Graphics/Graphics.h"
 #include "Fission/Base/String.h"
+#include "Fission/Base/Math/Vector.h"
 
 // todo: implement fixed aspect-ratio flag
 // todo: implement fullscreen
@@ -81,7 +82,7 @@ namespace Fission
 			string title = "Window Title";
 			Style style = Style::Default;
 			Flags flags = Flags::Default;
-			vec2i position;
+			base::vector2i position;
 			vec2i size = { 1280, 720 }; // size always refers to client size
 			int monitor_idx = 0; // which monitor to use. (0 is always the primary)
 			SaveID save = NoSaveID;

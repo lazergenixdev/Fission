@@ -24,7 +24,7 @@ namespace Fission {
 		m_Data->color_buffer.emplace_back( col );
 	}
 
-	void Mesh::push_vertex( vec2f position, int color_index ) {
+	void Mesh::push_vertex( base::vector2f position, int color_index ) {
 		m_Data->vertex_buffer.emplace_back( position, color_index );
 	}
 

@@ -169,29 +169,29 @@ void DebugLayerImpl::OnUpdate() {
 
 		{ // FPS
 			tl = m_pRenderer2D->CreateTextLayout( buf );
-			vec2f pos = { 0.0f, diff };
-			m_pRenderer2D->FillRect( rectf::from_tl( pos, { tl.width, diff } ), c );
+			base::vector2f pos = { 0.0f, diff };
+			m_pRenderer2D->FillRect( rectf::from_tl( vec2f::from(pos), { tl.width, diff } ), c );
 			m_pRenderer2D->DrawString( buf, pos, Colors::White );
 		}
 		
 		{ // CPU
 			tl = m_pRenderer2D->CreateTextLayout( cpu_name.c_str() );
-			vec2f pos = { size.x - tl.width, 0.0f };
-			m_pRenderer2D->FillRect( rectf::from_tl( pos, { tl.width, diff } ), c );
+			base::vector2f pos = { size.x - tl.width, 0.0f };
+			m_pRenderer2D->FillRect( rectf::from_tl( vec2f::from(pos), { tl.width, diff } ), c );
 			m_pRenderer2D->DrawString( cpu_name.c_str(), pos, Colors::White );
 		}
 
 		{ // Memory
 			tl = m_pRenderer2D->CreateTextLayout( memory_str.c_str() );
-			vec2f pos = { size.x - tl.width, diff };
-			m_pRenderer2D->FillRect( rectf::from_tl( pos, { tl.width, diff } ), c );
+			base::vector2f pos = { size.x - tl.width, diff };
+			m_pRenderer2D->FillRect( rectf::from_tl( vec2f::from(pos), { tl.width, diff } ), c );
 			m_pRenderer2D->DrawString( memory_str.c_str(), pos, Colors::White );
 		}
 
 		{ // Platform
 			tl = m_pRenderer2D->CreateTextLayout( platform_str.c_str() );
-			vec2f pos = { size.x - tl.width, diff * 2.0f };
-			m_pRenderer2D->FillRect( rectf::from_tl( pos, { tl.width, diff } ), c );
+			base::vector2f pos = { size.x - tl.width, diff * 2.0f };
+			m_pRenderer2D->FillRect( rectf::from_tl( vec2f::from(pos), { tl.width, diff } ), c );
 			m_pRenderer2D->DrawString( platform_str.c_str(), pos, Colors::White );
 		}
 

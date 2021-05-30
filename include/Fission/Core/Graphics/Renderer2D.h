@@ -32,6 +32,7 @@
 
 #pragma once
 #include "Fission/config.h"
+#include "Fission/Base/Math/Vector.h"
 #include "Renderer.h"
 #include "Graphics.h"
 #include "Font.h"
@@ -61,7 +62,7 @@ namespace Fission
 		FISSION_API ~Mesh();
 
 		FISSION_API void push_color( color col );
-		FISSION_API void push_vertex( vec2f position, int color_index );
+		FISSION_API void push_vertex( base::vector2f position, int color_index );
 		FISSION_API void push_index( uint32_t index );
 
 		FISSION_API void set_color( uint32_t index, color new_color );
@@ -84,11 +85,11 @@ namespace Fission
 
 		virtual void DrawRect( rectf rect, color color, float stroke_width, StrokeStyle stroke = StrokeStyle::Default ) = 0;
 
-		virtual void FillTriangle( vec2f p0, vec2f p1, vec2f p2, color color ) = 0;
+		virtual void FillTriangle( base::vector2f p0, base::vector2f p1, base::vector2f p2, color color ) = 0;
 
-		virtual void FillTriangleGrad( vec2f p0, vec2f p1, vec2f p2, color c0, color c1, color c2 ) = 0;
+		virtual void FillTriangleGrad( base::vector2f p0, base::vector2f p1, base::vector2f p2, color c0, color c1, color c2 ) = 0;
 
-		virtual void FillTriangleUV( vec2f p0, vec2f p1, vec2f p2, vec2f uv0, vec2f uv1, vec2f uv2, Resource::Texture2D * pTexture, color tint = Colors::White ) = 0;
+		virtual void FillTriangleUV( base::vector2f p0, base::vector2f p1, base::vector2f p2, base::vector2f uv0, base::vector2f uv1, base::vector2f uv2, Resource::Texture2D * pTexture, color tint = Colors::White ) = 0;
 
 		virtual void FillRectGrad( rectf rect, color color_topleft, color color_topright, color color_bottomleft, color color_bottomright ) = 0;
 
@@ -96,15 +97,15 @@ namespace Fission
 
 		virtual void DrawRoundRect( rectf rect, float rad, color color, float stroke_width, StrokeStyle stroke = StrokeStyle::Default ) = 0;
 
-		virtual void DrawLine( vec2f start, vec2f end, color color, float stroke_width = 1.0f, StrokeStyle stroke = StrokeStyle::Default ) = 0;
+		virtual void DrawLine( base::vector2f start, base::vector2f end, color color, float stroke_width = 1.0f, StrokeStyle stroke = StrokeStyle::Default ) = 0;
 
-		virtual void FillCircle( vec2f point, float radius, color color ) = 0;
+		virtual void FillCircle( base::vector2f point, float radius, color color ) = 0;
 
-		virtual void DrawCircle( vec2f point, float radius, color color, float stroke_width, StrokeStyle stroke = StrokeStyle::Default ) = 0;
+		virtual void DrawCircle( base::vector2f point, float radius, color color, float stroke_width, StrokeStyle stroke = StrokeStyle::Default ) = 0;
 
-		virtual void DrawCircle( vec2f point, float radius, color inner_color, color outer_color, float stroke_width, StrokeStyle stroke = StrokeStyle::Default ) = 0;
+		virtual void DrawCircle( base::vector2f point, float radius, color inner_color, color outer_color, float stroke_width, StrokeStyle stroke = StrokeStyle::Default ) = 0;
 
-		virtual void FillArrow( vec2f start, vec2f end, float width, color color ) = 0;
+		virtual void FillArrow( base::vector2f start, base::vector2f end, float width, color color ) = 0;
 
 		virtual void DrawImage( Resource::Texture2D * pTexture, rectf rect, rectf uv, color tint = Colors::White ) = 0;
 
@@ -114,11 +115,11 @@ namespace Fission
 
 		virtual void SelectFont( const Font * pFont ) = 0;
 
-		virtual TextLayout DrawString( const wchar_t * wstr, vec2f pos, color color ) = 0;
+		virtual TextLayout DrawString( const wchar_t * wstr, base::vector2f pos, color color ) = 0;
 
 		virtual TextLayout CreateTextLayout( const wchar_t * wstr ) = 0;
 
-		virtual TextLayout DrawString( const char * str, vec2f pos, color color ) = 0;
+		virtual TextLayout DrawString( const char * str, base::vector2f pos, color color ) = 0;
 
 		virtual TextLayout CreateTextLayout( const char * str ) = 0;
 

@@ -8,7 +8,7 @@ using namespace Fission;
 
 #include <numbers>
 
-static vec2f res = { 1280,720 };
+static base::vector2f res = { 1280,720 };
 
 scoped<Renderer2D> renderer2d;
 simple_timer gtimer;
@@ -55,9 +55,9 @@ public:
 		renderer2d->DrawRect( ((rectf)Rect).get_expanded(map(x,0.3f,1.0f,0.0f,4.0f)), color( c, x ), 1.5f );
 
 		// center text inside button by getting the text boundries
-		vec2f size = (vec2f)Rect.size();
+		base::vector2f size = base::vector2f::from(vec2f(Rect.size()));
 		auto tl = renderer2d->CreateTextLayout( label.c_str() );
-		renderer2d->DrawString( label.c_str(), (size - vec2f( tl.width, tl.height ))*0.5f + (vec2f)Rect.get_tl(), color(c,x*(1.0f/1.2f)) );
+		renderer2d->DrawString( label.c_str(), (size - base::vector2f( tl.width, tl.height ))*0.5f + base::vector2f::from(vec2f(Rect.get_tl())), color(c,x*(1.0f/1.2f)) );
 	}
 private:
 	recti Rect;
@@ -152,7 +152,7 @@ public:
 	virtual EventResult OnMouseMove(MouseMoveEventArgs&args) override
 	{
 		lazer::ui::MouseMoveEventArgs m;
-		m.pos = args.position;
+		m.pos = vec2i::from( args.position );
 		return (EventResult)wm.OnMouseMove( m );
 	}
 	virtual EventResult OnKeyDown( KeyDownEventArgs&args) override
@@ -229,7 +229,7 @@ class MenuLayer : public ILayer
 public:
 	virtual EventResult OnMouseMove( MouseMoveEventArgs & args ) override
 	{
-		mouse[std::size(mouse)-1] = (vec2f)args.position;
+		mouse[std::size(mouse)-1] = base::vector2f(args.position);
 		return EventResult::Pass;
 	}
 
@@ -247,7 +247,7 @@ public:
 		for( auto i = 0; i < std::size( mouse ); ++i )
 		{
 			float c = (float)(i+1) / (float)std::size( mouse );
-			vec2f diff = ( mouse[i] - center );
+			base::vector2f diff = ( mouse[i] - center );
 
 			renderer2d->FillArrow( center + diff*0.5f, mouse[i] - diff*0.2f, c*20.0f, col*c );
 
@@ -277,8 +277,8 @@ public:
 		renderer2d->Render();
 	}
 private:
-	vec2f mouse[20];
-	vec2f center = res * 0.5f;
+	base::vector2f mouse[20];
+	base::vector2f center = res * 0.5f;
 	float hue = 0.0f;
 	float t = 0.0f;
 };

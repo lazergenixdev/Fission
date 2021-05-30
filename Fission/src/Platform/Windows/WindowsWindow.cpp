@@ -184,10 +184,10 @@ namespace Fission::Platform {
 
                 auto size = pthis->GetWindowsSize();
 
-                vec2i & pos = pthis->m_Properties.position;
+                auto & pos = pthis->m_Properties.position;
 
-                pos.x = std::max( pos.x, 0 );
-                pos.y = std::max( pos.y, 0 );
+                // TODO: find better way to not have window not be offscreen.
+                pos.x = std::max( pos.x, 0 ), pos.y = std::max( pos.y, 0 );
 
                 if( bool( pthis->m_Properties.flags & Flags::CenterWindow ) )
                 {
@@ -195,7 +195,8 @@ namespace Fission::Platform {
                     auto hMonitor = pthis->m_pMonitor->native_handle();
                     MONITORINFO info; info.cbSize = sizeof( info );
                     GetMonitorInfoA( hMonitor, &info );
-                    pos = vec2i(info.rcMonitor.left,info.rcMonitor.top) + ( mode->resolution - size ) / 2;
+                    auto offset = base::vector2i( mode->resolution.x - size.x, mode->resolution.y - size.y ) / 2;
+                    pos = base::vector2i(info.rcMonitor.left,info.rcMonitor.top) + offset;
                 }
 
                 pthis->m_Handle = CreateWindowExW(
@@ -486,7 +487,7 @@ namespace Fission::Platform {
         {
             auto point = MAKEPOINTS( lParam );
             if( pWindow && !pWindow->m_bFullscreenMode )
-                pWindow->m_Properties.position = vec2i::from( point );
+                pWindow->m_Properties.position = base::vector2i::from( point );
             break;
         }
         //case WM_SIZING:

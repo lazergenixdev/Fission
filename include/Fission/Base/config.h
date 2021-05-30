@@ -7,9 +7,9 @@
 #define _FISSION_BASE_PUBLIC_END }
 
 #define _FISSION_BASE_ALIASES(N) \
-using N##f = N<float>;  \
-using N##d = N<double>;  \
-using N##l = N<long long>;\
+using N##f = N<float>;            \
+using N##d = N<double>;            \
+using N##l = N<long long>;          \
 using N##i = N<int>
 
 _FISSION_BASE_BEGIN

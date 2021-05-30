@@ -65,7 +65,7 @@ namespace Fission {
 
 				for( int i = 0; i < 20; i++ )
 				{
-					m_pRenderer2D->DrawString( L"^", vec2( offset, extend - m_FontSize * 2.0f - m_BottomPadding ), Colors::White );
+					m_pRenderer2D->DrawString( L"^", base::vector2f( offset, extend - m_FontSize * 2.0f - m_BottomPadding ), Colors::White );
 					offset += space;
 				}
 			}
@@ -79,11 +79,11 @@ namespace Fission {
 
 			consoleInput += m_CommandText.string();
 
-			m_pRenderer2D->DrawString( consoleInput.c_str(), vec2f( 8.0f, extend - m_FontSize - m_BottomPadding - 1.0f ), Colors::White );
+			m_pRenderer2D->DrawString( consoleInput.c_str(), base::vector2f( 8.0f, extend - m_FontSize - m_BottomPadding - 1.0f ), Colors::White );
 
 			if( m_CommandText.empty() )
 			{
-				m_pRenderer2D->DrawString( L"  Enter a command . . .", vec2f( 8.0f, extend - m_FontSize - m_BottomPadding - 1.0f ), Colors::Gray );
+				m_pRenderer2D->DrawString( L"  Enter a command . . .", base::vector2f( 8.0f, extend - m_FontSize - m_BottomPadding - 1.0f ), Colors::Gray );
 			}
 
 			m_pRenderer2D->Render();

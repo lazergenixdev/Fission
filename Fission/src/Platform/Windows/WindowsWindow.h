@@ -45,7 +45,7 @@ namespace Fission::Platform
 
 		virtual void Close() override;
 
-		vec2i GetPosition() const { return m_Properties.position; }
+		base::vector2i GetPosition() const { return m_Properties.position; }
 
 	private:
 		class WindowClass
