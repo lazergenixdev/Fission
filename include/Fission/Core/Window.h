@@ -36,6 +36,7 @@
 #include "Fission/Core/Graphics/Graphics.h"
 #include "Fission/Base/String.h"
 #include "Fission/Base/Math/Vector.h"
+#include "Fission/Base/Size.h"
 
 // todo: implement fixed aspect-ratio flag
 // todo: implement fullscreen
@@ -79,39 +80,39 @@ namespace Fission
 		//! @brief struct defining the properties of a given Window
 		struct Properties
 		{
-			string title = "Window Title";
-			Style style = Style::Default;
-			Flags flags = Flags::Default;
-			base::vector2i position;
-			vec2i size = { 1280, 720 }; // size always refers to client size
-			int monitor_idx = 0; // which monitor to use. (0 is always the primary)
-			SaveID save = NoSaveID;
+			string         title       = "Window Title";
+			base::size     size        = { 1280, 720 }; // size always refers to client size
+			base::vector2i position    = {};
+			Style          style       = Style::Default;
+			Flags          flags       = Flags::Default;
+			int            monitor_idx = 0; // which monitor to use. (0 is always the primary)
+			SaveID         save        = NoSaveID;
 		};
 
 	public:
 
-		FISSION_API static std::unique_ptr<Window> Create( const Properties & props, Graphics * pGraphics, IEventHandler * event_handler );
+		FISSION_API static std::unique_ptr<Window> Create( const Properties & _Properties, Graphics * _Ptr_Graphics, IEventHandler * _Event_Handler );
 
 		virtual ~Window() = default;
 	public:
 
 	//	virtual Input * GetInput() = 0;
 
-		virtual void SetEventHandler( IEventHandler * handler ) = 0;
+		virtual void SetEventHandler( IEventHandler * _Event_Handler ) = 0;
 
-		virtual void SetTitle( const string & title ) = 0;
+		virtual void SetTitle( const string & _Title ) = 0;
 
 		virtual string GetTitle() = 0;
 
-		virtual void SetStyle( Style style ) = 0;
+		virtual void SetStyle( Style _Style ) = 0;
 
 		virtual Style GetStyle() = 0;
 
-		virtual void SetSize( const vec2i & size ) = 0;
+		virtual void SetSize( const base::size & _Size ) = 0;
+
+		virtual base::size GetSize() = 0;
 
 		virtual Resource::SwapChain * GetSwapChain() = 0;
-
-		virtual vec2i GetSize() = 0;
 
 		//! @brief Destroy the platform window and exit it's event loop.
 		//! @note This function evokes the `IEventHandler::OnClose` function

@@ -112,14 +112,14 @@ namespace Fission::Platform {
         return m_Properties.style;
     }
 
-    void WindowsWindow::SetSize( const vec2i & size )
+    void WindowsWindow::SetSize( const base::size & size )
     {
         m_Properties.size = size;
         auto wsize = GetWindowsSize();
-        SendMessageW( m_Handle, FISSION_WINEVENT_SETSIZE, (WPARAM)wsize.x, (LPARAM)wsize.y );
+        SendMessageW( m_Handle, FISSION_WINEVENT_SETSIZE, (WPARAM)wsize.w, (LPARAM)wsize.h );
     }
 
-    vec2i WindowsWindow::GetSize()
+    base::size WindowsWindow::GetSize()
     {
         RECT cr;
         GetClientRect( m_Handle, &cr );
@@ -195,7 +195,7 @@ namespace Fission::Platform {
                     auto hMonitor = pthis->m_pMonitor->native_handle();
                     MONITORINFO info; info.cbSize = sizeof( info );
                     GetMonitorInfoA( hMonitor, &info );
-                    auto offset = base::vector2i( mode->resolution.x - size.x, mode->resolution.y - size.y ) / 2;
+                    auto offset = base::vector2i( mode->resolution.w - size.w, mode->resolution.h - size.h ) / 2;
                     pos = base::vector2i(info.rcMonitor.left,info.rcMonitor.top) + offset;
                 }
 
@@ -205,7 +205,7 @@ namespace Fission::Platform {
                     (LPWSTR)pthis->m_Properties.title.utf16().c_str(),
                     pthis->GetWindowsStyle(),
                     pos.x, pos.y,
-                    size.x, size.y,
+                    size.w, size.h,
                     NULL, NULL,
                     WindowClass::GetInstance(),
                     nullptr
@@ -228,7 +228,7 @@ namespace Fission::Platform {
                 Console::WriteLine( Colors::LightBlue, "Created Window with properties:" );
                 Console::WriteLine( Colors::LightBlue, " - Position: (%d, %d)", pos.x, pos.y );
 
-                Console::WriteLine( Colors::LightBlue, " - Size: [%d x %d]", pthis->m_Properties.size.x, pthis->m_Properties.size.y );
+                Console::WriteLine( Colors::LightBlue, " - Size: [%d x %d]", pthis->m_Properties.size.w, pthis->m_Properties.size.h );
                 Console::WriteLine( Colors::LightBlue, " - Style: %s", sStyle );
 
             }
@@ -326,7 +326,7 @@ namespace Fission::Platform {
                     auto pos = pWindow->GetPosition();
                 //    pWindow->m_pSwapChain->SetFullscreen( false, pWindow->m_pMonitor );
                     pWindow->m_pMonitor->RevertDisplayMode();
-                    SetWindowPos( pWindow->m_Handle, HWND_NOTOPMOST, pos.x, pos.y, size.x, size.y, SWP_SHOWWINDOW );
+                    SetWindowPos( pWindow->m_Handle, HWND_NOTOPMOST, pos.x, pos.y, size.w, size.h, SWP_SHOWWINDOW );
                     ShowWindow( pWindow->m_Handle, SW_RESTORE );
                     pWindow->m_Properties.style = Style::Border;
                     pWindow->m_bFullscreenMode = false;
@@ -342,7 +342,7 @@ namespace Fission::Platform {
                     DisplayMode mode = { {1280,720}, 60 };
                     pWindow->m_pMonitor->SetDisplayMode( &mode );
                 //    pWindow->m_pSwapChain->SetFullscreen( true, pWindow->m_pMonitor );
-                    SetWindowPos( pWindow->m_Handle, HWND_TOPMOST, 0, 0, mode.resolution.x, mode.resolution.y, SWP_SHOWWINDOW );
+                    SetWindowPos( pWindow->m_Handle, HWND_TOPMOST, 0, 0, mode.resolution.w, mode.resolution.h, SWP_SHOWWINDOW );
                 //    SetWindowPos( pWindow->m_Handle, HWND_TOPMOST, 0, 0, mode->resolution.x, mode->resolution.y, SWP_SHOWWINDOW );
                     ShowWindow( pWindow->m_Handle, SW_MAXIMIZE );
                 }
@@ -441,7 +441,7 @@ namespace Fission::Platform {
             SetWindowLongPtrW( hWnd, GWL_STYLE, pWindow->GetWindowsStyle() );
 
             auto size = pWindow->GetWindowsSize();
-            SetWindowPos( hWnd, NULL, 0, 0, size.x, size.y, SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_SHOWWINDOW );
+            SetWindowPos( hWnd, NULL, 0, 0, size.w, size.h, SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_SHOWWINDOW );
 
             return 0;
         }
@@ -614,7 +614,7 @@ namespace Fission::Platform {
         }
     }
 
-    vec2i WindowsWindow::GetWindowsSize()
+    base::size WindowsWindow::GetWindowsSize()
     {
         switch( m_Properties.style )
         {
@@ -625,13 +625,13 @@ namespace Fission::Platform {
 
         RECT wr = {
             0, 0,
-            m_Properties.size.x,
-            m_Properties.size.y,
+            m_Properties.size.w,
+            m_Properties.size.h,
         };
 
         ::AdjustWindowRect( &wr, WS_SYSMENU | WS_THICKFRAME | WS_BORDER | WS_CAPTION, FALSE );
 
-        return vec2i( wr.right - wr.left, wr.bottom - wr.top );
+        return { wr.right - wr.left, wr.bottom - wr.top };
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////

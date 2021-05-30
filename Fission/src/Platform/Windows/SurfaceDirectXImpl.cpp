@@ -12,7 +12,7 @@ namespace Fission {
 		DirectX::ScratchImage scratch;
 		DirectX::ScratchImage converted;
 
-		if( FAILED( hr = DirectX::LoadFromWICFile( _FilePath.wstring().c_str(), DirectX::WIC_FLAGS_NONE, nullptr, scratch ) ) )
+		if( FAILED( hr = DirectX::LoadFromWICFile( _FilePath.c_str(), DirectX::WIC_FLAGS_NONE, nullptr, scratch ) ) )
 		{
 			static char desc[512];
 			DXGetErrorDescriptionA( hr, desc, std::size( desc ) );

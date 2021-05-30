@@ -1,5 +1,6 @@
 #include "SurfaceImpl.h"
 #include <Fission/Base/Exception.h>
+#include <Fission/Base/Math/Vector.h>
 
 namespace Fission {
 
@@ -14,15 +15,15 @@ namespace Fission {
 
 	SurfaceRGBA8_UNormImpl::SurfaceRGBA8_UNormImpl( const Surface::CreateInfo & info )
 	{
-		FISSION_ASSERT( info.width < 16384u, "Texture Width too big!" );
-		FISSION_ASSERT( info.height < 16384u, "Texture Height too big!" );
+		FISSION_ASSERT( info.size.w < 16384, "Texture Width too big!" );
+		FISSION_ASSERT( info.size.h < 16384, "Texture Height too big!" );
 
-		if( info.width > 0u && info.height > 0u )
+		if( info.size.w > 0u && info.size.h > 0u )
 		{
 			// width * height should never overflow, but make sure it doesn't otherwise stupid compiler won't shutup
-			m_pData = std::make_unique<rgba_color8[]>( (size_t)info.width * (size_t)info.height );
-			m_Width = info.width;
-			m_Height = info.height;
+			m_pData = std::make_unique<rgba_color8[]>( (size_t)info.size.w * (size_t)info.size.h );
+			m_Width = info.size.w;
+			m_Height = info.size.h;
 			m_pxCount = m_Width * m_Height;
 			m_cbSize = m_pxCount * sizeof( rgba_color8 );
 			if( info.fillColor.has_value() )
@@ -33,7 +34,7 @@ namespace Fission {
 		}
 	}
 
-	void SurfaceRGBA8_UNormImpl::resize( vec2i _New_Size, ResizeOptions_ _Options ) {
+	void SurfaceRGBA8_UNormImpl::resize( base::size _New_Size, ResizeOptions_ _Options ) {
 		FISSION_THROW_NOT_IMPLEMENTED();
 	}
 	void SurfaceRGBA8_UNormImpl::set_width( int _New_Width, ResizeOptions_ _Options ) {
@@ -44,17 +45,17 @@ namespace Fission {
 	}
 
 
-	void SurfaceRGBA8_UNormImpl::insert( int _X, int _Y, PixelCallback _Source, vec2u _Source_Size )
+	void SurfaceRGBA8_UNormImpl::insert( int _X, int _Y, PixelCallback _Source, base::size _Source_Size )
 	{
-		assert( _X + _Source_Size.x <= m_Width );
-		assert( _Y + _Source_Size.y <= m_Height );
+		assert( _X + _Source_Size.w <= (int)m_Width );
+		assert( _Y + _Source_Size.h <= (int)m_Height );
 
-		for( uint32_t py = 0; py < _Source_Size.y; py++ )
+		for( int py = 0; py < _Source_Size.h; py++ )
 		{
-			uint32_t dst_y = py + _Y;
+			int dst_y = py + _Y;
 			rgba_color8 * copy_dest = &( (rgba_color8 *)this->m_pData.get() )[dst_y * this->m_Width + _X];
 
-			for( uint32_t x = 0; x < _Source_Size.x; x++ )
+			for( int x = 0; x < _Source_Size.w; x++ )
 				copy_dest[x] = _Source( x, py );
 		}
 	}
@@ -66,20 +67,21 @@ namespace Fission {
 			// implement this
 		}
 
-		vec2u start, size;
+		base::vector2i start;
+		base::size size;
 		if( _Source_Rect.has_value() )
-			size = (vec2u)_Source_Rect->size(), start = (vec2u)_Source_Rect->get_tl();
+			size = base::size(_Source_Rect->size()), start = base::vector2i::from(_Source_Rect->get_tl());
 		else
 			size = _Source->size();
 
-		FISSION_ASSERT( _X + size.x <= m_Width );
-		FISSION_ASSERT( _Y + size.y <= m_Height );
+		FISSION_ASSERT( _X + size.w <= m_Width );
+		FISSION_ASSERT( _Y + size.h <= m_Height );
 
-		for( uint32_t py = start.y; py < size.y; py++ )
+		for( int py = start.y; py < size.h; py++ )
 		{
 			rgba_color8 * copy_dest = &this->m_pData[( py + _Y ) * this->m_Width + _X];
 
-			for( uint32_t x = 0; x < size.x; x++ )
+			for( int x = 0; x < size.w; x++ )
 				copy_dest[x] = (rgba_color8)_Source->GetPixel( x + start.x, py );
 		}
 	}
@@ -117,27 +119,27 @@ namespace Fission {
 		return m_pData.get();
 	}
 
-	uint32_t SurfaceRGBA8_UNormImpl::width() const
+	int SurfaceRGBA8_UNormImpl::width() const
 	{
 		return m_Width;
 	}
 
-	uint32_t SurfaceRGBA8_UNormImpl::height() const
+	int SurfaceRGBA8_UNormImpl::height() const
 	{
 		return m_Height;
 	}
 
-	vec2u SurfaceRGBA8_UNormImpl::size() const
+	base::size SurfaceRGBA8_UNormImpl::size() const
 	{
-		return vec2( m_Width, m_Height );
+		return base::size( (int)m_Width, (int)m_Height );
 	}
 
-	uint32_t SurfaceRGBA8_UNormImpl::byte_size() const
+	base::size_t SurfaceRGBA8_UNormImpl::byte_size() const
 	{
 		return m_cbSize;
 	}
 
-	uint32_t SurfaceRGBA8_UNormImpl::pixel_count() const
+	base::size_t SurfaceRGBA8_UNormImpl::pixel_count() const
 	{
 		return m_pxCount;
 	}

@@ -27,9 +27,9 @@ namespace Fission::Platform
 
 		virtual Style GetStyle() override;
 
-		virtual void SetSize( const vec2i & size ) override;
+		virtual void SetSize( const base::size & size ) override;
 
-		virtual vec2i GetSize() override;
+		virtual base::size GetSize() override;
 
 		virtual void DisplayMessageBox( const string & title, const string & info ) override;
 
@@ -89,7 +89,7 @@ namespace Fission::Platform
 
 	public:
 		DWORD GetWindowsStyle();
-		vec2i GetWindowsSize();
+		base::size GetWindowsSize();
 
 	private:
 

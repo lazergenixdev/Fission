@@ -73,8 +73,8 @@ bool WindowsMonitor::SetDisplayMode( const DisplayMode * pMode )
 	devmode.dmSize = sizeof( DEVMODEW );
 
 	EnumDisplaySettingsW( NULL, 0, &devmode );
-	devmode.dmPelsWidth = pMode->resolution.x;
-	devmode.dmPelsHeight = pMode->resolution.y;
+	devmode.dmPelsWidth = pMode->resolution.w;
+	devmode.dmPelsHeight = pMode->resolution.h;
 	devmode.dmDisplayFrequency = pMode->refresh_rate;
 	devmode.dmBitsPerPel = 32;
 	devmode.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;

@@ -106,7 +106,7 @@ namespace Fission {
 					}
 					if( auto size = w.second["Size"] )
 					{
-						props.size = vec2i( size[0].as<int>(0), size[1].as<int>(0) );
+						props.size = base::size( size[0].as<int>(0), size[1].as<int>(0) );
 					}
 					if( auto ssz = w.second["Save Size"] )
 					{
@@ -164,8 +164,8 @@ namespace Fission {
 					{
 						auto out = wnd["Size"];
 						out.SetStyle( YAML::EmitterStyle::Flow );
-						out.push_back( props.size.value().x );
-						out.push_back( props.size.value().y );
+						out.push_back( props.size->width() );
+						out.push_back( props.size->height() );
 					}
 					if( props.flags.has_value() )
 					{

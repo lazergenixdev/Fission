@@ -30,13 +30,14 @@
 
 #pragma once
 #include "Fission/config.h"
+#include "Fission/Base/Size.h"
 
 namespace Fission
 {
 
 struct DisplayMode
 {
-	vec2i resolution;
+	base::size resolution;
 	int refresh_rate;
 };
 

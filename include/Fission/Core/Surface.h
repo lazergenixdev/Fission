@@ -31,6 +31,7 @@
 #pragma once
 #include "Fission/config.h"
 #include "Fission/Base/Color.h"
+#include "Fission/Base/Size.h"
 #include "Serializable.h"
 
 // todo: add documentation
@@ -53,7 +54,7 @@ namespace Fission
 	{
 	public:
 		struct CreateInfo {
-			int width = 0, height = 0;
+			base::size size;
 			std::optional<color> fillColor = {};
 			Texture::Format format = Texture::Format_RGBA8_UNORM;
 		};
@@ -63,10 +64,10 @@ namespace Fission
 			ResizeOptions_Stretch,
 		};
 	public:
-		FISSION_API static std::unique_ptr<Surface> Create( const CreateInfo & _Info = {} );
+		FISSION_API static std::unique_ptr<Surface> Create( const CreateInfo & _Create_Info = {} );
 
 
-		virtual void resize( vec2i _New_Size, ResizeOptions_ _Options = ResizeOptions_Clip ) = 0;
+		virtual void resize( base::size _New_Size, ResizeOptions_ _Options = ResizeOptions_Clip ) = 0;
 		virtual void set_width( int _New_Width, ResizeOptions_ _Options = ResizeOptions_Clip ) = 0;
 		virtual void set_height( int _New_Height, ResizeOptions_ _Options = ResizeOptions_Clip ) = 0;
 
@@ -74,24 +75,24 @@ namespace Fission
 		virtual void PutPixel( int _X, int _Y, color _Color ) = 0;
 		virtual color GetPixel( int _X, int _Y ) const = 0;
 
-		virtual void insert( int _X, int _Y, PixelCallback _Source, vec2u _Source_Size ) = 0;
+		virtual void insert( int _X, int _Y, PixelCallback _Source, base::size _Source_Size ) = 0;
 		virtual void insert( int _X, int _Y, const Surface * _Source, std::optional<recti> _Source_Rect = {} ) = 0;
 
 		// shrink the surface if there is any 'clear_color' on any side
-		virtual void shrink_to_fit( color _Clear_Color = color{} ) = 0;
+		virtual void shrink_to_fit( color _Clear_Color = color{0.0f} ) = 0;
 
 		virtual Texture::Format format() const = 0;
 
 		virtual const void * data() const = 0;
 		virtual void * data() = 0;
 
-		virtual uint32_t width() const = 0;
-		virtual uint32_t height() const = 0;
+		virtual int width() const = 0;
+		virtual int height() const = 0;
 
-		virtual vec2u size() const = 0;
+		virtual base::size size() const = 0;
 
-		virtual uint32_t byte_size() const = 0;
-		virtual uint32_t pixel_count() const = 0;
+		virtual base::size_t byte_size() const = 0;
+		virtual base::size_t pixel_count() const = 0;
 
 		virtual bool empty() const = 0;
 

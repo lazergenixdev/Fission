@@ -26,7 +26,7 @@ namespace Fission
 		{
 			std::optional<Window::Flags>	flags;
 			std::optional<base::vector2i>	position;
-			std::optional<vec2i>			size;
+			std::optional<base::size>		size;
 			std::optional<int>				monitor_idx = 0;
 		};
 

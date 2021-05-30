@@ -13,11 +13,11 @@ namespace Fission
 		virtual bool Load( const file::path & _FilePath ) override;
 		virtual bool Save( const file::path & _FilePath ) const override;
 
-		virtual void resize( vec2i _New_Size, ResizeOptions_ _Options ) override;
+		virtual void resize( base::size _New_Size, ResizeOptions_ _Options ) override;
 		virtual void set_width( int _New_Width, ResizeOptions_ _Options ) override;
 		virtual void set_height( int _New_Height, ResizeOptions_ _Options ) override;
 
-		virtual void insert( int _X, int _Y, PixelCallback _Source, vec2u _Source_Size ) override;
+		virtual void insert( int _X, int _Y, PixelCallback _Source, base::size _Source_Size ) override;
 		virtual void insert( int _X, int _Y, const Surface * _Source, std::optional<recti> _Source_Rect ) override;
 
 		virtual void PutPixel( int _X, int _Y, color _Color ) override;
@@ -28,16 +28,16 @@ namespace Fission
 		virtual Texture::Format format() const override;
 		virtual const void * data() const override;
 		virtual void * data() override;
-		virtual uint32_t width() const override;
-		virtual uint32_t height() const override;
-		virtual vec2u size() const override;
-		virtual uint32_t byte_size() const override;
-		virtual uint32_t pixel_count() const override;
+		virtual int width() const override;
+		virtual int height() const override;
+		virtual base::size size() const override;
+		virtual base::size_t byte_size() const override;
+		virtual base::size_t pixel_count() const override;
 		virtual bool empty() const override;
 
 	private:
-		uint32_t m_Width = 0, m_Height = 0, 
-				m_pxCount = 0, m_cbSize = 0;
+		uint32_t m_Width = 0,   m_Height = 0, 
+		         m_pxCount = 0, m_cbSize = 0;
 		std::unique_ptr<rgba_color8[]> m_pData;
 	};
 
