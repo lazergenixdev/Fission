@@ -457,7 +457,7 @@ namespace Fission::Platform {
 			D3D11_SUBRESOURCE_DATA srd = {};
 			srd.pSysMem = info.pSurface->data();
 			srd.SysMemPitch = info.pSurface->width() * sizeof rgba_color8;
-			srd.SysMemSlicePitch = info.pSurface->byte_size();
+			srd.SysMemSlicePitch = (UINT)info.pSurface->byte_size();
 			pDevice->CreateTexture2D( &bd, &srd, &m_pTexture );
 		}
 		else if( info.filePath ) {

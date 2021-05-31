@@ -631,6 +631,7 @@ namespace rbp {
 /************************************************************************************************************************************/
 
 #include <Fission/Base/Exception.h>
+#include <Fission/Base/Math/Vector.h>
 using namespace Fission;
 
 static nlohmann::json to_json( const metadata & md )
@@ -719,9 +720,12 @@ bool surface_map::Load( const file::path & file )
 		m_MetaData = from_json( desc["__metadata__"] );
 		desc.erase( "__metadata__" );
 
-		vec2f scale = (vec2f)m_Surface->size();
-		if( scale.x <= 0.0f || scale.y <= 0.0f ) return false;
-		scale = { 1.0f / scale.x, 1.0f / scale.y };
+		base::vector2f scale;
+		{
+			auto size = m_Surface->size();
+			if( size.h <= 0 || size.h <= 0 ) return false;
+			scale = { 1.0f / (float)size.w, 1.0f / (float)size.h };
+		}
 
 		for( auto && [key, value] : desc.items() )
 		{
@@ -845,8 +849,8 @@ bool surface_map::build( BuildFlags flags )
 	input.reserve( m_Map.size() );
 	for( auto && [key, subs] : m_Map )
 	{
-		vec2i size = (vec2i)subs.source->size();
-		input.emplace_back( size.x, size.y, &subs );
+		auto size = subs.source->size();
+		input.emplace_back( size.w, size.h, &subs );
 	}
 
 	std::vector<rbp::Rect> out_rects;
@@ -858,12 +862,11 @@ bool surface_map::build( BuildFlags flags )
 	{
 		Surface::CreateInfo info;
 		info.fillColor = color{0.0f};
-		info.width = (uint32_t)m_MaxSize.x;
-		info.height = (uint32_t)m_MaxSize.y;
+		info.size = m_MaxSize;
 		m_Surface = Surface::Create( info );
 	}
 
-	vec2f scale = { 1.0f / (float)m_MaxSize.x, 1.0f / (float)m_MaxSize.y };
+	base::vector2f scale = { 1.0f / (float)m_MaxSize.w, 1.0f / (float)m_MaxSize.h };
 	for( auto && r : out_rects )
 	{
 		sub_surface * sub = reinterpret_cast<sub_surface *>( r.userdata );

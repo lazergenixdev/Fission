@@ -126,8 +126,7 @@ namespace Fission {
 		font.height = float( face->size->metrics.height >> 6 );
 
 		Surface::CreateInfo surf_info;
-		surf_info.width = 1024;
-		surf_info.height = 256;
+		surf_info.size = { 1024, 256 };
 		surf_info.fillColor = color{0.0f};
 		auto pSurface = Surface::Create( surf_info );
 
@@ -151,10 +150,10 @@ namespace Fission {
 			/* now, draw to our target surface */
 			pSurface->insert(
 				node->rc.get_l(), node->rc.get_t(),
-				[&] ( uint32_t x, uint32_t y ) -> color {
+				[&] ( int x, int y ) -> color {
 					return rgba_color8( 255, 255, 255, bitmap.buffer[y * bitmap.width + x] );
 				},
-				vec2u{ bitmap.width, bitmap.rows }
+				base::size{ (int)bitmap.width, (int)bitmap.rows }
 			);
 
 			g.rc = {

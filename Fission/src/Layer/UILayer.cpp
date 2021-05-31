@@ -197,7 +197,7 @@ public:
 
 		g_pRenderer2D->DrawRect( rect, Colors::Black, 2.0f, StrokeStyle::Outside );
 
-		g_pRenderer2D->PushTransform( mat3x2f::Translation( rect.get_tl() ) );
+		g_pRenderer2D->PushTransform( base::matrix2x3f::Translation( rect.get_l(), rect.get_t() ) );
 		DynamicWindow::OnUpdate( dt );
 		g_pRenderer2D->PopTransform();
 	}

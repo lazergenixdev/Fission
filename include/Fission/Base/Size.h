@@ -47,17 +47,24 @@ struct size2
     type w; // Width
     type h; // Height
 
+
+    constexpr size2(const size2& src) = default;
+
     /*! @brief Create null size. */
     constexpr size2():w(static_cast<type>(0)),h(static_cast<type>(0)){}
 
     /*! @brief Create size from a Width and Height. */
     constexpr size2(type _Width,type _Height):w(_Width),h(_Height){}
 
+    /*! @brief Create size from another size type. */
+    template <typename _From>
+    constexpr size2(const size2<_From>&_Src):w(static_cast<type>(_Src.w)),h(static_cast<type>(_Src.w)){}
+
     //! @brief Reinterpret constructor.
     //! @note If the structure is not the same as `_Ty` * 2,
     //!       then the behavior of this function is undefined.
     template <typename _SizeType>
-    explicit constexpr size2(_SizeType _Src): w( *(reinterpret_cast<type *>( &_Src )) ), h( *(reinterpret_cast<type *>( &_Src )+1) )
+    explicit constexpr size2(const _SizeType&_Src): w( *(reinterpret_cast<const type *>( &_Src )) ), h( *(reinterpret_cast<const type *>( &_Src )+1) )
     {
         static_assert( sizeof( _SizeType ) == sizeof( size2 ), "Must be same size in order to reinterpret" );
     }

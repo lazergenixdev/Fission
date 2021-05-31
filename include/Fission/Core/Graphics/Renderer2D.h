@@ -32,7 +32,7 @@
 
 #pragma once
 #include "Fission/config.h"
-#include "Fission/Base/Math/Vector.h"
+#include "Fission/Base/Math/Matrix.h"
 #include "Renderer.h"
 #include "Graphics.h"
 #include "Font.h"
@@ -125,7 +125,7 @@ namespace Fission
 
 		virtual void SetBlendMode( BlendMode mode ) = 0;
 
-		virtual void PushTransform( const mat3x2f & transform ) = 0;
+		virtual void PushTransform( const base::matrix2x3f & transform ) = 0;
 
 		virtual void PopTransform() = 0;
 

@@ -59,7 +59,7 @@ namespace Fission {
 
 		virtual void SetBlendMode( BlendMode mode ) override;
 
-		virtual void PushTransform( const mat3x2f & transform ) override;
+		virtual void PushTransform( const base::matrix2x3f & transform ) override;
 
 		virtual void PopTransform() override;
 
@@ -67,8 +67,8 @@ namespace Fission {
 		void _set_accumulated_transform();
 
 	private:
-		mat3x2f m_accTransform = mat3x2f::Identity();
-		std::vector<mat3x2f> m_TransformStack;
+		base::matrix2x3f m_accTransform = base::matrix2x3f::Identity();
+		std::vector<base::matrix2x3f> m_TransformStack;
 
 	private:
 		Graphics * m_pGraphics;
@@ -125,7 +125,7 @@ namespace Fission {
 			struct sincos { float sin, cos; };
 			static std::vector<sincos> TrigCache;
 
-			const mat3x2f * mat;
+			const base::matrix2x3f * mat;
 		};
 
 		std::vector<DrawData> m_DrawBuffer;

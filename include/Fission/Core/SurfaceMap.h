@@ -138,7 +138,7 @@ namespace Fission {
     class surface_map : public ISerializable
     {
     public:
-		static constexpr int MaxWidth = 8192/2;
+		static constexpr int MaxWidth = 8192 / 2;
 		static constexpr int MaxHeight = 8192 / 2;
 
 		using iterator = std::unordered_map<std::string, sub_surface>::iterator;
@@ -187,7 +187,7 @@ namespace Fission {
         FISSION_API std::unique_ptr<Surface> && release();
 
     private:
-        vec2i m_MaxSize;
+        base::size m_MaxSize;
         metadata m_MetaData;
 
         std::unordered_map<std::string,sub_surface> m_Map;
