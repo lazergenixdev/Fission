@@ -189,7 +189,7 @@ namespace Fission::Platform {
                 // TODO: find better way to not have window not be offscreen.
                 pos.x = std::max( pos.x, 0 ), pos.y = std::max( pos.y, 0 );
 
-                if( bool( pthis->m_Properties.flags & Flags::CenterWindow ) )
+                if( pthis->m_Properties.flags & Flags::CenterWindow )
                 {
                     auto mode = pthis->m_pMonitor->GetCurrentDisplayMode();
                     auto hMonitor = pthis->m_pMonitor->native_handle();

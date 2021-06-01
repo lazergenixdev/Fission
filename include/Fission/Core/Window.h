@@ -31,12 +31,12 @@
 #pragma once
 #include "Fission/config.h"
 #include "Input/Event.h"
-#include "lazer/utility.h"
 #include "Fission/Core/Monitor.h"
 #include "Fission/Core/Graphics/Graphics.h"
 #include "Fission/Base/String.h"
 #include "Fission/Base/Math/Vector.h"
 #include "Fission/Base/Size.h"
+#include "Fission/Base/Utility/BitFlag.h"
 
 // todo: implement fixed aspect-ratio flag
 // todo: implement fullscreen
@@ -65,16 +65,17 @@ namespace Fission
 			Default = Border
 		};
 
-		enum class Flags : utility::flag
+		enum Flags : utility::bit_flag<32>
 		{
 			None					= 0,
-			RestrictAspectRatio		= utility::make_flag<0>, /* Restrict the window to only have one aspect ratio. */
-			CenterWindow			= utility::make_flag<1>, /* Center the window to the screen when created. */
-			SavePosition			= utility::make_flag<2>, /* Saves the window position when closed. */
-			SaveSize				= utility::make_flag<3>, /* Saves the window size when closed. */
+			RestrictAspectRatio		= utility::make_flag<0,32>, /* Restrict the window to only have one aspect ratio. */
+			CenterWindow			= utility::make_flag<1,32>, /* Center the window to the screen when created. */
+			SavePosition			= utility::make_flag<2,32>, /* Saves the window position when closed. */
+			SaveSize				= utility::make_flag<3,32>, /* Saves the window size when closed. */
 
 			Default					= RestrictAspectRatio | SavePosition | SaveSize | CenterWindow,
 		};
+		using Flag_t = utility::bit_flag_t<Flags>;
 
 
 		//! @brief struct defining the properties of a given Window
@@ -84,7 +85,7 @@ namespace Fission
 			base::size     size        = { 1280, 720 }; // size always refers to client size
 			base::vector2i position    = {};
 			Style          style       = Style::Default;
-			Flags          flags       = Flags::Default;
+			Flag_t         flags       = Flags::Default;
 			int            monitor_idx = 0; // which monitor to use. (0 is always the primary)
 			SaveID         save        = NoSaveID;
 		};

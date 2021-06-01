@@ -24,7 +24,7 @@ namespace Fission
 
 		struct OptWindowProperties
 		{
-			std::optional<Window::Flags>	flags;
+			std::optional<Window::Flag_t>	flags;
 			std::optional<base::vector2i>	position;
 			std::optional<base::size>		size;
 			std::optional<int>				monitor_idx = 0;

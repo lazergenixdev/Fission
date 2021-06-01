@@ -25,7 +25,7 @@ namespace Fission {
 		auto & props = it->second;
 
 		if( props.flags.has_value() )
-			(utility::flag &)pFallback->flags |= (utility::flag &)props.flags.value();
+			utility::set_flag( pFallback->flags, props.flags.value() );
 
 		if( props.position.has_value() )
 			pFallback->position = props.position.value();
@@ -102,7 +102,7 @@ namespace Fission {
 					}
 					if( auto spos = w.second["Save Position"] )
 					{
-						(utility::flag &)props.flags |= utility::flag( spos.as<bool>(true) ? Window::Flags::SavePosition : Window::Flags::None );
+						utility::set_flag( props.flags.value(), spos.as<bool>(true) ? Window::Flags::SavePosition : Window::Flags::None );
 					}
 					if( auto size = w.second["Size"] )
 					{
@@ -110,7 +110,7 @@ namespace Fission {
 					}
 					if( auto ssz = w.second["Save Size"] )
 					{
-						(utility::flag &)props.flags |= utility::flag( ssz.as<bool>(true) ? Window::Flags::SaveSize : Window::Flags::None );
+						utility::set_flag( props.flags.value(), ssz.as<bool>(true) ? Window::Flags::SaveSize : Window::Flags::None );
 					}
 					if( auto monitor = w.second["Monitor"] )
 					{
