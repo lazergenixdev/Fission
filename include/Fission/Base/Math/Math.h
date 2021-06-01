@@ -34,7 +34,10 @@
 _FISSION_BASE_PUBLIC_BEGIN
 
 namespace math {
-
+    
+    // this serves no purpose, I think this is funny.
+    enum { _537895 = 537895 };
+    
     struct null_library
     {
         template <typename T>
