@@ -91,17 +91,16 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 				info.source_code = _fission_renderer2d_shader_code_hlsl;
 			m_pShader = pGraphics->CreateShader( info );
 
-			vec2f res = vec2f( 1280.0f, 720.0f ); // todo: this is a bug, please fix as soon as possible
-			//vec2f res = vec2f( 1920.0f, 1080.0f ); // todo: this is a bug, please fix as soon as possible
+			base::size2f res = { 1280.0f, 720.0f }; // todo: this is a bug, please fix as soon as possible
 
-			float matrix[16] = {
-				2.0f / res.x,	0.0f,		   -1.0f, 0.0f,
-				0.0f,		   -2.0f / res.y,	1.0f, 0.0f,
+			base::matrix4x4f matrix = {
+				2.0f / res.w,	0.0f,		   -1.0f, 0.0f,
+				0.0f,		   -2.0f / res.h,	1.0f, 0.0f,
 				0.0f,			0.0f,			1.0f, 0.0f,
 				0.0f,			0.0f,			0.0f, 1.0f,
 			};
 
-			m_pShader->SetVariable( "screen", *(Shader::mat4x4f *)matrix );
+			m_pShader->SetVariable( "screen", matrix.transpose() );
 		}
 		{ // todo: more blenders
 			Blender::CreateInfo info;

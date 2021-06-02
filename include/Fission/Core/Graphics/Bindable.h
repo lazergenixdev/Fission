@@ -33,6 +33,7 @@
 #include "Fission/Core/Surface.h"
 #include "Fission/Core/Monitor.h"
 #include "VertexLayout.h"
+#include "Fission/Base/Math/Matrix.h"
 
 namespace Fission 
 { 
@@ -67,7 +68,7 @@ namespace Fission::Resource
 			const wchar_t * filePath = nullptr;
 			Surface * pSurface = nullptr;
 			Texture::Format format = Texture::Format_RGBA8_UNORM;
-			int width = 0, height = 0;
+			base::size size = {};
 		};
 	public:
 		virtual uint32_t GetWidth() = 0;
@@ -84,14 +85,14 @@ namespace Fission::Resource
 	public:
 
 		struct CreateInfo {
-			vec2i size = {};
+			base::size size = {};
 			Texture::Format format = Texture::Format_RGBA8_UNORM;
 		};
 
 		using Properties = CreateInfo; // optional alias
 
 	public:
-		virtual vec2i GetSize() = 0;
+		virtual base::size GetSize() = 0;
 
 		virtual void Clear( color clear_color ) = 0;
 
@@ -106,13 +107,13 @@ namespace Fission::Resource
 
 		struct CreateInfo {
 			Window * pWindow;
-			vec2i size = {};
+			base::size size = {};
 			Texture::Format format = Texture::Format_RGBA8_UNORM;
 		};
 
 	public:
 
-		virtual vec2i GetSize() = 0;
+		virtual base::size GetSize() = 0;
 
 	//	virtual FrameBuffer * GetBackBuffer() = 0;
 
@@ -175,34 +176,26 @@ namespace Fission::Resource
 			VertexLayout * pVertexLayout;
 		};
 
-		// temp
-		using mat3x3f = struct {
-			float data[3*3];
-		};
-		using mat4x4f = struct {
-			float data[4*4];
-		};
-
 	public:
 		virtual bool SetVariable( const char * name, float val ) = 0;
-		virtual bool SetVariable( const char * name, vec2f val ) = 0;
-		virtual bool SetVariable( const char * name, vec3f val ) = 0;
-		virtual bool SetVariable( const char * name, vec4f val ) = 0;
+		virtual bool SetVariable( const char * name, base::vector2f val ) = 0;
+		virtual bool SetVariable( const char * name, base::vector3f val ) = 0;
+		virtual bool SetVariable( const char * name, base::vector4f val ) = 0;
 
 		virtual bool SetVariable( const char * name, int val ) = 0;
-		virtual bool SetVariable( const char * name, vec2i val ) = 0;
-		virtual bool SetVariable( const char * name, vec3i val ) = 0;
-		virtual bool SetVariable( const char * name, vec4i val ) = 0;
+		virtual bool SetVariable( const char * name, base::vector2i val ) = 0;
+		virtual bool SetVariable( const char * name, base::vector3i val ) = 0;
+		virtual bool SetVariable( const char * name, base::vector4i val ) = 0;
 
-		virtual bool SetVariable( const char * name, mat2x2f val ) = 0;
-		virtual bool SetVariable( const char * name, mat3x2f val ) = 0;
-		virtual bool SetVariable( const char * name, mat3x3f val ) = 0;
-		virtual bool SetVariable( const char * name, mat4x4f val ) = 0;
+		virtual bool SetVariable( const char * name, base::matrix2x2f val ) = 0;
+		virtual bool SetVariable( const char * name, base::matrix2x3f val ) = 0;
+		virtual bool SetVariable( const char * name, base::matrix3x3f val ) = 0;
+		virtual bool SetVariable( const char * name, base::matrix4x4f val ) = 0;
 
 	//	virtual bool SetVariable( const char * name, float * pBegin, uint32_t count ) = 0;
 	//	virtual bool SetVariable( const char * name, int * pBegin, uint32_t count ) = 0;
 
-		inline bool SetVariable( const char * name, color val ) { return SetVariable( name, *(vec4f *)&val ); };
+		inline bool SetVariable( const char * name, rgba_colorf val ) { return SetVariable( name, *(base::vector4f *)&val ); };
 	};
 
 	//class Topology : public Bindable

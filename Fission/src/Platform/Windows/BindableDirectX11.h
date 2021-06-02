@@ -129,19 +129,19 @@ namespace Fission::Platform {
 		virtual void Unbind() override;
 
 		virtual bool SetVariable( const char * name, float val ) override;
-		virtual bool SetVariable( const char * name, vec2f val ) override;
-		virtual bool SetVariable( const char * name, vec3f val ) override;
-		virtual bool SetVariable( const char * name, vec4f val ) override;
+		virtual bool SetVariable( const char * name, base::vector2f val ) override;
+		virtual bool SetVariable( const char * name, base::vector3f val ) override;
+		virtual bool SetVariable( const char * name, base::vector4f val ) override;
 
 		virtual bool SetVariable( const char * name, int val ) override;
-		virtual bool SetVariable( const char * name, vec2i val ) override;
-		virtual bool SetVariable( const char * name, vec3i val ) override;
-		virtual bool SetVariable( const char * name, vec4i val ) override;
+		virtual bool SetVariable( const char * name, base::vector2i val ) override;
+		virtual bool SetVariable( const char * name, base::vector3i val ) override;
+		virtual bool SetVariable( const char * name, base::vector4i val ) override;
 
-		virtual bool SetVariable( const char * name, mat2x2f val ) override;
-		virtual bool SetVariable( const char * name, mat3x2f val ) override;
-		virtual bool SetVariable( const char * name, mat3x3f val ) override;
-		virtual bool SetVariable( const char * name, mat4x4f val ) override;
+		virtual bool SetVariable( const char * name, base::matrix2x2f val ) override;
+		virtual bool SetVariable( const char * name, base::matrix2x3f val ) override;
+		virtual bool SetVariable( const char * name, base::matrix3x3f val ) override;
+		virtual bool SetVariable( const char * name, base::matrix4x4f val ) override;
 
 	private:
 		template <typename T>
@@ -205,7 +205,7 @@ namespace Fission::Platform {
 	public:
 		SwapChainDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info );
 
-		virtual vec2i GetSize() override;
+		virtual base::size GetSize() override;
 
 	//	virtual Resource::FrameBuffer * GetBackBuffer() override;
 
@@ -221,7 +221,7 @@ namespace Fission::Platform {
 
 	private:
 		uint32_t *							m_pSyncInterval = nullptr;
-		vec2i								m_Resolution;
+		base::size							m_Resolution;
 		D3D11_VIEWPORT						m_ViewPort;
 		ID3D11DeviceContext *				m_pContext;
 		com_ptr<ID3D11RenderTargetView>		m_pRenderTargetView;
