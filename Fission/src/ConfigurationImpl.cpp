@@ -60,6 +60,10 @@ namespace Fission {
 		path.replace_extension( ".yml" );
 	}
 
+	// Get a reference to the underlying value of the optional,
+	// setting its value to `def` if opt has no value.
+	template <typename T, typename K>
+	auto & getopt( std::optional<T> & opt, const K & def ) { return opt.has_value() ? ( opt.value() ) : ( opt = static_cast<T>( def ) ).value(); }
 
 	bool Config::Load( file::path _Save_Location ) noexcept
 	{
@@ -102,7 +106,7 @@ namespace Fission {
 					}
 					if( auto spos = w.second["Save Position"] )
 					{
-						utility::set_flag( props.flags.value(), spos.as<bool>(true) ? Window::Flags::SavePosition : Window::Flags::None );
+						utility::set_flag( getopt(props.flags,0), spos.as<bool>(true) ? Window::Flags::SavePosition : Window::Flags::None );
 					}
 					if( auto size = w.second["Size"] )
 					{
@@ -110,7 +114,7 @@ namespace Fission {
 					}
 					if( auto ssz = w.second["Save Size"] )
 					{
-						utility::set_flag( props.flags.value(), ssz.as<bool>(true) ? Window::Flags::SaveSize : Window::Flags::None );
+						utility::set_flag( getopt(props.flags,0), ssz.as<bool>(true) ? Window::Flags::SaveSize : Window::Flags::None );
 					}
 					if( auto monitor = w.second["Monitor"] )
 					{
