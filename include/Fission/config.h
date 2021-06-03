@@ -48,7 +48,7 @@
 #define FISSION_THREAD_SAFE
 
 /* @brief Interface */
-#define fission_Interface struct
+#define Fission_Interface struct
 
 /**
  * standard library includes

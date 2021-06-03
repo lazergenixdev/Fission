@@ -447,7 +447,7 @@ namespace Fission::Platform {
         }
         case FISSION_WINEVENT_MSGBOX:
         {
-            MessageBoxW( hWnd, (LPWSTR)wParam, (LPWSTR)lParam, MB_OK );
+            MessageBoxW( hWnd, (LPWSTR)lParam, (LPWSTR)wParam, MB_OK );
             return 0;
         }
         case FISSION_WINEVENT_CLOSE:

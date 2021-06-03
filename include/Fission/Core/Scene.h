@@ -38,7 +38,7 @@ namespace Fission {
 
 	class Application;
 
-	fission_Interface ILayer : public IEventHandler
+	Fission_Interface ILayer : public IEventHandler
 	{
 		//! @note If you got any resources that need to be sent to the GPU, 
 		//!			now is the time to do them
@@ -83,9 +83,9 @@ namespace Fission {
 		}
 	};
 
-	fission_Interface IConsoleLayer : public ILayer {};
+	Fission_Interface IConsoleLayer : public ILayer {};
 
-	fission_Interface IUILayer : public ILayer {};
+	Fission_Interface IUILayer : public ILayer {};
 
 /* =================================================================================================== */
 /* ------------------------------------------ Scene System ------------------------------------------- */

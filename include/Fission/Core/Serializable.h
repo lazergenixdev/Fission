@@ -36,7 +36,7 @@
 
 namespace Fission {
 
-	fission_Interface ISerializable
+	Fission_Interface ISerializable
 	{
 		virtual bool Load( const std::filesystem::path & _FilePath ) = 0;
 		virtual bool Save( const std::filesystem::path & _FilePath ) const = 0;

@@ -127,32 +127,7 @@ namespace Fission::Platform {
 
 		virtual void Bind() override;
 		virtual void Unbind() override;
-
-		virtual bool SetVariable( const char * name, float val ) override;
-		virtual bool SetVariable( const char * name, base::vector2f val ) override;
-		virtual bool SetVariable( const char * name, base::vector3f val ) override;
-		virtual bool SetVariable( const char * name, base::vector4f val ) override;
-
-		virtual bool SetVariable( const char * name, int val ) override;
-		virtual bool SetVariable( const char * name, base::vector2i val ) override;
-		virtual bool SetVariable( const char * name, base::vector3i val ) override;
-		virtual bool SetVariable( const char * name, base::vector4i val ) override;
-
-		virtual bool SetVariable( const char * name, base::matrix2x2f val ) override;
-		virtual bool SetVariable( const char * name, base::matrix2x3f val ) override;
-		virtual bool SetVariable( const char * name, base::matrix3x3f val ) override;
-		virtual bool SetVariable( const char * name, base::matrix4x4f val ) override;
-
 	private:
-		template <typename T>
-		inline bool _Set( const char * name, const typename T::type & val )
-		{
-			for( auto && cb : m_VertexCBuffers )
-				if( cb.Set<T>( name, val ) ) return true;
-			for( auto && cb : m_PixelCBuffers )
-				if( cb.Set<T>( name, val ) ) return true;
-			return false;
-		}
 
 		static DXGI_FORMAT get_format( Resource::VertexLayoutTypes::Type type );
 	private:
@@ -161,8 +136,6 @@ namespace Fission::Platform {
 		com_ptr<ID3D11InputLayout> m_pInputLayout;
 		com_ptr<ID3D11VertexShader> m_pVertexShader;
 		com_ptr<ID3D11PixelShader> m_pPixelShader;
-		std::vector<PixelConstantBufferDX11> m_PixelCBuffers;
-		std::vector<VertexConstantBufferDX11> m_VertexCBuffers;
 		std::wstring m_Name;
 	};
 

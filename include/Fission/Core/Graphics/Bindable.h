@@ -30,10 +30,11 @@
 
 #pragma once
 #include "Fission/config.h"
+#include "Fission/Base/String.h"
+#include "Fission/Base/Math/Matrix.h"
 #include "Fission/Core/Surface.h"
 #include "Fission/Core/Monitor.h"
 #include "VertexLayout.h"
-#include "Fission/Base/Math/Matrix.h"
 
 namespace Fission 
 { 
@@ -50,15 +51,14 @@ namespace Fission
 
 namespace Fission::Resource
 {
-	struct IBindable
+	Fission_Interface IBindable
 	{
 		virtual void Bind() = 0;
 		virtual void Unbind() = 0;
 	};
 
-	class Texture2D : public IBindable
+	Fission_Interface Texture2D : public IBindable
 	{
-	public:
 		enum class Type {
 			Static, Dynamic,
 		};
@@ -70,7 +70,7 @@ namespace Fission::Resource
 			Texture::Format format = Texture::Format_RGBA8_UNORM;
 			base::size size = {};
 		};
-	public:
+
 		virtual uint32_t GetWidth() = 0;
 		virtual uint32_t GetHeight() = 0;
 		virtual void Bind( int slot ) = 0;
@@ -80,9 +80,8 @@ namespace Fission::Resource
 		virtual Surface * GetSurface() { return nullptr; }
 	};
 
-	class FrameBuffer : public IBindable
+	Fission_Interface FrameBuffer : public IBindable
 	{
-	public:
 
 		struct CreateInfo {
 			base::size size = {};
@@ -91,7 +90,6 @@ namespace Fission::Resource
 
 		using Properties = CreateInfo; // optional alias
 
-	public:
 		virtual base::size GetSize() = 0;
 
 		virtual void Clear( color clear_color ) = 0;
@@ -101,17 +99,13 @@ namespace Fission::Resource
 
 	//! @note SwapChains are created internally when a new window is created;
 	//!			SwapChains may not exist independent of a window.
-	class SwapChain : public IBindable
+	Fission_Interface SwapChain : public IBindable
 	{
-	public:
-
 		struct CreateInfo {
 			Window * pWindow;
 			base::size size = {};
 			Texture::Format format = Texture::Format_RGBA8_UNORM;
 		};
-
-	public:
 
 		virtual base::size GetSize() = 0;
 
@@ -124,9 +118,8 @@ namespace Fission::Resource
 		virtual void Present( vsync_ vsync ) = 0;
 	};
 
-	class VertexBuffer : public IBindable
+	Fission_Interface VertexBuffer : public IBindable
 	{
-	public:
 		enum class Type {
 			Static, Dynamic,
 		};
@@ -137,15 +130,14 @@ namespace Fission::Resource
 			void * pVertexData = nullptr;
 			uint32_t vtxCount;
 		};
-	public:
+
 		virtual void SetData( const void * pVertexData, uint32_t vtxCount ) = 0;
 
 		virtual uint32_t GetCount() = 0;
 	};
 
-	class IndexBuffer : public IBindable
+	Fission_Interface IndexBuffer : public IBindable
 	{
-	public:
 		enum class Type {
 			Static, Dynamic,
 		};
@@ -160,68 +152,64 @@ namespace Fission::Resource
 			void * pIndexData = nullptr;
 			uint32_t idxCount;
 		};
-	public:
+
 		virtual void SetData( const void * pIndexData, uint32_t idxCount ) = 0;
 
 		virtual uint32_t GetCount() = 0;
 	};
 
-	class Shader : public IBindable
+	Fission_Interface ConstantBuffer : public IBindable
 	{
-	public:
+		enum class Type {
+			Static, Dynamic,
+		};
 
 		struct CreateInfo {
-			std::string source_code;
-			std::wstring name;
+			Type type = Type::Dynamic;
+			void * pData = nullptr;
+		};
+
+		virtual void SetData( const void * pIndexData ) = 0;
+	};
+
+	Fission_Interface Shader : public IBindable
+	{
+		struct CreateInfo {
+			string sourceCode;
 			VertexLayout * pVertexLayout;
 		};
-
-	public:
-		virtual bool SetVariable( const char * name, float val ) = 0;
-		virtual bool SetVariable( const char * name, base::vector2f val ) = 0;
-		virtual bool SetVariable( const char * name, base::vector3f val ) = 0;
-		virtual bool SetVariable( const char * name, base::vector4f val ) = 0;
-
-		virtual bool SetVariable( const char * name, int val ) = 0;
-		virtual bool SetVariable( const char * name, base::vector2i val ) = 0;
-		virtual bool SetVariable( const char * name, base::vector3i val ) = 0;
-		virtual bool SetVariable( const char * name, base::vector4i val ) = 0;
-
-		virtual bool SetVariable( const char * name, base::matrix2x2f val ) = 0;
-		virtual bool SetVariable( const char * name, base::matrix2x3f val ) = 0;
-		virtual bool SetVariable( const char * name, base::matrix3x3f val ) = 0;
-		virtual bool SetVariable( const char * name, base::matrix4x4f val ) = 0;
-
-	//	virtual bool SetVariable( const char * name, float * pBegin, uint32_t count ) = 0;
-	//	virtual bool SetVariable( const char * name, int * pBegin, uint32_t count ) = 0;
-
-		inline bool SetVariable( const char * name, rgba_colorf val ) { return SetVariable( name, *(base::vector4f *)&val ); };
 	};
 
-	//class Topology : public Bindable
-	//{
-	//public:
-	//	enum Type {
-	//		LineList, LineStrip, 
-	//		TriangleList, TriangleStrip, 
-	//	};
-
-	//	virtual Type Get() = 0;
-	//	virtual void Set( Type ) = 0;
-	//};
-
-	class Sampler : public IBindable
+	Fission_Interface Topology : public IBindable
 	{
-	public:
-		enum {
+		enum Type {
+			LineList,     LineStrip, 
+			TriangleList, TriangleStrip, 
+		};
+
+		struct CreateInfo {
+			Type type = Type::TriangleList;
+		};
+
+		virtual Type Get() = 0;
+		virtual void Set( Type ) = 0;
+	};
+
+	//!
+	Fission_Interface Sampler : public IBindable
+	{
+		enum Filter {
 			Point, Linear
+		};
+
+		struct CreateInfo {
+			Filter type = Filter::Linear;
 		};
 	};
 
-	class Blender : public IBindable
+	Fission_Interface Blender : public IBindable
 	{
-	public:
-		enum class Blend {
+		enum Blend {
 			Normal, 
 			Multiply, 
 			Add, 
@@ -229,6 +217,7 @@ namespace Fission::Resource
 			Divide, 
 			Source,
 		};
+
 		struct CreateInfo {
 			Blend blend = Blend::Normal;
 		};

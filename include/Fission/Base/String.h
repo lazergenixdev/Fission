@@ -87,7 +87,7 @@ public:
 	using iterator = char_type *;
 	using const_iterator = std::add_const_t<iterator>;
 
-	_string_impl() :
+	_string_impl() noexcept :
 		m_pData( m_Storage ), m_Capacity( 0 ),
 		m_Size( 0 ), m_Storage()
 	{
@@ -177,7 +177,7 @@ public:
 		src.m_Storage[0] = static_cast<char_type>( 0 );
 	}
 
-	_string_impl & operator=( _string_impl && src )
+	_string_impl & operator=( _string_impl && src ) noexcept
 	{
 		_FISSION_STRING_TRACE( "Move Operator\n" );
 		m_pData = src.m_pData;
@@ -289,12 +289,14 @@ public:
 	inline const char_type& operator[](size_t _Index) const { return m_pData[_Index]; }
 
 	inline char_type * data() { return m_pData; }
+	inline const char_type * data()const{ return m_pData; }
+
 	inline size_t size() const { return m_Size; }
 	inline size_t capacity() const { return m_Capacity ? ( m_Capacity - 1 ) : ( std::size( m_Storage ) - 1 ); }
 	inline bool empty() const { return !bool( m_Size ); }
 
-	inline void clear() { m_Size = 0; m_pData[0] = static_cast<char_type>( 0 ); }
-	inline void pop_back() { m_pData[--m_Size] = static_cast<char_type>( 0 ); }
+	inline void clear() noexcept { m_Size = 0; m_pData[0] = static_cast<char_type>( 0 ); }
+	inline void pop_back() noexcept { m_pData[--m_Size] = static_cast<char_type>( 0 ); }
 
 	inline iterator begin() { return iterator( m_pData ); }
 	inline iterator end() { return iterator( m_pData + m_Size ); }

@@ -33,7 +33,14 @@ namespace Fission {
 
 	static constexpr const char * _fission_renderer2d_shader_code_hlsl =
 		R"( 
-	matrix screen;
+	static const float2 res = float2( 1280.0f, 720.0f ); // todo: this is a bug, please fix as soon as possible
+
+	static const matrix screen = transpose( matrix(
+		2.0f / res.x,	0.0f,		   -1.0f, 0.0f,
+		0.0f,		   -2.0f / res.y,	1.0f, 0.0f,
+		0.0f,			0.0f,			1.0f, 0.0f,
+		0.0f,			0.0f,			0.0f, 1.0f
+	) );
 
 struct VS_OUT { 
 	float2 tc : TexCoord; 
@@ -87,20 +94,8 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		{ // Create Shaders
 			Shader::CreateInfo info;
 			info.pVertexLayout = &vl;
-			if( pGraphics->GetAPI() == Graphics::API::DirectX11 )
-				info.source_code = _fission_renderer2d_shader_code_hlsl;
+			info.sourceCode = _fission_renderer2d_shader_code_hlsl;
 			m_pShader = pGraphics->CreateShader( info );
-
-			base::size2f res = { 1280.0f, 720.0f }; // todo: this is a bug, please fix as soon as possible
-
-			base::matrix4x4f matrix = {
-				2.0f / res.w,	0.0f,		   -1.0f, 0.0f,
-				0.0f,		   -2.0f / res.h,	1.0f, 0.0f,
-				0.0f,			0.0f,			1.0f, 0.0f,
-				0.0f,			0.0f,			0.0f, 1.0f,
-			};
-
-			m_pShader->SetVariable( "screen", matrix.transpose() );
 		}
 		{ // todo: more blenders
 			Blender::CreateInfo info;

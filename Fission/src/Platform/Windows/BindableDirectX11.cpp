@@ -5,34 +5,6 @@
 
 namespace Fission::Platform {
 
-	// glorious meta-programming
-#define DEFINE_HLSL_TYPE(N,T,HT,HC,C,R) \
-	struct N { \
-        using type = T; \
-        static constexpr D3D_SHADER_VARIABLE_TYPE hlsltype = HT; \
-        static constexpr D3D_SHADER_VARIABLE_CLASS hlslclass = HC; \
-        static constexpr uint32_t columns = C; \
-        static constexpr uint32_t rows = R; \
-    }
-
-	DEFINE_HLSL_TYPE( HLSLFloat, float, D3D_SVT_FLOAT, D3D_SVC_SCALAR, 1, 1 );
-	DEFINE_HLSL_TYPE( HLSLFloat2, base::vector2f, D3D_SVT_FLOAT, D3D_SVC_VECTOR, 2, 1 );
-	DEFINE_HLSL_TYPE( HLSLFloat3, base::vector3f, D3D_SVT_FLOAT, D3D_SVC_VECTOR, 3, 1 );
-	DEFINE_HLSL_TYPE( HLSLFloat4, base::vector4f, D3D_SVT_FLOAT, D3D_SVC_VECTOR, 4, 1 );
-
-	DEFINE_HLSL_TYPE( HLSLInt, int, D3D_SVT_INT, D3D_SVC_SCALAR, 1, 1 );
-	DEFINE_HLSL_TYPE( HLSLInt2, base::vector2i, D3D_SVT_INT, D3D_SVC_VECTOR, 2, 1 );
-	DEFINE_HLSL_TYPE( HLSLInt3, base::vector3i, D3D_SVT_INT, D3D_SVC_VECTOR, 3, 1 );
-	DEFINE_HLSL_TYPE( HLSLInt4, base::vector4i, D3D_SVT_INT, D3D_SVC_VECTOR, 4, 1 );
-
-	DEFINE_HLSL_TYPE( HLSLFloat2x2, base::matrix2x2f, D3D_SVT_FLOAT, D3D_SVC_MATRIX_COLUMNS, 2, 2 );
-	DEFINE_HLSL_TYPE( HLSLFloat3x2, base::matrix2x3f, D3D_SVT_FLOAT, D3D_SVC_MATRIX_COLUMNS, 3, 2 );
-	DEFINE_HLSL_TYPE( HLSLFloat3x3, base::matrix3x3f, D3D_SVT_FLOAT, D3D_SVC_MATRIX_COLUMNS, 3, 3 );
-	DEFINE_HLSL_TYPE( HLSLMatrix, base::matrix4x4f, D3D_SVT_FLOAT, D3D_SVC_MATRIX_COLUMNS, 4, 4 );
-
-#undef DEFINE_HLSL_TYPE
-
-
 	VertexBufferDX11::VertexBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info )
 		: m_pContext( pContext ), m_Count( info.vtxCount ), m_Stride( info.pVertexLayout->GetStride() ), m_Type( info.type )
 	{
@@ -270,8 +242,8 @@ namespace Fission::Platform {
 		com_ptr<ID3DBlob> pErrorBlob;
 		if( FAILED( 
 			hr = D3DCompile(
-				info.source_code.data(),
-				info.source_code.size(),
+				info.sourceCode.data(),
+				info.sourceCode.size(),
 				nullptr,
 				nullptr,
 				nullptr,
@@ -289,8 +261,8 @@ namespace Fission::Platform {
 
 		if( FAILED(
 			hr = D3DCompile(
-				info.source_code.data(),
-				info.source_code.size(),
+				info.sourceCode.data(),
+				info.sourceCode.size(),
 				nullptr,
 				nullptr,
 				nullptr,
@@ -311,17 +283,10 @@ namespace Fission::Platform {
 		hr = pDevice->CreatePixelShader( pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &m_pPixelShader );
 		create_input_layout();
 
-		// Create Constant Buffers
-		ReflectToConstantBuffers( &m_VertexCBuffers, pDevice, pContext, pVSBlob.Get() );
-		ReflectToConstantBuffers( &m_PixelCBuffers, pDevice, pContext, pPSBlob.Get() );
-
 	}
 
 	void ShaderDX11::Bind()
 	{
-		for( auto && b : m_PixelCBuffers ) b.Bind();
-		for( auto && b : m_VertexCBuffers ) b.Bind();
-
 		m_pContext->IASetInputLayout( m_pInputLayout.Get() );
 		m_pContext->VSSetShader( m_pVertexShader.Get(), nullptr, 0u );
 		m_pContext->PSSetShader( m_pPixelShader.Get(), nullptr, 0u );
@@ -330,21 +295,6 @@ namespace Fission::Platform {
 	void ShaderDX11::Unbind()
 	{
 	}
-	
-	bool ShaderDX11::SetVariable( const char * name, float val ) { return _Set<HLSLFloat>( name, val ); }
-	bool ShaderDX11::SetVariable( const char * name, base::vector2f val ) { return _Set<HLSLFloat2>( name, val ); }
-	bool ShaderDX11::SetVariable( const char * name, base::vector3f val ) { return _Set<HLSLFloat3>( name, val ); }
-	bool ShaderDX11::SetVariable( const char * name, base::vector4f val ) { return _Set<HLSLFloat4>( name, val ); }
-
-	bool ShaderDX11::SetVariable( const char * name, int val ) { return _Set<HLSLInt>( name, val ); }
-	bool ShaderDX11::SetVariable( const char * name, base::vector2i val ) { return _Set<HLSLInt2>( name, val ); }
-	bool ShaderDX11::SetVariable( const char * name, base::vector3i val ) { return _Set<HLSLInt3>( name, val ); }
-	bool ShaderDX11::SetVariable( const char * name, base::vector4i val ) { return _Set<HLSLInt4>( name, val ); }
-
-	bool ShaderDX11::SetVariable( const char * name, base::matrix2x2f val ) { return _Set<HLSLFloat2x2>( name, val ); }
-	bool ShaderDX11::SetVariable( const char * name, base::matrix2x3f val ) { return _Set<HLSLFloat3x2>( name, val ); }
-	bool ShaderDX11::SetVariable( const char * name, base::matrix3x3f val ) { return _Set<HLSLFloat3x3>( name, val ); }
-	bool ShaderDX11::SetVariable( const char * name, base::matrix4x4f val ) { return _Set<HLSLMatrix>( name, val ); }
 
 	DXGI_FORMAT ShaderDX11::get_format( Resource::VertexLayoutTypes::Type type )
 	{
