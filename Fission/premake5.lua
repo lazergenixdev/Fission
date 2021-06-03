@@ -22,14 +22,13 @@ project 'Fission'
 	{
         "%{wks.location}/include",
         "%{IncludeDir.yaml}",
-        "%{IncludeDir.lazerlib}",
+        "%{IncludeDir.json}",
         '%{IncludeDir.freetype}',
-        '%{prj.location}/vendor/json/single_include',
         '%{wks.location}/resources'
 	}
     
     staticruntime "On"
-    defines 'FISSION_BUILD_DLL'
+    defines { 'FISSION_BUILD', 'FISSION_BUILD_DLL=1' }
     
     filter "system:windows"
         files { "resource.h", "Fission.rc" }
