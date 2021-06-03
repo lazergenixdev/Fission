@@ -82,7 +82,7 @@ struct WidgetInfo
 {
 	std::string name;
 	int use_count = 0;
-	ui::window_uid uid = ui::null_window_uid;
+	ui::Widget * widget = nullptr;
 
 	// Internal Flags
 	WidgetType type;
@@ -378,9 +378,10 @@ public:
 				base::rectf::from_center( (float)(int)(numberbox.left() + tl.width) + 0.5f, numberbox.y.average(), 1.0f, tl.height-4.0f ),
 				Colors::White );
 	}
+public:
+	std::string numberText;
 private:
 	std::string label;
-	std::string numberText;
 	ui::rect Rect;
 	bool inTextBox = false;
 	float selectAlpha = 0.0f;
@@ -464,7 +465,14 @@ namespace Fission::UI {
 			}
 			return false;
 		}
-		else( float & ) it->second.data3 = *value; // I love this!
+		else
+		{
+			if( (float &)it->second.data3 != *value && it->second.widget )
+			{
+				static_cast<Slider *>( it->second.widget )->numberText = std::to_string( *value );
+				(float &)it->second.data3 = *value;
+			}
+		}
 
 		return false;
 	}
@@ -499,17 +507,11 @@ void UILayer::OnCreate()
 
 			for( auto && [wk, widget] : w.widgets )
 			{
-				if( widget.uid != ui::null_window_uid && widget.use_count-- <= 0 )
+				if( widget.widget && widget.use_count-- <= 0 )
 				{
-					using namespace ui;
-					auto it = std::find_if( window->widgets.begin(), window->widgets.end(), [widget] ( ui::Widget * w ) { return ( w->getuid() == widget.uid ); } );
-					ui::Window * wnd = * it;
-					if( it != window->widgets.end() )
-					{
-						wnd->Release();
-						delete wnd;
-						widget.uid = ui::null_window_uid;
-					}
+					widget.widget->Release();
+					delete widget.widget;
+					widget.widget = nullptr;
 				}
 			}
 		}
@@ -522,17 +524,11 @@ void UILayer::OnCreate()
 
 		for( auto && [wk, widget] : w.widgets )
 		{
-			if( widget.uid != ui::null_window_uid && widget.use_count-- <= 0 )
+			if( widget.widget && widget.use_count-- <= 0 )
 			{
-				using namespace ui;
-				auto it = std::find_if( window->widgets.begin(), window->widgets.end(), [widget] ( ui::Widget * w ) { return ( w->getuid() == widget.uid ); } );
-				ui::Widget * wnd = *it;
-				if( it != window->widgets.end() )
-				{
-					wnd->Release();
-					delete wnd;
-					widget.uid = ui::null_window_uid;
-				}
+				widget.widget->Release();
+				delete widget.widget;
+				widget.widget = nullptr;
 			}
 		}
 	}
@@ -552,33 +548,36 @@ void UILayer::OnCreate()
 
 			for( auto && [wk, widget] : w.widgets )
 			{
-				if( widget.uid == ui::null_window_uid && widget.use_count > 0 )
+				if( widget.widget == nullptr && widget.use_count > 0 )
 				{
 					auto w = new Slider( widget.name, window->Rect.width(), int( fontSize + window->offsetY+19*window->widgets.size() ), &widget );
 					window->addWidget( w );
-					widget.uid = w->getuid();
+					widget.widget = w;
 				}
 			}
 		}
 
 		auto & w = g_FallbackWindow;
-
-		DogeWindow * window = nullptr;
-		if( w.uid == ui::null_window_uid )
+		if( w.use_count )
 		{
-			window = new DogeWindow( w.name );
-			pWindowManager->addWindow( window );
-			w.uid = window->getuid();
-		}
-		else window = (DogeWindow *)pWindowManager->findWindow( w.uid );
-
-		for( auto && [wk, widget] : w.widgets )
-		{
-			if( widget.uid == ui::null_window_uid && widget.use_count > 0 )
+			--w.use_count;
+			DogeWindow * window = nullptr;
+			if( w.uid == ui::null_window_uid )
 			{
-				auto w = new Slider( widget.name, window->Rect.width(), int( fontSize + window->offsetY + 19 * window->widgets.size() ), &widget );
-				window->addWidget( w );
-				widget.uid = w->getuid();
+				window = new DogeWindow( w.name );
+				pWindowManager->addWindow( window );
+				w.uid = window->getuid();
+			}
+			else window = (DogeWindow *)pWindowManager->findWindow( w.uid );
+
+			for( auto && [wk, widget] : w.widgets )
+			{
+				if( widget.widget == nullptr && widget.use_count > 0 )
+				{
+					auto w = new Slider( widget.name, window->Rect.width(), int( fontSize + window->offsetY + 19 * window->widgets.size() ), &widget );
+					window->addWidget( w );
+					widget.widget = w;
+				}
 			}
 		}
 	}

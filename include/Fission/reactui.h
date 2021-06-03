@@ -54,7 +54,7 @@
 
 #pragma once
 
-#include<algorithm>
+#include <algorithm>
 
 /* begin/end header macros for 3rd-party integration */
 #ifndef _lazer_ui_begin_header_

@@ -230,6 +230,18 @@ public:
 class MenuLayer : public ILayer
 {
 public:
+	virtual EventResult OnKeyDown( KeyDownEventArgs & args ) override
+	{
+		if( args.key == Keys::Space )
+			space_down = true;
+		return EventResult::Pass;
+	}
+	virtual EventResult OnKeyUp( KeyUpEventArgs & args ) override
+	{
+		if( args.key == Keys::Space )
+			space_down = false;
+		return EventResult::Pass;
+	}
 	virtual EventResult OnMouseMove( MouseMoveEventArgs & args ) override
 	{
 		mouse[std::size(mouse)-1] = base::vector2f(args.position);
@@ -239,8 +251,11 @@ public:
 	virtual void OnCreate() override { }
 	virtual void OnUpdate() override
 	{
+		renderer2d->SetBlendMode( BlendMode::Add );
+
 		float dt = gtimer.peeks()*2.0f;
-		hue += dt, t += dt;
+		hue += dt;
+		if( !space_down ) t += dt;
 
 		if( hue >= 1.0f )
 			hue = 0.0f;
@@ -262,28 +277,29 @@ public:
 		renderer2d->DrawString( L"POV: Budget Game Menu", { 400.0f,200.0f }, Colors::White );
 
 		static float scale = 16.0f;
-	//	UI::Debug::Window( "nice" );
+		UI::Debug::Window( "Stuff" );
 		UI::Debug::InputFloat( "scale", &scale );
-
-		static float asd = 41.3f;
-		if( scale > 15.0f )
-		UI::Debug::InputFloat( "aaa", &asd );
+		UI::Debug::InputFloat( "hue", &hue );
+		UI::Debug::InputFloat( "mouse.x", &mouse[std::size(mouse)-1].x );
+		UI::Debug::InputFloat( "mouse.y", &mouse[std::size(mouse)-1].y );
 
 		float k = std::fmodf( t*2.f, std::numbers::pi_v<float>*2.0f );
 		float d = std::numbers::pi_v<float> *2.0f - k;
 		color cc = color( Colors::White, d / std::numbers::pi_v<float>*2.0f );
-		renderer2d->DrawCircle( { 424.0f,214.0f }, k * scale, color{ 0.0f }, cc * 0.9f, k * 10.0f, StrokeStyle::Outside );
-		renderer2d->DrawCircle( { 424.0f,214.0f }, k*scale+ k * 10.0f,cc, cc, d*2.0f, StrokeStyle::Outside );
+		renderer2d->DrawCircle( { 424.0f,214.0f }, k * scale, color( 0.0f ), cc, k * 10.0f, StrokeStyle::Outside );
+		renderer2d->DrawCircle( { 424.0f,214.0f }, k * scale + k * 10.0f,cc, cc, d*2.0f, StrokeStyle::Outside );
 
-		renderer2d->DrawCircle( ( mouse[19] - center ) * 0.75f + center, 0.0f, color( col, 0.2f ), color{ 0.0f }, 100.0f, StrokeStyle::Outside );
+		renderer2d->DrawCircle( ( mouse[19] - center ) * 0.75f + center, 0.0f, color( col, 0.2f ), color( 0.0f ), 100.0f, StrokeStyle::Outside );
 
 		renderer2d->Render();
+		renderer2d->SetBlendMode( BlendMode::Normal );
 	}
 private:
 	base::vector2f mouse[20];
 	base::vector2f center = res * 0.5f;
 	float hue = 0.0f;
 	float t = 0.0f;
+	bool space_down = false;
 };
 
 MenuScene::MenuScene()

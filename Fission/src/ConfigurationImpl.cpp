@@ -2,9 +2,7 @@
 #include <Fission/Core/Console.h>
 
 #include "yaml-cpp/yaml.h"
-#include "lazer/files.h"
 #include <fstream>
-
 
 using namespace Fission;
 
