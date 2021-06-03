@@ -17,17 +17,17 @@ namespace Fission {
 		{
 			if( is_leaf() )
 			{
-				vec2i sz = rc.size();
+				auto sz = rc.size();
 
 				//( if there's already a lightmap here, return )
 				if( isFilled ) return NULL;
 
 				//( if we're too small, return )
-				if( height > sz.y || width > sz.x )
+				if( height > sz.h || width > sz.w )
 					return NULL;
 
 				//( if we're just right, accept )
-				if( sz == vec2i{ width, height } )
+				if( sz == base::size{ width, height } )
 				{
 					isFilled = true;
 					return this;
@@ -38,18 +38,18 @@ namespace Fission {
 				B = new Node;
 
 				//( decide which way to split )
-				auto dw = sz.x - width;
-				auto dh = sz.y - height;
+				auto dw = sz.w - width;
+				auto dh = sz.h - height;
 
 				if( dw > dh )
 				{
-					A->rc = recti( rc.get_l(), rc.get_l() + width, rc.get_t(), rc.get_b() );
-					B->rc = recti( rc.get_l() + width, rc.get_r(), rc.get_t(), rc.get_b() );
+					A->rc = base::recti( rc.left(), rc.left() + width, rc.top(), rc.bottom() );
+					B->rc = base::recti( rc.left() + width, rc.right(), rc.top(), rc.bottom() );
 				}
 				else
 				{
-					A->rc = recti( rc.get_l(), rc.get_r(), rc.get_t(), rc.get_t() + height );
-					B->rc = recti( rc.get_l(), rc.get_r(), rc.get_t() + height, rc.get_b() );
+					A->rc = base::recti( rc.left(), rc.right(), rc.top(), rc.top() + height );
+					B->rc = base::recti( rc.left(), rc.right(), rc.top() + height, rc.bottom() );
 				}
 
 				//( insert into first child we created )
@@ -67,7 +67,7 @@ namespace Fission {
 
 		Node * A = nullptr, * B = nullptr;
 		bool isFilled = false;
-		recti rc;
+		base::recti rc;
 	};
 
 	// Bitmap Font
@@ -131,7 +131,7 @@ namespace Fission {
 		auto pSurface = Surface::Create( surf_info );
 
 		Node root;
-		root.rc = recti( 0, pSurface->width(), 0, pSurface->height() );
+		root.rc = base::recti( 0, pSurface->width(), 0, pSurface->height() );
 
 		auto save_glyph = [&] ( wchar_t ch ) {
 			Font::Glyph g;
@@ -149,7 +149,7 @@ namespace Fission {
 
 			/* now, draw to our target surface */
 			pSurface->insert(
-				node->rc.get_l(), node->rc.get_t(),
+				node->rc.left(), node->rc.top(),
 				[&] ( int x, int y ) -> color {
 					return rgba_color8( 255, 255, 255, bitmap.buffer[y * bitmap.width + x] );
 				},
@@ -157,10 +157,10 @@ namespace Fission {
 			);
 
 			g.rc = {
-				(float)node->rc.get_l() / (float)pSurface->width(),
-				(float)node->rc.get_r() / (float)pSurface->width(),
-				(float)node->rc.get_t() / (float)pSurface->height(),
-				(float)node->rc.get_b() / (float)pSurface->height()
+				(float)node->rc.left() / (float)pSurface->width(),
+				(float)node->rc.right() / (float)pSurface->width(),
+				(float)node->rc.top() / (float)pSurface->height(),
+				(float)node->rc.bottom() / (float)pSurface->height()
 			};
 
 			font.m_GlyphLookup[ch] = (int)font.m_Glyphs.size();
@@ -205,7 +205,7 @@ namespace Fission {
 		((_bm_Font*)pfont.get())->pFallbackGlyph = &( (_bm_Font *)pfont.get() )->m_Glyphs.front();
 	}
 
-	void FontManager::SetFont( const char * key, const file::path & filepath, float pxsize )
+	void FontManager::SetFont( const char * key, const std::filesystem::path & filepath, float pxsize )
 	{
 		auto pFace = freetype::Library::LoadFaceFromFile( filepath );
 

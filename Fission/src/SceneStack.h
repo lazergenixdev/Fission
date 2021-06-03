@@ -1,5 +1,6 @@
 #pragma once
 #include "Fission/Core/Scene.h"
+#include "Fission/Base/Utility/Timer.h"
 #include "Fission/Core/Application.h"
 
 namespace Fission {

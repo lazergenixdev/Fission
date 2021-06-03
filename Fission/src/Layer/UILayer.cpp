@@ -1,10 +1,12 @@
 ﻿#include "UILayer.h"
 #include <Fission/Core/UI/UI.h>
+#include <Fission/Base/Utility/Timer.h>
 #include <Fission/Core/Application.h>
 
 // Everything about this code is awful, please avert your eyes for your own well being. You have been warned.
 
 using namespace Fission;
+using namespace react;
 
 static scoped<Renderer2D>			g_pRenderer2D;
 static std::mutex					g_Mutex;
@@ -116,7 +118,7 @@ namespace Fission
 	EventResult UILayer::OnMouseMove( MouseMoveEventArgs & args )
 	{
 		ui::MouseMoveEventArgs m;
-		m.pos = vec2i::from( args.position );
+		m.pos = args.position;
 		std::scoped_lock lock( g_Mutex );
 		return (EventResult)pWindowManager->OnMouseMove( m );
 	}
@@ -143,7 +145,7 @@ namespace Fission
 	}
 	EventResult UILayer::OnSetCursor( SetCursorEventArgs & args )
 	{
-		lazer::ui::SetCursorEventArgs m;
+		ui::SetCursorEventArgs m;
 		m.cursor = args.cursor;
 		std::scoped_lock lock( g_Mutex );
 		EventResult r = (EventResult)pWindowManager->OnSetCursor( m );
@@ -159,45 +161,45 @@ namespace Fission
 
 static color g_ColorBackground = Colors::make_gray( 0.2f );
 
-class DogeWindow : public lazer::ui::DynamicWindow
+class DogeWindow : public ui::DynamicWindow
 {
 public:
 	DogeWindow( std::string label ) : DynamicWindow( { 100, 212, 100, 258 } ), id(label) {}
-	virtual lazer::ui::Result OnSetCursor( lazer::ui::SetCursorEventArgs & args ) override
+	virtual ui::Result OnSetCursor( ui::SetCursorEventArgs & args ) override
 	{
 		if( DynamicWindow::OnSetCursor( args ) )
 		{
-			auto pos = lazer::ui::GetRectPos( Rect, lazer::ui::g_MousePosition, 8, 0, 8 );
+			auto pos = ui::GetRectPos( Rect, ui::g_MousePosition, 8, 0, 8 );
 			switch( pos )
 			{
-			case lazer::ui::rect_pos_left:			args.cursor = Cursor::Get( Cursor::Default_SizeX ); break;
-			case lazer::ui::rect_pos_right:			args.cursor = Cursor::Get( Cursor::Default_SizeX ); break;
-			case lazer::ui::rect_pos_top:			args.cursor = Cursor::Get( Cursor::Default_SizeY ); break;
-			case lazer::ui::rect_pos_bottom:		args.cursor = Cursor::Get( Cursor::Default_SizeY ); break;
-			case lazer::ui::rect_pos_top_left:		args.cursor = Cursor::Get( Cursor::Default_SizeTLBR ); break;
-			case lazer::ui::rect_pos_top_right:		args.cursor = Cursor::Get( Cursor::Default_SizeBLTR ); break;
-			case lazer::ui::rect_pos_bottom_left:	args.cursor = Cursor::Get( Cursor::Default_SizeBLTR ); break;
-			case lazer::ui::rect_pos_bottom_right:	args.cursor = Cursor::Get( Cursor::Default_SizeTLBR ); break;
+			case ui::rect_pos_left:			args.cursor = Cursor::Get( Cursor::Default_SizeX ); break;
+			case ui::rect_pos_right:			args.cursor = Cursor::Get( Cursor::Default_SizeX ); break;
+			case ui::rect_pos_top:			args.cursor = Cursor::Get( Cursor::Default_SizeY ); break;
+			case ui::rect_pos_bottom:		args.cursor = Cursor::Get( Cursor::Default_SizeY ); break;
+			case ui::rect_pos_top_left:		args.cursor = Cursor::Get( Cursor::Default_SizeTLBR ); break;
+			case ui::rect_pos_top_right:		args.cursor = Cursor::Get( Cursor::Default_SizeBLTR ); break;
+			case ui::rect_pos_bottom_left:	args.cursor = Cursor::Get( Cursor::Default_SizeBLTR ); break;
+			case ui::rect_pos_bottom_right:	args.cursor = Cursor::Get( Cursor::Default_SizeTLBR ); break;
 			default: break;
 			}
 		}
-		return lazer::ui::Handled;
+		return ui::Handled;
 	}
 
 	virtual void OnUpdate( float dt ) override
 	{
-		rectf rect = (rectf)Rect;
+		base::rectf rect = (base::rectf)Rect;
 
 		auto tl = g_pRenderer2D->CreateTextLayout( id.c_str() );
 
 		g_pRenderer2D->FillRect( rect, g_ColorBackground );
-		g_pRenderer2D->FillRect( rectf::from_tl({rect.get_l()+60.0f,rect.get_t()},{rect.width()-60.0f,tl.height}), Colors::make_gray( 0.1f ) );
+		g_pRenderer2D->FillRect( base::rectf::from_topleft(rect.left()+60.0f,rect.top(),rect.width()-60.0f,tl.height), Colors::make_gray( 0.1f ) );
 		
-		g_pRenderer2D->DrawString( id.c_str(), base::vector2f::from(rect.get_tl())+base::vector2f((60.0f-tl.width)*0.5f,0.0f), Colors::Snow );
+		g_pRenderer2D->DrawString( id.c_str(), rect.topLeft()+base::vector2f((60.0f-tl.width)*0.5f,0.0f), Colors::Snow );
 
 		g_pRenderer2D->DrawRect( rect, Colors::Black, 2.0f, StrokeStyle::Outside );
 
-		g_pRenderer2D->PushTransform( base::matrix2x3f::Translation( rect.get_l(), rect.get_t() ) );
+		g_pRenderer2D->PushTransform( base::matrix2x3f::Translation( rect.left(), rect.top() ) );
 		DynamicWindow::OnUpdate( dt );
 		g_pRenderer2D->PopTransform();
 	}
@@ -207,7 +209,7 @@ private:
 	std::string id;
 };
 
-class Slider : public lazer::ui::Slider
+class Slider : public ui::Slider
 {
 public:
 	static constexpr int s_PaddingX = 5;
@@ -243,31 +245,31 @@ public:
 		resolve_number();
 	}
 
-	virtual lazer::ui::Result OnMouseMove( lazer::ui::MouseMoveEventArgs & args ) override
+	virtual ui::Result OnMouseMove( ui::MouseMoveEventArgs & args ) override
 	{
 		if( dragging )
 		{
-			vec2i offset = args.pos - startDrag;
+			ui::point offset = args.pos - startDrag;
 			drag_number( startNumber + float(offset.x/2)*0.1f );
-			return lazer::ui::Handled;
+			return ui::Handled;
 		}
 
-		rect dragRect = { Rect.get_l(), Rect.x.get_average(), Rect.get_t(), Rect.get_b() };
+		ui::rect dragRect = { Rect.left(), Rect.x.average(), Rect.top(), Rect.bottom() };
 
-		int center = Rect.x.get_average();
-		int pos = ui::GetMousePosition().x - parent->Rect.get_l();
+		int center = Rect.x.average();
+		int pos = ui::GetMousePosition().x - parent->Rect.left();
 
 		inTextBox = ( pos > center );
 
-		return lazer::ui::Handled;
+		return ui::Handled;
 	}
-	virtual lazer::ui::Result OnMouseLeave() override
+	virtual ui::Result OnMouseLeave() override
 	{
 		inTextBox = false;
-		return lazer::ui::Handled;
+		return ui::Handled;
 	}
 
-	virtual lazer::ui::Result OnKeyDown( lazer::ui::KeyDownEventArgs & args ) override
+	virtual ui::Result OnKeyDown( ui::KeyDownEventArgs & args ) override
 	{
 		switch( args.key )
 		{
@@ -284,9 +286,9 @@ public:
 		}
 		default: break;
 		}
-		return lazer::ui::Handled;
+		return ui::Handled;
 	}
-	virtual lazer::ui::Result OnKeyUp( lazer::ui::KeyUpEventArgs & args ) override
+	virtual ui::Result OnKeyUp( ui::KeyUpEventArgs & args ) override
 	{
 		switch( args.key )
 		{
@@ -302,10 +304,10 @@ public:
 		}
 		default: break;
 		}
-		return lazer::ui::Handled;
+		return ui::Handled;
 	}
 
-	virtual lazer::ui::Result OnTextInput( lazer::ui::TextInputEventArgs & args ) override
+	virtual ui::Result OnTextInput( ui::TextInputEventArgs & args ) override
 	{
 		switch( args.ch )
 		{
@@ -324,15 +326,15 @@ public:
 		case '.':
 			numberText += (char)args.ch; break;
 		}
-		return lazer::ui::Handled;
+		return ui::Handled;
 	}
 
-	virtual lazer::ui::Result OnSetCursor( lazer::ui::SetCursorEventArgs & args ) override
+	virtual ui::Result OnSetCursor( ui::SetCursorEventArgs & args ) override
 	{
-		rect dragRect = { Rect.get_l(), Rect.x.get_average(), Rect.get_t(), Rect.get_b() };
+		ui::rect dragRect = { Rect.left(), Rect.x.average(), Rect.top(), Rect.bottom() };
 
-		int center = Rect.x.get_average();
-		int pos = ui::GetMousePosition().x - parent->Rect.get_l();
+		int center = Rect.x.average();
+		int pos = ui::GetMousePosition().x - parent->Rect.left();
 
 		if( pos < center )
 			args.cursor = Cursor::Get( Cursor::Default_Arrow );
@@ -340,7 +342,7 @@ public:
 			args.cursor = Cursor::Get( Cursor::Default_TextInput );
 
 
-		return lazer::ui::Pass;
+		return ui::Pass;
 	}
 
 	virtual void OnParentResize( ui::rect r ) override
@@ -355,11 +357,11 @@ public:
 
 	virtual void OnUpdate( float dt ) override
 	{
-		rectf rect = (rectf)Rect;
+		base::rectf rect = (base::rectf)Rect;
 
-		g_pRenderer2D->DrawString( label.c_str(), base::vector2f::from( rect.get_tl() ), this == parent->GetHover() ? Colors::White : Colors::make_gray( 0.7f ) );
+		g_pRenderer2D->DrawString( label.c_str(), rect.topLeft(), this == parent->GetHover() ? Colors::White : Colors::make_gray( 0.7f ) );
 
-		rectf numberbox = { rect.x.get_average(), rect.get_r(), rect.get_t(), rect.get_b() };
+		base::rectf numberbox = { rect.x.average(), rect.right(), rect.top(), rect.bottom() };
 
 		g_pRenderer2D->FillRect( numberbox, Colors::make_gray( 0.15f ) );
 
@@ -369,22 +371,22 @@ public:
 		if( selectAlpha > 0.0f )
 		g_pRenderer2D->DrawRect( numberbox, color(1.0f, 1.0f, 1.0f, selectAlpha), 1.0f, StrokeStyle::Outside );
 
-		auto tl = g_pRenderer2D->DrawString( numberText.c_str(), base::vector2f::from(numberbox.get_tl()), Colors::White );
+		auto tl = g_pRenderer2D->DrawString( numberText.c_str(), base::vector2f::from(numberbox.topLeft()), Colors::White );
 
 		if( this == parent->GetFocus() && not dragging )
 			g_pRenderer2D->FillRect(
-				rectf::from_center( vec2f( (float)(int)(numberbox.get_l() + tl.width) + 0.5f, numberbox.y.get_average() ), 1.0f, tl.height-4.0f ),
+				base::rectf::from_center( (float)(int)(numberbox.left() + tl.width) + 0.5f, numberbox.y.average(), 1.0f, tl.height-4.0f ),
 				Colors::White );
 	}
 private:
 	std::string label;
 	std::string numberText;
-	recti Rect;
+	ui::rect Rect;
 	bool inTextBox = false;
 	float selectAlpha = 0.0f;
 
 	bool dragging = false;
-	vec2i startDrag = {};
+	ui::point startDrag = {};
 	float startNumber = 0.0f;
 
 	WidgetInfo * pWidget;
@@ -524,7 +526,7 @@ void UILayer::OnCreate()
 			{
 				using namespace ui;
 				auto it = std::find_if( window->widgets.begin(), window->widgets.end(), [widget] ( ui::Widget * w ) { return ( w->getuid() == widget.uid ); } );
-				ui::Window * wnd = *it;
+				ui::Widget * wnd = *it;
 				if( it != window->widgets.end() )
 				{
 					wnd->Release();

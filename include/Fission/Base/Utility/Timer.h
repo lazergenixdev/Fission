@@ -35,8 +35,8 @@
 _FISSION_BASE_PUBLIC_BEGIN
 
 //! @brief Wrapper for a std::chrono clock to measure duration between points in time.
-template <typename _Clock = std::chrono::high_resolution_clock>
-class simple_timer
+template <typename _Clock>
+class simple_tmr
 {
 public:
     using clock = _Clock;
@@ -44,14 +44,14 @@ public:
 public:
 
     //! @brief Start a simple timer.
-    simple_timer() : m_Last( clock::now() ) {}
+    simple_tmr() : m_Last( clock::now() ) {}
 
     //! @brief Peek the number of seconds elapsed.
     template <typename _Out = float>
     auto peeks() const
     {
         static_assert( std::is_arithmetic_v<_Out> );
-        auto dt = clock::now() - last;
+        auto dt = clock::now() - m_Last;
         return static_cast<_Out>(dt.count()) / static_cast<_Out>(1e9);
     }
 
@@ -60,7 +60,7 @@ public:
     auto peekms() const
     {
         static_assert( std::is_arithmetic_v<_Out> );
-        auto dt = clock::now() - last;
+        auto dt = clock::now() - m_Last;
         return static_cast<_Out>(dt.count()) / static_cast<_Out>(1e6);
     }
 
@@ -92,6 +92,8 @@ public:
 private:
     timepoint m_Last;
 
-}; // class Fission::simple_timer
+}; // class Fission::simple_tmr
+
+using simple_timer = simple_tmr<std::chrono::high_resolution_clock>;
 
 _FISSION_BASE_PUBLIC_END

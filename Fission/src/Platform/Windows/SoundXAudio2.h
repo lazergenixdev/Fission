@@ -67,7 +67,7 @@ namespace Fission::Platform
 		SoundEngineXAudio2( const CreateInfo & info );
 		virtual ~SoundEngineXAudio2();
 
-		virtual ref<ISound> CreateSound( const file::path & filepath ) override;
+		virtual ref<ISound> CreateSound( const std::filesystem::path & filepath ) override;
 
 		virtual ref<ISoundSource> Play(
 			ISound * _Sound, 

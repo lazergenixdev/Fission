@@ -33,6 +33,7 @@
 
 #pragma once
 #include "Bindable.h"
+#include "Fission/Base/Rect.h"
 
 namespace Fission {
 
@@ -40,8 +41,8 @@ namespace Fission {
 	{
 	public:
 		struct Glyph {
-			rectf rc;
-			vec2f offset, size;
+			base::rectf rc;
+			base::vector2f offset, size;
 			float advance;
 		};
 
@@ -83,7 +84,7 @@ namespace Fission {
 		// "$debug" ----- used by the debug layer
 		// "$console" --- used by the console layer
 		// "$ui" -------- used by the ui layer
-		FISSION_API static void SetFont( const char * key, const file::path & filepath, float pxsize );
+		FISSION_API static void SetFont( const char * key, const std::filesystem::path & filepath, float pxsize );
 
 		FISSION_API static void SetFont( const char * key, const void * pdata, size_t size, float pxsize );
 

@@ -124,8 +124,8 @@ namespace Fission {
 	{
         struct region_uv
         {
-            rectf rel; // relative rect (UV texture coordinates)
-            recti abs; // absolute rect (pixel coordinates)
+            base::rectf rel; // relative rect (UV texture coordinates)
+            base::recti abs; // absolute rect (pixel coordinates)
             bool flipped = false;
         };
 
@@ -158,8 +158,8 @@ namespace Fission {
 
         FISSION_API void clear();
 
-        FISSION_API virtual bool Load( const file::path & file ) override;
-        FISSION_API virtual bool Save( const file::path & file ) const override;
+        FISSION_API virtual bool Load( const std::filesystem::path & file ) override;
+        FISSION_API virtual bool Save( const std::filesystem::path & file ) const override;
 
         FISSION_API void set_metadata( const metadata & meta );
         FISSION_API metadata & get_metadata();

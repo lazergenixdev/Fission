@@ -36,7 +36,7 @@ namespace Fission {
 			// Get the name of the current process
 			char buffer[MAX_PATH];
 			GetModuleFileNameA( NULL, buffer, (DWORD)std::size( buffer ) );
-			std::string sProcessName = file::path( buffer ).filename().string();
+			std::string sProcessName = std::filesystem::path( buffer ).filename().string();
 
 			// Set the title of the console window
 			char title[100];

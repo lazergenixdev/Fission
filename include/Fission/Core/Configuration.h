@@ -63,10 +63,10 @@ namespace Fission {
         //!         them to take effect.
         //!       Also, window configuration data only apply for newly created windows after `Load()` was called.
         //! @return 
-        FISSION_API static bool Load( file::path _Save_Location = DefaultSaveFile ) noexcept;
+        FISSION_API static bool Load( std::filesystem::path _Save_Location = DefaultSaveFile ) noexcept;
 
         //! @brief Saves all settings in the application context.
-        FISSION_API static bool Save( file::path _Save_Location = DefaultSaveFile ) noexcept;
+        FISSION_API static bool Save( std::filesystem::path _Save_Location = DefaultSaveFile ) noexcept;
 
     };
 

@@ -25,13 +25,12 @@ namespace Fission {
 		{
 			extend += ( 200.0f - extend ) * dt * extend_rate;
 
-			//vec2f size = vec2f( 1280.0f, 720.0f ); // todo: this is a bug, please fix as soon as possible
-			vec2f size = vec2f( 1920.0f, 720.0f ); // todo: this is a bug, please fix as soon as possible
+			base::vector2f size = { 1920.0f, 720.0f }; // todo: this is a bug, please fix as soon as possible
 
 			// Draw Background
-			m_pRenderer2D->FillRectGrad( rectf( 0.0f, size.x, 0.0f, extend ), Colors::Black, Colors::Black, color( 0.7f ), color( 0.7f ) );
-			m_pRenderer2D->FillRect( rectf( 0.0f, size.x, extend - m_FontSize - m_BottomPadding * 3.0f, extend ), color( 0.40f ) );
-			m_pRenderer2D->FillRect( rectf( 0.0f, size.x, extend - 1.0f, extend + 1.0f ), Colors::White );
+			m_pRenderer2D->FillRectGrad( base::rectf( 0.0f, size.x, 0.0f, extend ), Colors::Black, Colors::Black, color( 0.7f ), color( 0.7f ) );
+			m_pRenderer2D->FillRect( base::rectf( 0.0f, size.x, extend - m_FontSize - m_BottomPadding * 3.0f, extend ), color( 0.40f ) );
+			m_pRenderer2D->FillRect( base::rectf( 0.0f, size.x, extend - 1.0f, extend + 1.0f ), Colors::White );
 
 			// Draw Console Buffer
 			float top = extend - m_FontSize * 2.0f - m_BottomPadding * 2.0f;

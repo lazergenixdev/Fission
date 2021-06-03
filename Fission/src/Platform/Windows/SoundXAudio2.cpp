@@ -19,7 +19,7 @@ namespace Fission::Platform {
 
 	enum class LoadSoundResult { Success, Failure, };
 
-	LoadSoundResult LoadSoundDataFromFile( const file::path & filepath, SoundData * sd );
+	LoadSoundResult LoadSoundDataFromFile( const std::filesystem::path & filepath, SoundData * sd );
 
 
 SoundEngineXAudio2::SoundEngineXAudio2( const CreateInfo & info )
@@ -46,7 +46,7 @@ SoundEngineXAudio2::SoundEngineXAudio2( const CreateInfo & info )
 	Console::WriteLine( Colors::Blanchedalmond, "Using XAudio2" );
 }
 
-ref<Fission::ISound> SoundEngineXAudio2::CreateSound( const file::path & filepath )
+ref<Fission::ISound> SoundEngineXAudio2::CreateSound( const std::filesystem::path & filepath )
 {
 	auto sound = CreateRef<SoundXAudio2>();
 	LoadSoundDataFromFile( filepath, &sound->m_Sound );
@@ -238,7 +238,7 @@ uint32_t SoundSourceXAudio2::GetPosition()
 #define BREAK_ON_FAIL( hrcall ) if( FAILED( hr = hrcall ) ) break;
 #define RETURN_ON_FAIL( hrcall ) if( FAILED( hr = hrcall ) ) return {};
 
-LoadSoundResult LoadSoundDataFromFile( const file::path & filepath, SoundData * sd )
+LoadSoundResult LoadSoundDataFromFile( const std::filesystem::path & filepath, SoundData * sd )
 {
 	struct MF
 	{

@@ -31,7 +31,7 @@
 #pragma once
 #include "Fission/config.h"
 #include "Fission/Base/Color.h"
-#include "Fission/Base/Size.h"
+#include "Fission/Base/Rect.h"
 #include "Serializable.h"
 
 // todo: add documentation
@@ -76,7 +76,7 @@ namespace Fission
 		virtual color GetPixel( int _X, int _Y ) const = 0;
 
 		virtual void insert( int _X, int _Y, PixelCallback _Source, base::size _Source_Size ) = 0;
-		virtual void insert( int _X, int _Y, const Surface * _Source, std::optional<recti> _Source_Rect = {} ) = 0;
+		virtual void insert( int _X, int _Y, const Surface * _Source, std::optional<base::recti> _Source_Rect = {} ) = 0;
 
 		// shrink the surface if there is any 'clear_color' on any side
 		virtual void shrink_to_fit( color _Clear_Color = color{0.0f} ) = 0;

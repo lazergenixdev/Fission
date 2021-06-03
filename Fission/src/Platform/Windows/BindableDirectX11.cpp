@@ -1,8 +1,7 @@
 #include "BindableDirectX11.h"
 #include "Fission/Core/Window.h"
-#include <filesystem>
+#include "Fission/Base/Exception.h"
 #include <d3dcompiler.h>
-#include "lazer/matrix.h"
 
 namespace Fission::Platform {
 
@@ -261,75 +260,49 @@ namespace Fission::Platform {
 			hr = pDevice->CreateInputLayout( pInputElements, numElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &m_pInputLayout );
 		};
 
-		if( info.source_code.empty() )
-		{
-			std::wstring vsPath = info.name + L"VS.cso";
-			std::wstring psPath = info.name + L"PS.cso";
-
-			using namespace std::string_literals;
-
-			if( FAILED( hr = D3DReadFileToBlob( vsPath.c_str(), &pVSBlob ) ) )
-				throw exception( 
-					"DirectX11 Shader Exception", 
-					_lazer_exception_msg
-					.append( "Failed to Load Shader into memory." )
-					.append( "File", "["s + wstring_to_utf8( vsPath ) + "]"s ) 
-				);
-			if( FAILED( hr = D3DReadFileToBlob( psPath.c_str(), &pPSBlob ) ) )
-				throw exception(
-					"DirectX11 Shader Exception",
-					_lazer_exception_msg
-					.append( "Failed to Load Shader into memory." )
-					.append( "File", "["s + wstring_to_utf8( psPath ) + "]"s )
-				);
-		}
-		// compile from source code
-		else
-		{
-			UINT CompileFlags = 0u;
+		UINT CompileFlags = 0u;
 #if defined(FISSION_DEBUG)
-			CompileFlags |= D3DCOMPILE_DEBUG;
+		CompileFlags |= D3DCOMPILE_DEBUG;
 #else
-			CompileFlags |= D3DCOMPILE_OPTIMIZATION_LEVEL3;
+		CompileFlags |= D3DCOMPILE_OPTIMIZATION_LEVEL3;
 #endif
 
-			com_ptr<ID3DBlob> pErrorBlob;
-			if( FAILED( 
-				hr = D3DCompile(
-					info.source_code.data(),
-					info.source_code.size(),
-					nullptr,
-					nullptr,
-					nullptr,
-					"vs_main",
-					"vs_4_0",
-					CompileFlags, 0u,
-					&pVSBlob,
-					&pErrorBlob 
-				)
-			) )
-			{
-				throw std::logic_error( (const char *)pErrorBlob->GetBufferPointer() );
-			}
+		com_ptr<ID3DBlob> pErrorBlob;
+		if( FAILED( 
+			hr = D3DCompile(
+				info.source_code.data(),
+				info.source_code.size(),
+				nullptr,
+				nullptr,
+				nullptr,
+				"vs_main",
+				"vs_4_0",
+				CompileFlags, 0u,
+				&pVSBlob,
+				&pErrorBlob 
+			)
+		) )
+		{
+			throw std::logic_error( (const char *)pErrorBlob->GetBufferPointer() );
+		}
 
 
-			if( FAILED(
-				hr = D3DCompile(
-					info.source_code.data(),
-					info.source_code.size(),
-					nullptr,
-					nullptr,
-					nullptr,
-					"ps_main",
-					"ps_4_0",
-					CompileFlags, 0u,
-					&pPSBlob,
-					&pErrorBlob 
-				)
-			) )
-			{
-				throw std::logic_error( (const char *)pErrorBlob->GetBufferPointer() );
-			}
+		if( FAILED(
+			hr = D3DCompile(
+				info.source_code.data(),
+				info.source_code.size(),
+				nullptr,
+				nullptr,
+				nullptr,
+				"ps_main",
+				"ps_4_0",
+				CompileFlags, 0u,
+				&pPSBlob,
+				&pErrorBlob 
+			)
+		) )
+		{
+			throw std::logic_error( (const char *)pErrorBlob->GetBufferPointer() );
 		}
 
 		// Create Shaders
@@ -567,10 +540,10 @@ namespace Fission::Platform {
 
 		com_ptr<IDXGIFactory> pDXGIFactory;
 		hr = CreateDXGIFactory( __uuidof( IDXGIFactory ), &pDXGIFactory );
-		if( FAILED( hr ) ) throw exception( "DXGI Error", _lazer_exception_msg.append( "Failed to create DXGI Factory." ) );
+		if( FAILED( hr ) ) FISSION_THROW( "DXGI Error",.append( "Failed to create DXGI Factory." ) );
 
 		hr = pDXGIFactory->CreateSwapChain( pDevice, &dSwapChain, &m_pSwapChain );
-		if( FAILED( hr ) ) throw exception( "DXGI Error", _lazer_exception_msg.append( "Failed to create Swapchain." ) );
+		if( FAILED( hr ) ) FISSION_THROW( "DXGI Error",.append( "Failed to create Swapchain." ) );
 
 		com_ptr<ID3D11Texture2D> pBackBuffer;
 		hr = m_pSwapChain->GetBuffer( 0u, IID_PPV_ARGS( &pBackBuffer ) );
@@ -607,8 +580,7 @@ namespace Fission::Platform {
 	void SwapChainDX11::Present( vsync_ vsync )
 	{
 		if( FAILED( m_pSwapChain->Present( (uint32_t)vsync, 0u ) ) )
-			throw exception("DirectX Exception", 
-			_lazer_exception_msg
+			FISSION_THROW("DirectX Exception", 
 				.append("Failed to Present Swapchain.")
 				.append("Reason","Honestly don't know, I should have checked the HRESULT, my bad dude.") 
 			);

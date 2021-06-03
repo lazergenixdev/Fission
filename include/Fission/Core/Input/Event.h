@@ -31,6 +31,7 @@
 #pragma once
 #include "Fission/config.h"
 #include "Fission/Base/Math/Vector.h"
+#include "Fission/Base/Size.h"
 #include "Keys.h"
 #include "Cursor.h"
 
@@ -89,7 +90,7 @@ namespace Fission {
 	};
 
 	struct ResizeEventArgs : public NativeEventArgs {
-		vec2i size; 
+		base::size size; 
 	};
 
 

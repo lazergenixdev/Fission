@@ -77,7 +77,7 @@ namespace Fission {
 
 		FISSION_API static ref<SoundEngine> Create( const CreateInfo & info = {} );
 
-		virtual ref<ISound> CreateSound( const file::path & filepath ) = 0;
+		virtual ref<ISound> CreateSound( const std::filesystem::path & filepath ) = 0;
 
 		virtual ref<ISoundSource> Play( ISound * _Sound, Sound::OutputID _Output, bool _Play_Looped = false, bool _Start_Playing = true, bool _Track = false ) = 0;
 

@@ -47,8 +47,8 @@ namespace Fission {
 
 	void SurfaceRGBA8_UNormImpl::insert( int _X, int _Y, PixelCallback _Source, base::size _Source_Size )
 	{
-		assert( _X + _Source_Size.w <= (int)m_Width );
-		assert( _Y + _Source_Size.h <= (int)m_Height );
+		FISSION_ASSERT( _X + _Source_Size.w <= static_cast<signed int>(m_Width) );
+		FISSION_ASSERT( _Y + _Source_Size.h <= static_cast<signed int>(m_Height) );
 
 		for( int py = 0; py < _Source_Size.h; py++ )
 		{
@@ -60,7 +60,7 @@ namespace Fission {
 		}
 	}
 
-	void SurfaceRGBA8_UNormImpl::insert( int _X, int _Y, const Surface * _Source, std::optional<recti> _Source_Rect )
+	void SurfaceRGBA8_UNormImpl::insert( int _X, int _Y, const Surface * _Source, std::optional<base::recti> _Source_Rect )
 	{
 		if( _Source->format() == Texture::Format_RGBA8_UNORM )
 		{
@@ -70,12 +70,12 @@ namespace Fission {
 		base::vector2i start;
 		base::size size;
 		if( _Source_Rect.has_value() )
-			size = base::size(_Source_Rect->size()), start = base::vector2i::from(_Source_Rect->get_tl());
+			size = base::size(_Source_Rect->size()), start = _Source_Rect->topLeft();
 		else
 			size = _Source->size();
 
-		FISSION_ASSERT( _X + size.w <= m_Width );
-		FISSION_ASSERT( _Y + size.h <= m_Height );
+		FISSION_ASSERT( _X + size.w <= static_cast<signed int>( m_Width ) );
+		FISSION_ASSERT( _Y + size.h <= static_cast<signed int>( m_Height ) );
 
 		for( int py = start.y; py < size.h; py++ )
 		{

@@ -36,10 +36,10 @@
 
 namespace Fission {
 
-	struct ISerializable
+	fission_Interface ISerializable
 	{
-		virtual bool Load( const file::path & _FilePath ) = 0;
-		virtual bool Save( const file::path & _FilePath ) const = 0;
+		virtual bool Load( const std::filesystem::path & _FilePath ) = 0;
+		virtual bool Save( const std::filesystem::path & _FilePath ) const = 0;
 
 		virtual ~ISerializable() = default;
 

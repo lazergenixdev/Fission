@@ -66,7 +66,7 @@ namespace Fission {
 		FISSION_API static void SaveToClipboard( const string & _Text );
 
 		FISSION_API static bool OpenURL( const string & _URL );
-		FISSION_API static bool OpenFile( const file::path & _File );
+		FISSION_API static bool OpenFile( const std::filesystem::path & _File );
 
 		/// <summary>
 		/// Writes out information about the system to the console.

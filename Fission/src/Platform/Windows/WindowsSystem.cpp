@@ -51,7 +51,7 @@ namespace Fission {
 		return (bool)ShellExecuteA( NULL, "open", _URL.c_str(), nullptr, nullptr, SW_SHOWDEFAULT );
 	}
 
-	bool System::OpenFile( const file::path & _File )
+	bool System::OpenFile( const std::filesystem::path & _File )
 	{
 		return (bool)ShellExecuteW( NULL, L"explore", _File.c_str(), nullptr, nullptr, SW_SHOWDEFAULT );
 	}

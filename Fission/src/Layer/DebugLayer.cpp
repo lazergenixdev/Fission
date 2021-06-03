@@ -2,6 +2,7 @@
 #include "Fission/Core/Application.h"
 #include "../Version.h"
 #include "Fission/Core/Console.h"
+#include "Fission/Base/Rect.h"
 
 // todo: move system info gathering to Fission::System
 
@@ -144,7 +145,7 @@ void DebugLayerImpl::OnCreate() {
 void DebugLayerImpl::OnUpdate() {
 	
 	static constexpr auto c = color( 0.0f, 0.0f, 0.0f, 0.7f );
-	vec2f size = vec2f( 1280.0f, 720.0f ); // todo: this is a bug, please fix as soon as possible
+	base::vector2f size = { 1280.0f, 720.0f }; // todo: this is a bug, please fix as soon as possible
 
 	auto pFont = FontManager::GetFont( "$debug" );
 	float diff = pFont->GetSize();
@@ -161,7 +162,7 @@ void DebugLayerImpl::OnUpdate() {
 
 		auto tl = m_pRenderer2D->CreateTextLayout( L"Fission v" FISSION_VERSION_STRING " - Debug Layer" );
 
-		m_pRenderer2D->FillRect( rectf( 0.0f, tl.width, 0.0f, diff ), c );
+		m_pRenderer2D->FillRect( base::rectf( 0.0f, tl.width, 0.0f, diff ), c );
 
 		m_pRenderer2D->DrawString( L"Fission v" FISSION_VERSION_STRING " - Debug Layer", { 0.0f, 0.0f }, Colors::White );
 
@@ -170,28 +171,27 @@ void DebugLayerImpl::OnUpdate() {
 		{ // FPS
 			tl = m_pRenderer2D->CreateTextLayout( buf );
 			base::vector2f pos = { 0.0f, diff };
-			m_pRenderer2D->FillRect( rectf::from_tl( vec2f::from(pos), { tl.width, diff } ), c );
-			m_pRenderer2D->DrawString( buf, pos, Colors::White );
+			m_pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, diff ), c );			m_pRenderer2D->DrawString( buf, pos, Colors::White );
 		}
 		
 		{ // CPU
 			tl = m_pRenderer2D->CreateTextLayout( cpu_name.c_str() );
 			base::vector2f pos = { size.x - tl.width, 0.0f };
-			m_pRenderer2D->FillRect( rectf::from_tl( vec2f::from(pos), { tl.width, diff } ), c );
+			m_pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, diff ), c );
 			m_pRenderer2D->DrawString( cpu_name.c_str(), pos, Colors::White );
 		}
 
 		{ // Memory
 			tl = m_pRenderer2D->CreateTextLayout( memory_str.c_str() );
 			base::vector2f pos = { size.x - tl.width, diff };
-			m_pRenderer2D->FillRect( rectf::from_tl( vec2f::from(pos), { tl.width, diff } ), c );
+			m_pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, diff ), c );
 			m_pRenderer2D->DrawString( memory_str.c_str(), pos, Colors::White );
 		}
 
 		{ // Platform
 			tl = m_pRenderer2D->CreateTextLayout( platform_str.c_str() );
 			base::vector2f pos = { size.x - tl.width, diff * 2.0f };
-			m_pRenderer2D->FillRect( rectf::from_tl( vec2f::from(pos), { tl.width, diff } ), c );
+			m_pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, diff ), c );
 			m_pRenderer2D->DrawString( platform_str.c_str(), pos, Colors::White );
 		}
 
@@ -203,7 +203,7 @@ void DebugLayerImpl::OnUpdate() {
 			{
 				auto tl = m_pRenderer2D->CreateTextLayout( s.c_str() );
 
-				m_pRenderer2D->FillRect( rectf( 0.0f, tl.width, start, start + tl.height ), c );
+				m_pRenderer2D->FillRect( base::rectf( 0.0f, tl.width, start, start + tl.height ), c );
 				m_pRenderer2D->DrawString( s.c_str(), { 0.0f, start }, Colors::White );
 
 				start += tl.height;

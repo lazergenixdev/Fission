@@ -71,14 +71,6 @@
 #include <filesystem>
 
 /**
- * External helper library
- */
-#include "lazer/lazer.h"
-namespace Fission {
-	using namespace lazer;
-}
-
-/**
  * Pointer Types
  */
 namespace Fission {
@@ -122,10 +114,9 @@ namespace Fission {
 #define FISSION_Rx2 "https://youtu.be/dQw4w9WgXcQ"
 
 /**
-* Stuff that haven't been added to 'lazerlib' yet
+* TODO: Find a place for this in Base/
 */
-
-namespace lazer {
+namespace Fission {
 	template <typename T>
 	class list_view
 	{

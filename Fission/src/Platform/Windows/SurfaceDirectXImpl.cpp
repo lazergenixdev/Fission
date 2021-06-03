@@ -6,7 +6,7 @@
 
 namespace Fission {
 
-	bool SurfaceRGBA8_UNormImpl::Load( const file::path & _FilePath )
+	bool SurfaceRGBA8_UNormImpl::Load( const std::filesystem::path & _FilePath )
 	{
 		HRESULT hr;
 		DirectX::ScratchImage scratch;
@@ -41,7 +41,7 @@ namespace Fission {
 		return true;
 	}
 
-	bool SurfaceRGBA8_UNormImpl::Save( const file::path & _FilePath ) const
+	bool SurfaceRGBA8_UNormImpl::Save( const std::filesystem::path & _FilePath ) const
 	{
 		if( !m_pData ) return false;
 

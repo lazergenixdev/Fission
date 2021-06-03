@@ -147,4 +147,4 @@ namespace Fission
 
 } // namespace Fission
 
-_lazer_Define_Flag_Enum_Operators( Fission::Window::Flags );
+_Fission_Declare_Enum_Operators( Fission::Window::Flags );

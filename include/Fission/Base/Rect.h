@@ -51,7 +51,7 @@ struct rect
     using type = _Ty;
     using range = range<_Ty>;
     using vector = vector2<_Ty>;
-    using size = size2<_Ty>;
+    using size2 = size2<_Ty>;
 
     range x, y;
 
@@ -84,7 +84,7 @@ struct rect
     {
         return rect(_Left,_Left+_Size_Vector.x,_Top,_Top+_Size_Vector.y);
     }
-    static inline constexpr rect from_topleft(const type&_Left,const type&_Top,const size&_Size)
+    static inline constexpr rect from_topleft(const type&_Left,const type&_Top,const size2&_Size)
     {
         return rect(_Left,_Left+_Size.w,_Top,_Top+_Size.h);
     }
@@ -96,7 +96,7 @@ struct rect
     {
         return rect(_TopLeft_Vector.x,_TopLeft_Vector.x+_Size_Vector.x,_TopLeft_Vector.y,_TopLeft_Vector.y+_Size_Vector.y);
     }
-    static inline constexpr rect from_topleft(const vector&_TopLeft_Vector,const size&_Size)
+    static inline constexpr rect from_topleft(const vector&_TopLeft_Vector,const size2&_Size)
     {
         return rect(_TopLeft_Vector.x,_TopLeft_Vector.x+_Size.w,_TopLeft_Vector.y,_TopLeft_Vector.y+_Size.h);
     }
@@ -108,7 +108,7 @@ struct rect
     {
         return rect(static_cast<type>(0),_Size_Vector.x,static_cast<type>(0),_Size_Vector.y);
     }
-    static inline constexpr rect from_topleft(const size&_Size)
+    static inline constexpr rect from_topleft(const size2&_Size)
     {
         return rect(static_cast<type>(0),_Size.w,static_cast<type>(0),_Size.h);
     }
@@ -125,7 +125,7 @@ struct rect
         const auto dx = _Size_Vector.x / static_cast<type>(2), dy = _Size_Vector.y / static_cast<type>(2);
         return rect(_Center_X-dx,_Center_X+dx,_Center_Y-dy,_Center_Y+dy);
     }
-    static inline constexpr rect from_center(const type&_Center_X,const type&_Center_Y,const size&_Size)
+    static inline constexpr rect from_center(const type&_Center_X,const type&_Center_Y,const size2&_Size)
     {
         const auto dx = _Size.w / static_cast<type>(2), dy = _Size.h / static_cast<type>(2);
         return rect(_Center_X-dx,_Center_X+dx,_Center_Y-dy,_Center_Y+dy);
@@ -140,7 +140,7 @@ struct rect
         const auto dx = _Size_Vector.x / static_cast<type>(2), dy = _Size_Vector.y / static_cast<type>(2);
         return rect(_TopLeft_Vector.x-dx,_TopLeft_Vector.x+dx,_TopLeft_Vector.y-dy,_TopLeft_Vector.y+dy);
     }
-    static inline constexpr rect from_center(const vector&_TopLeft_Vector,const size&_Size)
+    static inline constexpr rect from_center(const vector&_TopLeft_Vector,const size2&_Size)
     {
         const auto dx = _Size.w / static_cast<type>(2), dy = _Size.h / static_cast<type>(2);
         return rect(_TopLeft_Vector.x-dx,_TopLeft_Vector.x+dx,_TopLeft_Vector.y+dy,_TopLeft_Vector.y+dy);
@@ -155,7 +155,7 @@ struct rect
         const auto dx = _Size_Vector.x / static_cast<type>(2), dy = _Size_Vector.y / static_cast<type>(2);
         return rect(-dx,dx,-dy,+dy);
     }
-    static inline constexpr rect from_center(const size&_Size)
+    static inline constexpr rect from_center(const size2&_Size)
     {
         const auto dx = _Size.w / static_cast<type>(2), dy = _Size.h / static_cast<type>(2);
         return rect(-dx,dx,-dy,+dy);
@@ -196,9 +196,10 @@ struct rect
 
     inline constexpr auto width()const{return this->x.high-this->x.low;}
     inline constexpr auto height()const{return this->y.high-this->y.low;}
-    inline constexpr auto size()const{return size(this->x.high-this->x.low,this->y.high-this->y.low);}
     inline constexpr auto sizeVector()const{return vector(this->x.high-this->x.low,this->y.high-this->y.low);}
     inline constexpr auto center()const{auto c=vector(this->x.low+this->x.high,this->y.low+this->y.high);return c/static_cast<type>(2);}
+    template <typename _Out = size2>
+    inline constexpr _Out size()const{return _Out{this->x.high-this->x.low,this->y.high-this->y.low};}
 
 
     // Modification Functions
@@ -253,6 +254,10 @@ struct rect
     constexpr bool upper(const vector&_Position)const{return x.closed_upper(_Position.x)&&y.closed_upper(_Position.y);}
 
     inline constexpr auto clamp(const vector&_X)const{return vector(x.clamp(_X.x),y.clamp(_X.y));}
+
+    // Rect Functions
+
+    inline constexpr auto operator*(const type&_Right)const{return rect(this->x.low*_Right,this->x.high*_Right,this->y.low*_Right,this->y.high*_Right);}
 
 }; // struct Fission::base::rect
 

@@ -1,5 +1,6 @@
 ﻿#include <Fission/Platform/EntryPoint.h>
 #include <Fission/Fission.h>
+#include <Fission/Base/Utility/Timer.h>
 #include <Fission/Core/SurfaceMap.h>
 #include <Fission/Core/UI/UI.h>
 #include <Fission/Core/Sound.h>
@@ -16,31 +17,31 @@ simple_timer gtimer;
 #define _lazer_has_vector
 #define _lazer_has_point
 #define _lazer_has_rect
-namespace lazer::ui { 
-	template <typename T> using vector = std::vector<T>; 
-	using point = vec2i; 
-	using rect = recti; 
+namespace react::ui {
+	template <typename T> using vector = std::vector<T>;
+	using point = Fission::base::vector2i;
+	using rect = Fission::base::recti;
 }
-#define _lazer_char_type wchar_t
-#define _lazer_key_type Keys::Key
-#define _lazer_key_left_mouse_ Keys::Mouse_Left
-#define _lazer_key_right_mouse_ Keys::Mouse_Right
-#define _lazer_cursor_type Cursor *
+#define _lazer_char_type			wchar_t
+#define _lazer_key_type				Fission::Keys::Key
+#define _lazer_key_left_mouse_		Fission::Keys::Mouse_Left
+#define _lazer_key_right_mouse_		Fission::Keys::Mouse_Right
+#define _lazer_cursor_type			Fission::Cursor *
 #include "Fission/reactui.h"
 
-class Button : public lazer::ui::Button
+class Button : public react::ui::Button
 {
 public:
-	Button( const wchar_t * label, std::function<void()> f, vec2i pos = { 10, 30 } ) : 
-		Rect( recti::from_tl( pos, 90, 20 ) ), label( label ) , on_press(f)
+	Button( const wchar_t * label, std::function<void()> f, base::vector2i pos = { 10, 30 } ) : 
+		Rect( base::recti::from_topleft( pos, 90, 20 ) ), label( label ) , on_press(f)
 	{}
-	virtual bool isInside( lazer::ui::point pos ) override { return Rect[pos]; }
+	virtual bool isInside( react::ui::point pos ) override { return Rect[pos]; }
 	virtual void OnPressed() override { on_press(); }
 
-	virtual lazer::ui::Result OnSetCursor( lazer::ui::SetCursorEventArgs & args ) override
+	virtual react::ui::Result OnSetCursor( react::ui::SetCursorEventArgs & args ) override
 	{
 		args.cursor = Cursor::Get( Cursor::Default_Hand );
-		return lazer::ui::Handled;
+		return react::ui::Handled;
 	}
 	virtual void OnUpdate(float dt) override
 	{
@@ -52,15 +53,17 @@ public:
 		else
 			x += ( 0.3f - x ) * 10.0f * dt;
 
-		renderer2d->DrawRect( ((rectf)Rect).get_expanded(map(x,0.3f,1.0f,0.0f,4.0f)), color( c, x ), 1.5f );
+		auto y = ( x - 0.3f ) / 0.7f;
+
+		renderer2d->DrawRect( ((base::rectf)Rect).expanded(y*4.0f), color( c, x ), 1.5f );
 
 		// center text inside button by getting the text boundries
-		base::vector2f size = base::vector2f::from(vec2f(Rect.size()));
+		auto size = (base::vector2f)Rect.size<base::vector2i>();
 		auto tl = renderer2d->CreateTextLayout( label.c_str() );
-		renderer2d->DrawString( label.c_str(), (size - base::vector2f( tl.width, tl.height ))*0.5f + base::vector2f::from(vec2f(Rect.get_tl())), color(c,x*(1.0f/1.2f)) );
+		renderer2d->DrawString( label.c_str(), (size - base::vector2f( tl.width, tl.height ))*0.5f + (base::vector2f)Rect.topLeft(), color(c,x*(1.0f/1.2f)) );
 	}
 private:
-	recti Rect;
+	react::ui::rect Rect;
 	float x = 0.3f;
 	std::wstring label;
 	color c = Colors::White;
@@ -151,25 +154,25 @@ public:
 
 	virtual EventResult OnMouseMove(MouseMoveEventArgs&args) override
 	{
-		lazer::ui::MouseMoveEventArgs m;
-		m.pos = vec2i::from( args.position );
+		react::ui::MouseMoveEventArgs m;
+		m.pos = args.position;
 		return (EventResult)wm.OnMouseMove( m );
 	}
 	virtual EventResult OnKeyDown( KeyDownEventArgs&args) override
 	{
-		lazer::ui::KeyDownEventArgs m;
+		react::ui::KeyDownEventArgs m;
 		m.key = args.key;
 		return (EventResult)wm.OnKeyDown( m );
 	}
 	virtual EventResult OnKeyUp( KeyUpEventArgs&args) override
 	{
-		lazer::ui::KeyUpEventArgs m;
+		react::ui::KeyUpEventArgs m;
 		m.key = args.key;
 		return (EventResult)wm.OnKeyUp( m );
 	}
 	virtual EventResult OnSetCursor( SetCursorEventArgs&args) override
 	{
-		lazer::ui::SetCursorEventArgs m;
+		react::ui::SetCursorEventArgs m;
 		m.cursor = args.cursor;
 		EventResult r = (EventResult)wm.OnSetCursor( m );
 		args.cursor = m.cursor;
@@ -187,7 +190,7 @@ public:
 		renderer2d->Render();
 	}
 
-	lazer::ui::WindowManager wm;
+	react::ui::WindowManager wm;
 };
 
 class MenuScene : public Fission::Scene
@@ -268,7 +271,7 @@ public:
 
 		float k = std::fmodf( t*2.f, std::numbers::pi_v<float>*2.0f );
 		float d = std::numbers::pi_v<float> *2.0f - k;
-		color cc = color( Colors::White, map( d, 0.0f, std::numbers::pi_v<float>*2.0f, 0.0f, 1.0f ) );
+		color cc = color( Colors::White, d / std::numbers::pi_v<float>*2.0f );
 		renderer2d->DrawCircle( { 424.0f,214.0f }, k * scale, color{ 0.0f }, cc * 0.9f, k * 10.0f, StrokeStyle::Outside );
 		renderer2d->DrawCircle( { 424.0f,214.0f }, k*scale+ k * 10.0f,cc, cc, d*2.0f, StrokeStyle::Outside );
 

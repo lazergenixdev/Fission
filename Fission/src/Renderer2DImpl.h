@@ -21,15 +21,15 @@ namespace Fission {
 
 		virtual void FillTriangleUV( base::vector2f p0, base::vector2f p1, base::vector2f p2, base::vector2f uv0, base::vector2f uv1, base::vector2f uv2, Resource::Texture2D * pTexture, color tint ) override;
 
-		virtual void FillRect( rectf rect, color color ) override;
+		virtual void FillRect( base::rectf rect, color color ) override;
 
-		virtual void DrawRect( rectf rect, color color, float stroke_width, StrokeStyle stroke ) override;
+		virtual void DrawRect( base::rectf rect, color color, float stroke_width, StrokeStyle stroke ) override;
 
-		virtual void FillRectGrad( rectf rect, color color_topleft, color color_topright, color color_bottomleft, color color_bottomright ) override;
+		virtual void FillRectGrad( base::rectf rect, color color_topleft, color color_topright, color color_bottomleft, color color_bottomright ) override;
 
-		virtual void FillRoundRect( rectf rect, float rad, color color ) override;
+		virtual void FillRoundRect( base::rectf rect, float rad, color color ) override;
 
-		virtual void DrawRoundRect( rectf rect, float rad, color color, float stroke_width, StrokeStyle stroke ) override;
+		virtual void DrawRoundRect( base::rectf rect, float rad, color color, float stroke_width, StrokeStyle stroke ) override;
 
 		virtual void DrawLine( base::vector2f start, base::vector2f end, color color, float stroke_width, StrokeStyle stroke ) override;
 
@@ -41,9 +41,9 @@ namespace Fission {
 
 		virtual void FillArrow( base::vector2f start, base::vector2f end, float width, color color ) override;
 
-		virtual void DrawImage( Resource::Texture2D * pTexture, rectf rect, rectf uv, color tint ) override;
+		virtual void DrawImage( Resource::Texture2D * pTexture, base::rectf rect, base::rectf uv, color tint ) override;
 
-		virtual void DrawImage( Resource::Texture2D * pTexture, rectf rect, color tint ) override;
+		virtual void DrawImage( Resource::Texture2D * pTexture, base::rectf rect, color tint ) override;
 
 		virtual void DrawMesh( const Mesh * m ) override;
 
@@ -98,13 +98,13 @@ namespace Fission {
 			DrawData( Renderer2DImpl * parent, uint32_t vc, uint32_t ic );
 
 			void AddRectFilled( base::vector2f tl, base::vector2f tr, base::vector2f bl, base::vector2f br, color c );
-			void AddRectFilled( rectf rect, color c );
-			void AddRectFilled( rectf rect, color tl, color tr, color bl, color br );
-			void AddRectFilledUV( rectf rect, rectf uv, color c );
-			void AddRect( rectf rect, color color, float stroke_width, StrokeStyle stroke );
+			void AddRectFilled( base::rectf rect, color c );
+			void AddRectFilled( base::rectf rect, color tl, color tr, color bl, color br );
+			void AddRectFilledUV( base::rectf rect, base::rectf uv, color c );
+			void AddRect( base::rectf rect, color color, float stroke_width, StrokeStyle stroke );
 
-			void AddRoundRectFilled( rectf rect, float rad, color c );
-			void AddRoundRect( rectf rect, float rad, color color, float stroke_width, StrokeStyle stroke );
+			void AddRoundRectFilled( base::rectf rect, float rad, color c );
+			void AddRoundRect( base::rectf rect, float rad, color color, float stroke_width, StrokeStyle stroke );
 
 			void AddMesh( const Mesh * mesh );
 			void AddCircleFilled( base::vector2f center, float rad, color c );

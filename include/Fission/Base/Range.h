@@ -62,7 +62,7 @@ struct range
     // Range Functions
 
     //!! @brief Clamps a value to this range.
-    inline constexpr auto clamp(const type&_X)const{return if(_X<this->low)return this->low;if(_X>this->high)return this->high;return _X;}
+    inline constexpr auto clamp(const type&_X)const{if(_X<this->low)return this->low;if(_X>this->high)return this->high;return _X;}
 
     //! @brief Checks whether value is contained within open range: ( low, high ).
     inline constexpr bool operator()(const type&_X)const{return(_X>this->low)&&(_X<this->high);}
@@ -131,6 +131,8 @@ struct range
     constexpr auto&operator-=(const type&_Shift){this->low-=_Shift,this->high-=_Shift;return*this;}
 
 }; // struct Fission::base::range
+
+_FISSION_BASE_ALIASES(range);
 
 //! @return The minimum distance between two ranges.
 //! @note: Returns a negative value for ranges that contain a subset of each other.

@@ -33,6 +33,7 @@
 #pragma once
 #include "Fission/config.h"
 #include "Fission/Base/Math/Matrix.h"
+#include "Fission/Base/Rect.h"
 #include "Renderer.h"
 #include "Graphics.h"
 #include "Font.h"
@@ -81,9 +82,9 @@ namespace Fission
 
 		FISSION_API static std::unique_ptr<Renderer2D> Create( Graphics * pGraphics );
 
-		virtual void FillRect( rectf rect, color color ) = 0;
+		virtual void FillRect( base::rectf rect, color color ) = 0;
 
-		virtual void DrawRect( rectf rect, color color, float stroke_width, StrokeStyle stroke = StrokeStyle::Default ) = 0;
+		virtual void DrawRect( base::rectf rect, color color, float stroke_width, StrokeStyle stroke = StrokeStyle::Default ) = 0;
 
 		virtual void FillTriangle( base::vector2f p0, base::vector2f p1, base::vector2f p2, color color ) = 0;
 
@@ -91,11 +92,11 @@ namespace Fission
 
 		virtual void FillTriangleUV( base::vector2f p0, base::vector2f p1, base::vector2f p2, base::vector2f uv0, base::vector2f uv1, base::vector2f uv2, Resource::Texture2D * pTexture, color tint = Colors::White ) = 0;
 
-		virtual void FillRectGrad( rectf rect, color color_topleft, color color_topright, color color_bottomleft, color color_bottomright ) = 0;
+		virtual void FillRectGrad( base::rectf rect, color color_topleft, color color_topright, color color_bottomleft, color color_bottomright ) = 0;
 
-		virtual void FillRoundRect( rectf rect, float rad, color color ) = 0;
+		virtual void FillRoundRect( base::rectf rect, float rad, color color ) = 0;
 
-		virtual void DrawRoundRect( rectf rect, float rad, color color, float stroke_width, StrokeStyle stroke = StrokeStyle::Default ) = 0;
+		virtual void DrawRoundRect( base::rectf rect, float rad, color color, float stroke_width, StrokeStyle stroke = StrokeStyle::Default ) = 0;
 
 		virtual void DrawLine( base::vector2f start, base::vector2f end, color color, float stroke_width = 1.0f, StrokeStyle stroke = StrokeStyle::Default ) = 0;
 
@@ -107,9 +108,9 @@ namespace Fission
 
 		virtual void FillArrow( base::vector2f start, base::vector2f end, float width, color color ) = 0;
 
-		virtual void DrawImage( Resource::Texture2D * pTexture, rectf rect, rectf uv, color tint = Colors::White ) = 0;
+		virtual void DrawImage( Resource::Texture2D * pTexture, base::rectf rect, base::rectf uv, color tint = Colors::White ) = 0;
 
-		virtual void DrawImage( Resource::Texture2D * pTexture, rectf rect, color tint = Colors::White ) = 0;
+		virtual void DrawImage( Resource::Texture2D * pTexture, base::rectf rect, color tint = Colors::White ) = 0;
 
 		virtual void DrawMesh( const Mesh * m ) = 0;
 

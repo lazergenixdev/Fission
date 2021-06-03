@@ -54,7 +54,7 @@ namespace Fission {
 		m_WindowPropertyMap[_Properties.save] = props;
 	}
 
-	static void FormatConfigFilename( file::path & path )
+	static void FormatConfigFilename( std::filesystem::path & path )
 	{
 		path = "etc"/path;
 		path.replace_extension( ".yml" );
@@ -65,13 +65,13 @@ namespace Fission {
 	template <typename T, typename K>
 	auto & getopt( std::optional<T> & opt, const K & def ) { return opt.has_value() ? ( opt.value() ) : ( opt = static_cast<T>( def ) ).value(); }
 
-	bool Config::Load( file::path _Save_Location ) noexcept
+	bool Config::Load( std::filesystem::path _Save_Location ) noexcept
 	{
-		if( !file::exists( "etc" ) )
+		if( !std::filesystem::exists( "etc" ) )
 		{
 			Console::WriteLine( "'etc/' not found. Creating directory .." );
 
-			file::create_directory( "etc" );
+			std::filesystem::create_directory( "etc" );
 
 #ifdef FISSION_PLATFORM_WINDOWS
 			DWORD attr = GetFileAttributesW( L"etc" );
@@ -138,7 +138,7 @@ namespace Fission {
 		return true;
 	}
 
-	bool Config::Save( file::path _Save_Location ) noexcept
+	bool Config::Save( std::filesystem::path _Save_Location ) noexcept
 	{
 		try
 		{

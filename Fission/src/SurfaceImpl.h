@@ -10,15 +10,15 @@ namespace Fission
 		SurfaceRGBA8_UNormImpl( const Surface::CreateInfo & info );
 
 		// Inherited via Surface
-		virtual bool Load( const file::path & _FilePath ) override;
-		virtual bool Save( const file::path & _FilePath ) const override;
+		virtual bool Load( const std::filesystem::path & _FilePath ) override;
+		virtual bool Save( const std::filesystem::path & _FilePath ) const override;
 
 		virtual void resize( base::size _New_Size, ResizeOptions_ _Options ) override;
 		virtual void set_width( int _New_Width, ResizeOptions_ _Options ) override;
 		virtual void set_height( int _New_Height, ResizeOptions_ _Options ) override;
 
 		virtual void insert( int _X, int _Y, PixelCallback _Source, base::size _Source_Size ) override;
-		virtual void insert( int _X, int _Y, const Surface * _Source, std::optional<recti> _Source_Rect ) override;
+		virtual void insert( int _X, int _Y, const Surface * _Source, std::optional<base::recti> _Source_Rect ) override;
 
 		virtual void PutPixel( int _X, int _Y, color _Color ) override;
 		virtual color GetPixel( int _X, int _Y ) const override;

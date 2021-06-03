@@ -693,7 +693,7 @@ surface_map::surface_map()
 	: m_MaxSize(MaxWidth,MaxHeight), m_MetaData()
 {}
 
-bool surface_map::Load( const file::path & file )
+bool surface_map::Load( const std::filesystem::path & file )
 {
 	m_MetaData = {};
 	m_Map.clear();
@@ -713,7 +713,7 @@ bool surface_map::Load( const file::path & file )
 
 		{
 			std::string temp = desc["__file__"];
-			m_Surface->Load( imageFilePath /= file::path( temp ) );
+			m_Surface->Load( imageFilePath /= std::filesystem::path( temp ) );
 			desc.erase( "__file__" );
 		}
 
@@ -739,7 +739,7 @@ bool surface_map::Load( const file::path & file )
 			subs.region.flipped = value["[flip]"].get<bool>();
 			subs.meta = from_json( value["__metadata__"] );
 
-			subs.region.rel = rectf( (rangef)rc.x * scale.x, (rangef)rc.y * scale.y );
+			subs.region.rel = base::rectf( (base::rangef)rc.x * scale.x, (base::rangef)rc.y * scale.y );
 
 			m_Map.emplace( key, subs );
 		}
@@ -752,7 +752,7 @@ bool surface_map::Load( const file::path & file )
 }
 #include "Fission/Core/Console.h"
 
-bool surface_map::Save( const file::path & file ) const
+bool surface_map::Save( const std::filesystem::path & file ) const
 {
 	if( !m_Surface ) return false;
 	try
@@ -870,8 +870,8 @@ bool surface_map::build( BuildFlags flags )
 	for( auto && r : out_rects )
 	{
 		sub_surface * sub = reinterpret_cast<sub_surface *>( r.userdata );
-		sub->region.abs = recti( r.x, r.x + r.width, r.y, ( r.y + r.height ) );
-		sub->region.rel = (rectf)sub->region.abs * scale.x; // todo: fix for differing width and height
+		sub->region.abs = base::recti( r.x, r.x + r.width, r.y, ( r.y + r.height ) );
+		sub->region.rel = (base::rectf)sub->region.abs * scale.x; // todo: fix for differing width and height
 
 		m_Surface->insert( r.x, r.y, sub->source );
 	}

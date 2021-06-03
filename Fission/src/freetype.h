@@ -13,7 +13,7 @@ namespace freetype
 		~Face();
 
 		FT_Face m_Face;
-		Face( FT_Library lib, const lazer::file::path & path );
+		Face( FT_Library lib, const std::filesystem::path & path );
 		Face( FT_Library lib, const void * data, size_t size );
 	};
 
@@ -21,7 +21,7 @@ namespace freetype
 	{
 	public:
 
-		static Face * LoadFaceFromFile( const lazer::file::path & path );
+		static Face * LoadFaceFromFile( const std::filesystem::path & path );
 		static Face * LoadFaceFromMemory( const void * pData, const size_t size );
 
 	private:

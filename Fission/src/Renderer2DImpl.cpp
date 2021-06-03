@@ -164,27 +164,27 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		m_DrawBuffer.back().AddTriangleUV( p0, p1, p2, uv0, uv1, uv2, tint );
 	}
 
-	void Renderer2DImpl::FillRect( rectf rect, color color )
+	void Renderer2DImpl::FillRect( base::rectf rect, color color )
 	{
 		m_DrawBuffer.back().AddRectFilled( rect, color );
 	}
 
-	void Renderer2DImpl::DrawRect( rectf rect, color color, float stroke_width, StrokeStyle stroke )
+	void Renderer2DImpl::DrawRect( base::rectf rect, color color, float stroke_width, StrokeStyle stroke )
 	{
 		m_DrawBuffer.back().AddRect( rect, color, stroke_width, stroke );
 	}
 
-	void Renderer2DImpl::FillRectGrad( rectf rect, color color_topleft, color color_topright, color color_bottomleft, color color_bottomright )
+	void Renderer2DImpl::FillRectGrad( base::rectf rect, color color_topleft, color color_topright, color color_bottomleft, color color_bottomright )
 	{
 		m_DrawBuffer.back().AddRectFilled( rect, color_topleft, color_topright, color_bottomleft, color_bottomright );
 	}
 
-	void Renderer2DImpl::FillRoundRect( rectf rect, float rad, color color )
+	void Renderer2DImpl::FillRoundRect( base::rectf rect, float rad, color color )
 	{
 		m_DrawBuffer.back().AddRoundRectFilled( rect, rad, color );
 	}
 
-	void Renderer2DImpl::DrawRoundRect( rectf rect, float rad, color color, float stroke_width, StrokeStyle stroke )
+	void Renderer2DImpl::DrawRoundRect( base::rectf rect, float rad, color color, float stroke_width, StrokeStyle stroke )
 	{
 		m_DrawBuffer.back().AddRoundRect( rect, rad, color, stroke_width, stroke );
 	}
@@ -242,13 +242,13 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 
 	}
 
-	void Renderer2DImpl::DrawImage( Resource::Texture2D * pTexture, rectf rect, rectf uv, color tint )
+	void Renderer2DImpl::DrawImage( Resource::Texture2D * pTexture, base::rectf rect, base::rectf uv, color tint )
 	{
 		SetTexture( pTexture );
 		m_DrawBuffer.back().AddRectFilledUV( rect, uv, tint );
 	}
 
-	void Renderer2DImpl::DrawImage( Resource::Texture2D * pTexture, rectf rect, color tint )
+	void Renderer2DImpl::DrawImage( Resource::Texture2D * pTexture, base::rectf rect, color tint )
 	{
 		SetTexture( pTexture );
 		m_DrawBuffer.back().AddRectFilledUV( rect, { 0.0f, 1.0f, 0.0f, 1.0f }, tint );
@@ -429,7 +429,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		mat( &parent->m_accTransform )
 	{}
 
-	void Renderer2DImpl::DrawData::AddRect( rectf rect, color c, float stroke_width, StrokeStyle stroke )
+	void Renderer2DImpl::DrawData::AddRect( base::rectf rect, color c, float stroke_width, StrokeStyle stroke )
 	{
 		for( int i = 0; i < 8; i++ ) {
 		// I bet you've never seen code like this:
@@ -444,15 +444,10 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			);
 		}
 
-		float in_l = rect.get_l();
-		float in_r = rect.get_r();
-		float in_t = rect.get_t();
-		float in_b = rect.get_b();
-
-		float out_l = rect.get_l();
-		float out_r = rect.get_r();
-		float out_t = rect.get_t();
-		float out_b = rect.get_b();
+		float in_l = rect.x.low, out_l = in_l;
+		float in_r = rect.x.high, out_r = in_r;
+		float in_t = rect.y.low, out_t = in_t;
+		float in_b = rect.y.high, out_b = in_b;
 
 		switch( stroke )
 		{
@@ -498,12 +493,12 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( in_r , in_b  ), c );
 	}
 
-	void Renderer2DImpl::DrawData::AddRoundRectFilled( rectf rect, float rad, color c )
+	void Renderer2DImpl::DrawData::AddRoundRectFilled( base::rectf rect, float rad, color c )
 	{
 		FISSION_THROW_NOT_IMPLEMENTED();
 	}
 
-	void Renderer2DImpl::DrawData::AddRoundRect( rectf rect, float rad, color color, float stroke_width, StrokeStyle stroke )
+	void Renderer2DImpl::DrawData::AddRoundRect( base::rectf rect, float rad, color color, float stroke_width, StrokeStyle stroke )
 	{
 		FISSION_THROW_NOT_IMPLEMENTED();
 	}
@@ -638,7 +633,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		pVtxData[vtxCount++] = vertex( *mat * (end   - edge_vector), endColor );
 	}
 
-	void Renderer2DImpl::DrawData::AddRectFilledUV( rectf rect, rectf uv, color c )
+	void Renderer2DImpl::DrawData::AddRectFilledUV( base::rectf rect, base::rectf uv, color c )
 	{
 		pIdxData[idxCount++] = vtxCount;
 		pIdxData[idxCount++] = vtxCount + 1u;
@@ -668,7 +663,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		pVtxData[vtxCount++] = vertex( *mat * br, c );
 	}
 
-	void Renderer2DImpl::DrawData::AddRectFilled( rectf rect, color c )
+	void Renderer2DImpl::DrawData::AddRectFilled( base::rectf rect, color c )
 	{
 		pIdxData[idxCount++] = vtxCount;
 		pIdxData[idxCount++] = vtxCount + 1u;
@@ -683,7 +678,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( rect.x.high, rect.y.high ), c );
 	}
 
-	void Renderer2DImpl::DrawData::AddRectFilled( rectf rect, color tl, color tr, color bl, color br )
+	void Renderer2DImpl::DrawData::AddRectFilled( base::rectf rect, color tl, color tr, color bl, color br )
 	{
 		pIdxData[idxCount++] = vtxCount;
 		pIdxData[idxCount++] = vtxCount + 1u;

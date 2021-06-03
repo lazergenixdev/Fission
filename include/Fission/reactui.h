@@ -5,10 +5,8 @@
 * wishes to implement it's own UI; there are no dependences needed and no build systems,
 * only a single header file, simply include this to build into your project.
 * 
-* This is a WIP, and I'm considering rewriting this API in C.
-* 
 * REQUIREMENTS:
-*	C++17 or later
+*	C++11 or later
 * 
 * This code is released to Public Domain. Patches and comments are welcome.
 * 
@@ -60,7 +58,7 @@
 
 /* begin/end header macros for 3rd-party integration */
 #ifndef _lazer_ui_begin_header_
-#define _lazer_ui_begin_header_ namespace lazer { namespace ui {
+#define _lazer_ui_begin_header_ namespace react { namespace ui {
 #endif
 #ifndef _lazer_ui_end_header_
 #define _lazer_ui_end_header_ } }
@@ -231,7 +229,7 @@ _lazer_ui_begin_header_
 	{
 		const auto & [x, y] = pos;
 
-		if( rect.get_expanded( -inflate )[pos] )
+		if( rect.expanded( -inflate )[pos] )
 			return rect_pos_inside;
 
 		rect.expand( expand );
@@ -239,34 +237,34 @@ _lazer_ui_begin_header_
 		if( !rect[pos] )
 			return rect_pos_outside;
 
-		if( x > rect.x.get_average() )
+		if( x > rect.x.average() )
 		{
-			if( y > rect.y.get_average() )
+			if( y > rect.y.average() )
 			{
-				if( x < ( rect.get_r() - expand - corner_tolerance ) )
+				if( x < ( rect.right() - expand - corner_tolerance ) )
 					return rect_pos_bottom;
-				if( y < ( rect.get_b() - expand - corner_tolerance ) )
+				if( y < ( rect.bottom() - expand - corner_tolerance ) )
 					return rect_pos_right;
 				return rect_pos_bottom_right;
 			}
-			if( x < ( rect.get_r() - expand - corner_tolerance ) )
+			if( x < ( rect.right() - expand - corner_tolerance ) )
 				return rect_pos_top;
-			if( y > ( rect.get_t() + expand + corner_tolerance ) )
+			if( y > ( rect.top() + expand + corner_tolerance ) )
 				return rect_pos_right;
 			return rect_pos_top_right;
 		}
 
-		if( y > rect.y.get_average() )
+		if( y > rect.y.average() )
 		{
-			if( x > ( rect.get_l() + expand + corner_tolerance ) )
+			if( x > ( rect.left() + expand + corner_tolerance ) )
 				return rect_pos_bottom;
-			if( y < ( rect.get_b() - expand - corner_tolerance ) )
+			if( y < ( rect.bottom() - expand - corner_tolerance ) )
 				return rect_pos_left;
 			return rect_pos_bottom_left;
 		}
-		if( x > ( rect.get_l() + expand + corner_tolerance ) )
+		if( x > ( rect.left() + expand + corner_tolerance ) )
 			return rect_pos_top;
-		if( y > ( rect.get_t() + expand + corner_tolerance ) )
+		if( y > ( rect.top() + expand + corner_tolerance ) )
 			return rect_pos_left;
 		return rect_pos_top_left;
 	}
@@ -587,7 +585,7 @@ inline bool Window::isInside( point pos ) { return false; }
 inline const window_uid Window::getuid() const { return uid; }
 
 
-inline WindowManager::WindowManager( int width, int height ) { Rect = rect::from_tl( {}, { width, height } ); }
+inline WindowManager::WindowManager( int width, int height ) { Rect = rect::from_topleft( {}, point{ width, height } ); }
 inline WindowManager::~WindowManager() { for( auto && w : windowStack ) delete w; }
 
 inline void WindowManager::SetCapture( Window * window ) { capture = window; }
@@ -693,7 +691,7 @@ inline void WindowManager::addWindow( Window * window ) {
 inline DynamicWindow::DynamicWindow( rect rc, Flags_ Flags ) : flags( Flags ) { Rect = rc; }
 inline DynamicWindow * DynamicWindow::addWidget( Widget * widget ) { widget->parent = this; widgets.emplace_back( widget ); return this; }
 inline void DynamicWindow::OnUpdate( float dt ) { for( auto && w : widgets ) w->OnUpdate( dt ); }
-inline bool DynamicWindow::isInside( point pos ) { return Rect.get_expanded( 8 )[pos]; }
+inline bool DynamicWindow::isInside( point pos ) { return Rect.expanded( 8 )[pos]; }
 inline void DynamicWindow::OnMove( point & new_pos ) {}
 
 inline void DynamicWindow::OnResize()
@@ -759,7 +757,7 @@ inline Result DynamicWindow::OnMouseMove( MouseMoveEventArgs & args ) {
 		auto size = Rect.size();
 		point p = parent->Rect.clamp( args.pos );
 		OnMove( p );
-		Rect = rect::from_tl( p - last, size );
+		Rect = rect::from_topleft( p - last, size );
 	}
 	else if( state & State_Sizing ) {
 		point p = parent->Rect.clamp( args.pos );
@@ -787,7 +785,7 @@ inline Result DynamicWindow::OnMouseMove( MouseMoveEventArgs & args ) {
 	}
 	else {
 		for( auto && w : widgets )
-			if( w->isInside( args.pos - Rect.get_tl() ) )
+			if( w->isInside( args.pos - Rect.topLeft() ) )
 			{
 				if( hover ) hover->OnMouseLeave();
 				hover = w;
@@ -833,7 +831,7 @@ inline Result DynamicWindow::OnKeyDown( KeyDownEventArgs & args ) {
 		case rect_pos_bottom_right:	(int &)state |= State_SizingR|State_SizingB; break;
 		default:break;
 		}
-		last = GetMousePosition() - Rect.get_tl();
+		last = GetMousePosition() - Rect.topLeft();
 		parent->SetCapture( this );
 	}
 	if( focus ) {

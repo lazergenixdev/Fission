@@ -4,16 +4,16 @@
 #define _lazer_has_vector
 #define _lazer_has_point
 #define _lazer_has_rect
-	namespace lazer::ui {
+	namespace react::ui {
 		template <typename T> using vector = std::vector<T>;
-		using point = lazer::vec2i;
-		using rect = lazer::recti;
+		using point = Fission::base::vector2i;
+		using rect = Fission::base::recti;
 	}
-#define _lazer_char_type wchar_t
-#define _lazer_key_type Fission::Keys::Key
-#define _lazer_key_left_mouse_ Fission::Keys::Mouse_Left
-#define _lazer_key_right_mouse_ Fission::Keys::Mouse_Right
-#define _lazer_cursor_type Fission::Cursor *
+#define _lazer_char_type			wchar_t
+#define _lazer_key_type				Fission::Keys::Key
+#define _lazer_key_left_mouse_		Fission::Keys::Mouse_Left
+#define _lazer_key_right_mouse_		Fission::Keys::Mouse_Right
+#define _lazer_cursor_type			Fission::Cursor *
 #include <Fission/reactui.h>
 
 namespace Fission {
@@ -41,7 +41,7 @@ namespace Fission {
 		void CreateActive();
 
 	private:
-		scoped<ui::WindowManager> pWindowManager;
+		scoped<react::ui::WindowManager> pWindowManager;
 	};
 
 }

@@ -8,7 +8,7 @@
 
 namespace freetype {
 
-	Face::Face( FT_Library lib, const lazer::file::path & path )
+	Face::Face( FT_Library lib, const std::filesystem::path & path )
 	{
 		FT_Error err;
 		_FREETYPE_THROW_FAILED_EX(
@@ -58,7 +58,7 @@ namespace freetype {
 			FT_Done_FreeType( m_Library );
 	}
 
-	Face * Library::LoadFaceFromFile( const lazer::file::path & path )
+	Face * Library::LoadFaceFromFile( const std::filesystem::path & path )
 	{
 		std::string location = path.string();
 		auto & s = Get(); // static instance
