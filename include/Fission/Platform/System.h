@@ -29,49 +29,21 @@
 */
 
 #pragma once
-#include "Fission/config.h"
+#include <Fission/config.h>
 #include "Fission/Base/String.h"
-
-// todo: change comment style to be consistant with rest of project
 
 namespace Fission {
 
-	/// <summary>
-	/// System acts as an interface for the platform operating system
-	/// </summary>
 	class System
 	{
 	public:
-		/// <summary>
-		/// Initialize Summary.
-		/// </summary>
-		FISSION_API static void Initialize();
+		FISSION_API static void ShowSimpleMessageBox( const string & _Title, const string & _Text );
 
-		/// <summary>
-		/// Shutdown Summary.
-		/// </summary>
-		FISSION_API static void Shutdown();
+		FISSION_API static bool OpenURL( const std::filesystem::path & _URL );
 
-		/// <summary>
-		/// Blocks current thread with a OK message box.
-		/// </summary>
-		/// <param name="Title">- What gets set as the title.</param>
-		/// <param name="Text">.</param>
-		FISSION_API static void DisplayMessageBox( const string & _Title, const string & _Text );
+		FISSION_API static bool OpenFileLocation( const std::filesystem::path & _File );
 
-		/// <summary>
-		/// Save text to the Clipboard.
-		/// </summary>
-		/// <param name="Text">- utf8 string to put onto the clipboard.</param>
-		FISSION_API static void SaveToClipboard( const string & _Text );
-
-		FISSION_API static bool OpenURL( const string & _URL );
-		FISSION_API static bool OpenFile( const std::filesystem::path & _File );
-
-		/// <summary>
-		/// Writes out information about the system to the console.
-		/// </summary>
-		FISSION_API static void WriteInfoToConsole();
+		FISSION_API static const char * GetVersionString();
 
 	}; // class Fission::System
 

@@ -1,11 +1,11 @@
 #pragma once
-#include "Fission/Core/Scene.h"
-#include "Fission/Base/String.h"
-#include "Fission/Base/Utility/Timer.h"
+#include <Fission/Base/String.h>
+#include <Fission/Base/Utility/Timer.h>
+#include <Fission/Core/Scene.hh>
 
 namespace Fission {
 
-class ConsoleLayer : public IConsoleLayer
+class ConsoleLayer : public IFConsoleLayer
 {
 public:
 	virtual void OnCreate() override;
@@ -17,7 +17,7 @@ private:
 	void _hide();
 
 private:
-	std::unique_ptr<Renderer2D> m_pRenderer2D;
+	std::unique_ptr<IFRenderer2D> m_pRenderer2D;
 
 	string m_CommandText;
 

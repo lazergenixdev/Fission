@@ -579,6 +579,14 @@ static bool operator==( const char * const _Left, const utf8_string & _Right ) {
 static bool operator==( const utf8_string & _Left, const char * const _Right ) { return _Left.__equal( _Right ); }
 #endif
 
+static auto operator+( const char8_t * const _Left, const utf8_string & _Right ) { return utf8_string(_Left)+_Right; }
+static auto operator+( const char16_t * const _Left, const utf16_string & _Right ) { return utf16_string(_Left)+_Right; }
+static auto operator+( const char32_t * const _Left, const utf32_string & _Right ) { return utf32_string(_Left)+_Right; }
+static auto operator+( const char * const _Left, const ascii_string & _Right ) { return ascii_string( _Left ) + _Right; }
+
+#ifdef __cpp_char8_t
+static auto operator+( const char * const _Left, const utf8_string & _Right ) { return utf8_string(_Left)+_Right; }
+#endif
 
 
 /* ======================= [String Literals] ======================= */

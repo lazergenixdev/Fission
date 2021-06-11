@@ -1,5 +1,5 @@
 #pragma once
-#include "Fission/Core/Scene.h"
+#include <Fission/Core/Scene.hh>
 
 #define _lazer_has_vector
 #define _lazer_has_point
@@ -18,7 +18,7 @@
 
 namespace Fission {
 
-	class UILayer : public IUILayer
+	class UILayer : public IFUILayer
 	{
 	public:
 		UILayer();

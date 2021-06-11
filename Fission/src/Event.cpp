@@ -1,8 +1,8 @@
-#include "Fission/Core/Input/Event.h"
+#include <Fission/Core/Input/Event.hh>
 
 using namespace Fission;
 
-IEventHandler * IEventHandler::Default() {
-	static IEventHandler _DefEventHandler;
+IFEventHandler * IFEventHandler::Default() {
+	static IFEventHandler _DefEventHandler;
 	return &_DefEventHandler;
 }

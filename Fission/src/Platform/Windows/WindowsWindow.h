@@ -1,8 +1,6 @@
 #pragma once
-#include "Fission/Core/Window.h"
-#include <mutex>
+#include "WinWindowManager.h"
 #include <condition_variable>
-#include <thread>
 
 namespace Fission::Platform
 {
@@ -10,58 +8,50 @@ namespace Fission::Platform
 		DWORD Style, ExStyle;
 	};
 
-	class WindowsWindow : public Window
+	extern LRESULT CALLBACK SetupWindowsProc( _In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wParam, _In_ LPARAM lParam );
+	extern LRESULT CALLBACK MainWindowsProc( _In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wParam, _In_ LPARAM lParam );
+
+	class WindowsWindow : public IFWindow
 	{
 	public:
 
-		WindowsWindow( const Properties & props, Graphics * pGraphics, IEventHandler * event_handler );
-		~WindowsWindow();
+		WindowsWindow( const CreateInfo * info, GlobalWindowInfo * gInfo );
 
-		virtual void SetEventHandler( IEventHandler * handler ) override;
+	//	virtual void SetEventHandler( IEventHandler * handler ) override;
 
-		virtual void SetTitle( const string & title ) override;
+	//	virtual void SetTitle( const string & title ) override;
 
-		virtual string GetTitle() override;
+	//	virtual string GetTitle() override;
 
-		virtual void SetStyle( Style style ) override;
+	//	virtual void SetStyle( Style style ) override;
 
-		virtual Style GetStyle() override;
+	//	virtual Style GetStyle() override;
 
-		virtual void SetSize( const base::size & size ) override;
+	//	virtual void SetSize( const base::size & size ) override;
 
-		virtual base::size GetSize() override;
+	//	virtual base::size GetSize() override;
 
-		virtual void DisplayMessageBox( const string & title, const string & info ) override;
+		virtual void ShowPopup( const string & title, const string & info ) override;
 
-		virtual void Call( std::function<void()> function ) override;
+	//	virtual void Call( std::function<void()> function ) override;
 
 		virtual native_handle_type native_handle() override;
 
-		virtual Resource::SwapChain * GetSwapChain() override;
+		virtual Resource::IFSwapChain * GetSwapChain() override;
 
-		virtual MonitorPtr GetMonitor() override;
+	//	virtual MonitorPtr GetMonitor() override;
 
-		virtual void SetMonitor( MonitorPtr ) override;
+	//	virtual void SetMonitor( MonitorPtr ) override;
 
 		virtual void Close() override;
 
+		virtual void Destroy() override;
+
 		base::vector2i GetPosition() const { return m_Properties.position; }
 
+		LRESULT CALLBACK ProcessEvent( Event * _Ptr_Event );
+
 	private:
-		class WindowClass
-		{
-		public:
-			static HINSTANCE GetInstance();
-			static const wchar_t * GetName();
-		private:
-			WindowClass();
-			~WindowClass();
-
-			const wchar_t * m_Name;
-			HINSTANCE m_hInstance;
-
-			static WindowClass & Get();
-		};
 
 		class MouseTrackEvents
 		{
@@ -73,30 +63,20 @@ namespace Fission::Platform
 
 	private:
 
-		void ProcessMessage( UINT Msg, WPARAM wParam, LPARAM lParam );
 
-		static void Run( WindowsWindow * pthis );
-
-		// Todo: implement gamepad support when bored
-		static void PollGamePad( WindowsWindow * pthis );
-
-		static LRESULT CALLBACK BaseWindowsProc(
-			_In_ HWND hWnd,
-			_In_ UINT Msg,
-			_In_ WPARAM wParam,
-			_In_ LPARAM lParam
-		);
+		void MessageThreadMain();
 
 	public:
 		DWORD GetWindowsStyle();
 		base::size GetWindowsSize();
 
 	private:
+		FPointer<Resource::IFSwapChain> m_pSwapChain;
+		IFEventHandler * pEventHandler = IFEventHandler::Default();
 
 		short m_MouseWheelDelta = 0;
 
 		Cursor * m_Cursor = Cursor::Get( Cursor::Default_Arrow );
-		ref<Resource::SwapChain> m_pSwapChain;
 
 		Properties m_Properties;
 		bool m_bRestrictAR = false;
@@ -104,11 +84,9 @@ namespace Fission::Platform
 
 		WindowHandle m_Handle = NULL;
 
-		IEventHandler * pEventHandler = IEventHandler::Default();
 		MouseTrackEvents m_MouseTracker;
 
 		Monitor * m_pMonitor;
-		Graphics * m_pGraphics;
 
 		std::mutex m_AccessMutex;
 		std::condition_variable m_AccessCV;
@@ -116,6 +94,7 @@ namespace Fission::Platform
 		std::thread m_WindowThread;
 		std::thread m_GamePadPollingThread;
 
+		GlobalWindowInfo * m_pGlobalInfo;
 	};
 
 }

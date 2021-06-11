@@ -1,10 +1,10 @@
 #pragma once
-#include "Fission/Core/Graphics/Bindable.h"
+#include <Fission/Core/Graphics/Bindable.hh>
 #include <d3d11.h>
 
 namespace Fission::Platform {
 
-	class VertexBufferDX11 : public Resource::VertexBuffer
+	class VertexBufferDX11 : public Resource::IFVertexBuffer
 	{
 	public:
 		VertexBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info );
@@ -16,6 +16,7 @@ namespace Fission::Platform {
 
 		virtual uint32_t GetCount() override;
 
+		virtual void Destroy() override;
 	private:
 		ID3D11DeviceContext * m_pContext;
 		com_ptr<ID3D11Buffer> m_pBuffer;
@@ -26,7 +27,7 @@ namespace Fission::Platform {
 		uint32_t m_Count;
 	};
 
-	class IndexBufferDX11 : public Resource::IndexBuffer
+	class IndexBufferDX11 : public Resource::IFIndexBuffer
 	{
 	public:
 		IndexBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info );
@@ -38,6 +39,7 @@ namespace Fission::Platform {
 
 		virtual uint32_t GetCount() override;
 
+		virtual void Destroy() override;
 	private:
 		ID3D11DeviceContext * m_pContext;
 		com_ptr<ID3D11Buffer> m_pBuffer;
@@ -48,7 +50,7 @@ namespace Fission::Platform {
 		uint32_t m_Count;
 	};
 
-	class ConstantBufferDX11 : Resource::IBindable
+	class ConstantBufferDX11 : Resource::IFBindable
 	{
 	public:
 		struct Variable
@@ -120,13 +122,15 @@ namespace Fission::Platform {
 		virtual void Bind() override;
 	};
 
-	class ShaderDX11 : public Resource::Shader
+	class ShaderDX11 : public Resource::IFShader
 	{
 	public:
 		ShaderDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info );
 
 		virtual void Bind() override;
 		virtual void Unbind() override;
+
+		virtual void Destroy() override;
 	private:
 
 		static DXGI_FORMAT get_format( Resource::VertexLayoutTypes::Type type );
@@ -140,7 +144,7 @@ namespace Fission::Platform {
 	};
 
 
-	class Texture2DDX11 : public Resource::Texture2D
+	class Texture2DDX11 : public Resource::IFTexture2D
 	{
 	public:
 		Texture2DDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info );
@@ -152,6 +156,7 @@ namespace Fission::Platform {
 		virtual uint32_t GetWidth() override;
 		virtual uint32_t GetHeight() override;
 
+		virtual void Destroy() override;
 	private:
 		ID3D11DeviceContext * m_pContext;
 		com_ptr<ID3D11Texture2D> m_pTexture;
@@ -160,7 +165,7 @@ namespace Fission::Platform {
 		uint32_t m_Width, m_Height;
 	};
 
-	class BlenderDX11 : public Resource::Blender
+	class BlenderDX11 : public Resource::IFBlender
 	{
 	public:
 		BlenderDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info );
@@ -168,12 +173,13 @@ namespace Fission::Platform {
 		virtual void Bind() override;
 		virtual void Unbind() override;
 
+		virtual void Destroy() override;
 	private:
 		ID3D11DeviceContext * m_pContext;
 		com_ptr<ID3D11BlendState> m_pBlendState;
 	};
 
-	class SwapChainDX11 : public Resource::SwapChain
+	class SwapChainDX11 : public Resource::IFSwapChain
 	{
 	public:
 		SwapChainDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info );
@@ -192,6 +198,7 @@ namespace Fission::Platform {
 
 		virtual void Unbind() override {}
 
+		virtual void Destroy() override;
 	private:
 		uint32_t *							m_pSyncInterval = nullptr;
 		base::size							m_Resolution;

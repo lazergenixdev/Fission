@@ -45,38 +45,38 @@
 #define FISSION_CONSTEXPR_LINE __LINE__
 #endif
 
-#define FISSION_FILENAME() ::Fission::base::Filename<::Fission::base::detail::get_filename_size( __FILE__ )>( __FILE__ )
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Helper Macros:
+
+#define FISSION_FILENAME() ::Fission::base::Filename<::Fission::base::__get_filename_size( __FILE__ )>( __FILE__ )
 #define FISSION_THROW_LOCATION_HERE() ::Fission::base::throw_location( FISSION_CONSTEXPR_LINE, FISSION_FILENAME() )
 
 #define FISSION_THROW(NAME, APPENDS) {\
 static constexpr auto _ = ::Fission::base::throw_location( FISSION_CONSTEXPR_LINE, FISSION_FILENAME() ); \
-throw ::Fission::base::Exception( NAME, ::Fission::base::exception_message(_) APPENDS ); \
+throw ::Fission::base::generic_error( NAME, ::Fission::base::error_message(_) APPENDS ); \
 }
 
 #define FISSION_THROW_NOT_IMPLEMENTED() \
 FISSION_THROW( "'I'm Lazy Exception'",.append( "'" __FUNCTION__ "' not implemented." ) )
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 _FISSION_BASE_BEGIN
 
-namespace detail
+template <size_t _Size>
+static constexpr size_t __get_filename_size( const char (&_Filepath)[_Size] )
 {
+    size_t ret = _Size-1;
 
-    template <size_t _Size>
-    static constexpr size_t get_filename_size( const char (&_Filepath)[_Size] )
-    {
-        size_t ret = _Size-1;
+    do {
+        if( 
+            _Filepath[ret] == '\\' // Windows Filesystem
+        ||  _Filepath[ret] == '/'  // Literally every other Filesystem
+        ) return _Size - ret - 1;
+    } 
+    while( ret-- > 0u );
 
-        do {
-            if( 
-                _Filepath[ret] == '\\' // Windows Filesystem
-            ||  _Filepath[ret] == '/'  // Literally every other Filesystem
-            ) return _Size - ret - 1;
-        } 
-        while( ret-- > 0u );
-
-        return _Size;
-    }
-
+    return _Size;
 }
 
 
@@ -122,27 +122,27 @@ private:
 
 
 template <size_t _Size>
-class exception_message
+class error_message
 {
 public:
-    exception_message( const throw_location<_Size> & loc ) noexcept : _msg( loc.as_string() ) {}
+    error_message( const throw_location<_Size> & loc ) noexcept : _msg( loc.as_string() ) {}
 
-    exception_message & append( const std::string & msg ) noexcept {
-    _msg += "\n\n";
-    _msg += msg;
-    return *this;
+    error_message & append( const std::string & msg ) noexcept {
+        _msg += "\n\n";
+        _msg += msg;
+        return *this;
     }
 
-    exception_message & append( const std::string & key, const std::string & msg ) noexcept {
-    _msg += "\n\n";
-    _msg += key;
-    _msg += ":\n";
-    _msg += msg;
-    return *this;
+    error_message & append( const std::string & key, const std::string & msg ) noexcept {
+        _msg += "\n\n";
+        _msg += key;
+        _msg += ":\n";
+        _msg += msg;
+        return *this;
     }
 
-    operator const std::string & ( ) const noexcept {
-    return _msg;
+    inline operator const std::string & ( ) const noexcept {
+        return _msg;
     }
 
 private:
@@ -152,30 +152,31 @@ private:
 
 
 
-class base_exception : public std::runtime_error
+class runtime_error : public std::runtime_error
 {
 public:
     const char * name() const noexcept { return _name.c_str(); }
 
 protected:
-    base_exception( const std::string & name, const std::string & msg ) noexcept
+    runtime_error( const std::string & name, const std::string & msg ) noexcept
         : std::runtime_error( msg ), _name( name )
     {}
 
 private:
     std::string _name;
-}; // class Fission::base::base_exception
+
+}; // class Fission::base::runtime_error
 
 
 
-class Exception : public base_exception
+class generic_error : public runtime_error
 {
 public:
     template <size_t _Size>
-    Exception( const std::string & name, const exception_message<_Size> & message ) noexcept
-        : base_exception( name, message )
+    generic_error( const std::string & name, const error_message<_Size> & message ) noexcept
+        : runtime_error( name, message )
     {}
-}; // class Fission::base::Exception
+}; // class Fission::base::generic_error
 
 
 _FISSION_BASE_END

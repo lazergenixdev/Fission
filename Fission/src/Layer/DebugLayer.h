@@ -1,13 +1,13 @@
 #pragma once
-#include "Fission/Core/Scene.h"
-#include "Fission/Base/Utility/Timer.h"
+#include <Fission/Base/Utility/Timer.h>
+#include <Fission/Core/Scene.hh>
 
 namespace Fission {
 
-	class DebugLayerImpl : public DebugLayer
+	class DebugLayerImpl : public IFDebugLayer
 	{
 	public:
-		DebugLayerImpl();
+		DebugLayerImpl(IFGraphics * gfx);
 
 		virtual void RegisterDrawCallback( const char * _Key, DebugDrawCallback _Callback ) override;
 
@@ -21,8 +21,11 @@ namespace Fission {
 		virtual void OnUpdate();
 
 		virtual EventResult OnKeyDown( KeyDownEventArgs & args ) override;
+
+		virtual void Destroy() override;
 	private:
-		std::unique_ptr<Renderer2D> m_pRenderer2D;
+		IFGraphics * gfx;
+		FPointer<IFRenderer2D> m_pRenderer2D;
 
 		std::map<std::string, DebugDrawCallback> m_DrawCallbacks;
 

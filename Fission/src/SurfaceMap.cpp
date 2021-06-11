@@ -1,4 +1,4 @@
-﻿#include "Fission/Core/SurfaceMap.h"
+﻿#include <Fission/Core/SurfaceMap.hh>
 
 /** @file MaxRectsBinPack.h
 	@author Jukka Jyl�nki
@@ -750,7 +750,7 @@ bool surface_map::Load( const std::filesystem::path & file )
 	}
 	return true;
 }
-#include "Fission/Core/Console.h"
+#include <Fission/Core/Console.hh>
 
 bool surface_map::Save( const std::filesystem::path & file ) const
 {

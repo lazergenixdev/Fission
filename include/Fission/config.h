@@ -29,9 +29,11 @@
 */
 
 #pragma once
-#include "Platform/Platform.h" /*!< Determine Target Platform */
+#include <Fission/Platform/Platform.h> /*!< Determine Target Platform */
 
-#if defined(FISSION_PLATFORM_WINDOWS)
+////////////////////////////////////////////////////////////////////////////////////
+
+#ifdef FISSION_PLATFORM_WINDOWS
 #ifdef FISSION_BUILD_DLL
 #define FISSION_API __declspec(dllexport)
 #else
@@ -39,16 +41,31 @@
 #endif // FISSION_BUILD_DLL
 #else
 #define FISSION_API extern
-#endif
+#endif // FISSION_PLATFORM_WINDOWS
 
 /*! @brief Engine Name */
-#define FISSION_ENGINE "Fission"
+#define FISSION_ENGINE "Fission Engine"
+
+/*! @brief Fission Engine Build String, identifying the config we built. */
+#if defined(FISSION_DEBUG)
+#define FISSION_BUILD_STRING "(Debug)"
+#elif defined(FISSION_RELEASE)
+#define FISSION_BUILD_STRING "(Release)"
+#else
+#define FISSION_BUILD_STRING ""
+#endif
 
 /*! @brief Functions that should be thread safe */
 #define FISSION_THREAD_SAFE
 
-/* @brief Interface */
-#define Fission_Interface struct
+/* FISSION_FORCE_INLINE */
+#if _MSC_VER
+#define FISSION_FORCE_INLINE __forceinline
+#else
+#define FISSION_FORCE_INLINE
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////
 
 /**
  * standard library includes
@@ -65,13 +82,37 @@
 #include <chrono>
 #include <mutex>
 #include <condition_variable>
-#include <thread>
 #include <unordered_map>
 #include <map>
 #include <filesystem>
+#include <thread>
+
+////////////////////////////////////////////////////////////////////////////////////
 
 /**
- * Pointer Types
+ * Assertions
+ */
+#include <cassert>
+#if FISSION_DEBUG && 1
+#define FISSION_ASSERT( expression, ... ) assert( expression && "" __VA_ARGS__ )
+#else
+#define FISSION_ASSERT( expression, ... ) ((void)0)
+#endif // FISSION_DEBUG
+
+/**
+ * Macro Helpers
+ */
+#define FISSION_MK_STR(X) #X
+
+/**
+* Important Web Address
+*/
+#define FISSION_Rx2 "https://youtu.be/dQw4w9WgXcQ"
+
+////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Pointer Types; TODO: move this to base/
  */
 namespace Fission {
 
@@ -81,37 +122,42 @@ namespace Fission {
 	using scoped = std::unique_ptr<T>;
 
 	template <typename T, typename...Args>
-	static constexpr ref<T> CreateRef( Args&&...args )
+	static constexpr ref<T> make_ref( Args&&...args )
 	{
 		return std::make_shared<T>( std::forward<Args>( args ) ... );
 	}
 	template <typename T, typename...Args>
-	static constexpr scoped<T> CreateScoped( Args&&...args )
+	static constexpr scoped<T> make_scoped( Args&&...args )
 	{
 		return std::make_unique<T>( std::forward<Args>( args ) ... );
 	}
 
+	//! @brief Managed pointer type that destroys pointer when moves out of scope.
+	template <typename T>
+	class FPointer
+	{
+	public:
+		FPointer() = default;
+		FPointer(T*_):ptr(_){};
+
+		FPointer( FPointer && src ) { ptr = src.ptr; src.ptr = nullptr; }
+
+		~FPointer() { if( ptr ) { ptr->Destroy(); ptr = nullptr; } }
+
+		//! @brief Release and Get the address of.
+		inline T ** operator&() { this->~FPointer(); return &ptr; }
+
+		inline FPointer & operator=( T * _Right ) { this->~FPointer(); ptr = _Right; return *this; }
+
+		inline T * operator->() { return ptr; }
+
+		inline T * get() { return ptr; }
+		inline const T * get() const { return ptr; }
+
+	private:
+		T * ptr = nullptr;
+	};
 }
-
-/**
- * assertions
- */
-#include <cassert>
-#ifdef FISSION_DEBUG
-#define FISSION_ASSERT( expression, ... ) assert( expression && "" __VA_ARGS__ )
-#else
-#define FISSION_ASSERT( expression, ... ) ((void)0)
-#endif // FISSION_DEBUG
-
-/**
- * macro helpers
- */
-#define FISSION_MK_STR(X) #X
-
-/**
-* Important Web Address
-*/
-#define FISSION_Rx2 "https://youtu.be/dQw4w9WgXcQ"
 
 /**
 * TODO: Find a place for this in Base/

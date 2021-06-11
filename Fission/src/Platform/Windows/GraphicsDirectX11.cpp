@@ -1,15 +1,62 @@
 #include "GraphicsDirectX11.h"
 #include "WindowsWindow.h"
-#include "Fission/Core/Console.h"
-#include "Fission/Base/Exception.h"
+#include <Fission/Core/Console.hh>
+#include <Fission/Base/Exception.h>
 
 namespace Fission::Platform {
 
-	GraphicsDirectX11::GraphicsDirectX11()
+	bool DirectX11Module::Load()
+	{
+		if( LoadLibrary( "d3d11" ) )
+		{
+			bool bSuccess = true;
+
+			bSuccess &= LoadFunction( &CreateDevice, "D3D11CreateDevice" );
+
+			return bSuccess;
+		}
+		return false;
+	}
+
+	void DirectX11Module::UnLoad()
+	{
+		CreateDevice = NULL;
+		WindowsModule::Free();
+	}
+
+	bool DirectX11Module::IsSupported()
+	{
+		// Check for DirectX11 Support.
+		HRESULT hr = S_OK;
+		com_ptr<ID3D11Device>			pDevice;
+		com_ptr<ID3D11DeviceContext>	pImmediateContext;
+
+		hr = CreateDevice(
+			nullptr,
+			D3D_DRIVER_TYPE_HARDWARE,
+			nullptr,
+			0u,
+			nullptr,
+			0u,
+			D3D11_SDK_VERSION,
+			&pDevice,
+			nullptr,
+			&pImmediateContext
+		);
+
+		return SUCCEEDED( hr ); // Device ??  well ok then thanks for the free device
+	}
+
+//////////////////////////////////////////////////// GraphicsDirectX11 ////////////////////////////////////////////////////
+
+	GraphicsDirectX11::GraphicsDirectX11( DirectX11Module * pModule )
 	{
 		HRESULT hr = S_OK;
 
-		static constexpr D3D_FEATURE_LEVEL FeatureLevelsWant[] = { D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0 };
+		static constexpr D3D_FEATURE_LEVEL FeatureLevelsWant[] = {
+			D3D_FEATURE_LEVEL_11_1,
+			D3D_FEATURE_LEVEL_11_0 
+		};
 		D3D_FEATURE_LEVEL FeatureLevelGot;
 
 		UINT uCreateFlags = 0u;
@@ -17,7 +64,7 @@ namespace Fission::Platform {
 #ifdef FISSION_DEBUG
 		uCreateFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
-		hr = D3D11CreateDevice(
+		hr = pModule->CreateDevice(
 			nullptr,								/* Graphics Adapter */
 			D3D_DRIVER_TYPE_HARDWARE,				/* Driver Type */
 			nullptr,								/* Software */
@@ -30,30 +77,24 @@ namespace Fission::Platform {
 			&m_pImmediateContext					/* pp Device Context */
 		);
 
-		if( FAILED( hr ) ) { FISSION_THROW( "DirectX Exception", .append( "Failed to Create Device." ) ); }
+		// TODO: use DXErr for a little more information
+		if( FAILED( hr ) ) { FISSION_THROW( "DirectX Exception", .append( "Failed to Create D3D11 Device." ) ); }
 
-		m_NativeHandle.pDevice = m_pDevice.Get();
+		// Set the native handle
+		m_NativeHandle.pDevice        = m_pDevice.Get();
 		m_NativeHandle.pDeviceContext = m_pImmediateContext.Get();
 
+		// Print what version of D3D we got
 		switch( FeatureLevelGot ) 
 		{
-		case D3D_FEATURE_LEVEL_11_1:
-			Console::WriteLine( Colors::Lime, "Using DirectX 11.1" );
-			break;
-		case D3D_FEATURE_LEVEL_11_0:
-			Console::WriteLine( Colors::Lime, "Using DirectX 11.0" );
-			break;
-		default:
-			throw std::logic_error("this don't make no fucking sense");
+		case D3D_FEATURE_LEVEL_11_1: Console::WriteLine( Colors::Lime, "Using DirectX 11.1" ); break;
+		case D3D_FEATURE_LEVEL_11_0: Console::WriteLine( Colors::Lime, "Using DirectX 11.0" ); break;
+		default:throw std::logic_error("this don't make no fucking sense");
 		}
 
-		UINT nquality = 0;
-		hr = m_pDevice->CheckMultisampleQualityLevels( DXGI_FORMAT_R8G8B8A8_UNORM, 8u, &nquality );
-
-		// this all needs to be moved !epic
-
+		// TODO: remove all this junk
+		m_pImmediateContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
 		// disable depth testing
-		ID3D11DepthStencilState * pDepthStencilState;
 		D3D11_DEPTH_STENCIL_DESC desc;
 		ZeroMemory( &desc, sizeof( desc ) );
 		desc.DepthEnable = false;
@@ -63,49 +104,28 @@ namespace Fission::Platform {
 		desc.FrontFace.StencilFailOp = desc.FrontFace.StencilDepthFailOp = desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
 		desc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 		desc.BackFace = desc.FrontFace;
-
-		m_pDevice->CreateDepthStencilState( &desc, &pDepthStencilState );
-		m_pImmediateContext->OMSetDepthStencilState( pDepthStencilState, 0 );
-
-		// todo: find where the best place to have this is
-		m_pImmediateContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
-
-		// Set Sampler | todo: move to texture?
-		ID3D11SamplerState * ss;
+		m_pDevice->CreateDepthStencilState( &desc, &pDepthStencil );
+		m_pImmediateContext->OMSetDepthStencilState( pDepthStencil.Get(), 0 );
+		// Set Sampler
 		D3D11_SAMPLER_DESC sdesc = CD3D11_SAMPLER_DESC{};
 		sdesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
 		sdesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
 		sdesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
 		sdesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
 		sdesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-		m_pDevice->CreateSamplerState( &sdesc, &ss );
-		m_pImmediateContext->PSSetSamplers( 0u, 1u, &ss );
-
-		ID3D11RasterizerState * rs;
+		m_pDevice->CreateSamplerState( &sdesc, &pSamplerState );
+		m_pImmediateContext->PSSetSamplers( 0u, 1u, pSamplerState.GetAddressOf() );
+		// Set Rasterizer
 		D3D11_RASTERIZER_DESC rdesc = CD3D11_RASTERIZER_DESC{};
 		rdesc.FillMode = D3D11_FILL_SOLID;
 		rdesc.CullMode = D3D11_CULL_NONE;
 		rdesc.ScissorEnable = false;
 		rdesc.DepthClipEnable = false;
-		m_pDevice->CreateRasterizerState( &rdesc, &rs );
-		m_pImmediateContext->RSSetState( rs );
-
-		//// Set Clip Rect to where we render
-		//D3D11_RECT r;
-		//r.left = r.top = 0;
-		//r.bottom = m_Resolution.y;
-		//r.right = m_Resolution.x;
-		//m_pImmediateContext->RSSetScissorRects( 1, &r );
-
+		m_pDevice->CreateRasterizerState( &rdesc, &pRasterizerState );
+		m_pImmediateContext->RSSetState( pRasterizerState.Get() );
 	}
 
-	GraphicsDirectX11::~GraphicsDirectX11()
-	{
-		m_pImmediateContext.Reset();
-		m_pDevice.Reset();
-	}
-
-	Graphics::API GraphicsDirectX11::GetAPI() { return API::DirectX11; }
+	IFGraphics::API GraphicsDirectX11::GetAPI() { return API::DirectX11; }
 
 	void GraphicsDirectX11::Draw( uint32_t vertexCount, uint32_t vertexOffset )
 	{
@@ -122,56 +142,35 @@ namespace Fission::Platform {
 	//	return Global_FrameBuffers::AddBuffer( m_vFrameBuffers.back() );
 	//}
 
-	scoped<Resource::VertexBuffer> GraphicsDirectX11::CreateVertexBuffer( const VertexBuffer::CreateInfo & info ) {
-		return CreateScoped<VertexBufferDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info );
+	Resource::IFVertexBuffer* GraphicsDirectX11::CreateVertexBuffer( const VertexBuffer::CreateInfo & info ) {
+		return new VertexBufferDX11( m_pDevice.Get(), m_pImmediateContext.Get(), info );
 	}
 
-	scoped<Resource::IndexBuffer> GraphicsDirectX11::CreateIndexBuffer( const IndexBuffer::CreateInfo & info ) {
-		return CreateScoped<IndexBufferDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info );
+	Resource::IFIndexBuffer* GraphicsDirectX11::CreateIndexBuffer( const IndexBuffer::CreateInfo & info ) {
+		return new IndexBufferDX11( m_pDevice.Get(), m_pImmediateContext.Get(), info );
 	}
 
-	scoped<Resource::Shader> GraphicsDirectX11::CreateShader( const Shader::CreateInfo & info ) {
-		return CreateScoped<ShaderDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info );
+	Resource::IFShader* GraphicsDirectX11::CreateShader( const Shader::CreateInfo & info ) {
+		return new ShaderDX11( m_pDevice.Get(), m_pImmediateContext.Get(), info );
 	}
 
-	scoped<Resource::Texture2D> GraphicsDirectX11::CreateTexture2D( const Texture2D::CreateInfo & info ) {
-		return CreateScoped<Texture2DDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info );
+	Resource::IFTexture2D* GraphicsDirectX11::CreateTexture2D( const Texture2D::CreateInfo & info ) {
+		return new Texture2DDX11( m_pDevice.Get(), m_pImmediateContext.Get(), info );
 	}
 
-	scoped<Resource::Blender> GraphicsDirectX11::CreateBlender( const Blender::CreateInfo & info ) {
-		return CreateScoped<BlenderDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info );
+	Resource::IFBlender* GraphicsDirectX11::CreateBlender( const Blender::CreateInfo & info ) {
+		return new BlenderDX11( m_pDevice.Get(), m_pImmediateContext.Get(), info );
 	}
 
-	ref<Resource::SwapChain> GraphicsDirectX11::CreateSwapChain( const SwapChain::CreateInfo & info ) {
-		return CreateRef<SwapChainDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info );
+	Resource::IFSwapChain* GraphicsDirectX11::CreateSwapChain( const SwapChain::CreateInfo & info ) {
+		return new SwapChainDX11( m_pDevice.Get(), m_pImmediateContext.Get(), info );
 	}
 
-	bool GraphicsDirectX11::CheckSupport()
-	{
-		HRESULT hr = S_OK;
-
-		com_ptr<ID3D11Device>			pDevice;
-		com_ptr<ID3D11DeviceContext>	pImmediateContext;
-
-		hr = D3D11CreateDevice(
-			nullptr,
-			D3D_DRIVER_TYPE_HARDWARE,
-			nullptr,
-			0u,
-			nullptr,
-			0u,
-			D3D11_SDK_VERSION,
-			&pDevice,
-			nullptr,
-			&pImmediateContext
-		);
-
-		return SUCCEEDED( hr ); // Device ??  well ok then thanks for the free device
-	}
-
-	Graphics::native_handle_type GraphicsDirectX11::native_handle()
+	IFGraphics::native_handle_type GraphicsDirectX11::native_handle()
 	{
 		return &m_NativeHandle;
 	}
+
+	void GraphicsDirectX11::Destroy() { delete this; }
 
 }

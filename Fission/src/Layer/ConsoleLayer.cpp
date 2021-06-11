@@ -1,6 +1,6 @@
 #include "ConsoleLayer.h"
-#include "Fission/Core/Console.h"
-#include "Fission/Core/Application.h"
+#include <Fission/Core/Application.hh>
+#include <Fission/Core/Console.hh>
 
 namespace JetBrainsMonoTTF {
 #include "Static Fonts/JetBrainsMono-Regular.inl"
@@ -11,8 +11,8 @@ namespace Fission {
 	void ConsoleLayer::OnCreate()
 	{
 	//	m_CommandText.reserve( s_MaxCommandSize );
-		m_pRenderer2D = Renderer2D::Create( GetApp()->GetGraphics() );
-		FontManager::SetFont( "$console", JetBrainsMonoTTF::data, JetBrainsMonoTTF::size, 8.0f );
+	//	m_pRenderer2D = Renderer2D::Create( GetApp()->GetGraphics() );
+	//	FontManager::SetFont( "$console", JetBrainsMonoTTF::data, JetBrainsMonoTTF::size, 8.0f );
 		auto pFont = FontManager::GetFont( "$console" );
 		m_pRenderer2D->SelectFont( pFont );
 		m_FontSize = pFont->GetSize();

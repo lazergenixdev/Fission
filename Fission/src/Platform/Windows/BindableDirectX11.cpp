@@ -1,9 +1,16 @@
 #include "BindableDirectX11.h"
-#include "Fission/Core/Window.h"
-#include "Fission/Base/Exception.h"
+#include <Fission/Core/Window.hh>
+#include <Fission/Base/Exception.h>
 #include <d3dcompiler.h>
 
 namespace Fission::Platform {
+
+	void VertexBufferDX11::Destroy() { delete this; }
+	void IndexBufferDX11::Destroy() { delete this; }
+	void Texture2DDX11::Destroy() { delete this; }
+	void ShaderDX11::Destroy() { delete this; }
+	void BlenderDX11::Destroy() { delete this; }
+	void SwapChainDX11::Destroy() { delete this; }
 
 	VertexBufferDX11::VertexBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info )
 		: m_pContext( pContext ), m_Count( info.vtxCount ), m_Stride( info.pVertexLayout->GetStride() ), m_Type( info.type )
@@ -67,6 +74,7 @@ namespace Fission::Platform {
 	{
 		return m_Count;
 	}
+
 
 	IndexBufferDX11::IndexBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info )
 		: m_pContext( pContext ), m_Count( info.idxCount ), m_Type( info.type )
@@ -143,62 +151,6 @@ namespace Fission::Platform {
 	uint32_t IndexBufferDX11::GetCount()
 	{
 		return m_Count;
-	}
-
-	template <typename T>
-	static HRESULT ReflectToConstantBuffers(
-		std::vector<T> * pBuffers,
-		ID3D11Device * pDevice,
-		ID3D11DeviceContext * pContext,
-		ID3DBlob * pBlob )
-	{
-		HRESULT hr;
-
-		com_ptr<ID3D11ShaderReflection> pShaderReflection;
-		// this function SHOULD never fail, since we only pass shaders we create
-		hr = D3DReflect( pBlob->GetBufferPointer(), pBlob->GetBufferSize(), __uuidof( ID3D11ShaderReflection ), &pShaderReflection );
-
-		D3D11_SHADER_DESC shader_desc;
-		pShaderReflection->GetDesc( &shader_desc );
-
-		// Search through all buffer to find any constant buffers
-		for( int i = 0; i < (int)shader_desc.BoundResources; ++i )
-		{
-			D3D11_SHADER_INPUT_BIND_DESC bind_desc;
-			pShaderReflection->GetResourceBindingDesc( i, &bind_desc );
-			if( bind_desc.Type != D3D_SIT_CBUFFER ) continue; // continue to next bound resource if not constant buffer
-
-			// Get constant buffer description
-			D3D11_SHADER_BUFFER_DESC desc;
-			auto pConstantBuffer = pShaderReflection->GetConstantBufferByName( bind_desc.Name );
-			pConstantBuffer->GetDesc( &desc );
-
-			// Add constant buffer to our own list of buffers
-			pBuffers->emplace_back( pDevice, pContext, bind_desc.BindPoint, desc.Size );
-			auto & cb = pBuffers->back();
-
-			// search through all variables held in the buffer to add to our own buffer
-			for( int i = 0; i < (int)desc.Variables; ++i )
-			{
-				D3D11_SHADER_VARIABLE_DESC vdesc;
-				D3D11_SHADER_TYPE_DESC tdesc;
-				auto * pVar = pConstantBuffer->GetVariableByIndex( i );
-				auto * pType = pVar->GetType();
-				pVar->GetDesc( &vdesc );
-				pType->GetDesc( &tdesc );
-
-				// Add variable to our constant buffer
-				ConstantBufferDX11::Variable var;
-				var.m_class = tdesc.Class;
-				var.m_type = tdesc.Type;
-				var.m_columns = tdesc.Columns;
-				var.m_rows = tdesc.Rows;
-				var.m_offset = vdesc.StartOffset;
-				cb.AddVariable( vdesc.Name, var );
-			}
-		}
-
-		return S_OK;
 	}
 
 	ShaderDX11::ShaderDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info )
@@ -473,7 +425,6 @@ namespace Fission::Platform {
 	{
 		HRESULT hr = S_OK;
 
-
 		DXGI_SWAP_CHAIN_DESC dSwapChain = {};
 		dSwapChain.BufferDesc.Width = m_Resolution.width();
 		dSwapChain.BufferDesc.Height = m_Resolution.height();
@@ -481,19 +432,30 @@ namespace Fission::Platform {
 		dSwapChain.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 		dSwapChain.OutputWindow = info.pWindow->native_handle();
 		dSwapChain.BufferCount = 2u;
-		dSwapChain.SampleDesc.Count = 4u;
+		dSwapChain.SampleDesc.Count = 8u;
 		dSwapChain.SampleDesc.Quality = 0u;
 		dSwapChain.Windowed = TRUE;
 		dSwapChain.BufferDesc.RefreshRate.Numerator = 200;
 		dSwapChain.BufferDesc.RefreshRate.Denominator = 1;
 		dSwapChain.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+		dSwapChain.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 
-		com_ptr<IDXGIFactory> pDXGIFactory;
-		hr = CreateDXGIFactory( __uuidof( IDXGIFactory ), &pDXGIFactory );
+		IDXGIDevice * pDXGIDevice = nullptr;
+		hr = pDevice->QueryInterface( IID_PPV_ARGS( &pDXGIDevice ) );
+
+		IDXGIAdapter * pDXGIAdapter = nullptr;
+		hr = pDXGIDevice->GetAdapter( &pDXGIAdapter );
+		pDXGIDevice->Release();
+
+		IDXGIFactory * pDXGIFactory = nullptr;
+		hr = pDXGIAdapter->GetParent( IID_PPV_ARGS( &pDXGIFactory ) );
+		pDXGIAdapter->Release();
+
 		if( FAILED( hr ) ) FISSION_THROW( "DXGI Error",.append( "Failed to create DXGI Factory." ) );
 
 		hr = pDXGIFactory->CreateSwapChain( pDevice, &dSwapChain, &m_pSwapChain );
 		if( FAILED( hr ) ) FISSION_THROW( "DXGI Error",.append( "Failed to create Swapchain." ) );
+		pDXGIFactory->Release();
 
 		com_ptr<ID3D11Texture2D> pBackBuffer;
 		hr = m_pSwapChain->GetBuffer( 0u, IID_PPV_ARGS( &pBackBuffer ) );

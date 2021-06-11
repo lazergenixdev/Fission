@@ -31,6 +31,20 @@
 //#define NODEFERWINDOWPOS
 //#define NOMCX
 
-#include <Windows.h>
+#include <windows.h>
 
+// STOP DOING THIS WINDOWS, I DON'T WANT YOUR STUPID MACROS
 #undef CreateWindow
+#undef LoadLibrary
+#undef LoadCursor
+#undef MessageBox
+#undef GetMessage
+#undef SendMessage
+#undef DispatchMessage
+#undef DefWindowProc
+#undef RegisterClass
+#undef UnregisterClass
+#undef SetWindowText
+#undef GetWindowLongPtr
+#undef SetWindowLongPtr
+#undef GetMonitorInfo

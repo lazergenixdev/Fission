@@ -6,10 +6,10 @@ project 'Fission'
     targetdir ("%{wks.location}/bin/" .. OutputDir)
 	objdir ("%{wks.location}/bin-int/" .. OutputDir .. "/%{prj.name}")
 
-    files { "%{prj.location}/src/**.cpp", "%{prj.location}/src/**.h" }
+    files { "%{prj.location}/src/**.cpp", "%{prj.location}/src/**.h", "%{prj.location}/src/**.hh" }
 
     -- public headers
-    files '%{wks.location}/include/**.h'
+    files '%{wks.location}/include/**'
 
     links { "yaml", "freetype" }
 
@@ -33,14 +33,13 @@ project 'Fission'
     filter "system:windows"
         files { "resource.h", "Fission.rc" }
 
-        -- COM
-        links 'ole32'
+        links { 
+            'user32',
+            'ole32'
+        }
 
         -- Graphics
-        links { 'd3d11', 'd3dcompiler' }
-
-        -- Windows
-        links { 'user32', 'gdi32', 'dxgi' }
+        links 'd3dcompiler'
 
         -- HRESULT translation to readable strings
         includedirs '%{prj.location}/vendor/windows/DXErr'

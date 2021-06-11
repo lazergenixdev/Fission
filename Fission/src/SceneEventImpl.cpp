@@ -1,11 +1,11 @@
-#include "Fission/Core/Scene.h"
+#include <Fission/Core/Scene.hh>
 
 namespace Fission
 {
 // Very boring code, here only for debugging purposes
 //
 
-	EventResult Scene::OnKeyDown( KeyDownEventArgs & args )
+	EventResult FScene::OnKeyDown( KeyDownEventArgs & args )
 	{
 		for( auto it = m_vLayerStack.rbegin(); it != m_vLayerStack.rend(); ++it )
 			if( ( *it )->OnKeyDown( args ) == EventResult::Handled )
@@ -13,7 +13,7 @@ namespace Fission
 		return EventResult::Pass;
 	}
 
-	EventResult Scene::OnKeyUp( KeyUpEventArgs & args )
+	EventResult FScene::OnKeyUp( KeyUpEventArgs & args )
 	{
 		for( auto it = m_vLayerStack.rbegin(); it != m_vLayerStack.rend(); ++it )
 			if( ( *it )->OnKeyUp( args ) == EventResult::Handled )
@@ -21,7 +21,7 @@ namespace Fission
 		return EventResult::Pass;
 	}
 
-	EventResult Scene::OnTextInput( TextInputEventArgs & args )
+	EventResult FScene::OnTextInput( TextInputEventArgs & args )
 	{
 		for( auto it = m_vLayerStack.rbegin(); it != m_vLayerStack.rend(); ++it )
 			if( ( *it )->OnTextInput( args ) == EventResult::Handled )
@@ -29,7 +29,7 @@ namespace Fission
 		return EventResult::Pass;
 	}
 
-	EventResult Scene::OnMouseMove( MouseMoveEventArgs & args )
+	EventResult FScene::OnMouseMove( MouseMoveEventArgs & args )
 	{
 		for( auto it = m_vLayerStack.rbegin(); it != m_vLayerStack.rend(); ++it )
 			if( ( *it )->OnMouseMove( args ) == EventResult::Handled )
@@ -37,7 +37,7 @@ namespace Fission
 		return EventResult::Pass;
 	}
 
-	EventResult Scene::OnMouseLeave( MouseLeaveEventArgs & args )
+	EventResult FScene::OnMouseLeave( MouseLeaveEventArgs & args )
 	{
 		for( auto it = m_vLayerStack.rbegin(); it != m_vLayerStack.rend(); ++it )
 			if( ( *it )->OnMouseLeave( args ) == EventResult::Handled )
@@ -45,7 +45,7 @@ namespace Fission
 		return EventResult::Pass;
 	}
 
-	EventResult Scene::OnSetCursor( SetCursorEventArgs & args )
+	EventResult FScene::OnSetCursor( SetCursorEventArgs & args )
 	{
 		for( auto it = m_vLayerStack.rbegin(); it != m_vLayerStack.rend(); ++it )
 			if( ( *it )->OnSetCursor( args ) == EventResult::Handled )
@@ -53,21 +53,21 @@ namespace Fission
 		return EventResult::Pass;
 	}
 
-	EventResult Scene::OnHide()
+	EventResult FScene::OnHide()
 	{
 		for( auto it = m_vLayerStack.rbegin(); it != m_vLayerStack.rend(); ++it )
 			( *it )->OnHide();
 		return EventResult::Handled;
 	}
 
-	EventResult Scene::OnShow()
+	EventResult FScene::OnShow()
 	{
 		for( auto it = m_vLayerStack.rbegin(); it != m_vLayerStack.rend(); ++it )
 			( *it )->OnShow();
 		return EventResult::Handled;
 	}
 
-	EventResult Scene::OnClose( CloseEventArgs & args )
+	EventResult FScene::OnClose( CloseEventArgs & args )
 	{
 		for( auto it = m_vLayerStack.rbegin(); it != m_vLayerStack.rend(); ++it )
 			( *it )->OnClose( args );

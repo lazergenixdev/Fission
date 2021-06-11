@@ -1,5 +1,5 @@
 #pragma once
-#include "Fission/Core/Input/Cursor.h"
+#include <Fission/Core/Input/Cursor.hh>
 
 namespace Fission::Platform
 {

@@ -1,4 +1,4 @@
-#include "Fission/Core/Input/Cursor.h"
+#include <Fission/Core/Input/Cursor.hh>
 
 #ifdef FISSION_PLATFORM_WINDOWS
 #include "Platform/Windows/WindowsCursor.h"

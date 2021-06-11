@@ -1,37 +1,18 @@
 #pragma once
-#include "Fission/Core/Scene.h"
-#include "Fission/Base/Utility/Timer.h"
-#include "Fission/Core/Application.h"
+#include <Fission/Core/Scene.hh>
+#include <Fission/Core/Application.hh>
+#include <Fission/Base/Utility/Timer.h>
 
 namespace Fission {
 
-	class DefaultScene : public Scene
+	class DefaultScene : public FScene
 	{
-	public:
-		virtual EventResult OnKeyDown( KeyDownEventArgs & )			FISSION_EVENT_DEFAULT;
-		virtual EventResult OnKeyUp( KeyUpEventArgs & )				FISSION_EVENT_DEFAULT;
-		virtual EventResult OnTextInput( TextInputEventArgs & )		FISSION_EVENT_DEFAULT;
-		virtual EventResult OnMouseMove( MouseMoveEventArgs & )		FISSION_EVENT_DEFAULT;
-		virtual EventResult OnMouseLeave( MouseLeaveEventArgs & )	FISSION_EVENT_DEFAULT;
-		virtual EventResult OnSetCursor( SetCursorEventArgs & )		FISSION_EVENT_DEFAULT;
-		virtual EventResult OnHide()								FISSION_EVENT_DEFAULT;
-		virtual EventResult OnShow()								FISSION_EVENT_DEFAULT;
-		virtual EventResult OnClose( CloseEventArgs & )				FISSION_EVENT_DEFAULT;
 	};
 
 	class SceneStack
 	{
 	public:
-		SceneStack( ScenePtr start )
-			: m_ActiveScene(start)
-		{
-			m_Scenes.reserve( 16 );
-			if( m_ActiveScene )
-			{
-				m_Scenes.emplace_back( m_ActiveScene );
-			}
-			else m_ActiveScene = new DefaultScene;
-		}
+		SceneStack() = default;
 
 		inline void OnCreate() { m_ActiveScene->CreateAll(); };
 
@@ -69,7 +50,7 @@ namespace Fission {
 		inline EventResult OnClose( CloseEventArgs & args )				{ return m_ActiveScene->OnClose( args );		}
 
 		// ptr_scene must never be nullptr
-		inline void OpenScene( Scene * ptr_scene )
+		inline void OpenScene( FScene * ptr_scene )
 		{
 			if( m_Scenes.size() )
 			{
@@ -89,7 +70,7 @@ namespace Fission {
 
 		inline void CloseScene()
 		{
-			if( m_Scenes.size() <= 1 ) return Application::Get()->Exit();
+		//	if( m_Scenes.size() <= 1 ) return Application::Get()->Exit();
 
 			if( !m_bSceneSwitch )
 			{
@@ -101,14 +82,14 @@ namespace Fission {
 
 	private:
 
-		ScenePtr m_ActiveScene;
+		FScene * m_ActiveScene = m_ActiveScene = new DefaultScene;
 		bool m_bSceneSwitch = false;
 
 		float m_SceneSwitchCooldownDuration = 0.2f;
 		simple_timer m_SceneSwitchTimer;
-		ScenePtr m_NextScene;
+		FScene * m_NextScene;
 
-		SceneList m_Scenes;
+		std::vector<FScene *> m_Scenes;
 	};
 
 }

@@ -31,13 +31,13 @@
 #pragma once
 #ifdef _WIN32
 	/* Windows x64/x86 */
-#define FISSION_PLATFORM_WINDOWS
+#define FISSION_PLATFORM_WINDOWS 1
 #ifdef _WIN64
 	/* Windows x64  */
-#define FISSION_PLATFORM_WINDOWS64
+#define FISSION_PLATFORM_WINDOWS64 1
 #else
 	/* Windows x86 */
-#define FISSION_PLATFORM_WINDOWS32
+#define FISSION_PLATFORM_WINDOWS32 1
 #endif
 #elif defined(__APPLE__) || defined(__MACH__)
 #include <TargetConditionals.h>
@@ -48,10 +48,10 @@
 #if TARGET_IPHONE_SIMULATOR == 1
 #error "IOS simulator is not supported!"
 #elif TARGET_OS_IPHONE == 1
-#define FISSION_PLATFORM_IOS
+#define FISSION_PLATFORM_IOS 1
 #error "IOS is not supported!"
 #elif TARGET_OS_MAC == 1
-#define FISSION_PLATFORM_MACOS
+#define FISSION_PLATFORM_MACOS 1
 #error "MacOS is not supported!"
 #else
 #error "Unknown Apple platform!"
@@ -60,10 +60,10 @@
  * since android is based on the linux kernel
  * it has __linux__ defined */
 #elif defined(__ANDROID__)
-#define FISSION_PLATFORM_ANDROID
+#define FISSION_PLATFORM_ANDROID 1
 #error "Android is not supported!"
 #elif defined(__linux__)
-#define FISSION_PLATFORM_LINUX
+#define FISSION_PLATFORM_LINUX 1
 #error "Linux is not supported!"
 #else
 	/* Unknown compiler/platform */
@@ -71,24 +71,44 @@
 #endif // End of platform detection
 
 #ifdef FISSION_PLATFORM_WINDOWS
-#include "Windows/winapi.h"
-#include <wrl/client.h>
+	#include <Fission/Platform/Windows/winapi.h>
+	#include <wrl/client.h>
 
-namespace Fission::Platform
-{
-	using ExitCode = int;
+	//! @note Our main will be called only from WinMain,
+	//!	       thus we just want to inline the code
+	#define FISSION_MAIN_EXPORT(RET) __forceinline RET
 
-	using WindowHandle = HWND;
-	using MonitorHandle = HMONITOR;
+	namespace Fission::Platform
+	{
+		using ExitCode = int;
 
-	using Event = struct {
-		HWND hWnd;
-		UINT Msg;
-		WPARAM wParam;
-		LPARAM lParam;
-	};
+		using WindowHandle = HWND;
+		using MonitorHandle = HMONITOR;
 
-	template <typename T>
-	using com_ptr = Microsoft::WRL::ComPtr<T>;
-}
-#endif // FISSION_PLATFORM_WINDOWS
+		using Event = struct {
+			HWND hWnd;
+			UINT Msg;
+			WPARAM wParam;
+			LPARAM lParam;
+		};
+
+		template <typename T>
+		using com_ptr = Microsoft::WRL::ComPtr<T>;
+	}
+
+#elif FISSION_PLATFORM_ANDROID
+
+	#define FISSION_MAIN_EXPORT(RET) extern "C" RET
+
+	namespace Fission::Platform
+	{
+		using ExitCode = int;
+
+		using WindowHandle = void*;
+		using MonitorHandle = void*;
+
+		using Event = struct { int unused; };
+	}
+
+#endif // FISSION_PLATFORM_""
+

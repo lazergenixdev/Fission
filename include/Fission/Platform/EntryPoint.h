@@ -32,16 +32,15 @@
 * SOFTWARE.
 *
 */
-
-
 #pragma once
-#include "Fission/Base/Exception.h"
-#include "Fission/Core/Application.h"
-#include "Fission/Platform/System.h"
+#include <Fission/Base/Exception.h>
+#include <Fission/Core/Engine.hh>
+#include <Fission/Core/Application.hh>
+#include <Fission/Platform/System.h>
 
-#define FISSION_EXIT_SUCCESS 0x0 /* Success */
-#define FISSION_EXIT_FAILURE 0x1 /* Failure */
-#define FISSION_EXIT_UNKNOWN 0x2 /* Failure */
+#define FISSION_EXIT_SUCCESS 0 /* Success */
+#define FISSION_EXIT_FAILURE 1 /* Failure */
+#define FISSION_EXIT_UNKNOWN 2 /* Failure */
 
 
 /* ================================================================================================== */
@@ -49,87 +48,104 @@
 /* ================================================================================================== */
 
 //! @brief Creates User Application.
-//! @return Pointer to a Fission::Application.
-extern Fission::Application * CreateApplication( void );
+//! @return Pointer to a Fission::FApplication.
+extern Fission::FApplication * CreateApplication( void );
 
 //! @brief Runs main application loop.
 //! @return ExitCode from the status of how the application exited.
-inline Fission::Platform::ExitCode _fission_main( void ) noexcept;
+FISSION_MAIN_EXPORT(Fission::Platform::ExitCode) _fission_main( void * ) noexcept;
 
 
 /* =================================================================================================== */
 /* -------------------------------------- Platform Entry Points -------------------------------------- */
 /* =================================================================================================== */
 
-#ifdef FISSION_PLATFORM_WINDOWS
+#if defined(FISSION_PLATFORM_WINDOWS)
 
 int WINAPI wWinMain( _In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPWSTR, _In_ int ) {
-	return _fission_main();
+	// Instance data is not needed on Windows, as there are
+	// WinAPI functions to get all the information needed; so
+	// there is no reason to pass anything to our main function.
+	return _fission_main(nullptr);
 }
 
-#endif // FISSION_PLATFORM_WINDOWS
+#elif defined(FISSION_PLATFORM_LINUX)
+
+#elif defined(FISSION_PLATFORM_ANDROID)
+
+/**
+ * I've been looking into Android development, and the only way to
+ * get a C++ program up and running is to compile into a shared library (.so)
+ * and call our C++ functions from a Java Android Activity.
+ * 
+ * So there is no need for a platform main function, our `_fission_main`
+ * will work just fine.
+ */
+
+#endif
 
 
 /* =================================================================================================== */
 /* ------------------------------------ fission main definition -------------------------------------- */
 /* =================================================================================================== */
 
-inline Fission::Platform::ExitCode _fission_main() noexcept
+FISSION_MAIN_EXPORT(Fission::Platform::ExitCode) _fission_main( void * instance ) noexcept
 {
 	using namespace Fission;
 	using namespace string_literals;
 
-	Platform::ExitCode ec = FISSION_EXIT_UNKNOWN;
+	Platform::ExitCode  nExitCode = FISSION_EXIT_UNKNOWN;
+	FPointer<IFEngine>  fsnEngine;
 
-	try 
+	Fission::CreateEngine( instance, &fsnEngine );
+
+	try
 	{
-		System::Initialize();
+		fsnEngine->LoadEngine();
 
-		auto _App = CreateApplication();
+		auto app = CreateApplication();
+
+		fsnEngine->LoadApplication( app );
 
 		try 
 		{
-			ec = _App->Run();
+			fsnEngine->Run( &nExitCode );
 		}
 
-		catch( base::base_exception & e )
+		catch( base::runtime_error & e )
 		{
-			_App->GetWindow()->DisplayMessageBox( string ( e.name() ) + " caught"_utf8, e.what() );
-			ec = FISSION_EXIT_FAILURE;
+			app->pMainWindow->ShowPopup( string( e.name() ) + " caught"_utf8, e.what() );
+			nExitCode = FISSION_EXIT_FAILURE;
 		}
 
 		catch( std::exception & e )
 		{
-			_App->GetWindow()->DisplayMessageBox( "C++ exception caught"_utf8, e.what() );
-			ec = FISSION_EXIT_FAILURE;
+			app->pMainWindow->ShowPopup( "C++ exception caught"_utf8, e.what() );
+			nExitCode = FISSION_EXIT_FAILURE;
 		}
 
 		catch( ... ) 
 		{
-			_App->GetWindow()->DisplayMessageBox( "Unknown Error"_utf8, "No information provided, lol"_utf8 );
+			app->pMainWindow->ShowPopup( "Unknown Error"_utf8, "No information provided, lol"_utf8 );
 		}
-
-		delete _App;
-
-		System::Shutdown();
 	}
 
-	catch( base::base_exception & e )
+	catch( base::runtime_error & e )
 	{
-		System::DisplayMessageBox( string( e.name() ) + " caught"_utf8, e.what() );
-		ec = FISSION_EXIT_FAILURE;
+		System::ShowSimpleMessageBox( string( e.name() ) + " caught"_utf8, e.what() );
+		nExitCode = FISSION_EXIT_FAILURE;
 	}
 
 	catch( std::exception & e )
 	{
-		System::DisplayMessageBox( "C++ exception caught"_utf8, e.what() );
-		ec = FISSION_EXIT_FAILURE;
+		System::ShowSimpleMessageBox( "C++ exception caught"_utf8, e.what() );
+		nExitCode = FISSION_EXIT_FAILURE;
 	}
 
 	catch( ... )
 	{
-		System::DisplayMessageBox( "Unknown Error"_utf8, "No information provided, lol"_utf8 );
+		System::ShowSimpleMessageBox( "Unknown Error"_utf8, "No information provided, lol"_utf8 );
 	}
 
-	return ec;
+	return nExitCode;
 }

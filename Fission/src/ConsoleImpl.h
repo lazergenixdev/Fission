@@ -1,5 +1,5 @@
 #pragma once
-#include "Fission/Core/Console.h"
+#include <Fission/Core/Console.hh>
 
 namespace Fission {
 

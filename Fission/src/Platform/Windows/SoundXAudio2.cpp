@@ -1,6 +1,6 @@
 #include "SoundXAudio2.h"
-#include "Fission/Core/Console.h"
-#include "Fission/Base/Exception.h"
+#include <Fission/Core/Console.hh>
+#include <Fission/Base/Exception.h>
 
 #include <windows.h>
 #include <mfapi.h>
@@ -48,7 +48,7 @@ SoundEngineXAudio2::SoundEngineXAudio2( const CreateInfo & info )
 
 ref<Fission::ISound> SoundEngineXAudio2::CreateSound( const std::filesystem::path & filepath )
 {
-	auto sound = CreateRef<SoundXAudio2>();
+	auto sound = make_ref<SoundXAudio2>();
 	LoadSoundDataFromFile( filepath, &sound->m_Sound );
 	return sound;
 }
@@ -60,7 +60,7 @@ ref<ISoundSource> SoundEngineXAudio2::Play( ISound * _Sound, Sound::OutputID _Ou
 	info.bStartPlaying = _Start_Playing;
 	info.bTrack = _Track;
 	info.sound = static_cast<SoundXAudio2 *>( _Sound );
-	return CreateRef<SoundSourceXAudio2>( m_pXAudio2Engine.Get(), m_vpSubmixVoices[_Output], info );
+	return make_ref<SoundSourceXAudio2>( m_pXAudio2Engine.Get(), m_vpSubmixVoices[_Output], info );
 }
 
 void SoundEngineXAudio2::SetVolume( Sound::OutputID _Output, float _Volume )

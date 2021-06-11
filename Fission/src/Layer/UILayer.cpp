@@ -1,14 +1,14 @@
 ﻿#include "UILayer.h"
-#include <Fission/Core/UI/UI.h>
+#include <Fission/Core/UI/UI.hh>
+#include <Fission/Core/Application.hh>
 #include <Fission/Base/Utility/Timer.h>
-#include <Fission/Core/Application.h>
 
 // Everything about this code is awful, please avert your eyes for your own well being. You have been warned.
 
 using namespace Fission;
 using namespace react;
 
-static scoped<Renderer2D>			g_pRenderer2D;
+static scoped<IFRenderer2D>			g_pRenderer2D;
 static std::mutex					g_Mutex;
 
 namespace NunitoSemiBoldTTF
@@ -482,7 +482,7 @@ namespace Fission::UI {
 
 UILayer::UILayer()
 {
-	pWindowManager = CreateScoped<ui::WindowManager>( 1280, 720 );
+	pWindowManager = make_scoped<ui::WindowManager>( 1280, 720 );
 }
 
 static constexpr float fontSize = 8.0f;
@@ -490,8 +490,8 @@ static simple_timer gtimer;
 
 void UILayer::OnCreate()
 {
-	g_pRenderer2D = Renderer2D::Create( GetApp()->GetGraphics() );
-	FontManager::SetFont( "$ui", "../resources/Fonts/NunitoSans-Regular.ttf", fontSize );
+//	g_pRenderer2D = Renderer2D::Create( GetApp()->GetGraphics() );
+//	FontManager::SetFont( "$ui", "../resources/Fonts/NunitoSans-Regular.ttf", fontSize );
 	g_pRenderer2D->SelectFont( FontManager::GetFont( "$ui" ) );
 
 	gtimer.reset();
