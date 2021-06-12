@@ -43,7 +43,7 @@
 
 namespace Fission
 {
-	struct IFWindow
+	struct IFWindow : public IFObject
 	{
 		/*! @brief Native window handle type */
 		using native_handle_type = Platform::WindowHandle;
@@ -126,12 +126,8 @@ namespace Fission
 		//! @brief Set which monitor the window will prefer for fullscreen mode
 	//	virtual void SetMonitor( MonitorPtr ) = 0;
 
-		virtual void ShowPopup( const string & title, const string & text ) = 0;
-
 		//! @brief Get a Handle to the native window
 		virtual native_handle_type native_handle() = 0;
-
-		virtual void Destroy() = 0;
 
 	}; // struct Fission::IFWindow
 

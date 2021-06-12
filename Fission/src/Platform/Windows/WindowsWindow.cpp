@@ -5,12 +5,12 @@
 #include "../../ConfigurationImpl.h"
 
 // application defined window messages
-#define FISSION_WINEVENT_MSGBOX       ( WM_USER + 0 )
-#define FISSION_WINEVENT_CLOSE        ( WM_USER + 1 )
-#define FISSION_WINEVENT_SETTITLE     ( WM_USER + 2 )
-#define FISSION_WINEVENT_SETSTYLE     ( WM_USER + 3 )
-#define FISSION_WINEVENT_SETSIZE      ( WM_USER + 4 )
-#define FISSION_WINEVENT_CALLEXTERNAL ( WM_USER + 5 )
+//#define FISSION_WM_MSGBOX       ( WM_USER + 0 )
+#define FISSION_WM_CLOSE        ( WM_USER + 1 )
+#define FISSION_WM_SETTITLE     ( WM_USER + 2 )
+#define FISSION_WM_SETSTYLE     ( WM_USER + 3 )
+#define FISSION_WM_SETSIZE      ( WM_USER + 4 )
+#define FISSION_WM_CALLEXTERNAL ( WM_USER + 5 )
 
 // TODO: Restrict Window Aspect Ratio
 // TODO: Fix Sizing of window when switching Window styles
@@ -112,14 +112,6 @@ namespace Fission::Platform
 //        return m_Properties.size;
 //    }
 
-    void WindowsWindow::ShowPopup( const string & title, const string & info )
-    {
-        auto _Title = title.utf16();
-        auto _Info = info.utf16();
-
-        SendMessageW( m_Handle, FISSION_WINEVENT_MSGBOX, (WPARAM)_Title.c_str(), (LPARAM)_Info.c_str() );
-    }
-
     IFWindow::native_handle_type WindowsWindow::native_handle()
     {
         return m_Handle;
@@ -142,12 +134,13 @@ namespace Fission::Platform
 //
     void WindowsWindow::Close()
     {
-        SendMessageW( m_Handle, FISSION_WINEVENT_CLOSE, 0, 0 );
+        SendMessageW( m_Handle, FISSION_WM_CLOSE, 0, 0 );
     }
 
     void WindowsWindow::Destroy()
     {
-        if( m_Handle ) Close();
+        if( m_Handle )
+            SendMessageW( m_Handle, FISSION_WM_CLOSE, 0, 0 );
         m_WindowThread.join();
         delete this;
     }
@@ -157,10 +150,7 @@ namespace Fission::Platform
         switch( e->Msg )
         {
         case WM_DESTROY:
-           PostQuitMessage( 0 );
-        break;
-
-        case FISSION_WINEVENT_CLOSE:
+        case FISSION_WM_CLOSE:
             PostQuitMessage( 0 );
         break;
 
@@ -251,7 +241,7 @@ namespace Fission::Platform
             MSG msg = {};
             BOOL bRet;
 
-            while( ( bRet = GetMessageW( &msg, m_Handle, 0, 0 ) ) != 0 )
+            while( ( bRet = GetMessageW( &msg, nullptr, 0, 0 ) ) != 0 )
             {
                 if( bRet == -1 )
                 {

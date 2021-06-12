@@ -53,7 +53,7 @@ extern Fission::FApplication * CreateApplication( void );
 
 //! @brief Runs main application loop.
 //! @return ExitCode from the status of how the application exited.
-FISSION_MAIN_EXPORT(Fission::Platform::ExitCode) _fission_main( void * ) noexcept;
+FISSION_MAIN_EXPORT(Fission::Platform::ExitCode) _fission_main( void * );
 
 
 /* =================================================================================================== */
@@ -89,7 +89,7 @@ int WINAPI wWinMain( _In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPWSTR, _In_ int )
 /* ------------------------------------ fission main definition -------------------------------------- */
 /* =================================================================================================== */
 
-FISSION_MAIN_EXPORT(Fission::Platform::ExitCode) _fission_main( void * instance ) noexcept
+FISSION_MAIN_EXPORT(Fission::Platform::ExitCode) _fission_main( void * instance )
 {
 	using namespace Fission;
 	using namespace string_literals;
@@ -114,37 +114,37 @@ FISSION_MAIN_EXPORT(Fission::Platform::ExitCode) _fission_main( void * instance 
 
 		catch( base::runtime_error & e )
 		{
-			app->pMainWindow->ShowPopup( string( e.name() ) + " caught"_utf8, e.what() );
+			System::ShowSimpleMessageBox( string( e.name() ) + " caught"_utf8, e.what(), System::Error, app->pMainWindow );
 			nExitCode = FISSION_EXIT_FAILURE;
 		}
 
 		catch( std::exception & e )
 		{
-			app->pMainWindow->ShowPopup( "C++ exception caught"_utf8, e.what() );
+			System::ShowSimpleMessageBox( "C++ exception caught"_utf8, e.what(), System::Error, app->pMainWindow );
 			nExitCode = FISSION_EXIT_FAILURE;
 		}
 
 		catch( ... ) 
 		{
-			app->pMainWindow->ShowPopup( "Unknown Error"_utf8, "No information provided, lol"_utf8 );
+			System::ShowSimpleMessageBox( "Unknown Error"_utf8, "No information provided, lol"_utf8, System::Error, app->pMainWindow );
 		}
 	}
 
 	catch( base::runtime_error & e )
 	{
-		System::ShowSimpleMessageBox( string( e.name() ) + " caught"_utf8, e.what() );
+		System::ShowSimpleMessageBox( string( e.name() ) + " caught"_utf8, e.what(), System::Error );
 		nExitCode = FISSION_EXIT_FAILURE;
 	}
 
 	catch( std::exception & e )
 	{
-		System::ShowSimpleMessageBox( "C++ exception caught"_utf8, e.what() );
+		System::ShowSimpleMessageBox( "C++ exception caught"_utf8, e.what(), System::Error );
 		nExitCode = FISSION_EXIT_FAILURE;
 	}
 
 	catch( ... )
 	{
-		System::ShowSimpleMessageBox( "Unknown Error"_utf8, "No information provided, lol"_utf8 );
+		System::ShowSimpleMessageBox( "Unknown Error"_utf8, "No information provided, lol"_utf8, System::Error );
 	}
 
 	return nExitCode;

@@ -38,6 +38,8 @@ namespace Fission
 	{
 		virtual void OnCreate( struct IFGraphics * _Ptr_Graphics /*, void * userdata*/) = 0;
 
+		//! @note Always called by the engine inbetween frames,
+		//!        and never in the middle of one being rendered.
 		virtual void OnRecreate( struct IFGraphics * _Ptr_Graphics /*, void * userdata*/ ) = 0;
 
 	}; // struct Fission::IFRenderer

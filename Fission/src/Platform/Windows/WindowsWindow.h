@@ -31,8 +31,6 @@ namespace Fission::Platform
 
 	//	virtual base::size GetSize() override;
 
-		virtual void ShowPopup( const string & title, const string & info ) override;
-
 	//	virtual void Call( std::function<void()> function ) override;
 
 		virtual native_handle_type native_handle() override;

@@ -30,14 +30,30 @@
 
 #pragma once
 #include <Fission/config.h>
-#include "Fission/Base/String.h"
+#include <Fission/Base/String.h>
+#include <Fission/Base/Utility/BitFlag.h>
+#include <Fission/Core/Window.hh>
 
-namespace Fission {
-
+namespace Fission
+{
 	class System
 	{
 	public:
-		FISSION_API static void ShowSimpleMessageBox( const string & _Title, const string & _Text );
+		enum MessageBoxFlags : utility::bit_flag<32> {
+			None    = 0,
+			Error   = utility::make_flag<0,32>,
+			Warning = utility::make_flag<1,32>,
+			Info    = utility::make_flag<2,32>
+		};
+		using MessageBoxFlag_t = utility::bit_flag_t<MessageBoxFlags>;
+
+
+		FISSION_API static void ShowSimpleMessageBox( 
+			const string& _Title, 
+			const string& _Text, 
+			const MessageBoxFlag_t& _Flags = MessageBoxFlags::None,
+			IFWindow * _Parent_Window = nullptr
+		);
 
 		FISSION_API static bool OpenURL( const std::filesystem::path & _URL );
 

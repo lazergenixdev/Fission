@@ -25,6 +25,12 @@ namespace Fission
 {
 	using AppCreateInfo = FApplication::CreateInfo;
 
+	struct RenderContext
+	{
+		FPointer<IFRenderer> renderer;
+		bool				 bCreated = false;
+	};
+
 	struct FissionEngineImpl
 	{
 		FPointer<WindowManager>     m_pWindowManager;
@@ -46,12 +52,19 @@ namespace Fission
 
 	struct FissionEngine : public Fission::IFEngine, public FissionEngineImpl, public IFEventHandler
 	{
-		virtual const char * GetVersionString()
+		virtual void GetVersion( int * _Maj, int * _Min, int * _Pat ) override
+		{
+			*_Maj = FISSION_VERSION_MAJ;
+			*_Min = FISSION_VERSION_MIN;
+			*_Pat = FISSION_VERSION_PAT;
+		}
+
+		virtual const char * GetVersionString() override
 		{
 			return _FISSION_FULL_BUILD_STRING;
 		}
 
-		virtual void LoadEngine()
+		virtual void LoadEngine() override
 		{
 			FISSION_ENGINE_ONCE( "Attempted to call `LoadEngine` more than once." );
 
@@ -64,12 +77,12 @@ namespace Fission
 			m_pWindowManager->Initialize();
 		}
 
-		virtual void Shutdown( Platform::ExitCode )
+		virtual void Shutdown( Platform::ExitCode ) override
 		{
 			FISSION_THROW_NOT_IMPLEMENTED()
 		}
 
-		virtual void Run(Platform::ExitCode* e)
+		virtual void Run(Platform::ExitCode* e) override
 		{
 			for( auto && r : m_Renderers )
 				r->OnCreate( m_pGraphics.get() );
@@ -87,7 +100,7 @@ namespace Fission
 			*e = 0x45;
 		}
 
-		virtual void LoadApplication( FApplication * app )
+		virtual void LoadApplication( FApplication * app ) override
 		{
 			FISSION_ENGINE_ONCE( "Attempted to call `LoadApplication` more than once." );
 
@@ -142,7 +155,7 @@ namespace Fission
 			return m_Scenes.OnKeyDown( args );
 		}
 
-		virtual void Destroy() { delete this; }
+		virtual void Destroy() override { delete this; }
 	};
 
 	void CreateEngine( void * instance, IFEngine ** ppEngine )

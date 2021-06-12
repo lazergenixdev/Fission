@@ -59,19 +59,37 @@ namespace Fission {
 		};
 	}
 
-	void System::ShowSimpleMessageBox( const string & _Title, const string & _Text )
+	void System::ShowSimpleMessageBox(
+		const string & _Title,
+		const string & _Text,
+		const MessageBoxFlag_t & _Flags,
+		IFWindow * _Parent_Window
+	)
 	{
-		auto _show_message = [] ( const wchar_t * title, const wchar_t * text ) {
-			MessageBoxW( NULL, text, title, MB_OK | MB_SYSTEMMODAL );
-		};
-
 		// Convert strings from UTF-8 to UTF-16
 		auto title = _Title.utf16();
 		auto text = _Text.utf16();
 
+		HWND hwnd = NULL;
+		if( _Parent_Window )
+			hwnd = _Parent_Window->native_handle();
+
+		UINT flags = MB_OK | MB_SYSTEMMODAL;
+		switch( _Flags & 0x7 )
+		{
+		case MessageBoxFlags::Error:   flags |= MB_ICONERROR;       break;
+		case MessageBoxFlags::Warning: flags |= MB_ICONWARNING;     break;
+		case MessageBoxFlags::Info:    flags |= MB_ICONINFORMATION; break;
+		default:break;
+		}
+
+		auto _show_message = [&] () {
+			MessageBoxW( hwnd, (LPCWSTR)text.c_str(), (LPCWSTR)title.c_str(), flags );
+		};
+
 		// This is needed because of quirks with the rules of what thread message boxes 
 		//   can be shown on, so we just bybass by making our own thread
-		auto _msg_thread = std::thread( _show_message, (LPWSTR)title.c_str(), (LPWSTR)text.c_str() );
+		auto _msg_thread = std::thread( _show_message );
 
 		// Block the thread until user exits the message box
 		_msg_thread.join();

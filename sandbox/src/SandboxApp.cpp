@@ -55,8 +55,10 @@ public:
 	virtual void OnStartUp( CreateInfo * info ) override
 	{
 		info->startScene = new BallScene;
-		Fission::string version = pEngine->GetVersionString();
-		info->window.title = "sandbox [" + version + "]";
+		char title[120];
+		sprintf( title, "sandbox [%s]", pEngine->GetVersionString() );
+		info->window.title = title;
+		info->window.style = Fission::IFWindow::Style::BorderSizeable;
 
 		Fission::CreateRenderer2D( &renderer );
 		pEngine->RegisterRenderer( "main", renderer );

@@ -51,7 +51,7 @@ namespace Fission
 
 		virtual void RegisterRenderer( const char * identifier, IFRenderer * renderer ) = 0;
 
-		virtual IFRenderer * GetRenderer( const char * identifier ) { return nullptr; }
+	//	virtual IFRenderer * GetRenderer( const char * identifier ) { return nullptr; }
 		
 		/**
 		 * @brief  Get Fission Engine Version
@@ -60,9 +60,9 @@ namespace Fission
 		 * @param  _Min: [out] Minor Version Number.
 		 * @param  _Pat: [out] Patch Version Number.
 		 */
-		virtual void GetVersion( int *_Maj, int *_Min, int *_Pat ) {}
+		virtual void GetVersion( int * _Maj, int * _Min, int * _Pat ) = 0;
 
-		//! @brief Gets version in format: "Fission vX.Y.Z"
+		//! @brief Gets version in format: "Fission vX.Y.Z [Debug/Release]"
 		virtual const char * GetVersionString() = 0;
 
 	}; // struct Fission::IFEngine

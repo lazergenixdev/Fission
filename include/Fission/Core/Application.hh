@@ -58,7 +58,7 @@ namespace Fission
 		// called only once: after Engine is initialized.
 		virtual void OnStartUp( CreateInfo * pCreateInfo ) {}
 
-		// called after a Graphics context has been created or recreated.
+		// called after a Graphics context has been created.
 		virtual void OnCreate() {}
 
 		// called right before Graphics context gets destroyed and the program exits.
