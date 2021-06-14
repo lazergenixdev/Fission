@@ -163,6 +163,10 @@ namespace Fission::Resource
 
 	struct IFConstantBuffer : public IFBindable
 	{
+		enum class Target {
+			Vertex, Pixel,
+		};
+
 		enum class Type {
 			Static, Dynamic,
 		};
@@ -170,9 +174,12 @@ namespace Fission::Resource
 		struct CreateInfo {
 			Type type = Type::Dynamic;
 			void * pData = nullptr;
+			uint32_t max_size;
 		};
 
-		virtual void SetData( const void * pIndexData ) = 0;
+		virtual void SetData( const void * pData, uint32_t size ) = 0;
+
+		virtual void Bind( Target target, int slot ) = 0;
 	};
 
 	struct IFShader : public IFBindable

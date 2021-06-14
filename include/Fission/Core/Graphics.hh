@@ -34,19 +34,21 @@
 #include <Fission/Core/Graphics/Bindable.hh>
 #include <Fission/Core/Graphics/Renderer.hh>
 
-namespace Fission {
+namespace Fission
+{
 
 struct IFGraphics : public IFObject
 {
 public:
 
-	using VertexBuffer =  Resource::IFVertexBuffer;
-	using IndexBuffer =   Resource::IFIndexBuffer;
-	using Texture2D =     Resource::IFTexture2D;
-	using Shader =        Resource::IFShader;
-	using Blender =       Resource::IFBlender;
-	using FrameBuffer =   Resource::IFFrameBuffer;
-	using SwapChain =     Resource::IFSwapChain;
+	using VertexBuffer =   Resource::IFVertexBuffer;
+	using IndexBuffer =    Resource::IFIndexBuffer;
+	using ConstantBuffer = Resource::IFConstantBuffer;
+	using Texture2D =      Resource::IFTexture2D;
+	using Shader =         Resource::IFShader;
+	using Blender =        Resource::IFBlender;
+	using FrameBuffer =    Resource::IFFrameBuffer;
+	using SwapChain =      Resource::IFSwapChain;
 
 public:
 	enum class API {
@@ -79,13 +81,14 @@ public:
 	virtual void DrawIndexed( uint32_t indexCount, uint32_t indexOffset = 0u, uint32_t vertexOffset = 0u ) = 0;
 
 
-	virtual FrameBuffer*   CreateFrameBuffer ( const FrameBuffer::CreateInfo & info ) = 0;
-	virtual VertexBuffer*  CreateVertexBuffer( const VertexBuffer::CreateInfo & info ) = 0;
-	virtual IndexBuffer*   CreateIndexBuffer ( const IndexBuffer::CreateInfo & info ) = 0;
-	virtual Shader*        CreateShader      ( const Shader::CreateInfo & info ) = 0;
-	virtual Texture2D*     CreateTexture2D   ( const Texture2D::CreateInfo & info ) = 0;
-	virtual Blender*       CreateBlender     ( const Blender::CreateInfo & info ) = 0;
-	virtual SwapChain*     CreateSwapChain   ( const SwapChain::CreateInfo & info ) = 0;
+	virtual FrameBuffer*    CreateFrameBuffer   ( const FrameBuffer::CreateInfo & info ) = 0;
+	virtual VertexBuffer*   CreateVertexBuffer  ( const VertexBuffer::CreateInfo & info ) = 0;
+	virtual ConstantBuffer* CreateConstantBuffer( const ConstantBuffer::CreateInfo & info ) = 0;
+	virtual IndexBuffer*    CreateIndexBuffer   ( const IndexBuffer::CreateInfo & info ) = 0;
+	virtual Shader*         CreateShader        ( const Shader::CreateInfo & info ) = 0;
+	virtual Texture2D*      CreateTexture2D     ( const Texture2D::CreateInfo & info ) = 0;
+	virtual Blender*        CreateBlender       ( const Blender::CreateInfo & info ) = 0;
+	virtual SwapChain*      CreateSwapChain     ( const SwapChain::CreateInfo & info ) = 0;
 
 public:
 

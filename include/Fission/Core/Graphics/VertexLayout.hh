@@ -84,15 +84,14 @@ namespace Fission::Resource {
 
 		/**** Push data onto vertex layout ****/
 
-		template <vertex_type _Ty>
-		VertexLayout & Append( const char * semantic ) {
+		VertexLayout & Append(const vertex_type & type, const char * semantic) {
 			m_SemanticBuffer.emplace_back( *semantic );
 			while( *semantic != '\0' )
 			{
 				m_SemanticBuffer.emplace_back( *( ++semantic ) );
 			}
-			m_TypeBuffer.emplace_back( _Ty );
-			m_Stride += VertexLayoutTypes::GetStride( _Ty );
+			m_TypeBuffer.emplace_back( type );
+			m_Stride += VertexLayoutTypes::GetStride( type );
 			return *this;
 		}
 

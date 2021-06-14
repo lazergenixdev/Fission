@@ -50,76 +50,22 @@ namespace Fission::Platform {
 		uint32_t m_Count;
 	};
 
-	class ConstantBufferDX11 : Resource::IFBindable
+	class ConstantBufferDX11 : public Resource::IFConstantBuffer
 	{
 	public:
-		struct Variable
-		{
-			D3D_SHADER_VARIABLE_TYPE m_type;
-			D3D_SHADER_VARIABLE_CLASS m_class;
-			uint32_t m_columns;
-			uint32_t m_rows;
-			uint32_t m_elements;
-			uint32_t m_offset;
-
-			template <typename T>
-			bool IsSame() {
-				return ( m_type == T::hlsltype
-					&& m_class == T::hlslclass
-					&& m_columns == T::columns
-					&& m_rows == T::rows );
-			}
-		};
-
-		ConstantBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, uint32_t slot, uint32_t size );
+		ConstantBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info );
 
 		virtual void Bind() override;
 		virtual void Unbind() override {};
 
-		// used for setting scalar/vector/matrix values by name
-		template <typename T>
-		bool Set( const std::string & name, const typename T::type & value )
-		{
-			using val_type = typename T::type;
-			auto it = m_VariableMap.find( name );
-			if( it == m_VariableMap.end() ) return false; // variable not found
-			auto & var = it->second;
-			if( !var.IsSame<T>() ) return false; // not the same type
-			val_type * pVal = reinterpret_cast<val_type *>( m_pData.get() + it->second.m_offset );
-			*pVal = value;
-			m_bDirty = true;
-			return true;
-		}
+		virtual void Bind( Target target, int slot ) override;
+		virtual void SetData( const void * pData, uint32_t size ) override;
 
-		void AddVariable( const std::string & name, const Variable & var )
-		{
-			m_VariableMap.emplace( name, var );
-		}
-
-
-	protected:
-		ID3D11DeviceContext * m_pContext;
-		com_ptr<ID3D11Buffer> m_pBuffer;
-		uint32_t m_BindSlot;
+		virtual void Destroy() override;
 
 	private:
-		uint32_t m_ByteSize;
-		std::unique_ptr<char[]> m_pData;
-		std::unordered_map<std::string, Variable> m_VariableMap;
-		bool m_bDirty = false;
-	};
-
-	class PixelConstantBufferDX11 : public ConstantBufferDX11
-	{
-	public:
-		PixelConstantBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, uint32_t slot, uint32_t size );
-		virtual void Bind() override;
-	};
-	class VertexConstantBufferDX11 : public ConstantBufferDX11
-	{
-	public:
-		VertexConstantBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, uint32_t slot, uint32_t size );
-		virtual void Bind() override;
+		ID3D11DeviceContext * m_pContext;
+		com_ptr<ID3D11Buffer> m_pBuffer;
 	};
 
 	class ShaderDX11 : public Resource::IFShader

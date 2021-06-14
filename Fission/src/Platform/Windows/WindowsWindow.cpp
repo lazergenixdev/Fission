@@ -26,7 +26,7 @@ namespace Fission::Platform
 
 		Event event = { hWnd, Msg, wParam, lParam };
 		// forward message to window class handler
-		return pWnd->ProcessEvent( &event );
+		return pWnd->HandleEvent( &event );
 	}
 
 	LRESULT CALLBACK SetupWindowsProc( _In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wParam, _In_ LPARAM lParam )
@@ -46,7 +46,7 @@ namespace Fission::Platform
 
 			Event event = { hWnd, Msg, wParam, lParam };
 			// forward message to window class handler
-			return pWnd->ProcessEvent( &event );
+			return pWnd->HandleEvent( &event );
 		}
 		// if we get a message before the WM_NCCREATE message, handle with default handler
 		return DefWindowProcW( hWnd, Msg, wParam, lParam );
@@ -60,6 +60,7 @@ namespace Fission::Platform
         m_WindowThread = std::thread( [this] { MessageThreadMain(); } );
 
         // Wait for window to be created on message thread
+        // (HWND will not be valid until window is created)
         m_AccessCV.wait( lock );
     }
 //
@@ -145,7 +146,7 @@ namespace Fission::Platform
         delete this;
     }
 
-	LRESULT CALLBACK WindowsWindow::ProcessEvent( Event * e )
+	LRESULT CALLBACK WindowsWindow::HandleEvent( Event * e )
 	{
         switch( e->Msg )
         {
@@ -211,7 +212,10 @@ namespace Fission::Platform
                 NULL, NULL,
                 m_pGlobalInfo->hInstance,
                 this
-            ); 
+            );
+
+            // todo: error checking to see if window was really created,
+            //   even if it is extremely unlikely.
 
             Resource::IFSwapChain::CreateInfo scInfo = { this };
             m_pSwapChain = m_pGlobalInfo->pGraphics->CreateSwapChain( scInfo );

@@ -47,7 +47,7 @@ namespace Fission::Platform
 
 		base::vector2i GetPosition() const { return m_Properties.position; }
 
-		LRESULT CALLBACK ProcessEvent( Event * _Ptr_Event );
+		LRESULT CALLBACK HandleEvent( Event * _Ptr_Event );
 
 	private:
 

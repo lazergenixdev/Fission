@@ -7,6 +7,7 @@ namespace Fission::Platform {
 
 	void VertexBufferDX11::Destroy() { delete this; }
 	void IndexBufferDX11::Destroy() { delete this; }
+	void ConstantBufferDX11::Destroy() { delete this; }
 	void Texture2DDX11::Destroy() { delete this; }
 	void ShaderDX11::Destroy() { delete this; }
 	void BlenderDX11::Destroy() { delete this; }
@@ -271,46 +272,62 @@ namespace Fission::Platform {
 		return DXGI_FORMAT_UNKNOWN;
 	}
 
-	ConstantBufferDX11::ConstantBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, uint32_t slot, uint32_t size )
-		: m_pContext( pContext ), m_ByteSize(size), m_BindSlot(slot), m_pData(std::make_unique<char[]>( size ))
+	//ConstantBufferDX11::ConstantBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, uint32_t slot, uint32_t size )
+	//	: m_pContext( pContext ), m_ByteSize(size), m_BindSlot(slot), m_pData(std::make_unique<char[]>( size ))
+	//{
+	//	D3D11_BUFFER_DESC bd = CD3D11_BUFFER_DESC{};
+	//	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	//	bd.Usage = D3D11_USAGE_DYNAMIC;
+	//	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	//	bd.ByteWidth = std::max( size, 64u );
+
+	//	pDevice->CreateBuffer( &bd, nullptr, &m_pBuffer );
+	//}
+
+	ConstantBufferDX11::ConstantBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info )
+		: m_pContext(pContext)
 	{
 		D3D11_BUFFER_DESC bd = CD3D11_BUFFER_DESC{};
 		bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		bd.Usage = D3D11_USAGE_DYNAMIC;
-		bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		bd.ByteWidth = std::max( size, 64u );
+		if( info.type == Type::Static )
+		{
+			bd.Usage = D3D11_USAGE_DEFAULT;
+			bd.CPUAccessFlags = 0;
+		}
+		else
+		{
+			bd.Usage = D3D11_USAGE_DYNAMIC;
+			bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		}
+		bd.ByteWidth = std::max( info.max_size, 64u );
 
 		pDevice->CreateBuffer( &bd, nullptr, &m_pBuffer );
 	}
 
-	PixelConstantBufferDX11::PixelConstantBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, uint32_t slot, uint32_t size )
-		: ConstantBufferDX11( pDevice, pContext, slot, size )
-	{}
-
-	VertexConstantBufferDX11::VertexConstantBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, uint32_t slot, uint32_t size )
-		: ConstantBufferDX11( pDevice, pContext, slot, size )
-	{}
-
-	void PixelConstantBufferDX11::Bind()
-	{
-		ConstantBufferDX11::Bind();
-		m_pContext->PSSetConstantBuffers( m_BindSlot, 1u, m_pBuffer.GetAddressOf() );
-	}
-
-	void VertexConstantBufferDX11::Bind()
-	{
-		ConstantBufferDX11::Bind();
-		m_pContext->VSSetConstantBuffers( m_BindSlot, 1u, m_pBuffer.GetAddressOf() );
-	}
-
 	void ConstantBufferDX11::Bind()
 	{
-		if( !m_bDirty ) return;
+	}
+
+	void ConstantBufferDX11::Bind( Target target, int slot )
+	{
+		switch( target )
+		{
+		case Fission::Resource::IFConstantBuffer::Target::Vertex:
+			m_pContext->VSSetConstantBuffers( slot, 1, m_pBuffer.GetAddressOf() );
+		break;
+		case Fission::Resource::IFConstantBuffer::Target::Pixel:
+			m_pContext->PSSetConstantBuffers( slot, 1, m_pBuffer.GetAddressOf() );
+		break;
+		default:throw std::logic_error("this don't make no fucking sense.");
+		}
+	}
+
+	void ConstantBufferDX11::SetData( const void * pData, uint32_t size )
+	{
 		D3D11_MAPPED_SUBRESOURCE msr = {};
 		m_pContext->Map( m_pBuffer.Get(), 0u, D3D11_MAP_WRITE_DISCARD, 0u, &msr );
-		memcpy( msr.pData, m_pData.get(), m_ByteSize );
+		memcpy( msr.pData, pData, size );
 		m_pContext->Unmap( m_pBuffer.Get(), 0u );
-		m_bDirty = false;
 	}
 
 	Texture2DDX11::Texture2DDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info )

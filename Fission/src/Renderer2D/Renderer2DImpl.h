@@ -75,15 +75,16 @@ namespace Fission {
 		std::vector<base::matrix2x3f> m_TransformStack;
 
 	private:
-		IFGraphics * m_pGraphics;
+		IFGraphics * m_pGraphics = nullptr;
 
-		FPointer<Resource::IFVertexBuffer> m_pVertexBuffer;
-		FPointer<Resource::IFIndexBuffer>  m_pIndexBuffer;
-		FPointer<Resource::IFShader>	   m_pShader;
-		FPointer<Resource::IFBlender>	   m_pBlenders[(size_t)BlendMode::__count__];
-		Resource::IFBlender *			   m_pUseBlender;
+		FPointer<Resource::IFVertexBuffer>   m_pVertexBuffer;
+		FPointer<Resource::IFIndexBuffer>    m_pIndexBuffer;
+		FPointer<Resource::IFConstantBuffer> m_pTransformBuffer;
+		FPointer<Resource::IFShader>	     m_pShader;
+		FPointer<Resource::IFBlender>	     m_pBlenders[(size_t)BlendMode::__count__];
+		Resource::IFBlender *			     m_pUseBlender = nullptr;
 
-		const Font *					   m_pSelectedFont = nullptr;
+		const Font *					     m_pSelectedFont = nullptr;
 
 	private:
 		struct vertex {

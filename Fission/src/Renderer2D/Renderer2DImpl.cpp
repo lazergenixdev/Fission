@@ -3,6 +3,12 @@
 #include <numbers>
 #include <Fission/Base/Exception.h>
 
+// might look into text snapping in more detail,
+//    but for now it looks better than not and there
+//    are no texture artifacts when snapping.
+#define __SNAP_TEXT 1
+#define _ROUND(_VAL) ((float)(int)((_VAL) + 0.5f))
+
 namespace Fission {
 
 	void CreateRenderer2D( IFRenderer2D ** ppRenderer2D )
@@ -10,13 +16,15 @@ namespace Fission {
 		*ppRenderer2D = new Renderer2DImpl;
 	}
 
-	std::vector<Renderer2DImpl::DrawData::sincos> Renderer2DImpl::DrawData::TrigCache = [] () {
+	std::vector<Renderer2DImpl::DrawData::sincos> Renderer2DImpl::DrawData::TrigCache =
+	[](){
 		using sincos = Renderer2DImpl::DrawData::sincos;
 		std::vector<sincos> out;
 
 		int geometry_persision = 10;
 
-		assert( geometry_persision >= 1 && geometry_persision < 100 ); // restrict the amount of persision to a reasonable range
+		// restrict the amount of persision to a reasonable range
+		FISSION_ASSERT( geometry_persision >= 1 && geometry_persision < 100 );
 
 		out.reserve( geometry_persision );
 		static constexpr float quarter_rotation = ( std::numbers::pi_v<float> / 2.0f );
@@ -31,17 +39,67 @@ namespace Fission {
 		return out;
 	}();
 
+	void Renderer2DImpl::OnCreate( IFGraphics * gfx )
+	{
+		// Allocate aligned memory for faster access
+		vertex_data = (vertex *)_aligned_malloc( vertex_max_count * sizeof vertex, 32 );
+		index_data = (uint32_t *)_aligned_malloc( index_max_count * sizeof uint32_t, 32 );
 
-	static constexpr const char * _fission_renderer2d_shader_code_hlsl =
-		R"( 
-	static const float2 res = float2( 1280.0f, 720.0f ); // todo: this is a bug, please fix as soon as possible
+		OnRecreate( gfx );
+	}
 
-	static const matrix screen = transpose( matrix(
-		2.0f / res.x,	0.0f,		   -1.0f, 0.0f,
-		0.0f,		   -2.0f / res.y,	1.0f, 0.0f,
-		0.0f,			0.0f,			1.0f, 0.0f,
-		0.0f,			0.0f,			0.0f, 1.0f
-	) );
+	void Renderer2DImpl::OnRecreate( IFGraphics * gfx )
+	{
+		m_pGraphics = gfx;
+		using namespace Resource;
+		using namespace Resource::VertexLayoutTypes;
+		using namespace string_literals;
+
+		auto vl = VertexLayout{};
+		vl.Append( Float2, "Position" );
+		vl.Append( Float2, "TexCoord" );
+		vl.Append( Float4, "Color" );
+
+		{ // Create Vertex Buffer
+			IFVertexBuffer::CreateInfo info;
+			info.vtxCount = vertex_max_count;
+			info.pVertexLayout = &vl;
+			info.type = IFVertexBuffer::Type::Dynamic;
+			m_pVertexBuffer = gfx->CreateVertexBuffer( info );
+		}
+		{ // Create Index Buffer
+			IFIndexBuffer::CreateInfo info;
+			info.idxCount = index_max_count;
+			info.size = IFIndexBuffer::Size::UInt32;
+			info.type = IFIndexBuffer::Type::Dynamic;
+			m_pIndexBuffer = gfx->CreateIndexBuffer( info );
+		}
+		{ // Create Index Buffer
+			IFConstantBuffer::CreateInfo info;
+			info.type = IFConstantBuffer::Type::Dynamic;
+			info.max_size = 64;
+			m_pTransformBuffer = gfx->CreateConstantBuffer( info );
+
+			// todo: this is a bug, please fix as soon as possible
+			static const auto res = base::vector2f{ 1280.0f, 720.0f };
+
+			static const auto screen = base::matrix4x4f(
+				2.0f / res.x,	0.0f,		   -1.0f, 0.0f,
+				0.0f,		   -2.0f / res.y,	1.0f, 0.0f,
+				0.0f,			0.0f,			1.0f, 0.0f,
+				0.0f,			0.0f,			0.0f, 1.0f
+			).transpose();
+
+			m_pTransformBuffer->SetData( &screen, sizeof(screen) );
+		}
+		{ // Create Shaders
+			IFShader::CreateInfo info;
+			info.pVertexLayout = &vl;
+			info.sourceCode = R"(
+cbuffer Transform : register(b0)
+{
+	matrix screen;
+}
 
 struct VS_OUT { 
 	float2 tc : TexCoord; 
@@ -61,46 +119,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 	if( tc.x < -0.5f ) return color;
 	return tex.Sample( ss, tc ) * color;
 }
-	)";
-
-	void Renderer2DImpl::OnCreate( IFGraphics * gfx )
-	{
-		// Allocate aligned memory for faster access
-		vertex_data = (vertex *)_aligned_malloc( vertex_max_count * sizeof vertex, 32 );
-		index_data = (uint32_t *)_aligned_malloc( index_max_count * sizeof uint32_t, 32 );
-
-		OnRecreate( gfx );
-	}
-
-	void Renderer2DImpl::OnRecreate( IFGraphics * gfx )
-	{
-		m_pGraphics = gfx;
-		using namespace Resource;
-		using namespace Resource::VertexLayoutTypes;
-
-		auto vl = VertexLayout{};
-		vl.Append<Float2>( "Position" );
-		vl.Append<Float2>( "TexCoord" );
-		vl.Append<Float4>( "Color" );
-
-		{ // Create Vertex Buffer
-			IFVertexBuffer::CreateInfo info;
-			info.vtxCount = vertex_max_count;
-			info.pVertexLayout = &vl;
-			info.type = IFVertexBuffer::Type::Dynamic;
-			m_pVertexBuffer = gfx->CreateVertexBuffer( info );
-		}
-		{ // Create Index Buffer
-			IFIndexBuffer::CreateInfo info;
-			info.idxCount = index_max_count;
-			info.size = IFIndexBuffer::Size::UInt32;
-			info.type = IFIndexBuffer::Type::Dynamic;
-			m_pIndexBuffer = gfx->CreateIndexBuffer( info );
-		}
-		{ // Create Shaders
-			IFShader::CreateInfo info;
-			info.pVertexLayout = &vl;
-			info.sourceCode = _fission_renderer2d_shader_code_hlsl;
+			)"_utf8;
 			m_pShader = gfx->CreateShader( info );
 		}
 		{ // todo: more blenders
@@ -137,6 +156,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		m_pVertexBuffer->Bind();
 		m_pIndexBuffer->SetData( index_data, end.idxCount + end.idxStart );
 		m_pIndexBuffer->Bind();
+		m_pTransformBuffer->Bind(Resource::IFConstantBuffer::Target::Vertex,0);
 		m_pUseBlender->Bind();
 
 		for( auto && cmd : m_DrawBuffer )
@@ -280,11 +300,6 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			if( *wstr == L'\r' || *wstr == L'\n' ) { wstr++; pos.y += m_pSelectedFont->GetSize(); start = 0.0f; continue; }
 			glyph = m_pSelectedFont->GetGylph( *wstr );
 
-
-#define __SNAP_TEXT 1
-
-#define _ROUND(_VAL) ((float)(int)((_VAL) + 0.5f))
-
 #if __SNAP_TEXT
 			const auto left = _ROUND( pos.x + glyph->offset.x + start );
 			const auto right = _ROUND( left + glyph->size.x );
@@ -337,11 +352,6 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		{
 			if( *str == '\r' || *str == '\n' ) { str++; pos.y += m_pSelectedFont->GetSize(); start = 0.0f; continue; }
 			glyph = m_pSelectedFont->GetGylph( (wchar_t)*str );
-
-
-#define __SNAP_TEXT 1
-
-#define _ROUND(_VAL) ((float)(int)((_VAL) + 0.5f))
 
 #if __SNAP_TEXT
 			const auto left = _ROUND( pos.x + glyph->offset.x + start );
@@ -414,10 +424,12 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 
 	void Renderer2DImpl::SetTexture( Resource::IFTexture2D * tex )
 	{
-		FISSION_ASSERT( tex, "bruh" );
+		FISSION_ASSERT( tex, "Cannot bind a null texture. (Use non-UV functions to not use a texture)" );
 
 		auto & end = m_DrawBuffer.back();
+		// There is no texture set in this draw call, use it directly.
 		if( end.Texture == nullptr ) end.Texture = tex;
+		// The texture we are using in this draw call is different, so we make another draw call.
 		else if( end.Texture != tex )
 		{
 			m_DrawBuffer.emplace_back( this, end.vtxStart + end.vtxCount, end.idxStart + end.idxCount );
@@ -435,15 +447,17 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 	{
 		for( int i = 0; i < 8; i++ ) {
 		// I bet you've never seen code like this:
-			i & 0x1 ? (
+			i & 0x1 ?
+			(
 				pIdxData[idxCount++] = vtxCount + i,
 				pIdxData[idxCount++] = vtxCount + ( i + 1u ) % 8u,
 				pIdxData[idxCount++] = vtxCount + ( i + 2u ) % 8u
-			) : (
+			):(
 				pIdxData[idxCount++] = vtxCount + i,
 				pIdxData[idxCount++] = vtxCount + ( i + 2u ) % 8u,
 				pIdxData[idxCount++] = vtxCount + ( i + 1u ) % 8u
-			);
+			)
+			;
 		}
 
 		float in_l = rect.x.low, out_l = in_l;

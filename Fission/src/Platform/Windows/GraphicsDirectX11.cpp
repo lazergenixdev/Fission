@@ -137,10 +137,10 @@ namespace Fission::Platform {
 		m_pImmediateContext->DrawIndexed( indexCount, indexOffset, vertexOffset );
 	}
 
-	//ref<Resource::FrameBuffer> GraphicsDirectX11::CreateFrameBuffer( const FrameBuffer::CreateInfo & info ) {
-	//	m_vFrameBuffers.emplace_back( CreateRef<FrameBufferDX11>( m_pDevice.Get(), m_pImmediateContext.Get(), info ) );
-	//	return Global_FrameBuffers::AddBuffer( m_vFrameBuffers.back() );
-	//}
+	Resource::IFFrameBuffer* GraphicsDirectX11::CreateFrameBuffer( const FrameBuffer::CreateInfo & info ) {
+		FISSION_THROW_NOT_IMPLEMENTED()
+		return nullptr;
+	}
 
 	Resource::IFVertexBuffer* GraphicsDirectX11::CreateVertexBuffer( const VertexBuffer::CreateInfo & info ) {
 		return new VertexBufferDX11( m_pDevice.Get(), m_pImmediateContext.Get(), info );
@@ -148,6 +148,10 @@ namespace Fission::Platform {
 
 	Resource::IFIndexBuffer* GraphicsDirectX11::CreateIndexBuffer( const IndexBuffer::CreateInfo & info ) {
 		return new IndexBufferDX11( m_pDevice.Get(), m_pImmediateContext.Get(), info );
+	}
+
+	Resource::IFConstantBuffer* GraphicsDirectX11::CreateConstantBuffer( const ConstantBuffer::CreateInfo & info ) {
+		return new ConstantBufferDX11( m_pDevice.Get(), m_pImmediateContext.Get(), info );
 	}
 
 	Resource::IFShader* GraphicsDirectX11::CreateShader( const Shader::CreateInfo & info ) {
