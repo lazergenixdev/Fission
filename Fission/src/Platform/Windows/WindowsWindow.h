@@ -1,6 +1,6 @@
 #pragma once
+#include <Fission/Base/Utility/SmartPointer.h>
 #include "WinWindowManager.h"
-#include <condition_variable>
 
 namespace Fission::Platform
 {

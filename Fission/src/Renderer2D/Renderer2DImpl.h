@@ -1,5 +1,6 @@
 #pragma once
-#include "Fission/Core/Graphics/Renderer2D.hh"
+#include <Fission/Base/Utility/SmartPointer.h>
+#include <Fission/Core/Graphics/Renderer2D.hh>
 
 namespace Fission {
 

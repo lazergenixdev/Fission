@@ -1,27 +1,33 @@
 ﻿#include "Fission/Platform/EntryPoint.h"
+#include <Fission/Base/Utility/Timer.h>
 #include <random>
 
-static Fission::IFRenderer2D * renderer;
-static std::mt19937 rng;
+static std::mt19937 rng( (unsigned int)time(nullptr) ); /* Use current time as seed for rng. */
 static std::uniform_real_distribution<float> dist{ 0.0f, 1.0f };
 
-class BallLayer : public Fission::IFLayer
+template <typename T>
+struct DefaultDelete : public T { virtual void Destroy() override { delete this; } };
+
+class BallLayer : public DefaultDelete<Fission::IFLayer>
 {
 public:
 	Fission::color rand_color() { 
-		return Fission::color( dist( rng ), dist( rng ), dist( rng ) ); 
+		return Fission::hsv_colorf( dist( rng ), 1.0f, 1.0f ); 
 	}
 
-	virtual void OnCreate() override {}
+	virtual void OnCreate( Fission::FApplication * app ) override
+	{
+		renderer = static_cast<Fission::IFRenderer2D *>( app->pEngine->GetRenderer( "$internal2D" ) );
+	}
 
 	virtual void OnUpdate() override
 	{
 		// Update ball position
-		pos += velocity * 0.05f;
+		pos += velocity * timer.gets() * 3.0f;
 
 		// Collide with the top and bottom
 		if( pos.y + radius >= 720.0f )
-			pos.y = 720.0f - radius, velocity.y = -velocity.y, color = rand_color();
+			pos.y = 720.0f - radius, velocity.y =- velocity.y, color = rand_color();
 		else if( pos.y - radius <= 0.0f )
 			pos.y = radius,          velocity.y =- velocity.y, color = rand_color();
 
@@ -32,40 +38,40 @@ public:
 			pos.x = radius,           velocity.x =- velocity.x, color = rand_color();
 
 		// Draw the circle to the screen
-		renderer->DrawCircle( pos, radius, color, 5.0f, Fission::StrokeStyle::Inside );
+		renderer->DrawCircle( pos, radius, {0.0f}, Fission::color( color, 0.5f ), 20.0f, Fission::StrokeStyle::Inside ); // inner glow
+		renderer->DrawCircle( pos, radius, Fission::color( color, 0.5f ), {0.0f}, 20.0f, Fission::StrokeStyle::Outside ); // outer glow
+		renderer->DrawCircle( pos, radius, color, 5.0f, Fission::StrokeStyle::Center ); // circle
+		renderer->SetBlendMode( Fission::BlendMode::Add );
 		renderer->Render();
+		renderer->SetBlendMode( Fission::BlendMode::Normal );
 	}
-	virtual void Destroy() override { delete this; }
 private:
+	Fission::IFRenderer2D * renderer;
 	Fission::base::vector2f velocity = { 50.0f, 100.0f };
 	Fission::base::vector2f pos      = { 100.0f, 100.0f };
-	float radius = 50.0f;
-	Fission::color color = Fission::Colors::White;
+	float                   radius   = 50.0f;
+	Fission::color          color    = Fission::Colors::Red;
+	Fission::simple_timer   timer;
 };
 
-class BallScene : public Fission::FScene
+class BallScene : public DefaultDelete<Fission::FScene>
 {
 public:
 	BallScene() { PushLayer( new BallLayer ); }
 };
 
-class SandboxApp : public Fission::FApplication
+class BounceBallApp : public DefaultDelete<Fission::FApplication>
 {
 public:
 	virtual void OnStartUp( CreateInfo * info ) override
 	{
 		info->startScene = new BallScene;
-		char title[120];
-		sprintf( title, "sandbox [%s]", pEngine->GetVersionString() );
+		char title[100];
+		sprintf( title, "Bouncing Ball Demo [%s]", pEngine->GetVersionString() );
 		info->window.title = title;
-		info->window.style = Fission::IFWindow::Style::BorderSizeable;
-
-		Fission::CreateRenderer2D( &renderer );
-		pEngine->RegisterRenderer( "main", renderer );
 	}
-	virtual void Destroy() override { delete this; }
 };
 
 Fission::FApplication * CreateApplication() {
-	return new SandboxApp;
+	return new BounceBallApp;
 }

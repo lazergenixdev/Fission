@@ -47,14 +47,27 @@ namespace Fission
 
 		virtual void LoadEngine() = 0;
 
+		//! @brief Loads all the reasources need to run our application,
+		//!          this includes: IFGraphics* and IFWindow*, and also giving 
+		//!          the application a reference to the Engine instance.
+		//! 
+		//! @note This function can only be called once after the engine is created,
+		//!			subsequent calls will trigger an exception and will have no effect.
+		//! 
 		virtual void LoadApplication( class FApplication * app ) = 0;
 
 		virtual void RegisterRenderer( const char * identifier, IFRenderer * renderer ) = 0;
 
-	//	virtual IFRenderer * GetRenderer( const char * identifier ) { return nullptr; }
+		/**
+		 * @brief  Get a renderer from it's name.
+		 *
+		 * @param  _Identifier: Name of the renderer you wish to retrieve;
+		 *                       "$internal2D" - type: IFRenderer2D - Engine's internal 2D renderer.
+		 */
+		virtual IFRenderer * GetRenderer( const char * _Identifier ) = 0;
 		
 		/**
-		 * @brief  Get Fission Engine Version
+		 * @brief  Get Fission Engine Version.
 		 * 
 		 * @param  _Maj: [out] Major Version Number.
 		 * @param  _Min: [out] Minor Version Number.

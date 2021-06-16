@@ -8,7 +8,7 @@ namespace Fission {
 class ConsoleLayer : public IFConsoleLayer
 {
 public:
-	virtual void OnCreate() override;
+//	virtual void OnCreate() override;
 	virtual void OnUpdate() override;
 
 	virtual EventResult OnKeyDown( KeyDownEventArgs & args ) override;

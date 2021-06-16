@@ -31,8 +31,10 @@
 #pragma once
 #include <Fission/Platform/Platform.h> /*!< Determine Target Platform */
 
-////////////////////////////////////////////////////////////////////////////////////
+//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\
+// Configuration stuff
 
+/* FISSION_API */
 #ifdef FISSION_PLATFORM_WINDOWS
 #ifdef FISSION_BUILD_DLL
 #define FISSION_API __declspec(dllexport)
@@ -48,11 +50,11 @@
 
 /*! @brief Fission Engine Build String, identifying the config we built. */
 #if defined(FISSION_DEBUG)
-#define FISSION_BUILD_STRING "(Debug)"
+#define FISSION_BUILD_STRING "(Debug)"   /* Debug build of the engine. */
 #elif defined(FISSION_RELEASE)
-#define FISSION_BUILD_STRING "(Release)"
+#define FISSION_BUILD_STRING "(Release)" /* Release build of the engine. */
 #else
-#define FISSION_BUILD_STRING ""
+#define FISSION_BUILD_STRING ""          /* Distribution build of the engine. */
 #endif
 
 /*! @brief Functions that should be thread safe */
@@ -65,21 +67,21 @@
 #define FISSION_FORCE_INLINE
 #endif
 
-////////////////////////////////////////////////////////////////////////////////////
+//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\
 
 /**
  * standard library includes
  */
 #include <memory>
 #include <utility>
-#include <algorithm>
+#include <algorithm> /* Literally one of the most useful headers in the C++ standard lib. */
 #include <functional>
-#include <optional>
+#include <optional> /* I am only optionally including this header. */
 #include <string>
 #include <sstream>
 #include <array>
 #include <vector>
-#include <chrono>
+#include <chrono> /* "I told you not to fuck with time Morty!" */
 #include <mutex>
 #include <condition_variable>
 #include <unordered_map>
@@ -87,7 +89,7 @@
 #include <filesystem>
 #include <thread>
 
-////////////////////////////////////////////////////////////////////////////////////
+//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\
 
 /**
  * Assertions
@@ -104,60 +106,16 @@
  */
 #define FISSION_MK_STR(X) #X
 
+//! @brief Convert the version to a single integer for version comparing.
+//! @note IMPLEMENT ME (TODO:)
+#define FISSION_VERSION_AS_INT(MAJ,MIN,PAT) float(MAJ ^ MIN ^ PAT)/0.0f
+
 /**
 * Important Web Address
 */
 #define FISSION_Rx2 "https://youtu.be/dQw4w9WgXcQ"
 
-////////////////////////////////////////////////////////////////////////////////////
-
-/**
- * Pointer Types; TODO: move this to base/
- */
-namespace Fission {
-
-	template <typename T>
-	using ref = std::shared_ptr<T>;
-	template <typename T>
-	using scoped = std::unique_ptr<T>;
-
-	template <typename T, typename...Args>
-	static constexpr ref<T> make_ref( Args&&...args )
-	{
-		return std::make_shared<T>( std::forward<Args>( args ) ... );
-	}
-	template <typename T, typename...Args>
-	static constexpr scoped<T> make_scoped( Args&&...args )
-	{
-		return std::make_unique<T>( std::forward<Args>( args ) ... );
-	}
-
-	//! @brief Managed pointer type that destroys pointer when moves out of scope.
-	template <typename T>
-	class FPointer
-	{
-	public:
-		FPointer() = default;
-		FPointer(T*_):ptr(_){};
-
-		FPointer( FPointer && src ) { ptr = src.ptr; src.ptr = nullptr; }
-
-		~FPointer() { if( ptr ) { ptr->Destroy(); ptr = nullptr; } }
-
-		//! @brief Release and Get the address of.
-		inline T ** operator&() { this->~FPointer(); return &ptr; }
-
-		inline FPointer & operator=( T * _Right ) { this->~FPointer(); ptr = _Right; return *this; }
-
-		inline T * operator->() { return ptr; }
-
-		inline T * get() { return ptr; }
-		inline const T * get() const { return ptr; }
-
-	private:
-		T * ptr = nullptr;
-	};
-}
+//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\
 
 /**
 * TODO: Find a place for this in Base/

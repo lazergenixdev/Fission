@@ -40,7 +40,7 @@ namespace Fission {
 	{
 		//! @note If you got any resources that need to be sent to the GPU, 
 		//!			now is the time to do them
-		virtual void OnCreate() = 0;
+		virtual void OnCreate( class FApplication * app ) = 0;
 
 		//! @brief Function to update what is displayed on a frame
 		virtual void OnUpdate() = 0;
@@ -82,54 +82,116 @@ namespace Fission {
 /* ------------------------------------------ Scene System ------------------------------------------- */
 /* =================================================================================================== */
 
-	class FScene : public IFEventHandler
+	class FScene : public IFEventHandler, public IFObject
 	{
 	public:
-		virtual void OnCreate() {}
-
-		inline void CreateAll()
+		virtual void OnCreate( class FApplication * app )
 		{
-			OnCreate();
+			for( auto && l : m_vUncreatedLayers )
+				m_vLayerStack.emplace_back( l );
 			for( auto && l : m_vLayerStack )
-				l->OnCreate();
-			m_bCreated = true;
+				l->OnCreate( app );
+			m_vUncreatedLayers.clear();
 		}
-		
+
 		inline void OnUpdate()
 		{
+			if( m_vUncreatedLayers.size() )
+			{
+				for( auto && l : m_vUncreatedLayers )
+				{
+					l->OnCreate( mApp );
+					m_vLayerStack.emplace_back( l );
+				}
+				m_vUncreatedLayers.clear();
+			}
 			for( auto && l : m_vLayerStack )
 				l->OnUpdate();
 		}
 
 		inline void PushLayer( IFLayer * layer )
 		{
-			if( m_bCreated ) layer->OnCreate();
-			m_vLayerStack.emplace_back( layer );
+			m_vUncreatedLayers.emplace_back( layer );
 		}
 
-		FISSION_API virtual EventResult OnKeyDown( KeyDownEventArgs & args ) override;
+// Very boring code, here only for debugging purposes.
+//		"You could make a macro out of this!"
+//
 
-		FISSION_API virtual EventResult OnKeyUp( KeyUpEventArgs & args ) override;
-
-		FISSION_API virtual EventResult OnTextInput( TextInputEventArgs & ) override;
-
-		FISSION_API virtual EventResult OnMouseMove( MouseMoveEventArgs & ) override;
-
-		FISSION_API virtual EventResult OnMouseLeave( MouseLeaveEventArgs & ) override;
-
-		FISSION_API virtual EventResult OnSetCursor( SetCursorEventArgs & ) override;
-
-		FISSION_API virtual EventResult OnHide() override;
-
-		FISSION_API virtual EventResult OnShow() override;
-
-		FISSION_API virtual EventResult OnClose( CloseEventArgs & ) override;
-
-		void Exit() {  };
-
-		virtual ~FScene()
+		virtual EventResult OnKeyDown( KeyDownEventArgs & args ) override
 		{
-			for( auto && l : m_vLayerStack ) delete l;
+			for( auto it = m_vLayerStack.rbegin(); it != m_vLayerStack.rend(); ++it )
+				if( ( *it )->OnKeyDown( args ) == EventResult::Handled )
+					return EventResult::Handled;
+			return EventResult::Pass;
+		}
+
+		virtual EventResult OnKeyUp( KeyUpEventArgs & args ) override
+		{
+			for( auto it = m_vLayerStack.rbegin(); it != m_vLayerStack.rend(); ++it )
+				if( ( *it )->OnKeyUp( args ) == EventResult::Handled )
+					return EventResult::Handled;
+			return EventResult::Pass;
+		}
+
+		virtual EventResult OnTextInput( TextInputEventArgs & args ) override
+		{
+			for( auto it = m_vLayerStack.rbegin(); it != m_vLayerStack.rend(); ++it )
+				if( ( *it )->OnTextInput( args ) == EventResult::Handled )
+					return EventResult::Handled;
+			return EventResult::Pass;
+		}
+
+		virtual EventResult OnMouseMove( MouseMoveEventArgs & args ) override
+		{
+			for( auto it = m_vLayerStack.rbegin(); it != m_vLayerStack.rend(); ++it )
+				if( ( *it )->OnMouseMove( args ) == EventResult::Handled )
+					return EventResult::Handled;
+			return EventResult::Pass;
+		}
+
+		virtual EventResult OnMouseLeave( MouseLeaveEventArgs & args ) override
+		{
+			for( auto it = m_vLayerStack.rbegin(); it != m_vLayerStack.rend(); ++it )
+				if( ( *it )->OnMouseLeave( args ) == EventResult::Handled )
+					return EventResult::Handled;
+			return EventResult::Pass;
+		}
+
+		virtual EventResult OnSetCursor( SetCursorEventArgs & args ) override
+		{
+			for( auto it = m_vLayerStack.rbegin(); it != m_vLayerStack.rend(); ++it )
+				if( ( *it )->OnSetCursor( args ) == EventResult::Handled )
+					return EventResult::Handled;
+			return EventResult::Pass;
+		}
+
+		virtual EventResult OnHide() override
+		{
+			for( auto it = m_vLayerStack.rbegin(); it != m_vLayerStack.rend(); ++it )
+				( *it )->OnHide();
+			return EventResult::Handled;
+		}
+
+		virtual EventResult OnShow() override
+		{
+			for( auto it = m_vLayerStack.rbegin(); it != m_vLayerStack.rend(); ++it )
+				( *it )->OnShow();
+			return EventResult::Handled;
+		}
+
+		virtual EventResult OnClose( CloseEventArgs & args ) override
+		{
+			for( auto it = m_vLayerStack.rbegin(); it != m_vLayerStack.rend(); ++it )
+				( *it )->OnClose( args );
+			return EventResult::Handled;
+		}
+
+		virtual ~FScene() 
+		{
+			FISSION_ASSERT( m_vUncreatedLayers.size() == 0 );
+			for( auto && l : m_vLayerStack )
+				l->Destroy();
 		}
 
 	private:
@@ -137,8 +199,9 @@ namespace Fission {
 		friend class SceneStack;
 
 		std::vector<IFLayer *> m_vLayerStack;
-		class SceneStack * pParent;
-		bool m_bCreated = false;
+		std::vector<IFLayer *> m_vUncreatedLayers;
+
+		class FApplication * mApp = nullptr;
 	};
 
 } // nanespace Fission

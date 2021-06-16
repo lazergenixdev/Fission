@@ -12,14 +12,18 @@ namespace Fission::Platform
 
 		WNDCLASSEXW wClassDesc = {};
 		wClassDesc.cbSize = sizeof( WNDCLASSEXW );
-		wClassDesc.lpszClassName = m_Info.WindowClassName;
-		wClassDesc.hInstance = m_Info.hInstance;
-		wClassDesc.lpfnWndProc = SetupWindowsProc;
+		wClassDesc.lpszClassName =  m_Info.WindowClassName;
+		wClassDesc.hInstance =      m_Info.hInstance;
+		wClassDesc.lpfnWndProc =    SetupWindowsProc;
 
 		HMODULE hGDI = LoadLibraryA( "gdi32" );
-		auto GetStockObj = (PFN_GET_STOCK_OBJECT)GetProcAddress( hGDI, "GetStockObject" );
-		wClassDesc.hbrBackground = (HBRUSH)GetStockObj(BLACK_BRUSH);
-		FreeLibrary( hGDI );
+		if( hGDI != NULL )
+		{
+			auto GetStockObj = (PFN_GET_STOCK_OBJECT)GetProcAddress( hGDI, "GetStockObject" );
+			if( GetStockObj != NULL )
+				wClassDesc.hbrBackground = (HBRUSH)GetStockObj(BLACK_BRUSH);
+			FreeLibrary( hGDI );
+		}
 
 		RegisterClassExW( &wClassDesc );
 	}

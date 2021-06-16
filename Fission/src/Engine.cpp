@@ -1,6 +1,7 @@
 #include <Fission/Core/Engine.hh>
 #include <Fission/Core/Application.hh>
 #include <Fission/Base/Exception.h>
+#include <Fission/Base/Utility/SmartPointer.h>
 
 #include "Platform/GraphicsLoader.h"
 #include "Platform/WindowManager.h"
@@ -39,14 +40,14 @@ namespace Fission
 		FPointer<IFGraphics>        m_pGraphics;
 		FPointer<IFWindow>          m_pWindow;
 
-		std::vector<FPointer<IFRenderer>> m_Renderers;
+		std::unordered_map<std::string,RenderContext> m_Renderers;
 
 		bool                        m_bRunning = true;
 
-		SceneStack                  m_Scenes;
+		SceneStack                  m_SceneStack;
 		FApplication *              m_Application = nullptr;
 
-		FPointer<DebugLayerImpl>    m_pDebugLayer;
+		DebugLayerImpl				m_DebugLayer;
 	};
 
 
@@ -79,20 +80,17 @@ namespace Fission
 
 		virtual void Shutdown( Platform::ExitCode ) override
 		{
-			FISSION_THROW_NOT_IMPLEMENTED()
+			m_pWindow->Close();
 		}
 
 		virtual void Run(Platform::ExitCode* e) override
 		{
-			for( auto && r : m_Renderers )
-				r->OnCreate( m_pGraphics.get() );
-
 			m_pWindow->GetSwapChain()->Bind();
 			while( m_bRunning )
 			{
 				m_pWindow->GetSwapChain()->Clear( color{} );
-				m_Scenes.OnUpdate();
-				m_pDebugLayer->OnUpdate();
+				m_SceneStack.OnUpdate(m_Application);
+				m_DebugLayer.OnUpdate();
 				m_pWindow->GetSwapChain()->Present( vsync_On );
 			}
 			m_Application->OnShutdown();
@@ -104,18 +102,24 @@ namespace Fission
 		{
 			FISSION_ENGINE_ONCE( "Attempted to call `LoadApplication` more than once." );
 
+			// Link the application to our engine instance
 			m_Application = app;
 			app->pEngine = this;
 
 			// Memory leak, TODO: fix memory leak.
 			AppCreateInfo * appCreateInfo = new AppCreateInfo;
+
+			// Fetch start-up information for this app
 			app->OnStartUp( appCreateInfo );
-			m_Scenes.OpenScene( appCreateInfo->startScene );
+
+			// Pass our start scene to the scene stack.
+			m_SceneStack.OpenScene( appCreateInfo->startScene );
+
+
+			// Create everything needed to run our application:
 
 			m_pGraphicsLoader->CreateGraphics( &appCreateInfo->graphics, &m_pGraphics );
 			m_pWindowManager->SetGraphics( m_pGraphics.get() );
-
-			m_pDebugLayer = new DebugLayerImpl( m_pGraphics.get() );
 
 			IFWindow::CreateInfo winCreateInfo;
 			winCreateInfo.pEventHandler = this;
@@ -125,20 +129,42 @@ namespace Fission
 			app->pMainWindow = m_pWindow.get();
 			app->pGraphics = m_pGraphics.get();
 
+			{
+				Fission::IFRenderer2D * renderer;
+				Fission::CreateRenderer2D( &renderer );
+				RegisterRenderer( "$internal2D", renderer );
+			}
+
+			// Now everything should be initialized, we call OnCreate
+			//  for our application and all of its dependencies:
+
 			app->OnCreate();
-			m_Scenes.OnCreate();
-			m_pDebugLayer->OnCreate();
+			m_DebugLayer.OnCreate(app);
+			m_SceneStack.OnCreate(app);
+
+			for( auto && [name, context] : m_Renderers )
+			{
+				if( !context.bCreated )
+				{
+					context.renderer->OnCreate( m_pGraphics.get() );
+					context.bCreated = true;
+				}
+			}
 		}
 
 		virtual void PushScene( FScene * _Ptr_Scene ) override
 		{
-			m_Scenes.OpenScene( _Ptr_Scene );
+			m_SceneStack.OpenScene( _Ptr_Scene );
 		}
 
 		virtual void RegisterRenderer( const char * name, IFRenderer * r ) override
 		{
-			(void)name; // ignored for now
-			m_Renderers.push_back( r );
+			m_Renderers.emplace( name, RenderContext{ r } );
+		}
+
+		virtual IFRenderer * GetRenderer( const char * name ) override
+		{
+			return m_Renderers[name].renderer.get();
 		}
 
 		virtual EventResult OnClose( CloseEventArgs & args ) override
@@ -149,10 +175,10 @@ namespace Fission
 
 		virtual EventResult OnKeyDown( KeyDownEventArgs & args ) override
 		{
-			if( m_pDebugLayer->OnKeyDown( args ) == EventResult::Handled )
+			if( m_DebugLayer.OnKeyDown( args ) == EventResult::Handled )
 				return EventResult::Handled;
 
-			return m_Scenes.OnKeyDown( args );
+			return m_SceneStack.OnKeyDown( args );
 		}
 
 		virtual void Destroy() override { delete this; }

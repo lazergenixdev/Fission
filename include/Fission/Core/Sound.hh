@@ -30,6 +30,7 @@
 
 #pragma once
 #include <Fission/config.h>
+#include <Fission/Base/Utility/SmartPointer.h>
 
 // todo: more options in API (getting raw samples, or possibly 'baked' samples)
 

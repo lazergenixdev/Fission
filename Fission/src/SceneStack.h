@@ -1,58 +1,64 @@
 #pragma once
 #include <Fission/Core/Scene.hh>
+#include <Fission/Core/Engine.hh>
 #include <Fission/Core/Application.hh>
 #include <Fission/Base/Utility/Timer.h>
 
 namespace Fission {
 
-	class DefaultScene : public FScene
+	struct DebugScene : public FScene
 	{
+		static DebugScene * Get() { static DebugScene scene; return &scene; }
+		virtual void Destroy() override { (void)0; }
 	};
 
 	class SceneStack
 	{
 	public:
-		SceneStack() = default;
+		SceneStack()
+		{
+			m_vScenes.reserve(5);
+			m_vScenes.emplace_back( m_ActiveScene );
+		}
 
-		inline void OnCreate() { m_ActiveScene->CreateAll(); };
+		FISSION_FORCE_INLINE void OnCreate(FApplication * app) { m_ActiveScene->OnCreate( app ); };
 
-		inline void OnUpdate() {
+		FISSION_FORCE_INLINE void OnUpdate(FApplication * app) {
 			if( m_bSceneSwitch && m_SceneSwitchTimer.peeks() >= m_SceneSwitchCooldownDuration )
 			{
 				if( m_NextScene )
 				{
 					m_ActiveScene = m_NextScene;
-					m_Scenes.emplace_back( m_NextScene );
-					m_ActiveScene->CreateAll();
+					m_vScenes.emplace_back( m_NextScene );
+					m_ActiveScene->OnCreate(app);
 				}
 				else 
 				{ 
 					// Active scene must always be available, so switch active scene before deleting
-					m_ActiveScene = *( m_Scenes.end() - 2 );
-				//	delete m_Scenes.back(); // this is a memory leak
-					m_Scenes.pop_back(); 
+					m_ActiveScene = *( m_vScenes.end() - 2 );
+					m_vScenes.back()->Destroy();
+					m_vScenes.pop_back();
 				}
 				m_bSceneSwitch = false;
 			}
 			m_ActiveScene->OnUpdate();
 		}
 
-
 		// these must match with @IEventHandler, no need for virtual functions
-		inline EventResult OnKeyDown( KeyDownEventArgs & args )			{ return m_ActiveScene->OnKeyDown( args );		}
-		inline EventResult OnKeyUp( KeyUpEventArgs & args )				{ return m_ActiveScene->OnKeyUp( args );		}
-		inline EventResult OnTextInput( TextInputEventArgs & args )		{ return m_ActiveScene->OnTextInput( args );	}
-		inline EventResult OnMouseMove( MouseMoveEventArgs & args )		{ return m_ActiveScene->OnMouseMove( args );	}
-		inline EventResult OnMouseLeave( MouseLeaveEventArgs & args )	{ return m_ActiveScene->OnMouseLeave( args );	}
-		inline EventResult OnSetCursor( SetCursorEventArgs & args )		{ return m_ActiveScene->OnSetCursor( args );	}
-		inline EventResult OnHide()										{ return m_ActiveScene->OnHide();				}
-		inline EventResult OnShow()										{ return m_ActiveScene->OnShow();				}
-		inline EventResult OnClose( CloseEventArgs & args )				{ return m_ActiveScene->OnClose( args );		}
+		FISSION_FORCE_INLINE EventResult OnKeyDown( KeyDownEventArgs & args )       { return m_ActiveScene->OnKeyDown( args );    }
+		FISSION_FORCE_INLINE EventResult OnKeyUp( KeyUpEventArgs & args )           { return m_ActiveScene->OnKeyUp( args );      }
+		FISSION_FORCE_INLINE EventResult OnTextInput( TextInputEventArgs & args )   { return m_ActiveScene->OnTextInput( args );  }
+		FISSION_FORCE_INLINE EventResult OnMouseMove( MouseMoveEventArgs & args )   { return m_ActiveScene->OnMouseMove( args );  }
+		FISSION_FORCE_INLINE EventResult OnMouseLeave( MouseLeaveEventArgs & args ) { return m_ActiveScene->OnMouseLeave( args ); }
+		FISSION_FORCE_INLINE EventResult OnSetCursor( SetCursorEventArgs & args )   { return m_ActiveScene->OnSetCursor( args );  }
+		FISSION_FORCE_INLINE EventResult OnHide()                                   { return m_ActiveScene->OnHide();             }
+		FISSION_FORCE_INLINE EventResult OnShow()                                   { return m_ActiveScene->OnShow();             }
+		FISSION_FORCE_INLINE EventResult OnClose( CloseEventArgs & args )           { return m_ActiveScene->OnClose( args );      }
 
 		// ptr_scene must never be nullptr
 		inline void OpenScene( FScene * ptr_scene )
 		{
-			if( m_Scenes.size() )
+			if( m_vScenes.size() )
 			{
 				if( !m_bSceneSwitch )
 				{
@@ -63,14 +69,15 @@ namespace Fission {
 			}
 			else
 			{
-				m_Scenes.emplace_back( ptr_scene );
-				m_ActiveScene = m_Scenes.back();
+				m_vScenes.emplace_back( ptr_scene );
+				m_ActiveScene = m_vScenes.back();
 			}
 		}
 
 		inline void CloseScene()
 		{
-		//	if( m_Scenes.size() <= 1 ) return Application::Get()->Exit();
+			// We only have this scene and debug scene left, we should close up.
+		//	if( m_vScenes.size() <= 2 ) return mApp->pEngine->Shutdown(0x45<<1);
 
 			if( !m_bSceneSwitch )
 			{
@@ -82,14 +89,14 @@ namespace Fission {
 
 	private:
 
-		FScene * m_ActiveScene = m_ActiveScene = new DefaultScene;
+		FScene * m_ActiveScene = DebugScene::Get();
 		bool m_bSceneSwitch = false;
 
 		float m_SceneSwitchCooldownDuration = 0.2f;
 		simple_timer m_SceneSwitchTimer;
-		FScene * m_NextScene;
+		FScene * m_NextScene = nullptr;
 
-		std::vector<FScene *> m_Scenes;
+		std::vector<FScene *> m_vScenes;
 	};
 
 }

@@ -38,11 +38,9 @@ void IFDebugLayer::Text( const char * what )
 }
 
 
-DebugLayerImpl::DebugLayerImpl( IFGraphics * gfx )
+DebugLayerImpl::DebugLayerImpl()
 {
-	this->gfx = gfx;
 	s_DebugLayer = this;
-	CreateRenderer2D( &m_pRenderer2D );
 }
 
 void DebugLayerImpl::RegisterDrawCallback( const char * _Key, DebugDrawCallback _Callback )
@@ -86,10 +84,10 @@ static std::string memory_str;
 
 void DebugLayerImpl::Destroy() { FontManager::DelFont( "$debug" ); delete this; }
 
-void DebugLayerImpl::OnCreate() {
-	m_pRenderer2D->OnCreate( gfx );
+void DebugLayerImpl::OnCreate(class FApplication * app) {
+	pRenderer2D = (IFRenderer2D*)app->pEngine->GetRenderer("$internal2D");
 
-	FontManager::SetFont( "$debug", RobotoRegularTTF::data, RobotoRegularTTF::size, 20.0f, gfx );
+	FontManager::SetFont( "$debug", RobotoRegularTTF::data, RobotoRegularTTF::size, 20.0f, app->pGraphics );
 
 	int CPUInfo[4] = { -1 };
 	unsigned   nExIds, i = 0;
@@ -133,7 +131,7 @@ void DebugLayerImpl::OnUpdate() {
 
 	auto pFont = FontManager::GetFont( "$debug" );
 	float diff = pFont->GetSize();
-	m_pRenderer2D->SelectFont( pFont );
+	pRenderer2D->SelectFont( pFont );
 	m_LastFrameTimes[m_FrameCount % std::size( m_LastFrameTimes )] = t.getms();
 
 	float msAvgFrameTime = [&, sum = 0.0f]()mutable{ for( auto && f : m_LastFrameTimes ) sum += f; return sum; }( ) / (float)std::size( m_LastFrameTimes );
@@ -144,40 +142,40 @@ void DebugLayerImpl::OnUpdate() {
 		memset( buf, 0, sizeof buf );
 		sprintf_s( buf, "%.1f FPS (%.2fms)", 1000.0f / msAvgFrameTime, msAvgFrameTime );
 
-		auto tl = m_pRenderer2D->CreateTextLayout( FISSION_ENGINE " v" FISSION_VERSION_STRING _FISSION_BUILD_STRING " - Debug Layer" );
+		auto tl = pRenderer2D->CreateTextLayout( FISSION_ENGINE " v" FISSION_VERSION_STRING _FISSION_BUILD_STRING " - Debug Layer" );
 
-		m_pRenderer2D->FillRect( base::rectf( 0.0f, tl.width, 0.0f, diff ), c );
+		pRenderer2D->FillRect( base::rectf( 0.0f, tl.width, 0.0f, diff ), c );
 
-		m_pRenderer2D->DrawString( FISSION_ENGINE " v" FISSION_VERSION_STRING _FISSION_BUILD_STRING " - Debug Layer", { 0.0f, 0.0f }, Colors::White );
+		pRenderer2D->DrawString( FISSION_ENGINE " v" FISSION_VERSION_STRING _FISSION_BUILD_STRING " - Debug Layer", { 0.0f, 0.0f }, Colors::White );
 
-		m_pRenderer2D->DrawString( L"(F3)", { tl.width + 4.0f, 0.0f }, color( Colors::White, 0.5f ) );
+		pRenderer2D->DrawString( L"(F3)", { tl.width + 4.0f, 0.0f }, color( Colors::White, 0.5f ) );
 
 		{ // FPS
-			tl = m_pRenderer2D->CreateTextLayout( buf );
+			tl = pRenderer2D->CreateTextLayout( buf );
 			base::vector2f pos = { 0.0f, diff };
-			m_pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, diff ), c );
-			m_pRenderer2D->DrawString( buf, pos, Colors::White );
+			pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, diff ), c );
+			pRenderer2D->DrawString( buf, pos, Colors::White );
 		}
 		
 		{ // CPU
-			tl = m_pRenderer2D->CreateTextLayout( cpu_name.c_str() );
+			tl = pRenderer2D->CreateTextLayout( cpu_name.c_str() );
 			base::vector2f pos = { size.x - tl.width, 0.0f };
-			m_pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, diff ), c );
-			m_pRenderer2D->DrawString( cpu_name.c_str(), pos, Colors::White );
+			pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, diff ), c );
+			pRenderer2D->DrawString( cpu_name.c_str(), pos, Colors::White );
 		}
 
 		{ // Memory
-			tl = m_pRenderer2D->CreateTextLayout( memory_str.c_str() );
+			tl = pRenderer2D->CreateTextLayout( memory_str.c_str() );
 			base::vector2f pos = { size.x - tl.width, diff };
-			m_pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, diff ), c );
-			m_pRenderer2D->DrawString( memory_str.c_str(), pos, Colors::White );
+			pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, diff ), c );
+			pRenderer2D->DrawString( memory_str.c_str(), pos, Colors::White );
 		}
 
 		{ // Platform
-			tl = m_pRenderer2D->CreateTextLayout( System::GetVersionString() );
+			tl = pRenderer2D->CreateTextLayout( System::GetVersionString() );
 			base::vector2f pos = { size.x - tl.width, diff * 2.0f };
-			m_pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, diff ), c );
-			m_pRenderer2D->DrawString( System::GetVersionString(), pos, Colors::White );
+			pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, diff ), c );
+			pRenderer2D->DrawString( System::GetVersionString(), pos, Colors::White );
 		}
 
 		float start = 80.0f;
@@ -186,17 +184,17 @@ void DebugLayerImpl::OnUpdate() {
 		{
 			for( auto && s : text )
 			{
-				auto tl = m_pRenderer2D->CreateTextLayout( s.c_str() );
+				auto tl = pRenderer2D->CreateTextLayout( s.c_str() );
 
-				m_pRenderer2D->FillRect( base::rectf( 0.0f, tl.width, start, start + tl.height ), c );
-				m_pRenderer2D->DrawString( s.c_str(), { 0.0f, start }, Colors::White );
+				pRenderer2D->FillRect( base::rectf( 0.0f, tl.width, start, start + tl.height ), c );
+				pRenderer2D->DrawString( s.c_str(), { 0.0f, start }, Colors::White );
 
 				start += tl.height;
 			}
 			start += 30.0f;
 		}
 
-		m_pRenderer2D->Render();
+		pRenderer2D->Render();
 	}
 
 	m_FrameCount++;

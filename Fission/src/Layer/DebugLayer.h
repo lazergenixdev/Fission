@@ -7,7 +7,7 @@ namespace Fission {
 	class DebugLayerImpl : public IFDebugLayer
 	{
 	public:
-		DebugLayerImpl(IFGraphics * gfx);
+		DebugLayerImpl();
 
 		virtual void RegisterDrawCallback( const char * _Key, DebugDrawCallback _Callback ) override;
 
@@ -17,15 +17,14 @@ namespace Fission {
 
 		void Text( const char * what ) ;
 
-		virtual void OnCreate();
-		virtual void OnUpdate();
+		virtual void OnCreate(class FApplication *) override;
+		virtual void OnUpdate() override;
 
 		virtual EventResult OnKeyDown( KeyDownEventArgs & args ) override;
 
 		virtual void Destroy() override;
 	private:
-		IFGraphics * gfx;
-		FPointer<IFRenderer2D> m_pRenderer2D;
+		IFRenderer2D * pRenderer2D;
 
 		std::map<std::string, DebugDrawCallback> m_DrawCallbacks;
 

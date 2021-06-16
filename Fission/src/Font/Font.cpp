@@ -1,4 +1,5 @@
 #include <Fission/Core/Application.hh>
+#include <Fission/Base/Utility/SmartPointer.h>
 #include <Fission/Core/Graphics/Font.hh>
 #include <Fission/Core/Surface.hh>
 #include "freetype.h"
@@ -75,7 +76,7 @@ namespace Fission {
 	{
 	public:
 
-		virtual Resource::IFTexture2D * GetTexture2D() const override { return const_cast<Resource::IFTexture2D*>( m_pTexture.get() ); }
+		virtual Resource::IFTexture2D * GetTexture2D() const override { return const_cast<Resource::IFTexture2D*>( m_pTexture ); }
 		virtual float GetSize() const override { return height; }
 
 		virtual const Glyph * GetGylph( wchar_t ch ) const override
@@ -91,7 +92,7 @@ namespace Fission {
 		std::vector<int> m_GlyphLookup;
 		std::vector<Glyph> m_Glyphs;
 		Glyph * pFallbackGlyph;
-		FPointer<Resource::IFTexture2D> m_pTexture;
+		Resource::IFTexture2D * m_pTexture; // This is a memory leak, LOL
 		float size, height;
 	};
 

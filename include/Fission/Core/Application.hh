@@ -36,7 +36,6 @@
 
 namespace Fission
 {
-
 	class FApplication : public IFObject
 	{
 	public:
@@ -48,9 +47,9 @@ namespace Fission
 
 		struct CreateInfo
 		{
-			FScene *			startScene;
-			IFWindow::Properties	window = {};
-			IFGraphics::State		graphics = {};
+			FScene *              startScene;
+			IFWindow::Properties  window = {};
+			IFGraphics::State     graphics = {};
 		};
 
 	public:
@@ -69,6 +68,6 @@ namespace Fission
 
 		FApplication( const FApplication & ) = delete; /*!< Copying Applications is not allowed. */
 
-	}; // class Fission::Application
+	}; // class Fission::FApplication
 
 } // namespace Fission

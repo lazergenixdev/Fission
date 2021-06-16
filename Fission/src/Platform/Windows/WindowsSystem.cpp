@@ -49,9 +49,9 @@ namespace Fission {
 			#ifdef FISSION_PLATFORM_WINDOWS32
 				BOOL IsRunningOn64 = FALSE;
 				if( FALSE == IsWow64Process( GetCurrentProcess(), &IsRunningOn64 ) ) throw 0x45;
-				sprintf_s(_Version,"Windows 10 %i-Bit (%u.%u.%u)",IsRunningOn64?64:32,version.dwMajorVersion,version.dwMinorVersion,version.dwBuildNumber);
+				sprintf(_Version,"Windows 10 %i-Bit (%u.%u.%u)",IsRunningOn64?64:32,version.dwMajorVersion,version.dwMinorVersion,version.dwBuildNumber);
 			#else // FISSION_PLATFORM_WINDOWS64
-				sprintf_s(_Version,"Windows 10 64-Bit (%u.%u.%u)",version.dwMajorVersion,version.dwMinorVersion,version.dwBuildNumber);
+				sprintf(_Version,"Windows 10 64-Bit (%u.%u.%u)",version.dwMajorVersion,version.dwMinorVersion,version.dwBuildNumber);
 			#endif
 			}
 

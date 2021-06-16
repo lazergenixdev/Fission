@@ -23,7 +23,7 @@ namespace Fission {
 	public:
 		UILayer();
 
-		virtual void OnCreate();
+	//	virtual void OnCreate();
 		virtual void OnUpdate();
 
 		virtual EventResult OnMouseMove( MouseMoveEventArgs & args ) override;
@@ -41,7 +41,7 @@ namespace Fission {
 		void CreateActive();
 
 	private:
-		scoped<react::ui::WindowManager> pWindowManager;
+	//	scoped<react::ui::WindowManager> pWindowManager;
 	};
 
 }
