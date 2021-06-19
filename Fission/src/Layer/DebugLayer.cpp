@@ -22,30 +22,14 @@ using namespace Fission;
 static DebugLayerImpl * s_DebugLayer = nullptr;
 
 
-void IFDebugLayer::Push( const char * name )
-{
-	s_DebugLayer->Push( name );
-}
-
-void IFDebugLayer::Pop()
-{
-	s_DebugLayer->Pop();
-}
-
-void IFDebugLayer::Text( const char * what )
-{
-	s_DebugLayer->Text( what );
-}
-
-
 DebugLayerImpl::DebugLayerImpl()
 {
 	s_DebugLayer = this;
 }
 
-void DebugLayerImpl::RegisterDrawCallback( const char * _Key, DebugDrawCallback _Callback )
+void DebugLayerImpl::RegisterDrawCallback( const char * _Key, DrawCallback _Callback, void * _UserData )
 {
-	m_DrawCallbacks.emplace( _Key, _Callback );
+	m_DrawCallbacks.emplace( _Key, DrawCallbackData{ _Callback, _UserData } );
 }
 
 void DebugLayerImpl::Push( const char * name )

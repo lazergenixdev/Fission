@@ -155,6 +155,14 @@ namespace Fission::Platform
             PostQuitMessage( 0 );
         break;
 
+        case WM_CHAR:
+        {
+            TextInputEventArgs ev{ e };
+            ev.codepoint = (char32_t)e->wParam&0xFFFF; // TODO: this is not always a codepoint, pls fix
+            pEventHandler->OnTextInput( ev );
+        }
+        break;
+
         case WM_SYSKEYDOWN:
         case WM_KEYDOWN:
         {

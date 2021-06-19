@@ -43,6 +43,11 @@
 
 namespace Fission
 {
+	enum MonitorIdx_
+	{
+		MonitorIdx_Automatic = 0xffffe
+	};
+
 	struct IFWindow : public IFObject
 	{
 		/*! @brief Native window handle type */
@@ -80,13 +85,13 @@ namespace Fission
 		//! @brief struct defining the properties of a given Window
 		struct Properties
 		{
-			string         title       = "Window Title"; /*!< Title of the window that will show in the title bar. */
-			base::size     size        = { 1280, 720 };  /*!< Client size of the window. */
-			base::vector2i position    = {};             /*!< Position of the window's Top-Left coordinate. */
-			Style          style       = Style::Default; /*!< Style of the window, can be one of @IFWindow::Style. */
-			Flag_t         flags       = Flags::Default; /*!< Flags of the window, can be any combination of @IFWindow::Flags. */
-			int            monitor_idx = 0;              /*!< Monitor to use for fullscreen mode. (0 is always the primary) */
-			SaveID         save        = NoSaveID;       /*!< Save ID for this window, used for saving window properties for next startup. */
+			string         title       = "Window Title";       /*!< Title of the window that will show in the title bar. */
+			base::size     size        = { 1280, 720 };        /*!< Client size of the window. */
+			base::vector2i position    = {};                   /*!< Position of the window's Top-Left coordinate. */
+			Style          style       = Style::Default;       /*!< Style of the window, can be one of @IFWindow::Style. */
+			Flag_t         flags       = Flags::Default;       /*!< Flags of the window, can be any combination of @IFWindow::Flags. */
+			int            monitor_idx = MonitorIdx_Automatic; /*!< Monitor to use for fullscreen mode. (0 is always the primary) */
+			SaveID         save        = NoSaveID;             /*!< Save ID for this window, used for saving window properties for next startup. */
 		};
 
 		struct CreateInfo

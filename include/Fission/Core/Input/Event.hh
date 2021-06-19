@@ -32,6 +32,7 @@
 #include <Fission/config.h>
 #include <Fission/Base/Math/Vector.h>
 #include <Fission/Base/Size.h>
+#include <Fission/Base/String.h>
 #include <Fission/Core/Input/Keys.hh>
 #include <Fission/Core/Input/Cursor.hh>
 
@@ -75,7 +76,7 @@ namespace Fission {
 	};
 
 	struct TextInputEventArgs : public NativeEventArgs {
-		wchar_t character;
+		char32_t codepoint;
 	};
 
 	struct MouseMoveEventArgs : public NativeEventArgs {

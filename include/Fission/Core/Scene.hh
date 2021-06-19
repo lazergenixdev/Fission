@@ -39,7 +39,7 @@ namespace Fission {
 	struct IFLayer : public IFEventHandler, public IFObject
 	{
 		//! @note If you got any resources that need to be sent to the GPU, 
-		//!			now is the time to do them
+		//!			now is the time to do it
 		virtual void OnCreate( class FApplication * app ) = 0;
 
 		//! @brief Function to update what is displayed on a frame
@@ -52,18 +52,18 @@ namespace Fission {
 /* ----------------------------------------- Default Layers ------------------------------------------ */
 /* =================================================================================================== */
 
-	using DebugDrawCallback = std::function<void( IFRenderer2D * pr2d )>;
+	using DrawCallback = std::function<void( IFRenderer2D * _Renderer, void * _UserData )>;
 
 	class IFDebugLayer : public IFLayer
 	{
 	public:
-		virtual void RegisterDrawCallback( const char * _Key, DebugDrawCallback _Callback ) = 0;
+		virtual void RegisterDrawCallback( const char * _Key, DrawCallback _Callback, void * _UserData ) = 0;
 
-		FISSION_API static void Push( const char * name );
+		virtual void Push( const char * name ) = 0;
 
-		FISSION_API static void Pop();
+		virtual void Pop() = 0;
 
-		FISSION_API static void Text( const char * what );
+		virtual void Text( const char * what ) = 0;
 
 		template <size_t Buffer_Size = 128, typename...T>
 		static void Text( const char * fmt, T&&...args )
@@ -202,6 +202,7 @@ namespace Fission {
 		std::vector<IFLayer *> m_vUncreatedLayers;
 
 		class FApplication * mApp = nullptr;
-	};
+
+	}; // class Fission::FScene
 
 } // nanespace Fission

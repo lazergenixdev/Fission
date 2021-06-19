@@ -9,13 +9,13 @@ namespace Fission {
 	public:
 		DebugLayerImpl();
 
-		virtual void RegisterDrawCallback( const char * _Key, DebugDrawCallback _Callback ) override;
+		virtual void RegisterDrawCallback( const char * _Key, DrawCallback _Callback, void * _UserData ) override;
 
 		void Push( const char * name );
 
 		void Pop();
 
-		void Text( const char * what ) ;
+		void Text( const char * what );
 
 		virtual void OnCreate(class FApplication *) override;
 		virtual void OnUpdate() override;
@@ -24,9 +24,13 @@ namespace Fission {
 
 		virtual void Destroy() override;
 	private:
-		IFRenderer2D * pRenderer2D;
+		IFRenderer2D * pRenderer2D = nullptr;
 
-		std::map<std::string, DebugDrawCallback> m_DrawCallbacks;
+		struct DrawCallbackData {
+			DrawCallback callback;
+			void * user;
+		};
+		std::map<std::string, DrawCallbackData> m_DrawCallbacks;
 
 		std::map<std::string, std::vector<std::string>> m_InfoMap;
 		std::vector<std::string> * m_CurrentInfo = nullptr;
@@ -34,7 +38,7 @@ namespace Fission {
 		bool m_bShow = false;
 		bool m_bShowFR = false;
 
-		float m_LastFrameTimes[64];
+		float m_LastFrameTimes[64] = {};
 		size_t m_FrameCount = 0;
 
 		simple_timer t;

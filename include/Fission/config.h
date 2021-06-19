@@ -106,8 +106,8 @@
  */
 #define FISSION_MK_STR(X) #X
 
-//! @brief Convert the version to a single integer for version comparing.
-//! @note IMPLEMENT ME (TODO:)
+//! @brief Convert the version numbers to a single integer for version comparing.
+//! @note TODO: (IMPLEMENT ME)
 #define FISSION_VERSION_AS_INT(MAJ,MIN,PAT) float(MAJ ^ MIN ^ PAT)/0.0f
 
 /**

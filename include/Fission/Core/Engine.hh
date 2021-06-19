@@ -36,6 +36,8 @@ namespace Fission
 {
 	struct IFEngine : public IFObject
 	{
+		virtual IFDebugLayer * GetDebug() = 0;
+
 		virtual void PushScene( FScene * _Ptr_Scene ) = 0;
 
 		virtual void CloseScene() {}
@@ -47,13 +49,14 @@ namespace Fission
 
 		virtual void LoadEngine() = 0;
 
-		//! @brief Loads all the reasources need to run our application,
-		//!          this includes: IFGraphics* and IFWindow*, and also giving 
-		//!          the application a reference to the Engine instance.
-		//! 
-		//! @note This function can only be called once after the engine is created,
-		//!			subsequent calls will trigger an exception and will have no effect.
-		//! 
+		/**
+		 * @brief Loads all the reasources need to run our application,
+		 *          this includes: IFGraphics* and IFWindow*, and also giving 
+		 *          the application a reference to the Engine instance.
+		 * 
+		 * @note This function can only be called once after the engine is created,
+		 *			subsequent calls will trigger an exception and will have no effect.
+		 */
 		virtual void LoadApplication( class FApplication * app ) = 0;
 
 		virtual void RegisterRenderer( const char * identifier, IFRenderer * renderer ) = 0;

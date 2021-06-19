@@ -5,19 +5,21 @@
 
 namespace Fission {
 
-class ConsoleLayer : public IFConsoleLayer
+class ConsoleLayerImpl : public IFConsoleLayer
 {
 public:
-//	virtual void OnCreate() override;
+	virtual void OnCreate(class FApplication * app) override;
 	virtual void OnUpdate() override;
 
 	virtual EventResult OnKeyDown( KeyDownEventArgs & args ) override;
 	virtual EventResult OnTextInput( TextInputEventArgs & args ) override;
+
+	virtual void Destroy() override;
 private:
 	void _hide();
 
 private:
-	std::unique_ptr<IFRenderer2D> m_pRenderer2D;
+	IFRenderer2D* m_pRenderer2D;
 
 	string m_CommandText;
 
@@ -29,6 +31,7 @@ private:
 	uint32_t lineOffset = 0;
 	bool m_bShow = false;
 
+	Font * m_pFont = nullptr;
 	float m_FontSize;
 	float m_BottomPadding = 2.0f;
 

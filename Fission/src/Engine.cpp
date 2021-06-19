@@ -8,6 +8,7 @@
 
 #include "SceneStack.h"
 #include "Layer/DebugLayer.h"
+#include "Layer/ConsoleLayer.h"
 
 #include "Version.h"
 
@@ -28,17 +29,17 @@ namespace Fission
 
 	struct RenderContext
 	{
-		FPointer<IFRenderer> renderer;
+		fsn_ptr<IFRenderer>  renderer;
 		bool				 bCreated = false;
 	};
 
 	struct FissionEngineImpl
 	{
-		FPointer<WindowManager>     m_pWindowManager;
-		FPointer<GraphicsLoader>    m_pGraphicsLoader;
+		fsn_ptr<WindowManager>      m_pWindowManager;
+		fsn_ptr<GraphicsLoader>     m_pGraphicsLoader;
 
-		FPointer<IFGraphics>        m_pGraphics;
-		FPointer<IFWindow>          m_pWindow;
+		fsn_ptr<IFGraphics>         m_pGraphics;
+		fsn_ptr<IFWindow>           m_pWindow;
 
 		std::unordered_map<std::string,RenderContext> m_Renderers;
 
@@ -48,6 +49,7 @@ namespace Fission
 		FApplication *              m_Application = nullptr;
 
 		DebugLayerImpl				m_DebugLayer;
+		ConsoleLayerImpl			m_ConsoleLayer;
 	};
 
 
@@ -90,6 +92,7 @@ namespace Fission
 			{
 				m_pWindow->GetSwapChain()->Clear( color{} );
 				m_SceneStack.OnUpdate(m_Application);
+				m_ConsoleLayer.OnUpdate();
 				m_DebugLayer.OnUpdate();
 				m_pWindow->GetSwapChain()->Present( vsync_On );
 			}
@@ -140,6 +143,7 @@ namespace Fission
 
 			app->OnCreate();
 			m_DebugLayer.OnCreate(app);
+			m_ConsoleLayer.OnCreate(app);
 			m_SceneStack.OnCreate(app);
 
 			for( auto && [name, context] : m_Renderers )
@@ -167,6 +171,11 @@ namespace Fission
 			return m_Renderers[name].renderer.get();
 		}
 
+		virtual IFDebugLayer * GetDebug() override
+		{
+			return &m_DebugLayer;
+		}
+
 		virtual EventResult OnClose( CloseEventArgs & args ) override
 		{
 			m_bRunning = false;
@@ -178,7 +187,21 @@ namespace Fission
 			if( m_DebugLayer.OnKeyDown( args ) == EventResult::Handled )
 				return EventResult::Handled;
 
+			if( m_ConsoleLayer.OnKeyDown( args ) == EventResult::Handled )
+				return EventResult::Handled;
+
 			return m_SceneStack.OnKeyDown( args );
+		}
+
+		virtual EventResult OnTextInput( TextInputEventArgs & args ) override
+		{
+			if( m_DebugLayer.OnTextInput( args ) == EventResult::Handled )
+				return EventResult::Handled;
+
+			if( m_ConsoleLayer.OnTextInput( args ) == EventResult::Handled )
+				return EventResult::Handled;
+
+			return m_SceneStack.OnTextInput( args );
 		}
 
 		virtual void Destroy() override { delete this; }
