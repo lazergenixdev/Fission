@@ -1,5 +1,5 @@
-workspace 'Fission'
 
+workspace 'Fission'
 	architecture "x86_64"
 
 	configurations { 'Debug', 'Release', 'Dist' }
@@ -25,3 +25,5 @@ group ""
 
 include 'Fission'
 include 'sandbox'
+
+include 'demos'

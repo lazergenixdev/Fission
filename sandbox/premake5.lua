@@ -18,7 +18,6 @@ project 'sandbox'
 	includedirs
 	{
         '%{wks.location}/include',
-        "%{IncludeDir.lazerlib}",
         "%{IncludeDir.freetype}",
         '%{wks.location}/resources'
 	}
