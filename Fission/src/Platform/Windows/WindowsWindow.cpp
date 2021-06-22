@@ -155,11 +155,116 @@ namespace Fission::Platform
             PostQuitMessage( 0 );
         break;
 
+        case WM_COMMAND: return 0;
+        case WM_SYSCOMMAND:
+        {
+            if( e->wParam == SC_CLOSE ) break;
+            switch( e->wParam & 0xFFF0 )
+            {
+            case SC_KEYMENU:
+            case SC_MOUSEMENU:
+            case SC_CLOSE:
+                return 0;
+            default:
+                break;
+            }
+            break;
+        }
+
+        case WM_MOVE:
+        {
+            auto point = MAKEPOINTS( e->lParam );
+            if( !m_bFullscreenMode )
+                m_Properties.position = base::vector2i::from( point );
+            break;
+        }
+
+        // Determine whether the window is being minimized
+        case WM_SIZE:
+            if( e->wParam == SIZE_MINIMIZED )
+                pEventHandler->OnHide();
+            else
+                pEventHandler->OnShow();
+        break;
+
+        case WM_MOUSEMOVE:
+        {
+            MouseMoveEventArgs ev{ e };
+            ev.position.x = short( e->lParam );
+            ev.position.y = short( e->lParam >> 16 );
+            pEventHandler->OnMouseMove( ev );
+            m_MouseTracker.OnMouseMove( e->hWnd );
+        }
+        break;
+
+        case WM_MOUSELEAVE:
+        {
+            MouseLeaveEventArgs ev{ e };
+            pEventHandler->OnMouseLeave( ev );
+            m_MouseTracker.Reset( e->hWnd );
+        }
+        break;
+
+		case WM_LBUTTONDOWN: case WM_LBUTTONDBLCLK:
+		case WM_RBUTTONDOWN: case WM_RBUTTONDBLCLK:
+		case WM_MBUTTONDOWN: case WM_MBUTTONDBLCLK:
+		case WM_XBUTTONDOWN: case WM_XBUTTONDBLCLK:
+		{
+			Keys::Key button = Keys::Unknown;
+			if( e->Msg == WM_LBUTTONDOWN || e->Msg == WM_LBUTTONDBLCLK ) { button = Keys::Mouse_Left; }
+			if( e->Msg == WM_RBUTTONDOWN || e->Msg == WM_RBUTTONDBLCLK ) { button = Keys::Mouse_Right; }
+			if( e->Msg == WM_MBUTTONDOWN || e->Msg == WM_MBUTTONDBLCLK ) { button = Keys::Mouse_Middle; }
+			//if( e->Msg == WM_XBUTTONDOWN || e->Msg == WM_XBUTTONDBLCLK ) { button = ( GET_XBUTTON_WPARAM( wParam ) == XBUTTON1 ) ? 3 : 4; }
+            SetCapture( e->hWnd );
+			KeyDownEventArgs ev{ e };
+			ev.key = button;
+			pEventHandler->OnKeyDown( ev );
+		}
+		return 0;
+
+		case WM_LBUTTONUP:
+		case WM_RBUTTONUP:
+		case WM_MBUTTONUP:
+		case WM_XBUTTONUP:
+		{
+			Keys::Key button = Keys::Unknown;
+			if( e->Msg == WM_LBUTTONUP ) { button = Keys::Mouse_Left; }
+			if( e->Msg == WM_RBUTTONUP ) { button = Keys::Mouse_Right; }
+			if( e->Msg == WM_MBUTTONUP ) { button = Keys::Mouse_Middle; }
+		//	if( e->Msg == WM_XBUTTONUP ) { button = ( GET_XBUTTON_WPARAM( wParam ) == XBUTTON1 ) ? 3 : 4; }
+			ReleaseCapture();
+			KeyUpEventArgs ev{ e };
+			ev.key = button;
+			pEventHandler->OnKeyUp( ev );
+		}
+		return 0;
+
         case WM_CHAR:
         {
             TextInputEventArgs ev{ e };
             ev.codepoint = (char32_t)e->wParam&0xFFFF; // TODO: this is not always a codepoint, pls fix
             pEventHandler->OnTextInput( ev );
+        }
+        break;
+
+        case WM_MOUSEWHEEL:
+        {
+            KeyDownEventArgs downEvent{ e };
+            KeyUpEventArgs upEvent{ e };
+            m_MouseWheelDelta += GET_WHEEL_DELTA_WPARAM( e->wParam );
+
+            downEvent.key = upEvent.key = Keys::Mouse_WheelUp;
+            while( m_MouseWheelDelta >= WHEEL_DELTA ) {
+                pEventHandler->OnKeyDown( downEvent );
+                pEventHandler->OnKeyUp( upEvent );
+                m_MouseWheelDelta -= WHEEL_DELTA;
+            }
+            downEvent.key = upEvent.key = Keys::Mouse_WheelDown;
+            while( m_MouseWheelDelta <= WHEEL_DELTA ) {
+                pEventHandler->OnKeyDown( downEvent );
+                pEventHandler->OnKeyUp( upEvent );
+                m_MouseWheelDelta += WHEEL_DELTA;
+            }
         }
         break;
 
@@ -171,6 +276,26 @@ namespace Fission::Platform
             ev.key = key_from_win32( (int)e->wParam );
             pEventHandler->OnKeyDown( ev );
         }
+        break;
+
+        case WM_SYSKEYUP:
+        case WM_KEYUP:
+        {
+            KeyUpEventArgs ev{ e };
+            ev.key = key_from_win32( (int)e->wParam );
+            pEventHandler->OnKeyUp( ev );
+        }
+        break;
+
+        case WM_SETCURSOR:
+            if( (short)e->lParam == HTCLIENT )
+            {
+                SetCursorEventArgs ev{ e };
+                ev.cursor = m_Cursor;
+                pEventHandler->OnSetCursor( ev );
+                if( ev.bUseCursor ) ev.cursor->Use();
+                return TRUE;
+            }
         break;
 
         default:break;
@@ -297,37 +422,9 @@ namespace Fission::Platform
 //        {
 //
 //        /************* Input Messages *************/
-//        case WM_MOUSEMOVE:
-//        {
-//            MouseMoveEventArgs ev{ &native_event };
-//            ev.position.x = short( lParam );
-//            ev.position.y = short( lParam >> 16 );
-//            pWindow->pEventHandler->OnMouseMove( ev );
-//            pWindow->m_MouseTracker.OnMouseMove( hWnd );
-//            break;
-//        }
-//        case WM_MOUSELEAVE:
-//        {
-//            MouseLeaveEventArgs ev{ &native_event };
-//            pWindow->pEventHandler->OnMouseLeave( ev );
-//            pWindow->m_MouseTracker.Reset( hWnd );
-//            break;
-//        }
-//        case WM_ACTIVATE:
-//        {
-//            //if( wParam == WA_INACTIVE && bool( pWindow->m_Properties.flags & Flags::Fullscreen ) )
-//            //    ShowWindow( hWnd, SW_MINIMIZE );
-//            break;
-//		}
 //        case WM_SYSKEYDOWN:
 //        case WM_KEYDOWN:
 //        {
-//        //    Console::WriteLine( L"[WindowId:%x] KEYDOWN: wParam=%i lParam=%i", Colors::Gray, (int)hWnd, wParam, lParam );
-//
-//            KeyDownEventArgs ev{ &native_event };
-//            ev.repeat = ( lParam & 0x40000000 );
-//            ev.key = key_from_win32( (int)wParam );
-//
 //            if( ev.key == Keys::F11 )
 //                if( pWindow->m_Properties.style == Style::Fullscreen )
 //                {
@@ -357,76 +454,6 @@ namespace Fission::Platform
 //                //    SetWindowPos( pWindow->m_Handle, HWND_TOPMOST, 0, 0, mode->resolution.x, mode->resolution.y, SWP_SHOWWINDOW );
 //                    ShowWindow( pWindow->m_Handle, SW_MAXIMIZE );
 //                }
-//
-//            pWindow->pEventHandler->OnKeyDown( ev );
-//            break;
-//        }
-//        case WM_SYSKEYUP:
-//        case WM_KEYUP:
-//        {
-//            KeyUpEventArgs ev{ &native_event };
-//            ev.key = key_from_win32( (int)wParam );
-//            pWindow->pEventHandler->OnKeyUp( ev );
-//            break;
-//		}
-//		case WM_LBUTTONDOWN: case WM_LBUTTONDBLCLK:
-//		case WM_RBUTTONDOWN: case WM_RBUTTONDBLCLK:
-//		case WM_MBUTTONDOWN: case WM_MBUTTONDBLCLK:
-//		case WM_XBUTTONDOWN: case WM_XBUTTONDBLCLK:
-//		{
-//			Keys::Key button = Keys::Unknown;
-//			if( Msg == WM_LBUTTONDOWN || Msg == WM_LBUTTONDBLCLK ) { button = Keys::Mouse_Left; }
-//			if( Msg == WM_RBUTTONDOWN || Msg == WM_RBUTTONDBLCLK ) { button = Keys::Mouse_Right; }
-//			if( Msg == WM_MBUTTONDOWN || Msg == WM_MBUTTONDBLCLK ) { button = Keys::Mouse_Middle; }
-//			//if( Msg == WM_XBUTTONDOWN || Msg == WM_XBUTTONDBLCLK ) { button = ( GET_XBUTTON_WPARAM( wParam ) == XBUTTON1 ) ? 3 : 4; }
-//            SetCapture( hWnd );
-//			KeyDownEventArgs ev{ &native_event };
-//			ev.key = button;
-//			pWindow->pEventHandler->OnKeyDown( ev );
-//			return 0;
-//		}
-//		case WM_LBUTTONUP:
-//		case WM_RBUTTONUP:
-//		case WM_MBUTTONUP:
-//		case WM_XBUTTONUP:
-//		{
-//			Keys::Key button = Keys::Unknown;
-//			if( Msg == WM_LBUTTONUP ) { button = Keys::Mouse_Left; }
-//			if( Msg == WM_RBUTTONUP ) { button = Keys::Mouse_Right; }
-//			if( Msg == WM_MBUTTONUP ) { button = Keys::Mouse_Middle; }
-//		//	if( Msg == WM_XBUTTONUP ) { button = ( GET_XBUTTON_WPARAM( wParam ) == XBUTTON1 ) ? 3 : 4; }
-//			ReleaseCapture();
-//			KeyUpEventArgs ev{ &native_event };
-//			ev.key = button;
-//			pWindow->pEventHandler->OnKeyUp( ev );
-//			return 0;
-//		}
-//        case WM_CHAR:
-//        {
-//            TextInputEventArgs ev{ &native_event };
-//            ev.character = (wchar_t)wParam;
-//            pWindow->pEventHandler->OnTextInput( ev );
-//            break;
-//        }
-//        case WM_MOUSEWHEEL:
-//        {
-//            KeyDownEventArgs downEvent{ &native_event };
-//            KeyUpEventArgs upEvent{ &native_event };
-//            pWindow->m_MouseWheelDelta += GET_WHEEL_DELTA_WPARAM( wParam );
-//
-//            downEvent.key = upEvent.key = Keys::Mouse_WheelUp;
-//            while( pWindow->m_MouseWheelDelta >= WHEEL_DELTA ) {
-//                pWindow->pEventHandler->OnKeyDown( downEvent );
-//                pWindow->pEventHandler->OnKeyUp( upEvent );
-//                pWindow->m_MouseWheelDelta -= WHEEL_DELTA;
-//            }
-//            downEvent.key = upEvent.key = Keys::Mouse_WheelDown;
-//            while( pWindow->m_MouseWheelDelta <= WHEEL_DELTA ) {
-//                pWindow->pEventHandler->OnKeyDown( downEvent );
-//                pWindow->pEventHandler->OnKeyUp( upEvent );
-//                pWindow->m_MouseWheelDelta += WHEEL_DELTA;
-//            }
-//            break;
 //        }
 //
 //
@@ -469,38 +496,6 @@ namespace Fission::Platform
 //
 //
 //        /************* System Messages *************/
-//        case WM_SIZE:
-//        {
-//            if( pWindow )
-//            {
-//                if( wParam == SIZE_MINIMIZED )
-//                    pWindow->pEventHandler->OnHide();
-//                else
-//                    pWindow->pEventHandler->OnShow();
-//            }
-//            break;
-//        }
-//        case WM_WINDOWPOSCHANGED:
-//        {
-//            //auto pWindowPos = reinterpret_cast<WINDOWPOS *>( lParam );
-//
-//            //Console::WriteLine( L"[windowposchanged] NOMOVE=%i NOOWNERZORDER=%i,", Colors::White, 
-//            //    bool( pWindowPos->flags & SWP_NOMOVE ),
-//            //    bool( pWindowPos->flags & SWP_NOOWNERZORDER )
-//            //);
-//
-//            //if( pWindowPos->hwndInsertAfter == HWND_TOP && pWindow->m_pGraphics )
-//            //    ; //pWindow->m_pGraphics->SetFullscreen( pWindow->m_pGraphics->IsFullscreen() );
-//
-//            break;
-//        }
-//        case WM_MOVE:
-//        {
-//            auto point = MAKEPOINTS( lParam );
-//            if( pWindow && !pWindow->m_bFullscreenMode )
-//                pWindow->m_Properties.position = base::vector2i::from( point );
-//            break;
-//        }
 //        //case WM_SIZING:
 //        //{
 //        //    // TODO: add AR restriction
@@ -560,54 +555,9 @@ namespace Fission::Platform
 //        //    }
 //        //    break;
 //        //}
-//        case WM_SETCURSOR:
-//        {
-//            if( (short)lParam == HTCLIENT )
-//            {
-//                SetCursorEventArgs ev{ &native_event };
-//                ev.cursor = pWindow->m_Cursor;
-//                pWindow->pEventHandler->OnSetCursor( ev );
-//                if( ev.bUseCursor ) ev.cursor->Use();
-//                //pWindow->m_Cursor = ev.cursor;
-//
-//                //hCurs3 = CreateCursor( WindowClass::GetInstance(),   // app. instance 
-//                //    8,                 // horizontal position of hot spot 
-//                //    8,                 // vertical position of hot spot 
-//                //    16,                // cursor width 
-//                //    16,                // cursor height 
-//                //    ANDmaskCursor,     // AND mask 
-//                //    XORmaskCursor );   // XOR mask 
-//                //SetCursor( hCurs3 );
-//                return TRUE;
-//            }
-//            break;
-//        }
-//        case WM_COMMAND: return 0;
-//        case WM_SYSCOMMAND:
-//        {
-//            if( wParam == SC_CLOSE ) break;
-//            switch( wParam & 0xFFF0 )
-//            {
-//            case SC_KEYMENU:
-//            case SC_MOUSEMENU:
-//            case SC_CLOSE:
-//                return 0;
-//            default:
-//                break;
-//            }
-//            break;
-//        }
-//        case WM_DESTROY:
-//            if( pWindow )
-//            {
-//                PostQuitMessage( 0 );
-//            }
-//           break;
 //
 //        default:break;
 //        }
-//
-//        return DefWindowProc( hWnd, Msg, wParam, lParam );
 //    }
 
     DWORD WindowsWindow::GetWindowsStyle()

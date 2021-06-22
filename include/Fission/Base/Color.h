@@ -30,8 +30,8 @@
 #pragma once
 #include "config.h"
 
-/*
-* 	INDEX
+/**
+* 	INDEX:
 * 	
 * [Color Types]
 * [Known Colors]
@@ -434,6 +434,21 @@ namespace Colors
 		if constexpr( is_hsv_v<ColorTy> )
 		{
 			return ColorTy( 0.0f, 0.0f, _Percent_White );
+		}
+	}
+
+	template <typename ColorTy = rgba_colorf>
+	static constexpr ColorTy make_gray( typename ColorTy::value_type _Percent_White, typename ColorTy::value_type _Alpha )
+	{
+		static_assert( is_color_v<ColorTy> && has_alpha_v<ColorTy> );
+
+		if constexpr( is_rgb_v<ColorTy> )
+		{
+			return ColorTy( _Percent_White, _Percent_White, _Percent_White, _Alpha );
+		}
+		if constexpr( is_hsv_v<ColorTy> )
+		{
+			return ColorTy( 0.0f, 0.0f, _Percent_White, _Alpha );
 		}
 	}
 

@@ -95,8 +95,9 @@ FISSION_MAIN_EXPORT(Fission::Platform::ExitCode) _fission_main( void * instance 
 	using namespace Fission;
 	using namespace string_literals;
 
-	Platform::ExitCode  nExitCode = FISSION_EXIT_UNKNOWN;
-	FPointer<IFEngine>  fsnEngine;
+	Platform::ExitCode      nExitCode = FISSION_EXIT_UNKNOWN;
+	FPointer<IFEngine>      fsnEngine;
+	FPointer<FApplication>  app;
 
 	Fission::CreateEngine( instance, &fsnEngine );
 
@@ -104,9 +105,9 @@ FISSION_MAIN_EXPORT(Fission::Platform::ExitCode) _fission_main( void * instance 
 	{
 		fsnEngine->LoadEngine();
 
-		auto app = CreateApplication();
+		app = CreateApplication();
 
-		fsnEngine->LoadApplication( app );
+		fsnEngine->LoadApplication( app.get() );
 
 		try 
 		{

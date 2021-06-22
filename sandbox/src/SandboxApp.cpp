@@ -66,9 +66,7 @@ public:
 	virtual void OnStartUp( CreateInfo * info ) override
 	{
 		info->startScene = new BallScene;
-		char title[100];
-		sprintf( title, "Bouncing Ball Demo [%s]", pEngine->GetVersionString() );
-		info->window.title = title;
+		info->window.title = u8"Sandbox 🅱🅱🅱";
 	}
 };
 
