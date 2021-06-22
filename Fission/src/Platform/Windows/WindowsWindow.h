@@ -19,9 +19,9 @@ namespace Fission::Platform
 
 	//	virtual void SetEventHandler( IEventHandler * handler ) override;
 
-	//	virtual void SetTitle( const string & title ) override;
+		virtual void SetTitle( const string & title ) override;
 
-	//	virtual string GetTitle() override;
+		virtual string GetTitle() override;
 
 	//	virtual void SetStyle( Style style ) override;
 
@@ -29,7 +29,7 @@ namespace Fission::Platform
 
 	//	virtual void SetSize( const base::size & size ) override;
 
-	//	virtual base::size GetSize() override;
+		virtual base::size GetSize() override;
 
 	//	virtual void Call( std::function<void()> function ) override;
 

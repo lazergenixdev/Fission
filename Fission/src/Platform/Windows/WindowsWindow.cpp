@@ -69,17 +69,17 @@ namespace Fission::Platform
 //        pEventHandler = handler;
 //    }
 //
-//    void WindowsWindow::SetTitle( const string & title )
-//    {
-//        m_Properties.title = title;
-//        auto _New_Title = m_Properties.title.utf16();
-//        SendMessageW( m_Handle, FISSION_WINEVENT_SETTITLE, (WPARAM)_New_Title.c_str(), 0 );
-//    }
-//
-//    string WindowsWindow::GetTitle()
-//    {
-//        return m_Properties.title;
-//    }
+    void WindowsWindow::SetTitle( const string & title )
+    {
+        m_Properties.title = title;
+        auto _New_Title = m_Properties.title.utf16();
+        SendMessageW( m_Handle, FISSION_WM_SETTITLE, (WPARAM)_New_Title.c_str(), 0 );
+    }
+
+    string WindowsWindow::GetTitle()
+    {
+        return m_Properties.title;
+    }
 //
 //    void WindowsWindow::SetStyle( Style style )
 //    {
@@ -105,13 +105,13 @@ namespace Fission::Platform
 //        SendMessageW( m_Handle, FISSION_WINEVENT_SETSIZE, (WPARAM)wsize.w, (LPARAM)wsize.h );
 //    }
 //
-//    base::size WindowsWindow::GetSize()
-//    {
-//        RECT cr;
-//        GetClientRect( m_Handle, &cr );
-//        m_Properties.size = { ( cr.right - cr.left ), ( cr.bottom - cr.top ) };
-//        return m_Properties.size;
-//    }
+    base::size WindowsWindow::GetSize()
+    {
+        RECT cr;
+        GetClientRect( m_Handle, &cr );
+        m_Properties.size = { ( cr.right - cr.left ), ( cr.bottom - cr.top ) };
+        return m_Properties.size;
+    }
 
     IFWindow::native_handle_type WindowsWindow::native_handle()
     {
@@ -296,6 +296,14 @@ namespace Fission::Platform
                 if( ev.bUseCursor ) ev.cursor->Use();
                 return TRUE;
             }
+        break;
+
+
+        case FISSION_WM_SETTITLE:
+        {
+			SetWindowTextW( e->hWnd, (LPWSTR)e->wParam );
+			return 0;
+        }
         break;
 
         default:break;

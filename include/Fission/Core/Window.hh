@@ -106,9 +106,9 @@ namespace Fission
 
 	//	virtual void SetEventHandler( IEventHandler * _Event_Handler ) = 0;
 
-	//	virtual void SetTitle( const string & _Title ) = 0;
+		virtual void SetTitle( const string & _Title ) = 0;
 
-	//	virtual string GetTitle() = 0;
+		virtual string GetTitle() = 0;
 
 	//	virtual void SetStyle( Style _Style ) = 0;
 
@@ -116,7 +116,7 @@ namespace Fission
 
 	//	virtual void SetSize( const base::size & _Size ) = 0;
 
-	//	virtual base::size GetSize() = 0;
+		virtual base::size GetSize() = 0;
 
 		virtual Resource::IFSwapChain * GetSwapChain() = 0;
 
