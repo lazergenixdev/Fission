@@ -301,6 +301,9 @@ public:
 	inline iterator begin() { return iterator( m_pData ); }
 	inline iterator end() { return iterator( m_pData + m_Size ); }
 
+	inline const_iterator begin() const { return const_iterator( m_pData ); }
+	inline const_iterator end() const { return const_iterator( m_pData + m_Size ); }
+
 
 #ifdef __cpp_char8_t
 	auto string() const {
