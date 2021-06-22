@@ -23,7 +23,7 @@ namespace Fission {
 
 		FISSION_FORCE_INLINE void OnCreate(FApplication * app) { m_ActiveScene->OnCreate( app ); };
 
-		FISSION_FORCE_INLINE void OnUpdate(FApplication * app) {
+		inline void OnUpdate(FApplication * app) {
 			if( m_bSceneSwitch && m_SceneSwitchTimer.peeks() >= m_SceneSwitchCooldownDuration )
 			{
 				if( m_NextScene )

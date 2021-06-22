@@ -33,6 +33,10 @@ namespace Fission
 		std::unordered_map<std::string, RendererContext>
 		                            m_Renderers;
 
+		SceneStack                  m_SceneStack;
+		DebugLayerImpl				m_DebugLayer;
+		ConsoleLayerImpl			m_ConsoleLayer;
+
 		vsync_						m_vsync = vsync_On;
 
 		bool                        m_bRunning = true;
@@ -41,12 +45,7 @@ namespace Fission
 		std::mutex                  m_PauseMutex;
 		std::condition_variable     m_PauseCondition;
 
-		SceneStack                  m_SceneStack;
 		FApplication *              m_Application = nullptr;
-
-		DebugLayerImpl				m_DebugLayer;
-		ConsoleLayerImpl			m_ConsoleLayer;
-
 		int                         m_ExitCode = 0;
 
 
@@ -82,6 +81,8 @@ namespace Fission
 		virtual EventResult OnClose( CloseEventArgs & )            override;
 
 		virtual void Destroy() override;
+
+		~FissionEngine() = default;
 	};
 
 }

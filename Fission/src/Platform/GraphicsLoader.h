@@ -7,7 +7,7 @@ namespace Fission
 	{
 		virtual void Initialize() = 0;
 
-		virtual void CreateGraphics( IFGraphics::State * pState, IFGraphics ** ppGraphics ) = 0;
+		virtual void CreateGraphics( GraphicsState * pState, IFGraphics ** ppGraphics ) = 0;
 
 		// TODO: make a function to give the reason why an API is not supported.
 		virtual bool CheckSupport( IFGraphics::API api ) = 0;

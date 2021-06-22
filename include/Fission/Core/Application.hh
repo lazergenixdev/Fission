@@ -49,7 +49,7 @@ namespace Fission
 		{
 			FScene *              startScene;
 			IFWindow::Properties  window = {};
-			IFGraphics::State     graphics = {};
+			GraphicsState         graphics = {};
 		};
 
 	public:

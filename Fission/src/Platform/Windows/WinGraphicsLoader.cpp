@@ -24,7 +24,7 @@ namespace Fission::Platform
 		}
 	}
 
-	void WindowsGraphicsLoader::CreateGraphics( IFGraphics::State * pState, IFGraphics ** ppGraphics )
+	void WindowsGraphicsLoader::CreateGraphics( GraphicsState * pState, IFGraphics ** ppGraphics )
 	{
 		*ppGraphics = NULL;
 		switch( pState->api )

@@ -177,12 +177,13 @@ namespace Fission
 	}
 
 
-	void FissionEngine::Destroy() { delete this; }
+	void FissionEngine::Destroy() { this->~FissionEngine(); _aligned_free( this ); }
 
 
 
 	void CreateEngine( void * instance, IFEngine ** ppEngine )
 	{
-		*ppEngine = new FissionEngine;
+		void * mem = _aligned_malloc( sizeof( FissionEngine ), 64 );
+		*ppEngine = new(mem) FissionEngine;
 	}
 }

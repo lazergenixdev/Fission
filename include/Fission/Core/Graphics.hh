@@ -41,14 +41,14 @@ struct IFGraphics : public IFObject
 {
 public:
 
-	using VertexBuffer =   Resource::IFVertexBuffer;
-	using IndexBuffer =    Resource::IFIndexBuffer;
+	using VertexBuffer   = Resource::IFVertexBuffer;
+	using IndexBuffer    = Resource::IFIndexBuffer;
 	using ConstantBuffer = Resource::IFConstantBuffer;
-	using Texture2D =      Resource::IFTexture2D;
-	using Shader =         Resource::IFShader;
-	using Blender =        Resource::IFBlender;
-	using FrameBuffer =    Resource::IFFrameBuffer;
-	using SwapChain =      Resource::IFSwapChain;
+	using Texture2D      = Resource::IFTexture2D;
+	using Shader         = Resource::IFShader;
+	using Blender        = Resource::IFBlender;
+	using FrameBuffer    = Resource::IFFrameBuffer;
+	using SwapChain      = Resource::IFSwapChain;
 
 public:
 	enum class API {
@@ -59,13 +59,6 @@ public:
 
 		__count__, /*!< Number of Graphics APIs available */
 		Default    /*!< @Graphics will decide which api is best to use */
-	};
-
-	struct State
-	{
-		API    api    = API::Default;
-		vsync_ vsync  = vsync_On;
-		int    msaa   = 1;
 	};
 
 public:
@@ -110,6 +103,16 @@ public:
 
 	virtual native_handle_type native_handle() = 0;
 
-}; // class Fission::IFGraphics
+}; // struct Fission::IFGraphics
+
+
+struct GraphicsState
+{
+	IFGraphics::API api       = IFGraphics::API::Default;
+	vsync_          vsync     = vsync_On;
+	int	            framerate = 0; /*!< framerate only applies when vsync is off, 0 == unlimited framerate */
+	int             msaa      = 1;
+
+}; // class Fission::GraphicsState
 
 } // namespace Fission
