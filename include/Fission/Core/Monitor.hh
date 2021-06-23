@@ -56,11 +56,13 @@ public:
 
 public:
 
-//	FISSION_API static list_view<MonitorPtr> GetMonitors();
+	FISSION_API static list_view<MonitorPtr> GetMonitors();
 
 	virtual const wchar_t * GetName() const = 0;
 
 	virtual const DisplayMode * GetCurrentDisplayMode() const = 0;
+
+//	virtual int GetIndex() const = 0;
 
 	//! @brief Change the display mode that is currently set.
 	virtual bool SetDisplayMode(const DisplayMode *) = 0;

@@ -91,6 +91,7 @@ namespace Fission
 			Escape,
 			Back,
 			Delete,
+			Enter,
 
 			Space,
 
@@ -212,6 +213,7 @@ namespace Fission
 			case Escape:			return "Escape";
 			case Back:				return "Backspace";
 			case Delete:			return "Delete";
+			case Enter:				return "Enter";
 			case Space:				return "Space";
 			case Num0:				return "0";
 			case Num1:				return "1";
@@ -319,6 +321,7 @@ namespace Fission
 				case VK_CAPITAL:		return Keys::Capital;
 				case VK_BACK:			return Keys::Back;
 				case VK_DELETE:			return Keys::Delete;
+				case VK_RETURN:			return Keys::Enter;
 										
 				case VK_UP:				return Keys::Up;
 				case VK_DOWN:			return Keys::Down;

@@ -324,8 +324,9 @@ namespace Fission::Platform {
 
 	void ConstantBufferDX11::SetData( const void * pData, uint32_t size )
 	{
+		HRESULT hr;
 		D3D11_MAPPED_SUBRESOURCE msr = {};
-		m_pContext->Map( m_pBuffer.Get(), 0u, D3D11_MAP_WRITE_DISCARD, 0u, &msr );
+		hr = m_pContext->Map( m_pBuffer.Get(), 0u, D3D11_MAP_WRITE_DISCARD, 0u, &msr );
 		memcpy( msr.pData, pData, size );
 		m_pContext->Unmap( m_pBuffer.Get(), 0u );
 	}
@@ -454,7 +455,7 @@ namespace Fission::Platform {
 		dSwapChain.Windowed = TRUE;
 		dSwapChain.BufferDesc.RefreshRate.Numerator = 200;
 		dSwapChain.BufferDesc.RefreshRate.Denominator = 1;
-		dSwapChain.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+	//	dSwapChain.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 		dSwapChain.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 
 		IDXGIDevice * pDXGIDevice = nullptr;
@@ -491,6 +492,37 @@ namespace Fission::Platform {
 		m_Resolution = { (int)dBuffer.Width, (int)dBuffer.Height };
 	}
 
+	void SwapChainDX11::Resize(base::size size)
+	{
+		std::scoped_lock lock( m_Mutex );
+		HRESULT hr = S_OK;
+		m_pRenderTargetView.Reset();
+
+		hr = m_pSwapChain->ResizeBuffers( 2u, size.w, size.h, DXGI_FORMAT_R8G8B8A8_UNORM, 0u );
+		if(FAILED(hr)) OutputDebugStringA("Failed to Resize Buffers\n");
+
+		com_ptr<ID3D11Device> pDevice;
+		m_pContext->GetDevice( &pDevice );
+
+		com_ptr<ID3D11Texture2D> pBackBuffer;
+		hr = m_pSwapChain->GetBuffer( 0u, IID_PPV_ARGS( &pBackBuffer ) );
+		if(FAILED(hr)) OutputDebugStringA("Failed to Get Back Buffer\n");
+		hr = pDevice->CreateRenderTargetView( pBackBuffer.Get(), nullptr, &m_pRenderTargetView );
+		if(FAILED(hr)) OutputDebugStringA("Failed to Create RTV\n");
+
+		D3D11_TEXTURE2D_DESC dBuffer;
+		pBackBuffer->GetDesc( &dBuffer );
+
+		m_ViewPort.Width = (FLOAT)dBuffer.Width;
+		m_ViewPort.Height = (FLOAT)dBuffer.Height;
+		m_ViewPort.MinDepth = 0.0f;
+		m_ViewPort.MaxDepth = 1.0f;
+		m_ViewPort.TopLeftX = 0.0f;
+		m_ViewPort.TopLeftY = 0.0f;
+
+		m_Resolution = { (int)dBuffer.Width, (int)dBuffer.Height };
+	}
+
 	base::size SwapChainDX11::GetSize()
 	{
 		return m_Resolution;
@@ -503,11 +535,13 @@ namespace Fission::Platform {
 
 	void SwapChainDX11::Clear( color clear_color )
 	{
+		std::scoped_lock lock( m_Mutex );
 		m_pContext->ClearRenderTargetView( m_pRenderTargetView.Get(), (FLOAT*)&clear_color );
 	}
 
 	void SwapChainDX11::Present( vsync_ vsync )
 	{
+		std::scoped_lock lock( m_Mutex );
 		if( FAILED( m_pSwapChain->Present( (uint32_t)vsync, 0u ) ) )
 			FISSION_THROW("DirectX Exception", 
 				.append("Failed to Present Swapchain.")
@@ -517,6 +551,7 @@ namespace Fission::Platform {
 
 	void SwapChainDX11::Bind()
 	{
+		std::scoped_lock lock( m_Mutex );
 		m_pContext->RSSetViewports( 1u, &m_ViewPort );
 		m_pContext->OMSetRenderTargets( 1u, m_pRenderTargetView.GetAddressOf(), nullptr );
 	}

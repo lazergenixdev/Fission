@@ -23,11 +23,11 @@ namespace Fission::Platform
 
 		virtual string GetTitle() override;
 
-	//	virtual void SetStyle( Style style ) override;
+		virtual void SetStyle( Style style ) override;
 
-	//	virtual Style GetStyle() override;
+		virtual Style GetStyle() override;
 
-	//	virtual void SetSize( const base::size & size ) override;
+		virtual void SetSize( const base::size & size ) override;
 
 		virtual base::size GetSize() override;
 

@@ -1,6 +1,7 @@
 #include "WinWindowManager.h"
 #include <Fission/Base/Exception.h>
 #include "WindowsWindow.h"
+#include "../Monitor.h"
 
 namespace Fission::Platform
 {
@@ -26,6 +27,8 @@ namespace Fission::Platform
 		}
 
 		RegisterClassExW( &wClassDesc );
+
+		EnumMonitors();
 	}
 
 	void WindowsWindowManager::SetGraphics( IFGraphics * pGraphics )

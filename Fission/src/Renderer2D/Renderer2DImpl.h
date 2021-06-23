@@ -17,6 +17,8 @@ namespace Fission {
 
 		virtual void Destroy() override;
 
+		virtual void SetTargetSize( base::vector2f size ) override;
+
 		// Inherited via Renderer2D
 		virtual void Render() override;
 

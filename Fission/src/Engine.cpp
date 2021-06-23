@@ -60,6 +60,18 @@ namespace Fission
 				m_PauseCondition.wait( lock );
 			}
 
+			if( m_bWantResize )
+			{
+				base::vector2f size = (base::vector2f)m_NewSize.as<base::vector2i>();
+				IFRenderer2D * r2d = static_cast<IFRenderer2D *>( m_Renderers["$internal2D"].renderer.get() );
+
+				r2d->SetTargetSize( size );
+
+				m_pWindow->GetSwapChain()->Resize( m_NewSize );
+
+				m_bWantResize = false;
+			}
+
 			m_pWindow->GetSwapChain()->Bind();
 			m_pWindow->GetSwapChain()->Clear( color{} );
 

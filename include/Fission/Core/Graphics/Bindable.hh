@@ -110,6 +110,8 @@ namespace Fission::Resource
 
 		virtual base::size GetSize() = 0;
 
+		virtual void Resize( base::size ) = 0;
+
 	//	virtual FrameBuffer * GetBackBuffer() = 0;
 
 		virtual void SetFullscreen( bool fullscreen, Monitor * pMonitor ) = 0;

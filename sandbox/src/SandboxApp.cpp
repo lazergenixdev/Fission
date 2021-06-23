@@ -1,9 +1,8 @@
 ﻿#include <Fission/Platform/EntryPoint.h>
+#include <Fission/Core/Monitor.hh>
 #include <Fission/Base/Utility/Timer.h>
-#include <random>
 
-static std::mt19937 rng( (unsigned int)time(nullptr) ); /* Use current time as seed for rng. */
-static std::uniform_real_distribution<float> dist{ 0.0f, 1.0f };
+static Fission::FApplication * g_App = nullptr;
 
 template <typename T>
 struct DefaultDelete : public T { virtual void Destroy() override { delete this; } };
@@ -11,47 +10,116 @@ struct DefaultDelete : public T { virtual void Destroy() override { delete this;
 class BallLayer : public DefaultDelete<Fission::IFLayer>
 {
 public:
-	Fission::color rand_color() { 
-		return Fission::hsv_colorf( dist( rng ), 1.0f, 1.0f ); 
-	}
-
 	virtual void OnCreate( Fission::FApplication * app ) override
 	{
 		renderer = static_cast<Fission::IFRenderer2D *>( app->pEngine->GetRenderer( "$internal2D" ) );
+		font = Fission::FontManager::GetFont("$console");
 	}
 
 	virtual void OnUpdate() override
 	{
-		// Update ball position
-		pos += velocity * timer.gets() * 3.0f;
+		using namespace Fission::base;
 
-		// Collide with the top and bottom
-		if( pos.y + radius >= 720.0f )
-			pos.y = 720.0f - radius, velocity.y =- velocity.y, color = rand_color();
-		else if( pos.y - radius <= 0.0f )
-			pos.y = radius,          velocity.y =- velocity.y, color = rand_color();
+		renderer->SelectFont( font );
 
-		// Collide with the left and right
-		if( pos.x + radius >= 1280.0f )
-			pos.x = 1280.0f - radius, velocity.x =- velocity.x, color = rand_color();
-		else if( pos.x - radius <= 0.0f )
-			pos.x = radius,           velocity.x =- velocity.x, color = rand_color();
+		float start = 50.0f + pos;
+		static char textBuffer[100];
+		Fission::DisplayMode prevMode = {};
+		bool bFoundHover = false;
 
-		// Draw the circle to the screen
-		renderer->DrawCircle( pos, radius, {0.0f}, Fission::color( color, 0.5f ), 20.0f, Fission::StrokeStyle::Inside ); // inner glow
-		renderer->DrawCircle( pos, radius, Fission::color( color, 0.5f ), {0.0f}, 20.0f, Fission::StrokeStyle::Outside ); // outer glow
-		renderer->DrawCircle( pos, radius, color, 5.0f, Fission::StrokeStyle::Center ); // circle
-		renderer->SetBlendMode( Fission::BlendMode::Add );
+		for( auto && mode : Fission::Monitor::GetMonitors()[0]->GetSupportedDisplayModes() )
+		{
+		//	if( prevMode.resolution != mode.resolution )
+			{
+				vector2f topleft = { 50.0f, start };
+				auto rect = rectf::from_topleft( topleft, 200.0f, 30.0f );
+
+				if( !bFoundHover && rect[mousepos] )
+				{
+					renderer->FillRect( rect, Fission::Colors::make_gray(0.4f) );
+					hover = &mode;
+					bFoundHover = true;
+				}
+				else
+				renderer->FillRect( rect, Fission::Colors::make_gray(0.2f) );
+
+				sprintf( textBuffer, "%i x %i @ %ihz", mode.resolution.w, mode.resolution.h, mode.refresh_rate );
+				renderer->DrawString( textBuffer, topleft + vector2f{12.0f, 6.0f}, Fission::Colors::White );
+
+				start += 35.0f;
+			}
+			prevMode = mode;
+		}
+
+		if( !bFoundHover ) hover = nullptr;
+
+		if( selected )
+		{
+			renderer->DrawString( "Selected Display Mode:", { 300.0f, 100.0f }, Fission::Colors::White );
+
+			sprintf( textBuffer, "%i x %i @ %ihz", selected->resolution.w, selected->resolution.h, selected->refresh_rate );
+			renderer->DrawString( textBuffer, { 300.0f, 130.0f }, Fission::Colors::Snow );
+		}
+
 		renderer->Render();
-		renderer->SetBlendMode( Fission::BlendMode::Normal );
+	}
+
+	virtual Fission::EventResult OnKeyUp( Fission::KeyUpEventArgs & args ) override
+	{
+		switch( args.key )
+		{
+		case Fission::Keys::F11:
+		{
+			if( g_App->pMainWindow->GetStyle() == Fission::IFWindow::Style::Fullscreen )
+			{
+				g_App->pMainWindow->SetStyle( Fission::IFWindow::Style::Border );
+			}
+			else
+			{
+				g_App->pMainWindow->SetStyle( Fission::IFWindow::Style::Fullscreen );
+			}
+		}
+		default:return  Fission::EventResult::Pass;
+		}
+	}
+	virtual Fission::EventResult OnKeyDown( Fission::KeyDownEventArgs & args ) override
+	{
+		switch( args.key )
+		{
+		case Fission::Keys::Mouse_WheelUp:
+			pos += 10.0f;
+		break;
+
+		case Fission::Keys::Mouse_WheelDown:
+			pos -= 10.0f;
+		break;
+
+		case Fission::Keys::Mouse_Left:
+			selected = hover;
+		break;
+
+		case Fission::Keys::Enter:
+			if( selected ) g_App->pMainWindow->SetSize(selected->resolution);
+		break;
+		
+		default:break;
+		}
+		return Fission::EventResult::Handled;
+	}
+	virtual Fission::EventResult OnMouseMove( Fission::MouseMoveEventArgs & args ) override
+	{
+		mousepos = (Fission::base::vector2f)args.position;
+		return Fission::EventResult::Handled;
 	}
 private:
 	Fission::IFRenderer2D * renderer;
-	Fission::base::vector2f velocity = { 50.0f, 100.0f };
-	Fission::base::vector2f pos      = { 100.0f, 100.0f };
-	float                   radius   = 50.0f;
-	Fission::color          color    = Fission::Colors::Red;
-	Fission::simple_timer   timer;
+	Fission::Font * font;
+
+	float pos = 0.0f;
+	Fission::base::vector2f mousepos;
+
+	Fission::DisplayMode * hover = nullptr;
+	Fission::DisplayMode * selected = nullptr;
 };
 
 class BallScene : public DefaultDelete<Fission::FScene>
@@ -71,5 +139,5 @@ public:
 };
 
 Fission::FApplication * CreateApplication() {
-	return new BounceBallApp;
+	return( g_App = new BounceBallApp );
 }

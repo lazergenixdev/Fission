@@ -48,6 +48,9 @@ namespace Fission
 		FApplication *              m_Application = nullptr;
 		int                         m_ExitCode = 0;
 
+		base::size                  m_NewSize;
+		bool                        m_bWantResize = false;
+
 
 
 		virtual void GetVersion( int * _Maj, int * _Min, int * _Pat ) override;
@@ -79,6 +82,7 @@ namespace Fission
 		virtual EventResult OnHide()                               override;
 		virtual EventResult OnShow()                               override;
 		virtual EventResult OnClose( CloseEventArgs & )            override;
+		virtual EventResult OnResize( ResizeEventArgs & )          override;
 
 		virtual void Destroy() override;
 

@@ -80,30 +80,21 @@ namespace Fission::Platform
     {
         return m_Properties.title;
     }
-//
-//    void WindowsWindow::SetStyle( Style style )
-//    {
-//        m_Properties.style = style;
-//        auto nstyle = GetWindowsStyle();
-//        SendMessageW( m_Handle, FISSION_WINEVENT_SETSTYLE, (WPARAM)&nstyle, 0 );
-//	}
-//
-//	void WindowsWindow::Call( std::function<void()> function )
-//	{
-//		SendMessageW( m_Handle, FISSION_WINEVENT_CALLEXTERNAL, (WPARAM)&function, 0 );
-//	}
-//
-//    Window::Style WindowsWindow::GetStyle()
-//    {
-//        return m_Properties.style;
-//    }
-//
-//    void WindowsWindow::SetSize( const base::size & size )
-//    {
-//        m_Properties.size = size;
-//        auto wsize = GetWindowsSize();
-//        SendMessageW( m_Handle, FISSION_WINEVENT_SETSIZE, (WPARAM)wsize.w, (LPARAM)wsize.h );
-//    }
+
+    void WindowsWindow::SetStyle( Style style )
+    {
+        SendMessageW( m_Handle, FISSION_WM_SETSTYLE, (WPARAM)&style, 0 );
+	}
+
+    IFWindow::Style WindowsWindow::GetStyle()
+    {
+        return m_Properties.style;
+    }
+
+	//void WindowsWindow::Call( std::function<void()> function )
+	//{
+	//	SendMessageW( m_Handle, FISSION_WM_CALLEXTERNAL, (WPARAM)&function, 0 );
+	//}
 //
     base::size WindowsWindow::GetSize()
     {
@@ -111,6 +102,11 @@ namespace Fission::Platform
         GetClientRect( m_Handle, &cr );
         m_Properties.size = { ( cr.right - cr.left ), ( cr.bottom - cr.top ) };
         return m_Properties.size;
+    }
+
+    void WindowsWindow::SetSize( const base::size & size )
+    {
+        SendMessageW( m_Handle, FISSION_WM_SETSIZE, (WPARAM)size.w, (LPARAM)size.h );
     }
 
     IFWindow::native_handle_type WindowsWindow::native_handle()
@@ -148,6 +144,8 @@ namespace Fission::Platform
 
 	LRESULT CALLBACK WindowsWindow::HandleEvent( Event * e )
 	{
+        auto && [hWnd, Msg, wParam, lParam] = *e;
+
         switch( e->Msg )
         {
         case WM_DESTROY:
@@ -290,10 +288,11 @@ namespace Fission::Platform
         case WM_SETCURSOR:
             if( (short)e->lParam == HTCLIENT )
             {
-                SetCursorEventArgs ev{ e };
-                ev.cursor = m_Cursor;
-                pEventHandler->OnSetCursor( ev );
-                if( ev.bUseCursor ) ev.cursor->Use();
+                SetCursor(LoadCursorW(NULL,IDC_ARROW));
+                //SetCursorEventArgs ev{ e };
+                //ev.cursor = m_Cursor;
+                //pEventHandler->OnSetCursor( ev );
+                //if( ev.bUseCursor ) ev.cursor->Use();
                 return TRUE;
             }
         break;
@@ -303,6 +302,72 @@ namespace Fission::Platform
         {
 			SetWindowTextW( e->hWnd, (LPWSTR)e->wParam );
 			return 0;
+        }
+        break;
+
+        case FISSION_WM_SETSTYLE:
+        {
+            auto pStyle = reinterpret_cast<Style *>( wParam );
+            auto prevStyle = m_Properties.style;
+            if( *pStyle == prevStyle ) return 0;
+
+            m_Properties.style = *pStyle;
+
+            if( prevStyle == Style::Fullscreen )
+            {
+                auto wstyle = GetWindowsStyle();
+                SetWindowLongW( hWnd, GWL_STYLE, wstyle );
+                SetWindowLongPtrW( hWnd, GWL_EXSTYLE, WS_EX_LEFT );
+                SetWindowLongPtrW( hWnd, GWL_STYLE, wstyle );
+                auto size = GetWindowsSize();
+                auto pos = GetPosition();
+                m_pMonitor->RevertDisplayMode();
+                SetWindowPos( hWnd, HWND_NOTOPMOST, pos.x, pos.y, size.w, size.h, SWP_SHOWWINDOW );
+                ShowWindow( hWnd, SW_RESTORE );
+                return 0;
+            }
+
+            {
+                auto wstyle = GetWindowsStyle();
+                SetWindowLongW( hWnd, GWL_STYLE, wstyle );
+            }
+
+            switch( *pStyle )
+            {
+            case Style::Fullscreen:
+            {
+                SetWindowLongPtrW( hWnd, GWL_EXSTYLE, WS_EX_APPWINDOW | WS_EX_TOPMOST );
+                SetWindowLongPtrW( hWnd, GWL_STYLE, WS_POPUP | WS_VISIBLE );
+            //  SetWindowLongPtr( pWindow->m_Handle, GWL_STYLE, WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_POPUP );
+                auto size = GetWindowsSize();
+                DisplayMode mode = *m_pMonitor->GetCurrentDisplayMode();
+                mode.resolution = size;
+                m_pMonitor->SetDisplayMode( &mode );
+                SetWindowPos( hWnd, HWND_TOPMOST, 0, 0, mode.resolution.w, mode.resolution.h, SWP_SHOWWINDOW );
+                ShowWindow( hWnd, SW_MAXIMIZE );
+                return 0;
+            }
+
+            default:return 0;
+            }
+        }
+        break;
+
+        case FISSION_WM_SETSIZE:
+        {
+            base::size new_size = { (int)wParam, (int)lParam };
+            if( new_size == m_Properties.size ) return 0;
+
+            m_Properties.size = new_size;
+            auto size = GetWindowsSize();
+
+            SetWindowPos( hWnd, NULL, 0, 0, size.w, size.h, SWP_NOMOVE|SWP_NOREPOSITION );
+        //    m_pSwapChain->Resize( new_size );
+
+            ResizeEventArgs ev{ e };
+            ev.size = new_size;
+            pEventHandler->OnResize( ev );
+            return 0;
         }
         break;
 
@@ -320,11 +385,13 @@ namespace Fission::Platform
             //if( pthis->m_Properties.save != NoSaveID )
             //    ConfigImpl::Get().GetWindowProperties( &pthis->m_Properties );
 
-            //auto monitors = Monitor::GetMonitors();
-            //if( pthis->m_Properties.monitor_idx < monitors.size() )
-            //    pthis->m_pMonitor = monitors[pthis->m_Properties.monitor_idx];
-            //else
-            //    pthis->m_pMonitor = monitors[0], pthis->m_Properties.monitor_idx = 0;
+            auto monitors = Monitor::GetMonitors();
+            if( m_Properties.monitor_idx < monitors.size() )
+                m_pMonitor = monitors[m_Properties.monitor_idx];
+            else if( m_Properties.monitor_idx == MonitorIdx_Automatic )
+                m_pMonitor = monitors[0], m_Properties.monitor_idx = 0; // TODO: find monitor based on window position
+            else
+                m_pMonitor = monitors[0], m_Properties.monitor_idx = 0;
 
             auto size = GetWindowsSize();
 
@@ -589,6 +656,12 @@ namespace Fission::Platform
         {
         case Style::Borderless:
             return m_Properties.size;
+        case Style::Fullscreen:
+        {
+            DisplayMode mode = *m_pMonitor->GetCurrentDisplayMode();
+            mode.resolution = m_Properties.size;
+            return m_Properties.size; // TODO: we should look for a valid displaymode here
+        }
         default:break;
         }
 

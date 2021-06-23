@@ -1,9 +1,8 @@
 #pragma once
 #include <Fission/Core/Monitor.hh>
 
-namespace Fission::Platform {
-
-	extern void EnumMonitors();
+namespace Fission::Platform
+{
 
 	class WindowsMonitor : public Monitor
 	{
@@ -14,6 +13,8 @@ namespace Fission::Platform {
 
 		virtual const DisplayMode * GetCurrentDisplayMode() const override;
 
+	//	virtual int GetIndex() const override;
+
 		virtual list_view<DisplayMode> GetSupportedDisplayModes() override;
 
 		virtual bool SetDisplayMode( const DisplayMode * ) override;
@@ -22,6 +23,11 @@ namespace Fission::Platform {
 
 		virtual native_handle_type native_handle() override;
 
+	public:
+
+		static WindowsMonitor * GetMonitorFromHandle( HMONITOR hMonitor );
+
+		static BOOL CALLBACK MonitorEnumCallback( HMONITOR, HDC, LPRECT, LPARAM );
 	private:
 
 		DisplayMode * FindClosestDisplayMode( const DisplayMode & mode );
@@ -33,6 +39,9 @@ namespace Fission::Platform {
 		std::vector<DisplayMode> m_SupportedModes;
 		const DisplayMode * m_pCurrentMode;
 		HMONITOR m_hMonitor;
+
+	public:
+		static std::vector<WindowsMonitor *> s_Monitors;
 
 	};
 

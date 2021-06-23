@@ -69,23 +69,6 @@ namespace Fission {
 		return m_SceneStack.OnSetCursor( args );
 	}
 
-	EventResult FissionEngine::OnClose( CloseEventArgs & args )
-	{
-		if( m_bMinimized )
-		{
-			m_bMinimized = false;
-			m_PauseCondition.notify_one();
-		}
-
-		m_ExitCode = args.ExitCode;
-
-		m_SceneStack.OnClose( args );
-
-		m_bRunning = false;
-
-		return EventResult::Handled;
-	}
-
 	EventResult FissionEngine::OnHide()
 	{
 		m_SceneStack.OnHide();
@@ -105,6 +88,34 @@ namespace Fission {
 			// Notify Main thread to continue rendering frames
 			m_PauseCondition.notify_one();
 		}
+		return EventResult::Handled;
+	}
+
+	EventResult FissionEngine::OnClose( CloseEventArgs & args )
+	{
+		if( m_bMinimized )
+		{
+			m_bMinimized = false;
+			m_PauseCondition.notify_one();
+		}
+
+		m_ExitCode = args.ExitCode;
+
+		m_SceneStack.OnClose( args );
+
+		m_bRunning = false;
+
+		return EventResult::Handled;
+	}
+
+	EventResult FissionEngine::OnResize( ResizeEventArgs & args )
+	{
+		//base::vector2f size = (base::vector2f)m_NewSize.as<base::vector2i>();
+		//IFRenderer2D * r2d = static_cast<IFRenderer2D *>( m_Renderers["$internal2D"].renderer.get() );
+
+		//r2d->SetTargetSize( size );
+		m_NewSize = args.size;
+		m_bWantResize = true;
 		return EventResult::Handled;
 	}
 

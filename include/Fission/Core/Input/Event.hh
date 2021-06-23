@@ -151,9 +151,9 @@ namespace Fission {
 		virtual EventResult OnClose( CloseEventArgs & )
 		FISSION_EVENT_DEFAULT
 
-	//	FISSION_THREAD_SAFE
-	//	virtual EventResult OnResize( ResizeEventArgs & )
-	//	FISSION_EVENT_DEFAULT
+		FISSION_THREAD_SAFE
+		virtual EventResult OnResize( ResizeEventArgs & )
+		FISSION_EVENT_DEFAULT
 
 	}; // struct Fission::IFEventHandler
 

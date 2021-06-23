@@ -77,13 +77,13 @@ namespace Fission {
 		{ // Create Index Buffer
 			IFConstantBuffer::CreateInfo info;
 			info.type = IFConstantBuffer::Type::Dynamic;
-			info.max_size = 64;
+			info.max_size = 128;
 			m_pTransformBuffer = gfx->CreateConstantBuffer( info );
 
 			// todo: this is a bug, please fix as soon as possible
-			static const auto res = base::vector2f{ 1280.0f, 720.0f };
+			static constexpr auto res = base::vector2f{ 1280.0f, 720.0f };
 
-			static const auto screen = base::matrix4x4f(
+			const auto screen = base::matrix4x4f(
 				2.0f / res.x,	0.0f,		   -1.0f, 0.0f,
 				0.0f,		   -2.0f / res.y,	1.0f, 0.0f,
 				0.0f,			0.0f,			1.0f, 0.0f,
@@ -143,6 +143,18 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		_aligned_free( vertex_data );
 		_aligned_free( index_data );
 		delete this;
+	}
+
+	void Renderer2DImpl::SetTargetSize( base::vector2f size )
+	{
+		const auto screen = base::matrix4x4f(
+			2.0f / size.x, 0.0f, -1.0f, 0.0f,
+			0.0f, -2.0f / size.y, 1.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+			0.0f, 0.0f, 0.0f, 1.0f
+		).transpose();
+
+		m_pTransformBuffer->SetData( &screen, sizeof( screen ) );
 	}
 
 	void Renderer2DImpl::Render()
