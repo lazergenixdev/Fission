@@ -39,11 +39,13 @@ namespace Fission {
 		return out;
 	}();
 
-	void Renderer2DImpl::OnCreate( IFGraphics * gfx )
+	void Renderer2DImpl::OnCreate( IFGraphics * gfx, base::size _Viewport_Size )
 	{
 		// Allocate aligned memory for faster access
 		vertex_data = (vertex *)_aligned_malloc( vertex_max_count * sizeof vertex, 32 );
 		index_data = (uint32_t *)_aligned_malloc( index_max_count * sizeof uint32_t, 32 );
+
+		_viewport_size = _Viewport_Size;
 
 		OnRecreate( gfx );
 	}
@@ -80,8 +82,7 @@ namespace Fission {
 			info.max_size = 128;
 			m_pTransformBuffer = gfx->CreateConstantBuffer( info );
 
-			// todo: this is a bug, please fix as soon as possible
-			static constexpr auto res = base::vector2f{ 1280.0f, 720.0f };
+			const auto res = base::vector2f{ (float)_viewport_size.w, (float)_viewport_size.h };
 
 			const auto screen = base::matrix4x4f(
 				2.0f / res.x,	0.0f,		   -1.0f, 0.0f,
@@ -145,13 +146,13 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		delete this;
 	}
 
-	void Renderer2DImpl::SetTargetSize( base::vector2f size )
+	void Renderer2DImpl::OnResize( IFGraphics * , base::size size )
 	{
 		const auto screen = base::matrix4x4f(
-			2.0f / size.x, 0.0f, -1.0f, 0.0f,
-			0.0f, -2.0f / size.y, 1.0f, 0.0f,
-			0.0f, 0.0f, 1.0f, 0.0f,
-			0.0f, 0.0f, 0.0f, 1.0f
+			2.0f / (float)size.w, 0.0f,                -1.0f, 0.0f,
+			0.0f,                -2.0f / (float)size.h, 1.0f, 0.0f,
+			0.0f,                 0.0f,                 1.0f, 0.0f,
+			0.0f,                 0.0f,                 0.0f, 1.0f
 		).transpose();
 
 		m_pTransformBuffer->SetData( &screen, sizeof( screen ) );
@@ -323,7 +324,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			const auto top = pos.y + glyph->offset.y;
 			const auto bottom = top + glyph->size.y;
 #endif
-
+			if( *wstr != L' ' )
 			m_DrawBuffer.back().AddRectFilledUV( { left, right, top, bottom }, glyph->rc, c );
 
 			start += glyph->advance;
@@ -377,6 +378,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			const auto bottom = top + glyph->size.y;
 #endif
 
+			if( *str != L' ' )
 			m_DrawBuffer.back().AddRectFilledUV( { left, right, top, bottom }, glyph->rc, c );
 
 			start += glyph->advance;

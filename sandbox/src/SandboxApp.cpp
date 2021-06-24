@@ -16,7 +16,7 @@ public:
 		font = Fission::FontManager::GetFont("$console");
 	}
 
-	virtual void OnUpdate() override
+	virtual void OnUpdate( Fission::timestep dt ) override
 	{
 		using namespace Fission::base;
 
@@ -24,12 +24,11 @@ public:
 
 		float start = 50.0f + pos;
 		static char textBuffer[100];
-		Fission::DisplayMode prevMode = {};
 		bool bFoundHover = false;
 
 		for( auto && mode : Fission::Monitor::GetMonitors()[0]->GetSupportedDisplayModes() )
 		{
-		//	if( prevMode.resolution != mode.resolution )
+			if( start + 30.0f > 0.0f )
 			{
 				vector2f topleft = { 50.0f, start };
 				auto rect = rectf::from_topleft( topleft, 200.0f, 30.0f );
@@ -41,14 +40,14 @@ public:
 					bFoundHover = true;
 				}
 				else
-				renderer->FillRect( rect, Fission::Colors::make_gray(0.2f) );
+				renderer->FillRect( rect, Fission::Colors::make_gray( &mode == selected ? 0.4f : 0.2f ) );
 
 				sprintf( textBuffer, "%i x %i @ %ihz", mode.resolution.w, mode.resolution.h, mode.refresh_rate );
 				renderer->DrawString( textBuffer, topleft + vector2f{12.0f, 6.0f}, Fission::Colors::White );
 
-				start += 35.0f;
 			}
-			prevMode = mode;
+			start += 35.0f;
+			if( start > 720.0f ) break;
 		}
 
 		if( !bFoundHover ) hover = nullptr;
@@ -59,6 +58,8 @@ public:
 
 			sprintf( textBuffer, "%i x %i @ %ihz", selected->resolution.w, selected->resolution.h, selected->refresh_rate );
 			renderer->DrawString( textBuffer, { 300.0f, 130.0f }, Fission::Colors::Snow );
+
+			renderer->DrawString( "Press [ENTER] to change to this resolution.", { 300.0f, 200.0f }, Fission::Colors::Snow );
 		}
 
 		renderer->Render();

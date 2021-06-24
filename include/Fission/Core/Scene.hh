@@ -31,6 +31,7 @@
 // todo: redesign debug layer interface to not be SLOW AF!
 
 #pragma once
+#include <Fission/Base/TimeStep.h>
 #include <Fission/Core/Input/Event.hh>
 #include <Fission/Core/Graphics/Renderer2D.hh>
 
@@ -43,7 +44,7 @@ namespace Fission {
 		virtual void OnCreate( class FApplication * app ) = 0;
 
 		//! @brief Function to update what is displayed on a frame
-		virtual void OnUpdate() = 0;
+		virtual void OnUpdate( timestep dt ) = 0;
 		
 	}; // struct Fission::IFLayer
 
@@ -94,7 +95,7 @@ namespace Fission {
 			m_vUncreatedLayers.clear();
 		}
 
-		inline void OnUpdate()
+		inline void OnUpdate( timestep dt )
 		{
 			if( m_vUncreatedLayers.size() )
 			{
@@ -106,7 +107,7 @@ namespace Fission {
 				m_vUncreatedLayers.clear();
 			}
 			for( auto && l : m_vLayerStack )
-				l->OnUpdate();
+				l->OnUpdate( dt );
 		}
 
 		inline void PushLayer( IFLayer * layer )

@@ -52,6 +52,13 @@ namespace Fission
 
 	void FissionEngine::Run( Platform::ExitCode * e )
 	{
+		auto SwapChain = m_pWindow->GetSwapChain();
+
+		SwapChain->Bind();
+
+		timestep _dt;
+		auto frameTimer = simple_timer{};
+
 		while( m_bRunning )
 		{
 			if( m_bMinimized )
@@ -62,24 +69,32 @@ namespace Fission
 
 			if( m_bWantResize )
 			{
-				base::vector2f size = (base::vector2f)m_NewSize.as<base::vector2i>();
-				IFRenderer2D * r2d = static_cast<IFRenderer2D *>( m_Renderers["$internal2D"].renderer.get() );
-
-				r2d->SetTargetSize( size );
+				for( auto && [name, ctx] : m_Renderers )
+					ctx.renderer->OnResize( m_pGraphics.get(), m_NewSize );
 
 				m_pWindow->GetSwapChain()->Resize( m_NewSize );
+				SwapChain->Bind();
 
 				m_bWantResize = false;
 			}
 
-			m_pWindow->GetSwapChain()->Bind();
-			m_pWindow->GetSwapChain()->Clear( color{} );
+	/////////////////////////////////////////////////////////////////////////
+	// Main Render Loop:
 
-			m_SceneStack.OnUpdate( m_Application );
-			m_ConsoleLayer.OnUpdate();
-			m_DebugLayer.OnUpdate();
+			if( m_clearColor )
+			SwapChain->Clear( m_clearColor.value() );
 
-			m_pWindow->GetSwapChain()->Present( m_vsync );
+			m_SceneStack.OnUpdate( m_Application, _dt );
+
+			m_ConsoleLayer.OnUpdate( _dt );
+			m_DebugLayer.OnUpdate( _dt );
+
+			SwapChain->Present( m_vsync );
+
+			_dt = frameTimer.gets();
+			
+	/////////////////////////////////////////////////////////////////////////
+
 		}
 
 		m_Application->OnShutdown();
@@ -133,11 +148,12 @@ namespace Fission
 		m_ConsoleLayer.OnCreate(app);
 		m_SceneStack.OnCreate(app);
 
+		base::size wViewportSize = m_pWindow->GetSwapChain()->GetSize();
 		for( auto && [name, context] : m_Renderers )
 		{
 			if( !context.bCreated )
 			{
-				context.renderer->OnCreate( m_pGraphics.get() );
+				context.renderer->OnCreate( m_pGraphics.get(), wViewportSize );
 				context.bCreated = true;
 			}
 		}
@@ -195,7 +211,7 @@ namespace Fission
 
 	void CreateEngine( void * instance, IFEngine ** ppEngine )
 	{
-		void * mem = _aligned_malloc( sizeof( FissionEngine ), 64 );
+		void * mem = _aligned_malloc( ( sizeof( FissionEngine ) + 64-sizeof(FissionEngine)%64 ), 64 );
 		*ppEngine = new(mem) FissionEngine;
 	}
 }

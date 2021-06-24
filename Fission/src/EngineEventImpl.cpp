@@ -110,12 +110,13 @@ namespace Fission {
 
 	EventResult FissionEngine::OnResize( ResizeEventArgs & args )
 	{
-		//base::vector2f size = (base::vector2f)m_NewSize.as<base::vector2i>();
-		//IFRenderer2D * r2d = static_cast<IFRenderer2D *>( m_Renderers["$internal2D"].renderer.get() );
-
-		//r2d->SetTargetSize( size );
 		m_NewSize = args.size;
 		m_bWantResize = true;
+
+		m_DebugLayer.OnResize(args);
+		m_ConsoleLayer.OnResize(args);
+		m_SceneStack.OnResize(args);
+
 		return EventResult::Handled;
 	}
 

@@ -71,6 +71,8 @@ void DebugLayerImpl::Destroy() { FontManager::DelFont( "$debug" ); delete this; 
 void DebugLayerImpl::OnCreate(class FApplication * app) {
 	pRenderer2D = (IFRenderer2D*)app->pEngine->GetRenderer("$internal2D");
 
+	m_width = (float)app->pMainWindow->GetSwapChain()->GetSize().w;
+
 	FontManager::SetFont( "$debug", RobotoRegularTTF::data, RobotoRegularTTF::size, 20.0f, app->pGraphics );
 
 	int CPUInfo[4] = { -1 };
@@ -108,15 +110,11 @@ void DebugLayerImpl::OnCreate(class FApplication * app) {
 	memory_str = "Total System Memory: " + std::string(buf) + "GB";
 }
 
-void DebugLayerImpl::OnUpdate() {
+void DebugLayerImpl::OnUpdate(timestep dt) {
 	
 	static constexpr auto c = color( 0.0f, 0.0f, 0.0f, 0.7f );
-	base::vector2f size = { 1280.0f, 720.0f }; // todo: this is a bug, please fix as soon as possible
 
-	auto pFont = FontManager::GetFont( "$debug" );
-	float diff = pFont->GetSize();
-	pRenderer2D->SelectFont( pFont );
-	m_LastFrameTimes[m_FrameCount % std::size( m_LastFrameTimes )] = t.getms();
+	m_LastFrameTimes[m_FrameCount % std::size( m_LastFrameTimes )] = dt.milliseconds();
 
 	float msAvgFrameTime = [&, sum = 0.0f]()mutable{ for( auto && f : m_LastFrameTimes ) sum += f; return sum; }( ) / (float)std::size( m_LastFrameTimes );
 
@@ -125,6 +123,10 @@ void DebugLayerImpl::OnUpdate() {
 		char buf[32];
 		memset( buf, 0, sizeof buf );
 		sprintf_s( buf, "%.1f FPS (%.2fms)", 1000.0f / msAvgFrameTime, msAvgFrameTime );
+
+		auto pFont = FontManager::GetFont( "$debug" );
+		float diff = pFont->GetSize();
+		pRenderer2D->SelectFont( pFont );
 
 		auto tl = pRenderer2D->CreateTextLayout( FISSION_ENGINE " v" FISSION_VERSION_STRING _FISSION_BUILD_STRING " - Debug Layer" );
 
@@ -143,21 +145,21 @@ void DebugLayerImpl::OnUpdate() {
 		
 		{ // CPU
 			tl = pRenderer2D->CreateTextLayout( cpu_name.c_str() );
-			base::vector2f pos = { size.x - tl.width, 0.0f };
+			base::vector2f pos = { m_width - tl.width, 0.0f };
 			pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, diff ), c );
 			pRenderer2D->DrawString( cpu_name.c_str(), pos, Colors::White );
 		}
 
 		{ // Memory
 			tl = pRenderer2D->CreateTextLayout( memory_str.c_str() );
-			base::vector2f pos = { size.x - tl.width, diff };
+			base::vector2f pos = { m_width - tl.width, diff };
 			pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, diff ), c );
 			pRenderer2D->DrawString( memory_str.c_str(), pos, Colors::White );
 		}
 
 		{ // Platform
 			tl = pRenderer2D->CreateTextLayout( System::GetVersionString() );
-			base::vector2f pos = { size.x - tl.width, diff * 2.0f };
+			base::vector2f pos = { m_width - tl.width, diff * 2.0f };
 			pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, diff ), c );
 			pRenderer2D->DrawString( System::GetVersionString(), pos, Colors::White );
 		}
@@ -199,5 +201,11 @@ EventResult DebugLayerImpl::OnKeyDown( KeyDownEventArgs & args )
 		swprintf( buf, std::size( buf ), L"%.1f FPS\n", 1000.0f / m_AvgFrameTime );
 		OutputDebugStringW( buf );
 	}
+	return FISSION_EVENT_PASS;
+}
+
+EventResult DebugLayerImpl::OnResize( ResizeEventArgs & args )
+{
+	m_width = (float)args.size.w;
 	return FISSION_EVENT_PASS;
 }

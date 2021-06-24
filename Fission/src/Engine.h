@@ -39,8 +39,11 @@ namespace Fission
 
 		vsync_						m_vsync = vsync_On;
 
+		std::optional<color>        m_clearColor = color{};
+
 		bool                        m_bRunning = true;
 		bool                        m_bMinimized = false;
+		bool                        m_bWantResize = false;
 
 		std::mutex                  m_PauseMutex;
 		std::condition_variable     m_PauseCondition;
@@ -49,7 +52,6 @@ namespace Fission
 		int                         m_ExitCode = 0;
 
 		base::size                  m_NewSize;
-		bool                        m_bWantResize = false;
 
 
 

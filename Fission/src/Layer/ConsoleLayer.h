@@ -9,10 +9,11 @@ class ConsoleLayerImpl : public IFConsoleLayer
 {
 public:
 	virtual void OnCreate(class FApplication * app) override;
-	virtual void OnUpdate() override;
+	virtual void OnUpdate(timestep dt) override;
 
 	virtual EventResult OnKeyDown( KeyDownEventArgs & args ) override;
 	virtual EventResult OnTextInput( TextInputEventArgs & args ) override;
+	virtual EventResult OnResize( ResizeEventArgs & args ) override;
 
 	virtual void Destroy() override;
 private:
@@ -31,11 +32,11 @@ private:
 	uint32_t lineOffset = 0;
 	bool m_bShow = false;
 
+	float m_width;
+
 	Font * m_pFont = nullptr;
 	float m_FontSize;
 	float m_BottomPadding = 2.0f;
-
-	simple_timer t;
 };
 
 }

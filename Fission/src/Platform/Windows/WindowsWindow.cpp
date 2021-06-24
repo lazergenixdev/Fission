@@ -142,7 +142,7 @@ namespace Fission::Platform
         delete this;
     }
 
-	LRESULT CALLBACK WindowsWindow::HandleEvent( Event * e )
+	LRESULT WindowsWindow::HandleEvent( Event * e )
 	{
         auto && [hWnd, Msg, wParam, lParam] = *e;
 
@@ -361,8 +361,14 @@ namespace Fission::Platform
             m_Properties.size = new_size;
             auto size = GetWindowsSize();
 
+            if( m_Properties.style == Style::Fullscreen )
+            {
+                DisplayMode mode = *m_pMonitor->GetCurrentDisplayMode();
+                mode.resolution = new_size;
+                m_pMonitor->SetDisplayMode(&mode);
+            }
+
             SetWindowPos( hWnd, NULL, 0, 0, size.w, size.h, SWP_NOMOVE|SWP_NOREPOSITION );
-        //    m_pSwapChain->Resize( new_size );
 
             ResizeEventArgs ev{ e };
             ev.size = new_size;

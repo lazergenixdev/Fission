@@ -23,7 +23,7 @@ namespace Fission {
 
 		FISSION_FORCE_INLINE void OnCreate(FApplication * app) { m_ActiveScene->OnCreate( app ); };
 
-		inline void OnUpdate(FApplication * app) {
+		inline void OnUpdate(FApplication * app,timestep dt) {
 			if( m_bSceneSwitch && m_SceneSwitchTimer.peeks() >= m_SceneSwitchCooldownDuration )
 			{
 				if( m_NextScene )
@@ -41,7 +41,7 @@ namespace Fission {
 				}
 				m_bSceneSwitch = false;
 			}
-			m_ActiveScene->OnUpdate();
+			m_ActiveScene->OnUpdate(dt);
 		}
 
 		// these must match with @IEventHandler, no need for virtual functions
@@ -54,6 +54,7 @@ namespace Fission {
 		FISSION_FORCE_INLINE EventResult OnHide()                                   { return m_ActiveScene->OnHide();             }
 		FISSION_FORCE_INLINE EventResult OnShow()                                   { return m_ActiveScene->OnShow();             }
 		FISSION_FORCE_INLINE EventResult OnClose( CloseEventArgs & args )           { return m_ActiveScene->OnClose( args );      }
+		FISSION_FORCE_INLINE EventResult OnResize( ResizeEventArgs & args )         { return m_ActiveScene->OnResize( args );     }
 
 		// ptr_scene must never be nullptr
 		inline void OpenScene( FScene * ptr_scene )

@@ -1,6 +1,6 @@
 /**
 *
-* @file: Renderer.h
+* @file: TimeStep.h
 * @author: lazergenixdev@gmail.com
 *
 *
@@ -27,26 +27,27 @@
 * SOFTWARE.
 *
 */
-
 #pragma once
-#include <Fission/config.h>
-#include <Fission/Base/Size.h>
-#include <Fission/Core/Object.hh>
+#include "config.h"
 
-namespace Fission
+_FISSION_BASE_PUBLIC_BEGIN
+
+struct timestep
 {
-	struct IFRenderer : public IFObject
-	{
-		virtual void OnCreate( struct IFGraphics * _Ptr_Graphics, base::size _Viewport_Size /*, void * userdata*/) = 0;
+  constexpr timestep(float time = 0.0f) : m_seconds(time) {}
 
-		//! @note Always called by the engine inbetween frames,
-		//!        and never in the middle of one being rendered.
-		virtual void OnRecreate( struct IFGraphics * _Ptr_Graphics /*, void * userdata*/ ) = 0;
+  constexpr operator float() const { return m_seconds; }
 
-		//! @brief Called when the main window has been resized.
-		virtual void OnResize( struct IFGraphics * _Ptr_Graphics, base::size _New_Size /*, void * userdata*/ ) = 0;
+  constexpr float get() const { return m_seconds; }
 
-	}; // struct Fission::IFRenderer
+  constexpr float seconds() const { return m_seconds; }
 
-} // namespace Fission
+  constexpr float milliseconds() const { return m_seconds * 1000.0f; }
 
+private:
+
+  float m_seconds;
+
+}; // struct Fission::timestep
+
+_FISSION_BASE_PUBLIC_END

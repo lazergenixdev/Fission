@@ -15,23 +15,22 @@ namespace Fission {
 		FontManager::SetFont( "$console", JetBrainsMonoTTF::data, JetBrainsMonoTTF::size, 14.0f, app->pGraphics );
 		m_pFont = FontManager::GetFont( "$console" );
 		m_FontSize = m_pFont->GetSize();
+
+		m_width = (float)app->pMainWindow->GetSwapChain()->GetSize().w;
 	}
 
-	void ConsoleLayerImpl::OnUpdate()
+	void ConsoleLayerImpl::OnUpdate(timestep dt)
 	{
-		float dt = t.gets();
 		if( m_bShow )
 		{
 			m_pRenderer2D->SelectFont( m_pFont );
 
 			extend += ( 200.0f - extend ) * dt * extend_rate;
 
-			base::vector2f size = { 1920.0f, 720.0f }; // todo: this is a bug, please fix as soon as possible
-
 			// Draw Background
-			m_pRenderer2D->FillRectGrad( base::rectf( 0.0f, size.x, 0.0f, extend ), Colors::Black, Colors::Black, color( 0.7f ), color( 0.7f ) );
-			m_pRenderer2D->FillRect( base::rectf( 0.0f, size.x, extend - m_FontSize - m_BottomPadding * 3.0f, extend ), Colors::make_gray( 0.2f, 0.3f ) );
-			m_pRenderer2D->FillRect( base::rectf( 0.0f, size.x, extend - 1.0f, extend + 1.0f ), Colors::White );
+			m_pRenderer2D->FillRectGrad( base::rectf( 0.0f, m_width, 0.0f, extend ), Colors::Black, Colors::Black, color( 0.7f ), color( 0.7f ) );
+			m_pRenderer2D->FillRect( base::rectf( 0.0f, m_width, extend - m_FontSize - m_BottomPadding * 3.0f, extend ), Colors::make_gray( 0.2f, 0.3f ) );
+			m_pRenderer2D->FillRect( base::rectf( 0.0f, m_width, extend - 1.0f, extend + 1.0f ), Colors::White );
 
 			// Draw Console Buffer
 			float top = extend - m_FontSize * 2.0f - m_BottomPadding * 2.0f;
@@ -60,7 +59,7 @@ namespace Fission {
 				auto car = m_pRenderer2D->CreateTextLayout( L"^" );
 
 				const float width = car.width;
-				const float space = size.x / 20.0f;
+				const float space = m_width / 20.0f;
 				float offset = space / 2.0f;
 
 				for( int i = 0; i < 20; i++ )
@@ -170,6 +169,12 @@ namespace Fission {
 			}
 			return FISSION_EVENT_HANDLED;
 		}
+		return FISSION_EVENT_PASS;
+	}
+
+	EventResult ConsoleLayerImpl::OnResize( ResizeEventArgs & args )
+	{
+		m_width = (float)args.size.w;
 		return FISSION_EVENT_PASS;
 	}
 

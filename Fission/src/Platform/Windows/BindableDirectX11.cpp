@@ -494,7 +494,7 @@ namespace Fission::Platform {
 
 	void SwapChainDX11::Resize(base::size size)
 	{
-		std::scoped_lock lock( m_Mutex );
+	//	std::scoped_lock lock( m_Mutex );
 		HRESULT hr = S_OK;
 		m_pRenderTargetView.Reset();
 
@@ -535,13 +535,13 @@ namespace Fission::Platform {
 
 	void SwapChainDX11::Clear( color clear_color )
 	{
-		std::scoped_lock lock( m_Mutex );
+	//	std::scoped_lock lock( m_Mutex );
 		m_pContext->ClearRenderTargetView( m_pRenderTargetView.Get(), (FLOAT*)&clear_color );
 	}
 
 	void SwapChainDX11::Present( vsync_ vsync )
 	{
-		std::scoped_lock lock( m_Mutex );
+	//	std::scoped_lock lock( m_Mutex );
 		if( FAILED( m_pSwapChain->Present( (uint32_t)vsync, 0u ) ) )
 			FISSION_THROW("DirectX Exception", 
 				.append("Failed to Present Swapchain.")
@@ -551,7 +551,7 @@ namespace Fission::Platform {
 
 	void SwapChainDX11::Bind()
 	{
-		std::scoped_lock lock( m_Mutex );
+	//	std::scoped_lock lock( m_Mutex );
 		m_pContext->RSSetViewports( 1u, &m_ViewPort );
 		m_pContext->OMSetRenderTargets( 1u, m_pRenderTargetView.GetAddressOf(), nullptr );
 	}

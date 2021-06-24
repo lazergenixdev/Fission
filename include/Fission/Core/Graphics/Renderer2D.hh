@@ -128,8 +128,6 @@ namespace Fission
 
 		virtual void PopTransform() = 0;
 
-		virtual void SetTargetSize( base::vector2f size ) = 0;
-
 		virtual void Render() = 0;
 
 	//	virtual void PushClipRect( const rectf & rect ) = 0;
