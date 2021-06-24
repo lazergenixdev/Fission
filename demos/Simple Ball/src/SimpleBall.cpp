@@ -20,10 +20,10 @@ public:
 		renderer = static_cast<Fission::IFRenderer2D *>( app->pEngine->GetRenderer( "$internal2D" ) );
 	}
 
-	virtual void OnUpdate() override
+	virtual void OnUpdate(Fission::timestep dt) override
 	{
 		// Update ball position
-		pos += velocity * timer.gets() * 3.0f;
+		pos += velocity * dt * 3.0f;
 
 		// Collide with the top and bottom
 		if( pos.y + radius >= 720.0f )
@@ -51,7 +51,6 @@ private:
 	Fission::base::vector2f pos      = { 100.0f, 100.0f };
 	float                   radius   = 50.0f;
 	Fission::color          color    = Fission::Colors::Red;
-	Fission::simple_timer   timer;
 };
 
 class BallScene : public DefaultDelete<Fission::FScene>
@@ -69,6 +68,7 @@ public:
 		char title[100];
 		sprintf( title, "Bouncing Ball Demo [%s]", pEngine->GetVersionString() );
 		info->window.title = title;
+		info->window.size = { 1280,720 };
 	}
 };
 
