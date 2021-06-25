@@ -33,9 +33,9 @@ namespace Fission
 		std::unordered_map<std::string, RendererContext>
 		                            m_Renderers;
 
-		SceneStack                  m_SceneStack;
 		DebugLayerImpl				m_DebugLayer;
 		ConsoleLayerImpl			m_ConsoleLayer;
+		SceneStack                  m_SceneStack;
 
 		vsync_						m_vsync = vsync_On;
 
