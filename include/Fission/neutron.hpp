@@ -1,9 +1,5 @@
 /*
-* I have searched the internet for a UI api that is not attached to any specific
-* rendering API, and I just turned up empty handed. So this software aims to do that, 
-* the purpose is to create the structural foundation for any application which 
-* wishes to implement it's own UI; there are no dependences needed and no build systems,
-* only a single header file, simply include this to build into your project.
+* WIP
 * 
 * REQUIREMENTS:
 *	C++11 or later
@@ -31,7 +27,7 @@
 * 
 *	`CharType`: Character type used when inputing text
 * 
-*	(define `_lazer_ui_no_cursor` to disable)
+*	(define `_neutron_no_cursor` to disable)
 *	`CursorType`: Type that represent a handle to a mouse cursor
 * 
 *	`rect`: Struct which represents an aligned rectangle
@@ -55,128 +51,85 @@
 #pragma once
 
 #include <algorithm>
+#include <stdexcept>
 
 /* begin/end header macros for 3rd-party integration */
-#ifndef _lazer_ui_begin_header_
-#define _lazer_ui_begin_header_ namespace react { namespace ui {
+#ifndef _neutron_begin_header_
+#define _neutron_begin_header_ namespace neutron {
 #endif
-#ifndef _lazer_ui_end_header_
-#define _lazer_ui_end_header_ } }
+#ifndef _neutron_end_header_
+#define _neutron_end_header_ }
 #endif
 
-_lazer_ui_begin_header_
+_neutron_begin_header_
 
 /* 
 *  config wraped in macro if you want to define the dependencies on your own, 
-*  DEFINE _lazer_ui_config_ to bypass the default implementation
+*  DEFINE _neutron_config_ to bypass the default implementation
 */
-#ifndef _lazer_ui_config_
-#define _lazer_ui_config_
+#ifndef _neutron_config_
+#define _neutron_config_
 
 	/* Key type that is used in Key callbacks, Default: 'int' */
-	#ifndef _lazer_key_type
-	#define _lazer_key_type int
+	#ifndef _neutron_key_type
+	#define _neutron_key_type int
 	#endif
-	using KeyType = _lazer_key_type;
+	using KeyType = _neutron_key_type;
 
 	/* Char type that is used in Text input callbacks, Default: 'char' */
-	#ifndef _lazer_char_type
-	#define _lazer_char_type char
+	#ifndef _neutron_char_type
+	#define _neutron_char_type char
 	#endif
-	using CharType = _lazer_char_type;
+	using CharType = _neutron_char_type;
 
-	/* Key value that represents the left mouse button, DEFINE this before including lazerui.h */
-	#ifndef _lazer_key_left_mouse_
-	#define _lazer_key_left_mouse_ 0
+	/* Key value that represents the left mouse button, DEFINE this before including neutron.hpp */
+	#ifndef _neutron_key_left_mouse_
+	#define _neutron_key_left_mouse_ 0
 	#endif
-	static KeyType g_KeyLeftMouse = _lazer_key_left_mouse_;
+	static KeyType g_KeyLeftMouse = _neutron_key_left_mouse_;
 
-	/* Key value that represents the right mouse button, DEFINE this before including lazerui.h */
-	#ifndef _lazer_key_right_mouse_
-	#define _lazer_key_right_mouse_ 1
+	/* Key value that represents the right mouse button, DEFINE this before including neutron.hpp */
+	#ifndef _neutron_key_right_mouse_
+	#define _neutron_key_right_mouse_ 1
 	#endif
-	static KeyType g_KeyRightMouse = _lazer_key_right_mouse_;
+	static KeyType g_KeyRightMouse = _neutron_key_right_mouse_;
 
-	/* DEFINE `_lazer_ui_no_cursor` to disable cursors */
-	#ifndef _lazer_ui_no_cursor
-	/* Cursor type that is used in SetCursor, DEFINE this before including lazerui.h if using cursors */
-	#ifndef _lazer_cursor_type
-	#define _lazer_cursor_type void *
+	/* DEFINE `_neutron_no_cursor` to disable cursors */
+	#ifndef _neutron_no_cursor
+	/* Cursor type that is used in SetCursor, DEFINE this before including neutron.hpp if using cursors */
+	#ifndef _neutron_cursor_type
+	#define _neutron_cursor_type void *
 	#endif
-	using CursorType = _lazer_cursor_type;
+	using CursorType = _neutron_cursor_type;
 	#endif
 
-#ifndef _lazer_has_alloc_
-	//! @note WIP
-	//! @brief Memory manager that ensures all memory allocated for ui
-	//!			components is packed close together for optimal performance.
-	//! 
-	//! @note context assumes that less than 2 GB will be allocated for UI components.
-	//! @warning NOT THREAD SAFE, use mutex to ensure no corruption.
-	class context
-	{
-	public:
-		using byte = unsigned char;
-
-		context( unsigned int nByteCount = 6'400'000u, unsigned int nBlockSize = 64u ) :
-			m_pBeginBlock( operator new( nByteCount + (nByteCount / nBlockSize)*sizeof( block_entry ), std::align_val_t(64) ) )
-		{
-			m_pBeginIndex = (block_entry *)( (byte *)m_pBeginBlock + nByteCount );
-			m_pEndIndex = (block_entry *)( (byte *)m_pBeginIndex + ( nByteCount / nBlockSize ) * sizeof( block_entry ) );
-
-			m_pFreeBegin = m_pBeginBlock;
-			m_pFreeEnd = (byte *)m_pBeginBlock + nByteCount;
-		}
-
-		template <typename T, typename...P>
-		T * alloc( P&&...params ) { 
-
-			/* Initialize Object and Adjust next free */
-			T * out = new ( m_pFreeBegin ) T( params... );
-			(byte*)m_pFreeBegin += sizeof( T );
-			return out; 
-		}
-
-		void free( void * p ) {}
-
-	private:
-		struct block_entry { unsigned int nBytes, flags = 0; };
-
-		/* Block Data */
-		void * m_pBeginBlock;
-
-		/* Memory Index */
-		block_entry * m_pBeginIndex;
-		block_entry * m_pEndIndex;
-
-		/* Allocation Optimizations */
-		void * m_pFreeBegin, * m_pFreeEnd; // Smallest range that contains all free blocks
-	};
-#endif
-
-#ifndef _lazer_has_point
-	struct int2 { 
+	#ifndef _neutron_point_type
+	#define _neutron_point_type ::neutron::_point
+	struct _point {
 		int x, y; 
-		int2 operator-( const int2 & rhs ) const { return { x - rhs.x, y - rhs.y }; }
+		constexpr _point operator-( const _point & rhs ) const { return { this->x - rhs.x, this->y - rhs.y }; }
 	};
-	using point = int2;
-#endif
+	#endif
+	using point = _neutron_point_type;
 
-#ifndef _lazer_has_rect
-	struct range2 { 
-		int xlow, xhigh, ylow, yhigh; 
-		bool operator[]( const point & p ) const { return ( p.x >= xlow ) && ( p.x <= xhigh ) && ( p.y >= ylow ) && ( p.y <= yhigh ); }
-		static range2 from_tl( const point & position, const point & size ) { return { position.x, position.x + size.x, position.y, position.y + size.y }; }
-		point get_tl() const { return { xlow, ylow }; }
-		point size() const { return { xhigh - xlow, yhigh - ylow }; }
-		point clamp( const point & p ) const { point out = p; if( p.x > xhigh ) out.x = xhigh; else if( p.x < xlow ) out.x = xlow; if( p.y > yhigh ) out.y = yhigh; else if( p.y < ylow ) out.y = ylow; return out; }
+	#ifndef _neutron_rect_type
+	#define _neutron_rect_type ::neutron::_rect
+	struct _rect { 
+		struct _range { int low, high; };
+		_range x, y;
+		constexpr bool operator[]( const point & p ) const { return ( p.x >= x.low ) && ( p.x <= x.high ) && ( p.y >= y.low ) && ( p.y <= y.high ); }
+		constexpr static _rect from_topleft( const point & position, const point & size ) { return { position.x, position.x + size.x, position.y, position.y + size.y }; }
+		point topLeft() const { return { x.low, y.low }; }
+		point size() const { return { x.high - x.low, y.high - y.low }; }
+		point clamp( const point & p ) const { point out = p; if( p.x > x.high ) out.x = x.high; else if( p.x < x.low ) out.x = x.low; if( p.y > y.high ) out.y = y.high; else if( p.y < y.low ) out.y = y.low; return out; }
 	};
-	using rect = range2;
-#endif
+	#endif
+	using rect = _neutron_rect_type;
 
-#ifndef _lazer_has_vector
+	#ifndef _neutron_vector_type
+	#define _neutron_vector_type ::neutron::_vector
 	template <typename T>
-	struct basevector 
+	struct _vector 
 	{
 		using value_type = T;
 		using iterator = T*;
@@ -195,9 +148,9 @@ _lazer_ui_begin_header_
 
 		value_type & back();
 	};
-	template <typename T> 
-	using vector = basevector<T>;
-#endif
+	#endif
+	template <typename T>
+	using vector = _neutron_vector_type<T>;
 
 	enum rect_pos_
 	{
@@ -290,7 +243,7 @@ _lazer_ui_begin_header_
 
 	struct TextInputEventArgs { CharType ch; };
 
-	#ifndef _lazer_ui_no_cursor
+	#ifndef _neutron_no_cursor
 	struct SetCursorEventArgs { CursorType cursor; };
 	#endif
 
@@ -300,10 +253,10 @@ _lazer_ui_begin_header_
 	};
 
 	/* Default ui callback */
-	#define _lazer_ui_Pass_Event_ { return Pass; }
+	#define _neutron_Pass_Event_ { return Pass; }
 
 	/* Default update callback */
-	#define _lazer_ui_Empty_Expression_ {}
+	#define _neutron_Empty_Expression_ {}
 
 	/*
 	* Type used for window uids
@@ -327,10 +280,10 @@ _lazer_ui_begin_header_
 	static constexpr window_uid null_window_uid = {0,0}; // null
 	static window_uid g_NextWindow_uid = { 0x45, 0x1a4 }; // perfect
 
-#endif /* _lazer_ui_config_ */
+#endif /* _neutron_config_ */
 
 /* <helpers> */
-#define _lazer_ui_bit(X) (1<<X)
+#define _neutron_bit(X) (1<<X)
 /* </helpers> */
 
 
@@ -354,37 +307,37 @@ class TextEdit;
 
 struct IEventHandler {
 
-#ifndef _lazer_ui_no_cursor
+#ifndef _neutron_no_cursor
 	inline virtual Result OnSetCursor( SetCursorEventArgs & )
-		_lazer_ui_Pass_Event_
+		_neutron_Pass_Event_
 #endif
 
 	inline virtual Result OnMouseMove( MouseMoveEventArgs & )
-		_lazer_ui_Pass_Event_
+		_neutron_Pass_Event_
 
 	inline virtual Result OnMouseLeave()
-		_lazer_ui_Pass_Event_
+		_neutron_Pass_Event_
 
 	inline virtual Result OnKeyDown( KeyDownEventArgs & )
-		_lazer_ui_Pass_Event_
+		_neutron_Pass_Event_
 
 	inline virtual Result OnKeyUp( KeyUpEventArgs & )
-		_lazer_ui_Pass_Event_
+		_neutron_Pass_Event_
 
 	inline virtual Result OnTextInput( TextInputEventArgs & )
-		_lazer_ui_Pass_Event_
+		_neutron_Pass_Event_
 
 	inline virtual void OnFocusGain()
-		_lazer_ui_Empty_Expression_
+		_neutron_Empty_Expression_
 
 	inline virtual void OnParentResize( rect rc )
-		_lazer_ui_Empty_Expression_
+		_neutron_Empty_Expression_
 
 	inline virtual void OnFocusLost()
-		_lazer_ui_Empty_Expression_
+		_neutron_Empty_Expression_
 
 	inline virtual void OnUpdate( float dt )
-		_lazer_ui_Empty_Expression_
+		_neutron_Empty_Expression_
 
 };
 
@@ -432,19 +385,19 @@ class DynamicWindow : public Window, public Parent
 public:
 	enum Flags_ {
 		Flags_None = 0,
-		Flags_Movable = _lazer_ui_bit(0),
-		Flags_Sizable = _lazer_ui_bit(1),
+		Flags_Movable = _neutron_bit(0),
+		Flags_Sizable = _neutron_bit(1),
 
 		Flags_Default = Flags_Movable | Flags_Sizable,
 	};
 	enum State_ {
 		State_Default = 0,
-		State_Moving = _lazer_ui_bit(0),
+		State_Moving = _neutron_bit(0),
 
-		State_SizingL = _lazer_ui_bit(1),
-		State_SizingR = _lazer_ui_bit(2),
-		State_SizingT = _lazer_ui_bit(3),
-		State_SizingB = _lazer_ui_bit(4),
+		State_SizingL = _neutron_bit(1),
+		State_SizingR = _neutron_bit(2),
+		State_SizingT = _neutron_bit(3),
+		State_SizingB = _neutron_bit(4),
 		State_Sizing = State_SizingL | State_SizingR | State_SizingT | State_SizingB,
 	};
 
@@ -464,7 +417,7 @@ public:
 	virtual void OnMove( point & new_pos );
 	virtual void OnResize();
 
-#ifndef _lazer_ui_no_cursor
+#ifndef _neutron_no_cursor
 	Result OnSetCursor( SetCursorEventArgs & args ) override;
 #endif
 	virtual Result OnMouseLeave() override;
@@ -493,7 +446,7 @@ public:
 
 public:
 	inline virtual void OnPressed()
-		_lazer_ui_Empty_Expression_
+		_neutron_Empty_Expression_
 
 	virtual Result OnKeyDown( KeyDownEventArgs & args ) override;
 	virtual Result OnKeyUp( KeyUpEventArgs & args ) override;
@@ -506,10 +459,10 @@ public:
 
 public:
 	inline virtual void OnSlide()
-		_lazer_ui_Empty_Expression_
+		_neutron_Empty_Expression_
 
 	inline virtual void UpdateSlidePosition( point mouse )
-		_lazer_ui_Empty_Expression_
+		_neutron_Empty_Expression_
 
 	Result OnKeyDown( KeyDownEventArgs & args ) override;
 	Result OnKeyUp( KeyUpEventArgs & args ) override;
@@ -522,10 +475,10 @@ public:
 	bool active = false;
 public:
 	inline virtual void OnFinishEdit()
-		_lazer_ui_Empty_Expression_
+		_neutron_Empty_Expression_
 
 	inline virtual void OnEdit()
-		_lazer_ui_Empty_Expression_
+		_neutron_Empty_Expression_
 };
 
 class WindowManager : public IEventHandler, public Parent
@@ -552,7 +505,7 @@ public:
 	virtual Result OnKeyUp( KeyUpEventArgs & args ) override;
 	virtual Result OnTextInput( TextInputEventArgs & args ) override;
 	virtual Result OnMouseMove( MouseMoveEventArgs & args ) override;
-#ifndef _lazer_ui_no_cursor
+#ifndef _neutron_no_cursor
 	virtual Result OnSetCursor( SetCursorEventArgs & args ) override;
 #endif
 	virtual Result OnMouseLeave() override;
@@ -900,4 +853,4 @@ inline Result Slider::OnMouseMove( MouseMoveEventArgs & args ) {
 	return Pass;
 }
 
-_lazer_ui_end_header_
+_neutron_end_header_
