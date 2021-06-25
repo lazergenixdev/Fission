@@ -43,10 +43,6 @@
 
 namespace Fission
 {
-	enum MonitorIdx_
-	{
-		MonitorIdx_Automatic = 0xffffe
-	};
 
 	struct IFWindow : public IFObject
 	{
@@ -126,7 +122,7 @@ namespace Fission
 		virtual void Close() = 0;
 
 		//! @note For entering fullscreen mode, THIS is the monitor that will be used.
-	//	virtual MonitorPtr GetMonitor() = 0;
+		virtual MonitorPtr GetMonitor() = 0;
 
 		//! @brief Set which monitor the window will prefer for fullscreen mode
 	//	virtual void SetMonitor( MonitorPtr ) = 0;

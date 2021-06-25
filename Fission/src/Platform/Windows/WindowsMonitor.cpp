@@ -20,8 +20,8 @@ inline bool DisplayModesEqual( const DisplayMode & a, const DisplayMode & b )
 	return ( a.resolution == b.resolution ) && ( a.refresh_rate == b.refresh_rate );
 }
 
-WindowsMonitor::WindowsMonitor( HMONITOR hMonitor, const std::wstring & Name )
-	: m_hMonitor(hMonitor), m_Name(Name)
+WindowsMonitor::WindowsMonitor( HMONITOR hMonitor, const string & Name, int index )
+	: m_hMonitor(hMonitor), m_Name(Name), m_Index(index)
 {
 	BOOL bRetVal;
 	DEVMODEW devmode;
@@ -61,15 +61,15 @@ WindowsMonitor::WindowsMonitor( HMONITOR hMonitor, const std::wstring & Name )
 	m_pCurrentMode = &m_SupportedModes[currentIdx];
 }
 
-const wchar_t * WindowsMonitor::GetName() const
+const char * WindowsMonitor::GetName() const
 {
     return m_Name.c_str();
 }
 
-//int WindowsMonitor::GetIndex() const
-//{
-//    return 0;
-//}
+int WindowsMonitor::GetIndex() const
+{
+    return m_Index;
+}
 
 const DisplayMode * WindowsMonitor::GetCurrentDisplayMode() const
 {
@@ -87,14 +87,14 @@ bool WindowsMonitor::SetDisplayMode( const DisplayMode * pMode )
 	memset( &devmode, 0, sizeof( DEVMODEW ) );
 	devmode.dmSize = sizeof( DEVMODEW );
 
-	EnumDisplaySettingsW( NULL, 0, &devmode );
+	EnumDisplaySettingsW( m_DeviceName.c_str(), 0, &devmode );
 	devmode.dmPelsWidth = pMode->resolution.w;
 	devmode.dmPelsHeight = pMode->resolution.h;
 	devmode.dmDisplayFrequency = pMode->refresh_rate;
 	devmode.dmBitsPerPel = 32;
 	devmode.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;
 
-	return ( ChangeDisplaySettingsW( &devmode, CDS_FULLSCREEN ) == DISP_CHANGE_SUCCESSFUL );
+	return ( ChangeDisplaySettingsExW( m_DeviceName.c_str(), &devmode, NULL, CDS_FULLSCREEN, 0 ) == DISP_CHANGE_SUCCESSFUL );
 }
 
 bool WindowsMonitor::RevertDisplayMode()
@@ -141,14 +141,24 @@ WindowsMonitor * WindowsMonitor::GetMonitorFromHandle( HMONITOR hMonitor )
 	return nullptr;
 }
 
+} // namespace Fission::Platform
 
-BOOL CALLBACK WindowsMonitor::MonitorEnumCallback( HMONITOR hMonitor, HDC, LPRECT, LPARAM ppwsNames )
+struct MonitorEnumData
 {
-	auto & pName = *reinterpret_cast<std::wstring **>( ppwsNames );
-	s_Monitors.emplace_back( new WindowsMonitor( hMonitor, *(pName++) ) );
-	return TRUE;
-}
+	std::vector<std::wstring> names;
+	int index = 0;
+};
 
+BOOL CALLBACK Fission::Platform::WindowsMonitor::MonitorEnumCallback( HMONITOR hMonitor, HDC, LPRECT, LPARAM pMonitorEnumData )
+{
+	auto pData = reinterpret_cast<MonitorEnumData *>( pMonitorEnumData );
+
+	auto monitor_name = pData->names[pData->index];
+
+	auto name_utf16 = utf16_string((const char16_t*)monitor_name.c_str(), monitor_name.size());
+
+	s_Monitors.emplace_back( new WindowsMonitor( hMonitor, name_utf16.utf8(), pData->index++ ) );
+	return TRUE;
 }
 
 #include <tchar.h>
@@ -178,9 +188,10 @@ WCB WmiCloseBlock;
 
 void Fission::Platform::EnumMonitors()
 {
+	for( auto && mon : WindowsMonitor::s_Monitors ) delete mon;
 	WindowsMonitor::s_Monitors.clear();
 
-	std::vector<std::wstring> monitor_names;
+	MonitorEnumData data;
 
 	// Get all the monitor names
 	HRESULT hr = E_FAIL;
@@ -227,7 +238,7 @@ void Fission::Platform::EnumMonitors()
 						pwsInstanceName = (WCHAR *)OFFSET_TO_PTR( pWmiAllData, nOffset + sizeof( USHORT ) );
 
 						WCHAR * pwsUserFriendlyName = (WCHAR *)MonitorID->UserFriendlyName;
-						monitor_names.emplace_back( pwsUserFriendlyName );
+						data.names.emplace_back( pwsUserFriendlyName );
 
 						if( !pWmiAllData->WnodeHeader.Linkage )
 							break;
@@ -243,6 +254,5 @@ void Fission::Platform::EnumMonitors()
 	FreeLibrary( hDLL );
 
 	// Init list of monitors
-	std::wstring * pStartName = &monitor_names.front();
-	EnumDisplayMonitors( NULL, nullptr, WindowsMonitor::MonitorEnumCallback, (LPARAM)&pStartName );
+	EnumDisplayMonitors( NULL, nullptr, WindowsMonitor::MonitorEnumCallback, (LPARAM)&data );
 }

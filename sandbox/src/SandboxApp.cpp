@@ -12,6 +12,7 @@ class BallLayer : public DefaultDelete<Fission::IFLayer>
 public:
 	virtual void OnCreate( Fission::FApplication * app ) override
 	{
+		wnd = app->pMainWindow;
 		renderer = static_cast<Fission::IFRenderer2D *>( app->pEngine->GetRenderer( "$internal2D" ) );
 		font = Fission::FontManager::GetFont("$console");
 	}
@@ -26,7 +27,13 @@ public:
 		static char textBuffer[100];
 		bool bFoundHover = false;
 
-		for( auto && mode : Fission::Monitor::GetMonitors()[0]->GetSupportedDisplayModes() )
+		auto monitor = wnd->GetMonitor();
+		if( pos + 20.0f > 0.0f )
+		{
+			sprintf( textBuffer, "Monitor: %s", monitor->GetName() );
+			renderer->DrawString( textBuffer, vector2f{ 12.0f, pos + 2.0f }, Fission::Colors::White );
+		}
+		for( auto && mode : monitor->GetSupportedDisplayModes() )
 		{
 			if( start + 30.0f > 0.0f )
 			{
@@ -114,6 +121,7 @@ public:
 	}
 private:
 	Fission::IFRenderer2D * renderer;
+	Fission::IFWindow * wnd;
 	Fission::Font * font;
 
 	float pos = 0.0f;

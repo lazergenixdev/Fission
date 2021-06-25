@@ -43,10 +43,19 @@ struct DisplayMode
 
 class Monitor;
 
-//! Public API will always use raw pointers,
-//! because monitors are something that will never
-//! need to be changed by the user
+// Public API will always use raw pointers,
+// because monitors are something that will never
+// need to be changed by the user
 using MonitorPtr = Monitor *;
+
+enum MonitorIdx_
+{
+	MonitorIdx_Primary = 0,
+
+	//! @brief Set in a window's properties for it to determine
+	//!        it's monitor automatically based on where the window is.
+	MonitorIdx_Automatic = -1,
+};
 
 class Monitor
 {
@@ -58,11 +67,17 @@ public:
 
 	FISSION_API static list_view<MonitorPtr> GetMonitors();
 
-	virtual const wchar_t * GetName() const = 0;
+	virtual const char * GetName() const = 0;
 
 	virtual const DisplayMode * GetCurrentDisplayMode() const = 0;
 
-//	virtual int GetIndex() const = 0;
+	/*! @brief Get the index of this monitor.
+	 * 
+	 *  @note Monitors are always arranged from index 0 to N,
+	 *	      so a monitors index in @Monitor::GetMonitors()
+	 *        will always equal this value.
+	 */
+	virtual int GetIndex() const = 0;
 
 	//! @brief Change the display mode that is currently set.
 	virtual bool SetDisplayMode(const DisplayMode *) = 0;

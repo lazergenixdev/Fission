@@ -37,7 +37,7 @@ namespace Fission::Platform
 
 		virtual Resource::IFSwapChain * GetSwapChain() override;
 
-	//	virtual MonitorPtr GetMonitor() override;
+		virtual MonitorPtr GetMonitor() override;
 
 	//	virtual void SetMonitor( MonitorPtr ) override;
 
@@ -93,6 +93,7 @@ namespace Fission::Platform
 		std::thread m_GamePadPollingThread;
 
 		GlobalWindowInfo * m_pGlobalInfo;
+		bool m_bResetMonitor = false;
 	};
 
 }

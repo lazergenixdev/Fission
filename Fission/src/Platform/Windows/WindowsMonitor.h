@@ -1,4 +1,5 @@
 #pragma once
+#include <Fission/Base/String.h>
 #include <Fission/Core/Monitor.hh>
 
 namespace Fission::Platform
@@ -7,13 +8,13 @@ namespace Fission::Platform
 	class WindowsMonitor : public Monitor
 	{
 	public:
-		WindowsMonitor( HMONITOR hMonitor, const std::wstring & Name );
+		WindowsMonitor( HMONITOR hMonitor, const string & Name, int index );
 
-		virtual const wchar_t * GetName() const override;
+		virtual const char * GetName() const override;
 
 		virtual const DisplayMode * GetCurrentDisplayMode() const override;
 
-	//	virtual int GetIndex() const override;
+		virtual int GetIndex() const override;
 
 		virtual list_view<DisplayMode> GetSupportedDisplayModes() override;
 
@@ -34,10 +35,14 @@ namespace Fission::Platform
 
 	private:
 
-		std::wstring m_Name = L"<Monitor Name>";
+		string m_Name = "<Monitor Name>";
 		std::wstring m_DeviceName = L"<Device Name>";
+
 		std::vector<DisplayMode> m_SupportedModes;
 		const DisplayMode * m_pCurrentMode;
+
+		int m_Index;
+		
 		HMONITOR m_hMonitor;
 
 	public:

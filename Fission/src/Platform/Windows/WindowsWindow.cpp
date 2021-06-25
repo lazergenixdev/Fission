@@ -1,8 +1,13 @@
 #include "WindowsWindow.h"
+#include <Fission/Base/Exception.h>
 #include <Fission/Core/Console.hh>
 #include <Fission/Core/Configuration.hh>
+#include <Fission/Platform/System.h>
 #include <Xinput.h>
+#include <Dbt.h>
+
 #include "../../ConfigurationImpl.h"
+#include "../Monitor.h"
 
 // application defined window messages
 //#define FISSION_WM_MSGBOX       ( WM_USER + 0 )
@@ -119,10 +124,32 @@ namespace Fission::Platform
         return m_pSwapChain.get();
     }
 
-//    MonitorPtr WindowsWindow::GetMonitor()
-//    {
-//        return m_pMonitor;
-//    }
+    MonitorPtr WindowsWindow::GetMonitor()
+    {
+        if( m_bResetMonitor )
+        {
+            m_bResetMonitor = false;
+            if( /*m_Properties.style != Style::Fullscreen &&*/ m_Properties.monitor_idx == MonitorIdx_Automatic )
+            {
+                auto hMonitor = MonitorFromWindow( m_Handle, MONITOR_DEFAULTTONEAREST );
+                Monitor * pMonitor = nullptr;
+                for( auto && mon : Monitor::GetMonitors() )
+                {
+                    if( mon->native_handle() == hMonitor )
+                    {
+                        pMonitor = mon;
+                        break;
+                    }
+                }
+
+                if( pMonitor == nullptr )
+                    FISSION_THROW( "Window Error", .append( "Monitor not found! (caused by new monitor being connected)" ) )
+
+                m_pMonitor = pMonitor;
+            }
+        }
+        return m_pMonitor;
+    }
 //
 //    void WindowsWindow::SetMonitor( MonitorPtr a )
 //    {
@@ -142,11 +169,16 @@ namespace Fission::Platform
         delete this;
     }
 
+
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Message Handler !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+
 	LRESULT WindowsWindow::HandleEvent( Event * e )
 	{
         auto && [hWnd, Msg, wParam, lParam] = *e;
 
-        switch( e->Msg )
+        switch( Msg )
         {
         case WM_DESTROY:
         case FISSION_WM_CLOSE:
@@ -156,8 +188,8 @@ namespace Fission::Platform
         case WM_COMMAND: return 0;
         case WM_SYSCOMMAND:
         {
-            if( e->wParam == SC_CLOSE ) break;
-            switch( e->wParam & 0xFFF0 )
+            if( wParam == SC_CLOSE ) break;
+            switch( wParam & 0xFFF0 )
             {
             case SC_KEYMENU:
             case SC_MOUSEMENU:
@@ -171,15 +203,15 @@ namespace Fission::Platform
 
         case WM_MOVE:
         {
-            auto point = MAKEPOINTS( e->lParam );
-            if( !m_bFullscreenMode )
-                m_Properties.position = base::vector2i::from( point );
+            auto point = MAKEPOINTS( lParam );
+            m_Properties.position = base::vector2i::from( point );
+            m_bResetMonitor = true;
             break;
         }
 
         // Determine whether the window is being minimized
         case WM_SIZE:
-            if( e->wParam == SIZE_MINIMIZED )
+            if( wParam == SIZE_MINIMIZED )
                 pEventHandler->OnHide();
             else
                 pEventHandler->OnShow();
@@ -188,10 +220,10 @@ namespace Fission::Platform
         case WM_MOUSEMOVE:
         {
             MouseMoveEventArgs ev{ e };
-            ev.position.x = short( e->lParam );
-            ev.position.y = short( e->lParam >> 16 );
+            ev.position.x = short( lParam );
+            ev.position.y = short( lParam >> 16 );
             pEventHandler->OnMouseMove( ev );
-            m_MouseTracker.OnMouseMove( e->hWnd );
+            m_MouseTracker.OnMouseMove( hWnd );
         }
         break;
 
@@ -199,7 +231,7 @@ namespace Fission::Platform
         {
             MouseLeaveEventArgs ev{ e };
             pEventHandler->OnMouseLeave( ev );
-            m_MouseTracker.Reset( e->hWnd );
+            m_MouseTracker.Reset( hWnd );
         }
         break;
 
@@ -209,11 +241,11 @@ namespace Fission::Platform
 		case WM_XBUTTONDOWN: case WM_XBUTTONDBLCLK:
 		{
 			Keys::Key button = Keys::Unknown;
-			if( e->Msg == WM_LBUTTONDOWN || e->Msg == WM_LBUTTONDBLCLK ) { button = Keys::Mouse_Left; }
-			if( e->Msg == WM_RBUTTONDOWN || e->Msg == WM_RBUTTONDBLCLK ) { button = Keys::Mouse_Right; }
-			if( e->Msg == WM_MBUTTONDOWN || e->Msg == WM_MBUTTONDBLCLK ) { button = Keys::Mouse_Middle; }
-			//if( e->Msg == WM_XBUTTONDOWN || e->Msg == WM_XBUTTONDBLCLK ) { button = ( GET_XBUTTON_WPARAM( wParam ) == XBUTTON1 ) ? 3 : 4; }
-            SetCapture( e->hWnd );
+			if( Msg == WM_LBUTTONDOWN || Msg == WM_LBUTTONDBLCLK ) { button = Keys::Mouse_Left; }
+			if( Msg == WM_RBUTTONDOWN || Msg == WM_RBUTTONDBLCLK ) { button = Keys::Mouse_Right; }
+			if( Msg == WM_MBUTTONDOWN || Msg == WM_MBUTTONDBLCLK ) { button = Keys::Mouse_Middle; }
+			//if( Msg == WM_XBUTTONDOWN || Msg == WM_XBUTTONDBLCLK ) { button = ( GET_XBUTTON_WPARAM( wParam ) == XBUTTON1 ) ? 3 : 4; }
+            SetCapture( hWnd );
 			KeyDownEventArgs ev{ e };
 			ev.key = button;
 			pEventHandler->OnKeyDown( ev );
@@ -226,10 +258,10 @@ namespace Fission::Platform
 		case WM_XBUTTONUP:
 		{
 			Keys::Key button = Keys::Unknown;
-			if( e->Msg == WM_LBUTTONUP ) { button = Keys::Mouse_Left; }
-			if( e->Msg == WM_RBUTTONUP ) { button = Keys::Mouse_Right; }
-			if( e->Msg == WM_MBUTTONUP ) { button = Keys::Mouse_Middle; }
-		//	if( e->Msg == WM_XBUTTONUP ) { button = ( GET_XBUTTON_WPARAM( wParam ) == XBUTTON1 ) ? 3 : 4; }
+			if( Msg == WM_LBUTTONUP ) { button = Keys::Mouse_Left; }
+			if( Msg == WM_RBUTTONUP ) { button = Keys::Mouse_Right; }
+			if( Msg == WM_MBUTTONUP ) { button = Keys::Mouse_Middle; }
+		//	if( Msg == WM_XBUTTONUP ) { button = ( GET_XBUTTON_WPARAM( wParam ) == XBUTTON1 ) ? 3 : 4; }
 			ReleaseCapture();
 			KeyUpEventArgs ev{ e };
 			ev.key = button;
@@ -240,7 +272,7 @@ namespace Fission::Platform
         case WM_CHAR:
         {
             TextInputEventArgs ev{ e };
-            ev.codepoint = (char32_t)e->wParam&0xFFFF; // TODO: this is not always a codepoint, pls fix
+            ev.codepoint = (char32_t)wParam&0xFFFF; // TODO: this is not always a codepoint, pls fix
             pEventHandler->OnTextInput( ev );
         }
         break;
@@ -249,7 +281,7 @@ namespace Fission::Platform
         {
             KeyDownEventArgs downEvent{ e };
             KeyUpEventArgs upEvent{ e };
-            m_MouseWheelDelta += GET_WHEEL_DELTA_WPARAM( e->wParam );
+            m_MouseWheelDelta += GET_WHEEL_DELTA_WPARAM( wParam );
 
             downEvent.key = upEvent.key = Keys::Mouse_WheelUp;
             while( m_MouseWheelDelta >= WHEEL_DELTA ) {
@@ -270,8 +302,8 @@ namespace Fission::Platform
         case WM_KEYDOWN:
         {
             KeyDownEventArgs ev{ e };
-            ev.repeat = ( e->lParam & 0x40000000 );
-            ev.key = key_from_win32( (int)e->wParam );
+            ev.repeat = ( lParam & 0x40000000 );
+            ev.key = key_from_win32( (int)wParam );
             pEventHandler->OnKeyDown( ev );
         }
         break;
@@ -280,13 +312,13 @@ namespace Fission::Platform
         case WM_KEYUP:
         {
             KeyUpEventArgs ev{ e };
-            ev.key = key_from_win32( (int)e->wParam );
+            ev.key = key_from_win32( (int)wParam );
             pEventHandler->OnKeyUp( ev );
         }
         break;
 
         case WM_SETCURSOR:
-            if( (short)e->lParam == HTCLIENT )
+            if( (short)lParam == HTCLIENT )
             {
                 SetCursor(LoadCursorW(NULL,IDC_ARROW));
                 //SetCursorEventArgs ev{ e };
@@ -297,10 +329,19 @@ namespace Fission::Platform
             }
         break;
 
+        case WM_DEVICECHANGE:
+        {
+            // TODO: do something here. anything..
+            if( wParam == DBT_DEVNODES_CHANGED )
+            {
+            }
+        }
+        break;
+
 
         case FISSION_WM_SETTITLE:
         {
-			SetWindowTextW( e->hWnd, (LPWSTR)e->wParam );
+			SetWindowTextW( hWnd, (LPWSTR)wParam );
 			return 0;
         }
         break;
@@ -340,11 +381,18 @@ namespace Fission::Platform
                 SetWindowLongPtrW( hWnd, GWL_STYLE, WS_POPUP | WS_VISIBLE );
             //  SetWindowLongPtr( pWindow->m_Handle, GWL_STYLE, WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_POPUP );
                 auto size = GetWindowsSize();
-                DisplayMode mode = *m_pMonitor->GetCurrentDisplayMode();
+
+                DisplayMode mode = *GetMonitor()->GetCurrentDisplayMode();
                 mode.resolution = size;
                 m_pMonitor->SetDisplayMode( &mode );
-                SetWindowPos( hWnd, HWND_TOPMOST, 0, 0, mode.resolution.w, mode.resolution.h, SWP_SHOWWINDOW );
-                ShowWindow( hWnd, SW_MAXIMIZE );
+
+                MONITORINFO mi;
+                mi.cbSize = sizeof( mi );
+
+                GetMonitorInfoW( m_pMonitor->native_handle(), &mi );
+
+                SetWindowPos( hWnd, HWND_TOPMOST, mi.rcMonitor.left, mi.rcMonitor.top, mode.resolution.w, mode.resolution.h, SWP_SHOWWINDOW );
+            //    ShowWindow( hWnd, SW_MAXIMIZE );
                 return 0;
             }
 
@@ -379,11 +427,19 @@ namespace Fission::Platform
 
         default:break;
         }
-        return DefWindowProcW( e->hWnd, e->Msg, e->wParam, e->lParam );
+        return DefWindowProcW( hWnd, Msg, wParam, lParam );
 	}
+
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! End Message Handler !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+
 
     void WindowsWindow::MessageThreadMain()
     {
+        ExitCode wExitCode = 1;
+        CloseEventArgs closeEvent{ wExitCode };
+
         { // Create Window
 
             std::lock_guard lock( m_AccessMutex );
@@ -392,54 +448,69 @@ namespace Fission::Platform
             //    ConfigImpl::Get().GetWindowProperties( &pthis->m_Properties );
 
             auto monitors = Monitor::GetMonitors();
+            if( m_Properties.monitor_idx == MonitorIdx_Automatic )
+            {
+                m_bResetMonitor = true;
+                GetMonitor(); // Cause our monitor to be reset.
+            }
+            else
             if( m_Properties.monitor_idx < monitors.size() )
                 m_pMonitor = monitors[m_Properties.monitor_idx];
-            else if( m_Properties.monitor_idx == MonitorIdx_Automatic )
-                m_pMonitor = monitors[0], m_Properties.monitor_idx = 0; // TODO: find monitor based on window position
             else
                 m_pMonitor = monitors[0], m_Properties.monitor_idx = 0;
 
             auto size = GetWindowsSize();
 
             auto & pos = m_Properties.position;
+            pos.x = std::max( pos.x, 0 );
+            pos.y = std::max( pos.y, 0 );
 
-            // TODO: find better way to not have window not be offscreen.
-            pos.x = std::max( pos.x, 0 ), pos.y = std::max( pos.y, 0 );
-
-            //if( pthis->m_Properties.flags & Flags::CenterWindow )
-            //{
-            //    auto mode = pthis->m_pMonitor->GetCurrentDisplayMode();
-            //    auto hMonitor = pthis->m_pMonitor->native_handle();
-            //    MONITORINFO info; info.cbSize = sizeof( info );
-            //    GetMonitorInfoA( hMonitor, &info );
-            //    auto offset = base::vector2i( mode->resolution.w - size.w, mode->resolution.h - size.h ) / 2;
-            //    pos = base::vector2i(info.rcMonitor.left,info.rcMonitor.top) + offset;
-            //}
+            if( m_Properties.flags & Flags::CenterWindow )
+            {
+                auto mode = m_pMonitor->GetCurrentDisplayMode();
+                auto hMonitor = m_pMonitor->native_handle();
+                MONITORINFO info; info.cbSize = sizeof( info );
+                GetMonitorInfoA( hMonitor, &info );
+                auto offset = base::vector2i( mode->resolution.w - size.w, mode->resolution.h - size.h ) / 2;
+                pos = base::vector2i(info.rcMonitor.left,info.rcMonitor.top) + offset;
+            }
 
             m_Handle = CreateWindowExW(
-                0L,
-                m_pGlobalInfo->WindowClassName,
-                (LPWSTR)m_Properties.title.utf16().c_str(),
-                GetWindowsStyle(),
-                pos.x, pos.y,
-                size.w, size.h,
-                NULL, NULL,
-                m_pGlobalInfo->hInstance,
-                this
+                0L,                                         // Ex Style
+                m_pGlobalInfo->WindowClassName,             // Window Class Name
+                (LPWSTR)m_Properties.title.utf16().c_str(), // Window Title
+                GetWindowsStyle(),                          // Style
+                pos.x, pos.y,                               // Position
+                size.w, size.h,                             // Size
+                NULL, NULL,                                 // Parent Window, Menu
+                m_pGlobalInfo->hInstance,                   // Instance
+                this                                        // UserData
             );
 
-            // todo: error checking to see if window was really created,
-            //   even if it is extremely unlikely.
+            // We failed to create the window (very unlikely)
+            if( m_Handle == NULL )
+            {
+                char what[100];
+                sprintf( what, "'CreateWindowExW()' returned 0. [hInstance=%p]", (void*)m_pGlobalInfo->hInstance );
+                System::ShowSimpleMessageBox( "Unable to create window!", what, System::Error );
 
+                goto quick_exit;
+            }
+
+            // TODO: CreateSwapChain() is able to throw an exception, handle the exception.
             Resource::IFSwapChain::CreateInfo scInfo = { this };
             m_pSwapChain = m_pGlobalInfo->pGraphics->CreateSwapChain( scInfo );
+
+
+        // Window is now created successfully, print out some debug info:
 
             auto sStyle = "<style>";
             switch( m_Properties.style )
             {
-            case Style::Border: sStyle = "Border"; break;
-            case Style::Borderless: sStyle = "Borderless"; break;
+            case Style::Border:         sStyle = "Border";         break;
+            case Style::Borderless:     sStyle = "Borderless";     break;
             case Style::BorderSizeable: sStyle = "BorderSizeable"; break;
+            case Style::Fullscreen:     sStyle = "Fullscreen";     break;
             default:break;
             }
 
@@ -453,7 +524,6 @@ namespace Fission::Platform
         // Tell Constructor to exit, window should be created now
         m_AccessCV.notify_one();
 
-        ExitCode wExitCode = 0;
         try 
         {
             MSG msg = {};
@@ -476,170 +546,35 @@ namespace Fission::Platform
             wExitCode = int( msg.wParam );
         }
 
-        catch( ... )
+        catch( base::runtime_error & e )
         {
-            MessageBoxA( NULL, "Summary: Don't throw exceptions from the event handler!!", "Exception Caught in Message Loop!", MB_OK );
+            char title[64];
+            sprintf( title, "Fatal Error (%s)", e.name() );
+            System::ShowSimpleMessageBox( title, e.what(), System::Error, this );
             wExitCode = 0x45;
         }
 
-        CloseEventArgs closeEvent{ wExitCode };
+        catch( ... )
+        {
+            System::ShowSimpleMessageBox( "Fatal Error", "Exception thrown from window message handler, unable to recover :(", System::Error, this );
+            wExitCode = 0x46;
+        }
+
+        closeEvent.ExitCode = wExitCode;
         pEventHandler->OnClose( closeEvent );
 
         DestroyWindow( m_Handle );
         m_Handle = NULL;
 
+        return;
+
+    quick_exit:
+        m_AccessCV.notify_one();
+        pEventHandler->OnClose( closeEvent );
+
         //if( pthis->m_Properties.save != NoSaveID )
         //    ConfigImpl::Get().SetWindowProperties( pthis->m_Properties );
     }
-
-//    LRESULT WindowsWindow::BaseWindowsProc( _In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wParam, _In_ LPARAM lParam )
-//    {
-//        auto pWindow = reinterpret_cast<WindowsWindow *>( GetWindowLongPtrW( hWnd, GWLP_USERDATA ) );
-//
-//        Event native_event = { hWnd, Msg, wParam, lParam };
-//        //Console::WriteLine( L"HWND[%i] -- MSG:%i", Colors::White, hWnd, Msg );
-//
-//        switch( Msg )
-//        {
-//
-//        /************* Input Messages *************/
-//        case WM_SYSKEYDOWN:
-//        case WM_KEYDOWN:
-//        {
-//            if( ev.key == Keys::F11 )
-//                if( pWindow->m_Properties.style == Style::Fullscreen )
-//                {
-//                    SetWindowLongPtr( pWindow->m_Handle, GWL_EXSTYLE, WS_EX_LEFT );
-//                    SetWindowLongPtr( pWindow->m_Handle, GWL_STYLE, WS_MINIMIZEBOX | WS_SYSMENU | WS_CAPTION | WS_VISIBLE );
-//                    auto size = pWindow->GetWindowsSize();
-//                    auto pos = pWindow->GetPosition();
-//                //    pWindow->m_pSwapChain->SetFullscreen( false, pWindow->m_pMonitor );
-//                    pWindow->m_pMonitor->RevertDisplayMode();
-//                    SetWindowPos( pWindow->m_Handle, HWND_NOTOPMOST, pos.x, pos.y, size.w, size.h, SWP_SHOWWINDOW );
-//                    ShowWindow( pWindow->m_Handle, SW_RESTORE );
-//                    pWindow->m_Properties.style = Style::Border;
-//                    pWindow->m_bFullscreenMode = false;
-//                }
-//                else
-//                {
-//                    pWindow->m_Properties.style = Style::Fullscreen;
-//                    pWindow->m_bFullscreenMode = true;
-//                    SetWindowLongPtr( pWindow->m_Handle, GWL_EXSTYLE, WS_EX_APPWINDOW | WS_EX_TOPMOST );
-//                    SetWindowLongPtr( pWindow->m_Handle, GWL_STYLE, WS_POPUP | WS_VISIBLE );
-//                //    SetWindowLongPtr( pWindow->m_Handle, GWL_STYLE, WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_POPUP );
-//                 //   auto mode = pWindow->m_pMonitor->GetCurrentDisplayMode();
-//                    DisplayMode mode = { {1280,720}, 60 };
-//                    pWindow->m_pMonitor->SetDisplayMode( &mode );
-//                //    pWindow->m_pSwapChain->SetFullscreen( true, pWindow->m_pMonitor );
-//                    SetWindowPos( pWindow->m_Handle, HWND_TOPMOST, 0, 0, mode.resolution.w, mode.resolution.h, SWP_SHOWWINDOW );
-//                //    SetWindowPos( pWindow->m_Handle, HWND_TOPMOST, 0, 0, mode->resolution.x, mode->resolution.y, SWP_SHOWWINDOW );
-//                    ShowWindow( pWindow->m_Handle, SW_MAXIMIZE );
-//                }
-//        }
-//
-//
-//        /************* User Messages *************/
-//        case FISSION_WINEVENT_CALLEXTERNAL:
-//        {
-//            std::function<void()> & fn = *reinterpret_cast<std::function<void()> *>( wParam );
-//            fn();
-//            return 0;
-//		}
-//		case FISSION_WINEVENT_SETTITLE:
-//		{
-//			SetWindowTextW( hWnd, (LPWSTR)wParam );
-//			return 0;
-//		}
-//        case FISSION_WINEVENT_SETSIZE:
-//        {
-//            SetWindowPos( hWnd, NULL, 0, 0, (int)wParam, (int)lParam, SWP_NOMOVE );
-//            return 0;
-//        }
-//        case FISSION_WINEVENT_SETSTYLE:
-//        {
-//            SetWindowLongPtrW( hWnd, GWL_STYLE, pWindow->GetWindowsStyle() );
-//
-//            auto size = pWindow->GetWindowsSize();
-//            SetWindowPos( hWnd, NULL, 0, 0, size.w, size.h, SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_SHOWWINDOW );
-//
-//            return 0;
-//        }
-//        case FISSION_WINEVENT_MSGBOX:
-//        {
-//            MessageBoxW( hWnd, (LPWSTR)lParam, (LPWSTR)wParam, MB_OK );
-//            return 0;
-//        }
-//        case FISSION_WINEVENT_CLOSE:
-//        {
-//            PostQuitMessage( 0 );
-//            return 0;
-//        }
-//
-//
-//        /************* System Messages *************/
-//        //case WM_SIZING:
-//        //{
-//        //    // TODO: add AR restriction
-//        //    RECT * pRect = reinterpret_cast<RECT *>( lParam );
-//        //    int width = pRect->right - pRect->left, 
-//        //        height = pRect->bottom - pRect->top;
-//        //    const int min_width = 300, 
-//        //        min_height = pWindow->m_bRestrictAR ? 
-//        //            ( min_width * pWindow->m_Properties.aspectRatio.y ) / pWindow->m_Properties.aspectRatio.x : 210; // hmm
-//        //    switch( wParam )
-//        //    {
-//        //    case WMSZ_TOP:
-//        //    {
-//        //        if( height < min_height ) { pRect->top = pRect->bottom - min_height; }
-//        //        break;
-//        //    }
-//        //    case WMSZ_LEFT:
-//        //    {
-//        //        if( width < min_width ) { pRect->left = pRect->right - min_width; }
-//        //        break;
-//        //    }
-//        //    case WMSZ_RIGHT:
-//        //    {
-//        //        if( width < min_width ) { pRect->right = pRect->left + min_width; }
-//        //        break;
-//        //    }
-//        //    case WMSZ_BOTTOM:
-//        //    {
-//        //        if( height < min_height ) { pRect->bottom = pRect->top + min_height; }
-//        //        break;
-//        //    }
-//        //    case WMSZ_TOPLEFT:
-//        //    {
-//        //        if( height < min_height ) { pRect->top = pRect->bottom - min_height; }
-//        //        if( width < min_width ) { pRect->left = pRect->right - min_width; }
-//        //        break;
-//        //    }
-//        //    case WMSZ_TOPRIGHT:
-//        //    {
-//        //        if( height < min_height ) { pRect->top = pRect->bottom - min_height; }
-//        //        if( width < min_width ) { pRect->right = pRect->left + min_width; }
-//        //        break;
-//        //    }
-//        //    case WMSZ_BOTTOMLEFT:
-//        //    {
-//        //        if( height < min_height ) { pRect->bottom = pRect->top + min_height; }
-//        //        if( width < min_width ) { pRect->left = pRect->right - min_width; }
-//        //        break;
-//        //    }
-//        //    case WMSZ_BOTTOMRIGHT:
-//        //    {
-//        //        if( height < min_height ) { pRect->bottom = pRect->top + min_height; }
-//        //        if( width < min_width ) { pRect->right = pRect->left + min_width; }
-//        //        break;
-//        //    }
-//        //    default:break;
-//        //    }
-//        //    break;
-//        //}
-//
-//        default:break;
-//        }
-//    }
 
     DWORD WindowsWindow::GetWindowsStyle()
     {
@@ -661,13 +596,8 @@ namespace Fission::Platform
         switch( m_Properties.style )
         {
         case Style::Borderless:
-            return m_Properties.size;
         case Style::Fullscreen:
-        {
-            DisplayMode mode = *m_pMonitor->GetCurrentDisplayMode();
-            mode.resolution = m_Properties.size;
-            return m_Properties.size; // TODO: we should look for a valid displaymode here
-        }
+            return m_Properties.size;
         default:break;
         }
 
