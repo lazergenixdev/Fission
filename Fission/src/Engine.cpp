@@ -118,7 +118,7 @@ namespace Fission
 		app->OnStartUp( appCreateInfo );
 
 		// Pass our start scene to the scene stack.
-		m_SceneStack.OpenScene( appCreateInfo->startScene );
+		m_SceneStack.PushScene( appCreateInfo->startScene );
 
 
 		// Create everything needed to run our application:

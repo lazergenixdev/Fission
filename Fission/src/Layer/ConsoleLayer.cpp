@@ -70,21 +70,25 @@ namespace Fission {
 			}
 
 
+			constexpr const char * s_DefText = "Enter a command . . .";
 
-			std::string consoleInput = "] ";
+			auto tl = m_pRenderer2D->DrawString( "] ", base::vector2f(8.0f, extend - m_FontSize - m_BottomPadding - 1.0f), Colors::White );
 
-			consoleInput += m_CommandText.string();
+			if( m_CommandText.empty() ) {
+				m_pRenderer2D->DrawString( s_DefText, base::vector2f( 8.0f + tl.width, extend - m_FontSize - m_BottomPadding - 1.0f ), Colors::Gray );
+			} else {
+				m_BlinkPosition += 1.5f * dt;
+				if( m_BlinkPosition >= 2.0f )
+					m_BlinkPosition = 0.0f;
 
-			auto tl = m_pRenderer2D->CreateTextLayout( consoleInput.c_str() );
+				if( m_BlinkPosition < 1.0f )
+				{
+					auto cmd_tl = m_pRenderer2D->CreateTextLayout( m_CommandText.c_str() );
+					auto left = 9.0f + tl.width + cmd_tl.width;
+					m_pRenderer2D->FillRect( base::rectf( left, 6.0f + left, extend - 7.0f, extend - 5.0f ), Colors::White );
+				}
 
-			if( !m_CommandText.empty() )
-			m_pRenderer2D->FillRect( base::rectf( 9.0f + tl.width, 15.0f + tl.width, extend - 7.0f, extend - 5.0f ), Colors::White );
-
-			m_pRenderer2D->DrawString( consoleInput.c_str(), base::vector2f( 8.0f, extend - m_FontSize - m_BottomPadding - 1.0f ), Colors::White );
-
-			if( m_CommandText.empty() )
-			{
-				m_pRenderer2D->DrawString( L"  Enter a command . . .", base::vector2f( 8.0f, extend - m_FontSize - m_BottomPadding - 1.0f ), Colors::Gray );
+				m_pRenderer2D->DrawString( m_CommandText.c_str(), base::vector2f( 8.0f + tl.width, extend - m_FontSize - m_BottomPadding - 1.0f ), Colors::White );
 			}
 
 			m_pRenderer2D->Render();
@@ -161,12 +165,18 @@ namespace Fission {
 			case '\b':
 			{
 				if( !m_CommandText.empty() )
+				{
+					m_BlinkPosition = 0.0f;
 					m_CommandText.pop_back();
+				}
 				break;
 			}
 			default:
 				if( m_CommandText.size() < s_MaxCommandSize )
+				{
+					m_BlinkPosition = 0.0f;
 					m_CommandText += string( 1, (char)args.codepoint );
+				}
 				break;
 			}
 			return FISSION_EVENT_HANDLED;

@@ -75,6 +75,12 @@ namespace Fission {
 			}
 		}
 
+		inline void PushScene( FScene * ptr_scene )
+		{
+			m_vScenes.emplace_back( ptr_scene );
+			m_ActiveScene = m_vScenes.back();
+		}
+
 		inline void CloseScene()
 		{
 			// We only have this scene and debug scene left, we should close up.

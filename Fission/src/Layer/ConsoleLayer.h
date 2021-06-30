@@ -29,6 +29,9 @@ private:
 	float extend_rate = 6.0f;
 	float extend = 0.0f;
 
+	float m_BlinkPosition = 0.0f; // show: [0 - 1); hidden: [1 - 2);
+	int m_CursorPosition = 0;
+
 	uint32_t lineOffset = 0;
 	bool m_bShow = false;
 
