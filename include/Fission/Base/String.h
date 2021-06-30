@@ -320,6 +320,7 @@ public:
 	inline char_type * data() { return m_pData; }
 	inline const char_type * data()const{ return m_pData; }
 
+	inline size_t length() const { return m_Size; }
 	inline size_t size() const { return m_Size; }
 	inline size_t capacity() const { return m_Capacity ? ( m_Capacity - 1 ) : ( std::size( m_Storage ) - 1 ); }
 	inline bool empty() const { return !bool( m_Size ); }

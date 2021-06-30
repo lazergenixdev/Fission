@@ -71,12 +71,14 @@ namespace Fission {
 
 
 
-			//float end = (float)m_CommandText.length();
-			//m_pRenderer2D->DrawRect( rectf( end * 6.6f + 22.0f, end * 6.6f + 29.0f, bottom - 7.0f, bottom - 5.0f ), color::White );
-
 			std::string consoleInput = "] ";
 
 			consoleInput += m_CommandText.string();
+
+			auto tl = m_pRenderer2D->CreateTextLayout( consoleInput.c_str() );
+
+			if( !m_CommandText.empty() )
+			m_pRenderer2D->FillRect( base::rectf( 9.0f + tl.width, 15.0f + tl.width, extend - 7.0f, extend - 5.0f ), Colors::White );
 
 			m_pRenderer2D->DrawString( consoleInput.c_str(), base::vector2f( 8.0f, extend - m_FontSize - m_BottomPadding - 1.0f ), Colors::White );
 
