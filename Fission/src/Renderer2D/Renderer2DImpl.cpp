@@ -405,6 +405,23 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		return out;
 	}
 
+	TextLayout Renderer2DImpl::CreateTextLayout( const char * str, uint32_t length )
+	{
+		FISSION_ASSERT( m_pSelectedFont, "you're not supposed to do that." );
+
+		TextLayout out{ 0.0f,(float)m_pSelectedFont->GetSize() };
+
+		uint32_t pos = 0;
+		while( pos < length )
+		{
+			const Font::Glyph * g = m_pSelectedFont->GetGylph( (wchar_t)str[pos] );
+			out.width += g->advance;
+			pos++;
+		}
+
+		return out;
+	}
+
 	void Renderer2DImpl::SetBlendMode( BlendMode mode )
 	{
 		m_pUseBlender = m_pBlenders[(int)mode].get();

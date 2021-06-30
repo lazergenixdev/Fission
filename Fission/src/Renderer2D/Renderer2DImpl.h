@@ -64,6 +64,8 @@ namespace Fission {
 
 		virtual TextLayout CreateTextLayout( const char * str ) override;
 
+		virtual TextLayout CreateTextLayout( const char * str, uint32_t length ) override;
+
 		virtual void SetBlendMode( BlendMode mode ) override;
 
 		virtual void PushTransform( const base::matrix2x3f & transform ) override;

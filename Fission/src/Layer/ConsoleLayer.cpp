@@ -83,9 +83,9 @@ namespace Fission {
 
 				if( m_BlinkPosition < 1.0f )
 				{
-					auto cmd_tl = m_pRenderer2D->CreateTextLayout( m_CommandText.c_str() );
+					auto cmd_tl = m_pRenderer2D->CreateTextLayout( m_CommandText.c_str(), m_CursorPosition );
 					auto left = 9.0f + tl.width + cmd_tl.width;
-					m_pRenderer2D->FillRect( base::rectf( left, 6.0f + left, extend - 7.0f, extend - 5.0f ), Colors::White );
+					m_pRenderer2D->FillRect( base::rectf( left, 1.0f + left, extend - m_FontSize - m_BottomPadding - 1.0f, extend - m_BottomPadding - 1.0f ), Colors::White );
 				}
 
 				m_pRenderer2D->DrawString( m_CommandText.c_str(), base::vector2f( 8.0f + tl.width, extend - m_FontSize - m_BottomPadding - 1.0f ), Colors::White );
@@ -101,31 +101,29 @@ namespace Fission {
 		{
 			switch( args.key )
 			{
-			case Keys::Accent:
-			{
-				if( m_bShow ) {
-					_hide();
-				}
-				else {
-					m_CommandText.clear();
-					extend = 0.0f;
-					lineOffset = 0;
-					m_bShow = true;
-				}
-				return FISSION_EVENT_HANDLED;
-			}
-			case Keys::Up:
+			case Keys::Accent: return FISSION_EVENT_HANDLED;
 			case Keys::Mouse_WheelUp:
 			{
 				if( m_bShow )
 					lineOffset++;
 				break;
 			}
-			case Keys::Down:
 			case Keys::Mouse_WheelDown:
 			{
 				if( m_bShow && ( lineOffset > 0 ) )
 					lineOffset--;
+				break;
+			}
+			case Keys::Left:
+			{
+				m_BlinkPosition = 0.0f;
+				m_CursorPosition = std::max( m_CursorPosition - 1, 0 );
+				break;
+			}
+			case Keys::Right:
+			{
+				m_BlinkPosition = 0.0f;
+				m_CursorPosition = std::min( m_CursorPosition + 1, (int)m_CommandText.length() );
 				break;
 			}
 			case Keys::Escape:
@@ -149,25 +147,25 @@ namespace Fission {
 		{
 			switch( args.codepoint )
 			{
-			case '`':
-			case '~':
-				return FISSION_EVENT_HANDLED;
 			case '\r':
 			{
 				if( !m_CommandText.empty() )
 				{
+					Console::WriteLine( (">> " + m_CommandText).c_str() );
 					Console::ExecuteCommand( m_CommandText );
 					m_CommandText.clear();
+					m_CursorPosition = 0;
 					lineOffset = 0u;
 				}
 				break;
 			}
 			case '\b':
 			{
-				if( !m_CommandText.empty() )
+				if( m_CursorPosition > 0 )
 				{
 					m_BlinkPosition = 0.0f;
-					m_CommandText.pop_back();
+					--m_CursorPosition;
+					m_CommandText = m_CommandText.string().erase( m_CursorPosition, 1 );
 				}
 				break;
 			}
@@ -175,10 +173,20 @@ namespace Fission {
 				if( m_CommandText.size() < s_MaxCommandSize )
 				{
 					m_BlinkPosition = 0.0f;
-					m_CommandText += string( 1, (char)args.codepoint );
+					m_CommandText = m_CommandText.string().insert( m_CursorPosition, 1, (char)args.codepoint );
+					++m_CursorPosition;
 				}
 				break;
 			}
+			return FISSION_EVENT_HANDLED;
+		}
+		else if( args.codepoint == U'`' )
+		{
+			m_CommandText.clear();
+			extend = 0.0f;
+			lineOffset = 0;
+			m_CursorPosition = 0;
+			m_bShow = true;
 			return FISSION_EVENT_HANDLED;
 		}
 		return FISSION_EVENT_PASS;

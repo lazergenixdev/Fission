@@ -179,6 +179,9 @@ namespace Fission
 				return "incorrect format"_utf8;
 			}
 		);
+
+		// sus
+		Console::RegisterCommand( "sus", [=]( const string & ) { return string("SUS AMOGUS"); });
 	}
 
 

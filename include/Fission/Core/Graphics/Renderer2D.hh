@@ -122,6 +122,8 @@ namespace Fission
 
 		virtual TextLayout CreateTextLayout( const char * str ) = 0;
 
+		virtual TextLayout CreateTextLayout( const char * str, uint32_t length ) = 0;
+
 		virtual void SetBlendMode( BlendMode mode ) = 0;
 
 		virtual void PushTransform( const base::matrix2x3f & transform ) = 0;
