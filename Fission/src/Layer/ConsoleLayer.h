@@ -40,6 +40,9 @@ private:
 	Font * m_pFont = nullptr;
 	float m_FontSize;
 	float m_BottomPadding = 2.0f;
+
+	std::vector<string> m_History;
+	int m_LastHistoryIndex = 0;
 };
 
 }

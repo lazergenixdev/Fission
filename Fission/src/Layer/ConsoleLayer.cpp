@@ -23,6 +23,12 @@ namespace Fission {
 	{
 		if( m_bShow )
 		{
+			if( !Console::IsEnabled() )
+			{
+				_hide();
+				return;
+			}
+
 			m_pRenderer2D->SelectFont( m_pFont );
 
 			extend += ( 200.0f - extend ) * dt * extend_rate;
@@ -97,7 +103,7 @@ namespace Fission {
 
 	EventResult ConsoleLayerImpl::OnKeyDown( KeyDownEventArgs & args )
 	{
-		if( Console::IsEnabled() )
+		if( m_bShow )
 		{
 			switch( args.key )
 			{
@@ -112,6 +118,32 @@ namespace Fission {
 			{
 				if( m_bShow && ( lineOffset > 0 ) )
 					lineOffset--;
+				break;
+			}
+			case Keys::Up:
+			{
+				if( !m_History.empty() )
+				{
+					++m_LastHistoryIndex;
+					if( m_LastHistoryIndex > (int)m_History.size() ) m_LastHistoryIndex = m_History.size();
+
+					auto & str = m_History[m_History.size() - size_t(m_LastHistoryIndex)];
+					m_CommandText = str;
+					m_CursorPosition = (int)m_CommandText.length();
+				}
+				break;
+			}
+			case Keys::Down:
+			{
+				if( !m_History.empty() )
+				{
+					--m_LastHistoryIndex;
+					if( m_LastHistoryIndex < 1 ) m_LastHistoryIndex = 1;
+
+					auto & str = m_History[m_History.size() - size_t(m_LastHistoryIndex)];
+					m_CommandText = str;
+					m_CursorPosition = (int)m_CommandText.length();
+				}
 				break;
 			}
 			case Keys::Left:
@@ -137,8 +169,9 @@ namespace Fission {
 			default:
 				break;
 			}
+			return FISSION_EVENT_HANDLED;
 		}
-		return ( m_bShow ) ? FISSION_EVENT_HANDLED : FISSION_EVENT_PASS;
+		return FISSION_EVENT_PASS;
 	}
 
 	EventResult ConsoleLayerImpl::OnTextInput( TextInputEventArgs & args )
@@ -151,10 +184,12 @@ namespace Fission {
 			{
 				if( !m_CommandText.empty() )
 				{
+					m_History.emplace_back( m_CommandText );
 					Console::WriteLine( (">> " + m_CommandText).c_str() );
 					Console::ExecuteCommand( m_CommandText );
 					m_CommandText.clear();
 					m_CursorPosition = 0;
+					m_LastHistoryIndex = 0;
 					lineOffset = 0u;
 				}
 				break;
@@ -180,7 +215,7 @@ namespace Fission {
 			}
 			return FISSION_EVENT_HANDLED;
 		}
-		else if( args.codepoint == U'`' )
+		else if( args.codepoint == U'`' && Console::IsEnabled() )
 		{
 			m_CommandText.clear();
 			extend = 0.0f;
