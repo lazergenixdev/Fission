@@ -221,6 +221,7 @@ namespace Fission {
 			extend = 0.0f;
 			lineOffset = 0;
 			m_CursorPosition = 0;
+			m_LastHistoryIndex = 0;
 			m_bShow = true;
 			return FISSION_EVENT_HANDLED;
 		}
