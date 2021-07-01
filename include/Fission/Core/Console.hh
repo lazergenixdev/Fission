@@ -180,4 +180,57 @@ namespace Fission
 
 	}; // class Fission::Console
 
+	/*
+	* This code will be required for making the Console able to help try auto-complete
+	* what the user writes to the console.
+	
+	* I choose not to implement this for two reasons:
+	
+	*   - It will make simple commands more complicated to write out.
+	*   - It is not helpful to me personally.
+
+	* I do plan on implementing this in the future, but probably after v1.0.0 gets released.
+
+	
+
+  struct CommandArgument
+  {
+    const char * name;
+
+    bool is_number();
+    bool is_string();
+    bool is_integer();
+
+    void * user;
+
+  };
+
+  using CommandCallback = std::function<string(CommandArgument* args, int count)>;
+
+  using _ParseArgument = bool(const char * str, int count, CommandArgument * out);
+
+  struct CommandInfo
+  {
+    const char * name;
+
+    struct ArgumentInfo
+    {
+      const char * name;
+
+      const char * responses = nullptr;
+
+      _ParseArgument parse = nullptr;
+
+      bool is_integer = false;
+      bool is_floating_point = false;
+
+      bool required = true;
+    };
+
+    ArgumentInfo * arguments;
+    int argument_count = 0;
+  };
+
+	*/
+
 } // namespace Fission
