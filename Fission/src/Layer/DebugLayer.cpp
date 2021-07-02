@@ -25,6 +25,7 @@ static DebugLayerImpl * s_DebugLayer = nullptr;
 DebugLayerImpl::DebugLayerImpl()
 {
 	s_DebugLayer = this;
+	m_UserInfo.reserve(100);
 }
 
 void DebugLayerImpl::RegisterDrawCallback( const char * _Key, DrawCallback _Callback, void * _UserData )
@@ -32,34 +33,9 @@ void DebugLayerImpl::RegisterDrawCallback( const char * _Key, DrawCallback _Call
 	m_DrawCallbacks.emplace( _Key, DrawCallbackData{ _Callback, _UserData } );
 }
 
-void DebugLayerImpl::Push( const char * name )
-{
-	std::string key = name;
-
-	auto it = m_InfoMap.find( key );
-	if( it == m_InfoMap.end() )
-	{
-		auto it = m_InfoMap.emplace( key, std::vector<std::string>() );
-
-		m_CurrentInfo = &it.first->second;
-		m_CurrentInfo->emplace_back( "[" + key + "]" );
-		return;
-	}
-
-	m_CurrentInfo = &it->second;
-	m_CurrentInfo->erase( m_CurrentInfo->begin() + 1, m_CurrentInfo->end() );
-}
-
-void DebugLayerImpl::Pop()
-{
-	m_CurrentInfo = nullptr;
-}
-
 void DebugLayerImpl::Text( const char * what )
 {
-	FISSION_ASSERT( m_CurrentInfo, "You must Push before Text() friendo" );
-
-	m_CurrentInfo->emplace_back( what );
+	m_UserInfo.emplace_back( what );
 }
 
 static std::string cpu_name;
@@ -110,6 +86,8 @@ void DebugLayerImpl::OnCreate(class FApplication * app) {
 	memory_str = "Total System Memory: " + std::string(buf) + "GB";
 }
 
+#define _DEBUG_LAYER FISSION_ENGINE " v" FISSION_VERSION_STRING _FISSION_BUILD_STRING " - Debug Layer"
+
 void DebugLayerImpl::OnUpdate(timestep dt) {
 	
 	static constexpr auto c = color( 0.0f, 0.0f, 0.0f, 0.7f );
@@ -120,69 +98,66 @@ void DebugLayerImpl::OnUpdate(timestep dt) {
 
 	if( m_bShow )
 	{
-		char buf[32];
-		memset( buf, 0, sizeof buf );
-		sprintf_s( buf, "%.1f FPS (%.2fms)", 1000.0f / msAvgFrameTime, msAvgFrameTime );
+		char sFPS[32];
+		memset( sFPS, 0, sizeof sFPS );
+		sprintf_s( sFPS, "%.1f FPS (%.2fms)", 1000.0f / msAvgFrameTime, msAvgFrameTime );
 
 		auto pFont = FontManager::GetFont( "$debug" );
-		float diff = pFont->GetSize();
 		pRenderer2D->SelectFont( pFont );
 
-		auto tl = pRenderer2D->CreateTextLayout( FISSION_ENGINE " v" FISSION_VERSION_STRING _FISSION_BUILD_STRING " - Debug Layer" );
+		float offsety = 0.0f;
 
-		pRenderer2D->FillRect( base::rectf( 0.0f, tl.width, 0.0f, diff ), c );
+		auto tl = pRenderer2D->CreateTextLayout( _DEBUG_LAYER );
+		pRenderer2D->FillRect( base::rectf( 0.0f, tl.width, offsety, tl.height ), c );
+		pRenderer2D->DrawString( _DEBUG_LAYER, { 0.0f, 0.0f }, Colors::White );
+		pRenderer2D->DrawString( L"(F3)", { tl.width + 4.0f, offsety }, color( Colors::White, 0.5f ) );
+		offsety += tl.height;
 
-		pRenderer2D->DrawString( FISSION_ENGINE " v" FISSION_VERSION_STRING _FISSION_BUILD_STRING " - Debug Layer", { 0.0f, 0.0f }, Colors::White );
+		// FPS
+		tl = pRenderer2D->CreateTextLayout( sFPS );
+		pRenderer2D->FillRect( base::rectf( 0.0f, tl.width, offsety, offsety + tl.height ), c );
+		pRenderer2D->DrawString( sFPS, { 0.0f, offsety }, Colors::White );
+		offsety += tl.height;
 
-		pRenderer2D->DrawString( L"(F3)", { tl.width + 4.0f, 0.0f }, color( Colors::White, 0.5f ) );
+		for( auto && text : m_UserInfo )
+		{
+			auto tl = pRenderer2D->CreateTextLayout( text.c_str() );
 
-		{ // FPS
-			tl = pRenderer2D->CreateTextLayout( buf );
-			base::vector2f pos = { 0.0f, diff };
-			pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, diff ), c );
-			pRenderer2D->DrawString( buf, pos, Colors::White );
+			pRenderer2D->FillRect( base::rectf( 0.0f, tl.width, offsety, offsety + tl.height ), c );
+			pRenderer2D->DrawString( text.c_str(), { 0.0f, offsety }, Colors::White );
+
+			offsety += tl.height;
 		}
+
+		offsety = 0.0f;
 		
 		{ // CPU
 			tl = pRenderer2D->CreateTextLayout( cpu_name.c_str() );
-			base::vector2f pos = { m_width - tl.width, 0.0f };
-			pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, diff ), c );
+			base::vector2f pos = { m_width - tl.width, offsety };
+			pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, tl.height ), c );
 			pRenderer2D->DrawString( cpu_name.c_str(), pos, Colors::White );
+			offsety += tl.height;
 		}
 
 		{ // Memory
 			tl = pRenderer2D->CreateTextLayout( memory_str.c_str() );
-			base::vector2f pos = { m_width - tl.width, diff };
-			pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, diff ), c );
+			base::vector2f pos = { m_width - tl.width, offsety };
+			pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, tl.height ), c );
 			pRenderer2D->DrawString( memory_str.c_str(), pos, Colors::White );
+			offsety += tl.height;
 		}
 
 		{ // Platform
 			tl = pRenderer2D->CreateTextLayout( System::GetVersionString() );
-			base::vector2f pos = { m_width - tl.width, diff * 2.0f };
-			pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, diff ), c );
+			base::vector2f pos = { m_width - tl.width, offsety };
+			pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, tl.height ), c );
 			pRenderer2D->DrawString( System::GetVersionString(), pos, Colors::White );
-		}
-
-		float start = 80.0f;
-
-		for( auto && [key,text] : m_InfoMap )
-		{
-			for( auto && s : text )
-			{
-				auto tl = pRenderer2D->CreateTextLayout( s.c_str() );
-
-				pRenderer2D->FillRect( base::rectf( 0.0f, tl.width, start, start + tl.height ), c );
-				pRenderer2D->DrawString( s.c_str(), { 0.0f, start }, Colors::White );
-
-				start += tl.height;
-			}
-			start += 30.0f;
 		}
 
 		pRenderer2D->Render();
 	}
 
+	m_UserInfo.clear();
 	m_FrameCount++;
 }
 

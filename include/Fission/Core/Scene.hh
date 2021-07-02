@@ -60,10 +60,6 @@ namespace Fission {
 	public:
 		virtual void RegisterDrawCallback( const char * _Key, DrawCallback _Callback, void * _UserData ) = 0;
 
-		virtual void Push( const char * name ) = 0;
-
-		virtual void Pop() = 0;
-
 		virtual void Text( const char * what ) = 0;
 
 		template <size_t Buffer_Size = 128, typename...T>

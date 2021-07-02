@@ -11,10 +11,6 @@ namespace Fission {
 
 		virtual void RegisterDrawCallback( const char * _Key, DrawCallback _Callback, void * _UserData ) override;
 
-		void Push( const char * name );
-
-		void Pop();
-
 		void Text( const char * what );
 
 		virtual void OnCreate(class FApplication *) override;
@@ -33,8 +29,7 @@ namespace Fission {
 		};
 		std::map<std::string, DrawCallbackData> m_DrawCallbacks;
 
-		std::map<std::string, std::vector<std::string>> m_InfoMap;
-		std::vector<std::string> * m_CurrentInfo = nullptr;
+		std::vector<std::string> m_UserInfo;
 
 		bool m_bShow = false;
 		bool m_bShowFR = false;
