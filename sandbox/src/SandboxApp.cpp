@@ -23,10 +23,7 @@ public:
 
 		renderer->SelectFont( font );
 
-		if( auto debug = g_App->pEngine->GetDebug() )
-		{
-			debug->Text("sandbox-v1.0.0");
-		}
+		g_App->pEngine->GetDebug()->Text("sandbox v1.0.0");
 
 		float start = 50.0f + pos;
 		static char textBuffer[100];

@@ -39,4 +39,5 @@ end
 
 group 'demos'
   include_demo('Simple Ball')
+  include_demo('Snake')
 group ''

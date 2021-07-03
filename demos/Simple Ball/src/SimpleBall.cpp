@@ -15,12 +15,12 @@ public:
 		return Fission::hsv_colorf( dist( rng ), 1.0f, 1.0f ); 
 	}
 
-	virtual void OnCreate( Fission::FApplication * app ) override
+	void OnCreate( Fission::FApplication * app )
 	{
 		renderer = static_cast<Fission::IFRenderer2D *>( app->pEngine->GetRenderer( "$internal2D" ) );
 	}
 
-	virtual void OnUpdate(Fission::timestep dt) override
+	void OnUpdate(Fission::timestep dt)
 	{
 		// Update ball position
 		pos += velocity * dt * 3.0f;
@@ -62,7 +62,7 @@ public:
 class BounceBallApp : public DefaultDelete<Fission::FApplication>
 {
 public:
-	virtual void OnStartUp( CreateInfo * info ) override
+	void OnStartUp( CreateInfo * info )
 	{
 		info->startScene = new BallScene;
 		char title[100];

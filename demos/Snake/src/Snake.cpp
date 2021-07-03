@@ -1,25 +1,19 @@
 ﻿#include <Fission/Platform/EntryPoint.h>
 #include <Fission/Base/Utility/Timer.h>
 
-template <typename T>
-struct DefaultDelete : public T { virtual void Destroy() override { delete this; } };
-
-class SnakeLayer : public DefaultDelete<Fission::IFLayer>
-{
-};
-
-class GameScene : public DefaultDelete<Fission::FScene>
-{
-};
+#include "StartScene.h"
+#include "GameScene.h"
 
 class SnakeApp : public DefaultDelete<Fission::FApplication>
 {
 public:
-	virtual void OnStartUp( CreateInfo * info ) override
+	void OnStartUp( CreateInfo * info )
 	{
 		char title[100];
 		sprintf( title, "Snek Demo [%s]", pEngine->GetVersionString() );
 		info->window.title = title;
+		info->window.size = { 800, 600 };
+		info->startScene = new StartScene;
 	}
 };
 
