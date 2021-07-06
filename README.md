@@ -9,18 +9,18 @@
 - Runtime Texture Atlas creation utility
 
 # RoadMap 🗓
-### *Fission-v0.6.0* (week 24 2021)
-- update Engine architecture to be more self-contained (+Fission::FEngine)
-- Bring back ConstantBuffers as a Graphics Bindable
-- Update misleading Fission::System API
-### *Fission-v0.6.1* (week 25 2021)
-- Fully implement the use of Monitors
-- Make it easy to switch resolutions and fullscreen mode at runtime
-### *Fission-v0.6.2* (week 27 2021)
-- Better console layer (cursor + selection + copy/paste + history)
-### *Fission-v0.6.3* (week 28 2021)
-- Rewrite of the debug UI
-- Dedicated UI Layer?
+Version 0.7 will have a complete focus on UI, both for developer debugging and for general use.
+
+### *Fission v0.7.0-alpha.1* (week 28 2021)
+### *Fission v0.7.0-alpha.2* (week 29 2021)
+### *Fission v0.7.0* (week 30 2021)
+- Functional implementation of debug UI
+  - windows
+  - sliders
+  - buttons
+  - combo boxes
+- [neutron.hpp](https://github.com/lazergenixdev/Fission/blob/master/include/Fission/neutron.hpp), with all features implemented
+- user-defined UI Layers
 
 ### Planned Features ⛅
 - SPIR-V for shader reflection
