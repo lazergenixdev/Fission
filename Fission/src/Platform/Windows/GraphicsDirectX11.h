@@ -29,6 +29,8 @@ namespace Fission::Platform
 		virtual void Draw( uint32_t vertexCount, uint32_t vertexOffset ) override;
 
 		virtual void DrawIndexed( uint32_t indexCount, uint32_t indexOffset, uint32_t vertexOffset ) override;
+
+		virtual void SetClipRect( base::rectf rect ) override;
 		
 		virtual FrameBuffer*    CreateFrameBuffer   ( const FrameBuffer::CreateInfo & info  ) override;
 		virtual VertexBuffer*   CreateVertexBuffer  ( const VertexBuffer::CreateInfo & info ) override;

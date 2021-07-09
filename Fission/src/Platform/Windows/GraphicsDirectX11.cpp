@@ -137,6 +137,12 @@ namespace Fission::Platform {
 		m_pImmediateContext->DrawIndexed( indexCount, indexOffset, vertexOffset );
 	}
 
+	void GraphicsDirectX11::SetClipRect( base::rectf rect )
+	{
+		const D3D11_RECT clip_rect = base::rect<LONG>(rect).as<D3D11_RECT>();
+		m_pImmediateContext->RSSetScissorRects( 1, &clip_rect );
+	}
+
 	Resource::IFFrameBuffer* GraphicsDirectX11::CreateFrameBuffer( const FrameBuffer::CreateInfo & info ) {
 		FISSION_THROW_NOT_IMPLEMENTED()
 		return nullptr;

@@ -9,6 +9,8 @@ namespace Fission {
 	public:
 		DebugLayerImpl();
 
+		void SetAppVersionString( const string & version_String );
+
 		virtual void RegisterDrawCallback( const char * _Key, DrawCallback _Callback, void * _UserData ) override;
 
 		void Text( const char * what );
@@ -29,6 +31,7 @@ namespace Fission {
 		};
 		std::map<std::string, DrawCallbackData> m_DrawCallbacks;
 
+		string m_AppVersionString = "<APP VERSION> (nice version you got there)";
 		std::vector<std::string> m_UserInfo;
 
 		bool m_bShow = false;

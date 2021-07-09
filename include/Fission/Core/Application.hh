@@ -50,6 +50,9 @@ namespace Fission
 			FScene *              startScene;
 			IFWindow::Properties  window = {};
 			GraphicsState         graphics = {};
+
+			const char *          name_utf8 = "<app name>";
+			const char *          version_utf8 = "0.0.0";
 		};
 
 	public:

@@ -1,19 +1,20 @@
 ﻿#include <Fission/Platform/EntryPoint.h>
 #include <Fission/Core/Monitor.hh>
 #include <Fission/Base/Utility/Timer.h>
+#include <Fission/Simple2DLayer.h>
 
 static Fission::FApplication * g_App = nullptr;
 
 template <typename T>
 struct DefaultDelete : public T { virtual void Destroy() override { delete this; } };
 
-class BallLayer : public DefaultDelete<Fission::IFLayer>
+class BallLayer : public DefaultDelete<Fission::Simple2DLayer>
 {
 public:
 	virtual void OnCreate( Fission::FApplication * app ) override
 	{
+		Simple2DLayer::OnCreate(app);
 		wnd = app->pMainWindow;
-		renderer = static_cast<Fission::IFRenderer2D *>( app->pEngine->GetRenderer( "$internal2D" ) );
 		font = Fission::FontManager::GetFont("$console");
 	}
 
@@ -21,9 +22,7 @@ public:
 	{
 		using namespace Fission::base;
 
-		renderer->SelectFont( font );
-
-		g_App->pEngine->GetDebug()->Text("sandbox v1.0.0");
+		m_pRenderer2D->SelectFont( font );
 
 		float start = 50.0f + pos;
 		static char textBuffer[100];
@@ -33,7 +32,7 @@ public:
 		if( pos + 20.0f > 0.0f )
 		{
 			sprintf( textBuffer, "Monitor: %s", monitor->GetName() );
-			renderer->DrawString( textBuffer, vector2f{ 12.0f, pos + 2.0f }, Fission::Colors::White );
+			m_pRenderer2D->DrawString( textBuffer, vector2f{ 12.0f, pos + 2.0f }, Fission::Colors::White );
 		}
 		for( auto && mode : monitor->GetSupportedDisplayModes() )
 		{
@@ -44,15 +43,15 @@ public:
 
 				if( !bFoundHover && rect[mousepos] )
 				{
-					renderer->FillRect( rect, Fission::Colors::make_gray(0.4f) );
+					m_pRenderer2D->FillRect( rect, Fission::Colors::make_gray(0.4f) );
 					hover = &mode;
 					bFoundHover = true;
 				}
 				else
-				renderer->FillRect( rect, Fission::Colors::make_gray( &mode == selected ? 0.4f : 0.2f ) );
+				m_pRenderer2D->FillRect( rect, Fission::Colors::make_gray( &mode == selected ? 0.4f : 0.2f ) );
 
 				sprintf( textBuffer, "%i x %i @ %ihz", mode.resolution.w, mode.resolution.h, mode.refresh_rate );
-				renderer->DrawString( textBuffer, topleft + vector2f{12.0f, 6.0f}, Fission::Colors::White );
+				m_pRenderer2D->DrawString( textBuffer, topleft + vector2f{12.0f, 6.0f}, Fission::Colors::White );
 
 			}
 			start += 35.0f;
@@ -63,15 +62,17 @@ public:
 
 		if( selected )
 		{
-			renderer->DrawString( "Selected Display Mode:", { 300.0f, 100.0f }, Fission::Colors::White );
+			m_pRenderer2D->DrawString( "Selected Display Mode:", { 300.0f, 100.0f }, Fission::Colors::White );
 
 			sprintf( textBuffer, "%i x %i @ %ihz", selected->resolution.w, selected->resolution.h, selected->refresh_rate );
-			renderer->DrawString( textBuffer, { 300.0f, 130.0f }, Fission::Colors::Snow );
+			m_pRenderer2D->DrawString( textBuffer, { 300.0f, 130.0f }, Fission::Colors::Snow );
 
-			renderer->DrawString( "Press [ENTER] to change to this resolution.", { 300.0f, 200.0f }, Fission::Colors::Snow );
+			m_pRenderer2D->DrawString( "Press [ENTER] to change to this resolution.", { 300.0f, 200.0f }, Fission::Colors::Snow );
 		}
 
-		renderer->Render();
+		m_pRenderer2D->DrawCircle( mousepos, 50.0f, Fission::Colors::White, Fission::color{ Fission::Colors::White,0.0f }, 100.0f );
+
+		m_pRenderer2D->Render();
 	}
 
 	virtual Fission::EventResult OnKeyUp( Fission::KeyUpEventArgs & args ) override
@@ -122,7 +123,6 @@ public:
 		return Fission::EventResult::Handled;
 	}
 private:
-	Fission::IFRenderer2D * renderer;
 	Fission::IFWindow * wnd;
 	Fission::Font * font;
 
@@ -145,7 +145,9 @@ public:
 	virtual void OnStartUp( CreateInfo * info ) override
 	{
 		info->startScene = new BallScene;
-		info->window.title = u8"Sandbox 🅱🅱🅱";
+		info->window.title = u8"🔥 Sandbox 🔥  👌👌👌👌👌";
+		info->name_utf8 = "sandbox";
+		info->version_utf8 = "1.0.0";
 	}
 };
 

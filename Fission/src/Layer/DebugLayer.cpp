@@ -5,6 +5,9 @@
 #include <Fission/Base/Rect.h>
 #include "../Version.h"
 
+#include <dxgi.h>
+#pragma comment(lib,"dxgi")
+
 #ifdef FISSION_DIST
 #define _FISSION_BUILD_STRING
 #else
@@ -28,6 +31,11 @@ DebugLayerImpl::DebugLayerImpl()
 	m_UserInfo.reserve(100);
 }
 
+void Fission::DebugLayerImpl::SetAppVersionString( const string & version_String )
+{
+	m_AppVersionString = version_String;
+}
+
 void DebugLayerImpl::RegisterDrawCallback( const char * _Key, DrawCallback _Callback, void * _UserData )
 {
 	m_DrawCallbacks.emplace( _Key, DrawCallbackData{ _Callback, _UserData } );
@@ -40,6 +48,7 @@ void DebugLayerImpl::Text( const char * what )
 
 static std::string cpu_name;
 static std::string memory_str;
+static std::string gpu_name;
 #include <intrin.h>
 
 void DebugLayerImpl::Destroy() { FontManager::DelFont( "$debug" ); delete this; }
@@ -49,7 +58,7 @@ void DebugLayerImpl::OnCreate(class FApplication * app) {
 
 	m_width = (float)app->pMainWindow->GetSwapChain()->GetSize().w;
 
-	FontManager::SetFont( "$debug", RobotoRegularTTF::data, RobotoRegularTTF::size, 20.0f, app->pGraphics );
+	FontManager::SetFont( "$debug", "../resources/Fonts/IBMPlexMono-Medium.ttf", 18.0f, app->pGraphics );
 
 	int CPUInfo[4] = { -1 };
 	unsigned   nExIds, i = 0;
@@ -84,9 +93,20 @@ void DebugLayerImpl::OnCreate(class FApplication * app) {
 	char buf[128];
 	sprintf( buf, "%.1f", float( ( statex.ullTotalPhys / 1024 ) / ( 1024 * 1000 ) ) );
 	memory_str = "Total System Memory: " + std::string(buf) + "GB";
+
+	Platform::com_ptr<IDXGIFactory> pFactory = NULL;
+	CreateDXGIFactory( IID_PPV_ARGS( &pFactory ) );
+
+	Platform::com_ptr<IDXGIAdapter> pAdapter = NULL;
+	pFactory->EnumAdapters( 0, &pAdapter );
+
+	DXGI_ADAPTER_DESC descAdapter;
+	pAdapter->GetDesc( &descAdapter );
+
+	gpu_name = utf16_string( (char16_t*)descAdapter.Description ).utf8().string();
 }
 
-#define _DEBUG_LAYER FISSION_ENGINE " v" FISSION_VERSION_STRING _FISSION_BUILD_STRING " - Debug Layer"
+#define _DEBUG_LAYER FISSION_ENGINE " " FISSION_FULL_VERSION_STRING _FISSION_BUILD_STRING
 
 void DebugLayerImpl::OnUpdate(timestep dt) {
 	
@@ -108,9 +128,51 @@ void DebugLayerImpl::OnUpdate(timestep dt) {
 		float offsety = 0.0f;
 
 		auto tl = pRenderer2D->CreateTextLayout( _DEBUG_LAYER );
-		pRenderer2D->FillRect( base::rectf( 0.0f, tl.width, offsety, tl.height ), c );
-		pRenderer2D->DrawString( _DEBUG_LAYER, { 0.0f, 0.0f }, Colors::White );
-		pRenderer2D->DrawString( L"(F3)", { tl.width + 4.0f, offsety }, color( Colors::White, 0.5f ) );
+		pRenderer2D->FillRect( { m_width - tl.width, m_width, 0.0f, tl.height }, c );
+		pRenderer2D->DrawString( _DEBUG_LAYER, { m_width - tl.width, 0.0f }, Colors::White );
+	//	pRenderer2D->DrawString( L"(F3)", { tl.width + 4.0f, offsety }, color( Colors::White, 0.5f ) );
+		offsety += tl.height;
+
+		{ // Platform
+			tl = pRenderer2D->CreateTextLayout( System::GetVersionString() );
+			base::vector2f pos = { m_width - tl.width, offsety };
+			pRenderer2D->FillRect( { m_width - tl.width, m_width, offsety, offsety + tl.height }, c );
+			pRenderer2D->DrawString( System::GetVersionString(), pos, Colors::White );
+			offsety += tl.height;
+		}
+
+		offsety += tl.height * 1.5f;
+		
+		{ // CPU
+			tl = pRenderer2D->CreateTextLayout( cpu_name.c_str() );
+			base::vector2f pos = { m_width - tl.width, offsety };
+			pRenderer2D->FillRect( { m_width - tl.width, m_width, offsety, offsety + tl.height }, c );
+			pRenderer2D->DrawString( cpu_name.c_str(), pos, Colors::White );
+			offsety += tl.height;
+		}
+
+		//{ // Memory
+		//	tl = pRenderer2D->CreateTextLayout( memory_str.c_str() );
+		//	base::vector2f pos = { m_width - tl.width, offsety };
+		//	pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, tl.height ), c );
+		//	pRenderer2D->DrawString( memory_str.c_str(), pos, Colors::White );
+		//	offsety += tl.height;
+		//}
+		 
+		{ // GPU
+			tl = pRenderer2D->CreateTextLayout( gpu_name.c_str() );
+			base::vector2f pos = { m_width - tl.width, offsety };
+			pRenderer2D->FillRect( { m_width - tl.width, m_width, offsety, offsety + tl.height }, c );
+			pRenderer2D->DrawString( gpu_name.c_str(), pos, Colors::White );
+			offsety += tl.height;
+		}
+
+		offsety = 0.0f;
+
+		// App Version
+		tl = pRenderer2D->CreateTextLayout( m_AppVersionString.c_str() );
+		pRenderer2D->FillRect( base::rectf( 0.0f, tl.width, offsety, offsety + tl.height ), c );
+		pRenderer2D->DrawString( m_AppVersionString.c_str(), { 0.0f, offsety }, Colors::White );
 		offsety += tl.height;
 
 		// FPS
@@ -127,31 +189,6 @@ void DebugLayerImpl::OnUpdate(timestep dt) {
 			pRenderer2D->DrawString( text.c_str(), { 0.0f, offsety }, Colors::White );
 
 			offsety += tl.height;
-		}
-
-		offsety = 0.0f;
-		
-		{ // CPU
-			tl = pRenderer2D->CreateTextLayout( cpu_name.c_str() );
-			base::vector2f pos = { m_width - tl.width, offsety };
-			pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, tl.height ), c );
-			pRenderer2D->DrawString( cpu_name.c_str(), pos, Colors::White );
-			offsety += tl.height;
-		}
-
-		{ // Memory
-			tl = pRenderer2D->CreateTextLayout( memory_str.c_str() );
-			base::vector2f pos = { m_width - tl.width, offsety };
-			pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, tl.height ), c );
-			pRenderer2D->DrawString( memory_str.c_str(), pos, Colors::White );
-			offsety += tl.height;
-		}
-
-		{ // Platform
-			tl = pRenderer2D->CreateTextLayout( System::GetVersionString() );
-			base::vector2f pos = { m_width - tl.width, offsety };
-			pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, tl.height ), c );
-			pRenderer2D->DrawString( System::GetVersionString(), pos, Colors::White );
 		}
 
 		pRenderer2D->Render();

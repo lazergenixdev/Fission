@@ -73,6 +73,8 @@ public:
 
 	virtual void DrawIndexed( uint32_t indexCount, uint32_t indexOffset = 0u, uint32_t vertexOffset = 0u ) = 0;
 
+	virtual void SetClipRect( base::rectf rect ) = 0;
+
 
 	virtual FrameBuffer*    CreateFrameBuffer   ( const FrameBuffer::CreateInfo & info ) = 0;
 	virtual VertexBuffer*   CreateVertexBuffer  ( const VertexBuffer::CreateInfo & info ) = 0;

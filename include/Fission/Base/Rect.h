@@ -171,7 +171,7 @@ struct rect
 
     //! @brief Convert a rect to another rect type.
     template <typename _Rect_Type, rect_Layout _Layout = rect_layout_LTRB>
-    static inline constexpr _Rect_Type as()
+    inline constexpr _Rect_Type as()
     {
         if constexpr (_Layout == rect_layout_LRTB)
             return _Rect_Type{this->x.low,this->x.high,this->y.low,this->y.high};
@@ -179,7 +179,6 @@ struct rect
             return _Rect_Type{this->x.low,this->y.low,this->x.high,this->y.high};
         if constexpr (_Layout == rect_layout_LTWH)
             return _Rect_Type{this->x.low,this->y.low,this->x.high-this->x.low,this->y.high-this->y.high};
-        else static_assert(false, "hmmmmmmmm");
     }
 
     // Getters

@@ -132,10 +132,6 @@ namespace Fission
 
 		virtual void Render() = 0;
 
-	//	virtual void PushClipRect( const rectf & rect ) = 0;
-
-	//	virtual void PopClipRect() = 0;
-
 	}; // class Fission::Renderer2D
 
 	FISSION_API void CreateRenderer2D( IFRenderer2D ** ppRenderer2D );

@@ -73,9 +73,9 @@ BEGIN
             VALUE "FileVersion", FISSION_VERSION_STRING ".69"
             VALUE "InternalName", FISSION_ENGINE
             VALUE "LegalCopyright", FISSION_COPYRIGHT
-            VALUE "OriginalFilename", FISSION_ENGINE ".dll"
+            VALUE "OriginalFilename", "Fission.dll"
             VALUE "ProductName", "Fission Engine"
-            VALUE "ProductVersion", FISSION_VERSION_STRING ".420"
+            VALUE "ProductVersion", FISSION_FULL_VERSION_STRING
         END
     END
     BLOCK "VarFileInfo"

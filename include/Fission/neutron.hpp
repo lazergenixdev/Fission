@@ -82,22 +82,23 @@ _neutron_begin_header_
 	#endif
 	using CharType = _neutron_char_type;
 
-	/* Key value that represents the left mouse button, DEFINE this before including neutron.hpp */
-	#ifndef _neutron_key_left_mouse_
-	#define _neutron_key_left_mouse_ 0
+	/* Key value that represents the primary mouse button, DEFINE this before including neutron.hpp */
+	#ifndef _neutron_key_primary_mouse
+	#define _neutron_key_primary_mouse 0
 	#endif
-	static KeyType g_KeyLeftMouse = _neutron_key_left_mouse_;
+	static KeyType g_KeyPrimaryMouse = _neutron_key_primary_mouse;
 
-	/* Key value that represents the right mouse button, DEFINE this before including neutron.hpp */
-	#ifndef _neutron_key_right_mouse_
-	#define _neutron_key_right_mouse_ 1
+	/* Key value that represents the secondary mouse button, DEFINE this before including neutron.hpp */
+	#ifndef _neutron_key_secondary_mouse
+	#define _neutron_key_secondary_mouse 1
 	#endif
-	static KeyType g_KeyRightMouse = _neutron_key_right_mouse_;
+	static KeyType g_KeySecondaryMouse = _neutron_key_secondary_mouse;
 
 	/* DEFINE `_neutron_no_cursor` to disable cursors */
 	#ifndef _neutron_no_cursor
 	/* Cursor type that is used in SetCursor, DEFINE this before including neutron.hpp if using cursors */
 	#ifndef _neutron_cursor_type
+	#define NEUTRON_HAS_CURSOR 1
 	#define _neutron_cursor_type void *
 	#endif
 	using CursorType = _neutron_cursor_type;
@@ -296,7 +297,8 @@ struct IEventHandler;	// Interface for message callbacks
 struct Parent;			// Any Object which imbeds child windows
 class Window;			// Represents a ui window
 class DynamicWindow;	// Represents a ui window that can contain children and freely move
-class WindowManager;
+class WindowManager;    // Structure that handles the managing of, and communication between ui windows
+class Context;          // context help text
 
 class Widget;
 class Slider;
@@ -387,6 +389,7 @@ public:
 		Flags_None = 0,
 		Flags_Movable = _neutron_bit(0),
 		Flags_Sizable = _neutron_bit(1),
+	//	Flags_Visible = _neutron_bit(2),
 
 		Flags_Default = Flags_Movable | Flags_Sizable,
 	};
@@ -491,7 +494,10 @@ public:
 	vector<Window *> windowStack;
 public:
 	WindowManager( int width, int height );
+	WindowManager(){}
 	~WindowManager();
+
+	void Initialize( int width, int height );
 
 	virtual void SetCapture( Window * window ) override;
 	virtual void SetFocus( Window * window ) override;
@@ -523,6 +529,16 @@ public:
 		if( it == windowStack.end() ) return nullptr;
 		return *it;
 	}
+};
+
+class Context
+{
+public:
+	Context(){}
+	~Context();
+
+public:
+	WindowManager wm;
 };
 
 

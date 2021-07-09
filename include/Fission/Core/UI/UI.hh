@@ -1,6 +1,6 @@
 /**
 *
-* @file: UI.h
+* @file: UI.hh
 * @author: lazergenixdev@gmail.com
 *
 *
@@ -31,8 +31,19 @@
 #pragma once
 #include <Fission/config.h>
 
+#include <Fission/neutron.hpp>
+
 namespace Fission::UI
 {
+
+	class UILayer : public IFLayer
+	{
+	public:
+		UILayer(neutron::Context* ctx, bool owned=false){}
+
+	public:	
+		neutron::Context* context;
+	};
 
 	class Debug
 	{

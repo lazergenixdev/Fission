@@ -125,7 +125,7 @@ namespace Fission {
 				if( !m_History.empty() )
 				{
 					++m_LastHistoryIndex;
-					if( m_LastHistoryIndex > (int)m_History.size() ) m_LastHistoryIndex = m_History.size();
+					if( m_LastHistoryIndex > (int)m_History.size() ) m_LastHistoryIndex = (int)m_History.size();
 
 					auto & str = m_History[m_History.size() - size_t(m_LastHistoryIndex)];
 					m_CommandText = str;
