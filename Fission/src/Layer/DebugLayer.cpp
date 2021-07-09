@@ -16,8 +16,8 @@
 
 // todo: move system info gathering to Fission::System
 
-namespace RobotoRegularTTF {
-#include "Static Fonts/Roboto-Regular.inl"
+namespace IBMPlexMono_MediumTTF {
+#include "Static Fonts/IBMPlexMono-Medium.inl"
 }
 
 using namespace Fission;
@@ -58,7 +58,7 @@ void DebugLayerImpl::OnCreate(class FApplication * app) {
 
 	m_width = (float)app->pMainWindow->GetSwapChain()->GetSize().w;
 
-	FontManager::SetFont( "$debug", "../resources/Fonts/IBMPlexMono-Medium.ttf", 18.0f, app->pGraphics );
+	FontManager::SetFont( "$debug", IBMPlexMono_MediumTTF::data, IBMPlexMono_MediumTTF::size, 18.0f, app->pGraphics );
 
 	int CPUInfo[4] = { -1 };
 	unsigned   nExIds, i = 0;
