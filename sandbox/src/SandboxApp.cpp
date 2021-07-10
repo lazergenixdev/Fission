@@ -3,6 +3,8 @@
 #include <Fission/Base/Utility/Timer.h>
 #include <Fission/Simple2DLayer.h>
 
+#include <Fission/Core/UI/Debug.hh>
+
 static Fission::FApplication * g_App = nullptr;
 
 template <typename T>
@@ -73,6 +75,8 @@ public:
 		m_pRenderer2D->DrawCircle( mousepos, 50.0f, Fission::Colors::White, Fission::color{ Fission::Colors::White,0.0f }, 100.0f );
 
 		m_pRenderer2D->Render();
+
+		Fission::UI::Debug::SliderFloat( "Test Slider", &pos );
 	}
 
 	virtual Fission::EventResult OnKeyUp( Fission::KeyUpEventArgs & args ) override

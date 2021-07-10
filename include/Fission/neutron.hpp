@@ -116,13 +116,23 @@ _neutron_begin_header_
 	#ifndef _neutron_rect_type
 	#define _neutron_rect_type ::neutron::_rect
 	struct _rect { 
-		struct _range { int low, high; };
+		struct _range { 
+			int low, high; 
+			auto average() const { return (low+high)/2; }
+		};
 		_range x, y;
 		constexpr bool operator[]( const point & p ) const { return ( p.x >= x.low ) && ( p.x <= x.high ) && ( p.y >= y.low ) && ( p.y <= y.high ); }
 		constexpr static _rect from_topleft( const point & position, const point & size ) { return { position.x, position.x + size.x, position.y, position.y + size.y }; }
 		point topLeft() const { return { x.low, y.low }; }
 		point size() const { return { x.high - x.low, y.high - y.low }; }
 		point clamp( const point & p ) const { point out = p; if( p.x > x.high ) out.x = x.high; else if( p.x < x.low ) out.x = x.low; if( p.y > y.high ) out.y = y.high; else if( p.y < y.low ) out.y = y.low; return out; }
+		_rect & expand( int dx ) { x.low -= dx, x.high += dx; y.low -= dx, y.high += dx; return *this; }
+		_rect expanded( int dx ) const { return { {x.low-dx,x.high+dx},{y.low-dx,y.high+dx} }; }
+
+		auto top() const { return y.low; }
+		auto bottom() const { return y.high; }
+		auto left() const { return x.low; }
+		auto right() const { return x.high; }
 	};
 	#endif
 	using rect = _neutron_rect_type;
@@ -566,7 +576,7 @@ inline Window * WindowManager::GetFocus() { return focus; };
 inline Window * WindowManager::GetHover() { return hover; };
 
 inline Result WindowManager::OnKeyDown( KeyDownEventArgs & args ) {
-	if( args.key == g_KeyLeftMouse || args.key == g_KeyRightMouse )
+	if( args.key == g_KeyPrimaryMouse || args.key == g_KeySecondaryMouse )
 	{
 		if( hover ) {
 			bringToFront( hover );
@@ -768,7 +778,7 @@ inline Result DynamicWindow::OnMouseMove( MouseMoveEventArgs & args ) {
 }
 
 inline Result DynamicWindow::OnKeyDown( KeyDownEventArgs & args ) {
-	if( args.key == g_KeyLeftMouse || args.key == g_KeyRightMouse ) {
+	if( args.key == g_KeyPrimaryMouse || args.key == g_KeySecondaryMouse ) {
 		if( hover ) {
 			if( focus ) focus->OnFocusLost();
 			focus = hover;
@@ -781,7 +791,7 @@ inline Result DynamicWindow::OnKeyDown( KeyDownEventArgs & args ) {
 		focus->OnKeyDown( args );
 		return Handled;
 	}
-	if( args.key == g_KeyLeftMouse && flags & Flags_Movable ) {
+	if( args.key == g_KeyPrimaryMouse && flags & Flags_Movable ) {
 		auto P = GetRectPos( Rect, g_MousePosition, 8, 0, 8 );
 		switch( P )
 		{
@@ -813,7 +823,7 @@ inline Result DynamicWindow::OnKeyDown( KeyDownEventArgs & args ) {
 inline Result DynamicWindow::OnKeyUp( KeyUpEventArgs & args ) {
 	if( focus )
 		return focus->OnKeyUp( args );
-	else if( args.key == g_KeyLeftMouse ) {
+	else if( args.key == g_KeyPrimaryMouse ) {
 		(int &)state &=~ (State_Sizing|State_Moving);
 		parent->SetCapture( nullptr );
 	}
@@ -826,7 +836,7 @@ inline Result DynamicWindow::OnTextInput( TextInputEventArgs & args ) {
 }
 
 inline Result Button::OnKeyDown( KeyDownEventArgs & args ) {
-	if( args.key == g_KeyLeftMouse ) {
+	if( args.key == g_KeyPrimaryMouse ) {
 		active = true;
 		return Handled;
 	}
@@ -834,7 +844,7 @@ inline Result Button::OnKeyDown( KeyDownEventArgs & args ) {
 }
 
 inline Result Button::OnKeyUp( KeyUpEventArgs & args ) {
-	if( g_KeyLeftMouse == args.key ) {
+	if( g_KeyPrimaryMouse == args.key ) {
 		if( parent->GetHover() == this ) OnPressed();
 		active = false;
 		return Handled;
@@ -843,7 +853,7 @@ inline Result Button::OnKeyUp( KeyUpEventArgs & args ) {
 }
 
 inline Result Slider::OnKeyDown( KeyDownEventArgs & args ) {
-	if( args.key == g_KeyLeftMouse ) {
+	if( args.key == g_KeyPrimaryMouse ) {
 		parent->SetCapture( this );
 		active = true;
 		UpdateSlidePosition( GetMousePosition() );
@@ -853,7 +863,7 @@ inline Result Slider::OnKeyDown( KeyDownEventArgs & args ) {
 }
 
 inline Result Slider::OnKeyUp( KeyUpEventArgs & args ) {
-	if( g_KeyLeftMouse == args.key ) {
+	if( g_KeyPrimaryMouse == args.key ) {
 		parent->SetCapture( nullptr );
 		active = false;
 		return Handled;

@@ -36,11 +36,17 @@ namespace Fission
 {
 	struct IFEngine : public IFObject
 	{
-		virtual IFDebugLayer * GetDebug() = 0;
+		/**
+		 * @brief  Get Fission Engine Version.
+		 * 
+		 * @param  _Maj: [out] Major Version Number.
+		 * @param  _Min: [out] Minor Version Number.
+		 * @param  _Pat: [out] Patch Version Number.
+		 */
+		virtual void GetVersion( int * _Maj, int * _Min, int * _Pat ) = 0;
 
-		virtual void PushScene( FScene * _Ptr_Scene ) = 0;
-
-		virtual void CloseScene() {}
+		//! @brief Gets version in format: "Fission vX.Y.Z [Debug/Release]"
+		virtual const char * GetVersionString() = 0;
 
 		virtual void Run( Platform::ExitCode * ) = 0;
 
@@ -68,18 +74,18 @@ namespace Fission
 		 *                       "$internal2D" - type: IFRenderer2D - Engine's internal 2D renderer.
 		 */
 		virtual IFRenderer * GetRenderer( const char * _Identifier ) = 0;
-		
-		/**
-		 * @brief  Get Fission Engine Version.
-		 * 
-		 * @param  _Maj: [out] Major Version Number.
-		 * @param  _Min: [out] Minor Version Number.
-		 * @param  _Pat: [out] Patch Version Number.
-		 */
-		virtual void GetVersion( int * _Maj, int * _Min, int * _Pat ) = 0;
 
-		//! @brief Gets version in format: "Fission vX.Y.Z [Debug/Release]"
-		virtual const char * GetVersionString() = 0;
+		virtual IFDebugLayer * GetDebug() = 0;
+
+		virtual void PushScene( FScene * _Ptr_Scene ) = 0;
+
+		virtual void CloseScene() {}
+
+		//! @brief Limits the FPS output by the engine.
+		//! @note FPS Limiter is disabled by default.
+		//! @note 10 is the minimum FPS, anything lower will disable the FPS limit.
+		virtual void SetFPSLimit( int fps ) = 0;
+		
 
 	}; // struct Fission::IFEngine
 

@@ -1,6 +1,8 @@
 #include "Engine.h"
 #include "Version.h"
 
+#include "UI/Debug.h"
+
 #define FISSION_ENGINE_ONCE(MSG) \
 static bool bCalled = false; \
 if( bCalled ) FISSION_THROW( "FEngine Error", .append(MSG) ) \
@@ -10,77 +12,6 @@ bCalled = true
 
 namespace Fission
 {
-
-	static struct Test * _s_test;
-	static struct IFWindow * _s_test_window;
-
-	struct Test : public IFLayer
-	{
-		std::mutex mutex;
-		IFRenderer2D * r2d;
-
-		POINT last = {};
-		bool mousedown = false;
-
-		virtual void OnCreate( FApplication * app ) override
-		{
-			CreateRenderer2D( &r2d );
-			r2d->OnCreate( app->pGraphics, { 300, 500 } );
-		}
-		virtual void OnUpdate( timestep dt ) override
-		{
-			base::rectf rect = {0.0f,300.0f,0.0f,500.0f};
-
-			r2d->SelectFont( FontManager::GetFont( "$debug" ) );
-			float border = 2.0f;
-
-			r2d->DrawRect(rect,Colors::make_gray(0.1f),border,StrokeStyle::Inside);
-
-			r2d->FillRect( rect.expanded( -border ),Colors::make_gray(0.15f));
-
-			r2d->DrawString( "Debug Window", { 10.0f, 10.0f }, Colors::White );
-			r2d->DrawString( " in Development :)", { 10.0f, 30.0f }, Colors::White );
-
-			r2d->Render();
-		}
-
-		virtual EventResult OnMouseMove( MouseMoveEventArgs & args ) override
-		{
-			if( mousedown )
-			{
-				POINT currentpos;
-				GetCursorPos( &currentpos );
-				int x = currentpos.x - last.x;
-				int y = currentpos.y - last.y;
-				MoveWindow( _s_test_window->native_handle(), x, y, 300, 500, false );
-				return EventResult::Handled;
-			}
-			return EventResult::Pass;
-		}
-		virtual EventResult OnKeyDown( KeyDownEventArgs & args ) override
-		{
-			if( args.key == Keys::Mouse_Left )
-			{
-				mousedown = true;
-				GetCursorPos( &last );
-				RECT rect;
-				GetWindowRect( _s_test_window->native_handle(), &rect );
-				last.x = last.x - rect.left;
-				last.y = last.y - rect.top;
-			}
-			return EventResult::Handled;
-		}
-		virtual EventResult OnKeyUp( KeyUpEventArgs & args ) override
-		{
-			if( args.key == Keys::Mouse_Left )
-				mousedown = false;
-			return EventResult::Handled;
-		}
-
-		virtual void Destroy() override { delete this; }
-
-	};
-
 	using namespace string_literals;
 
 	using AppCreateInfo = FApplication::CreateInfo;
@@ -157,9 +88,7 @@ namespace Fission
 
 			SwapChain->Present( m_vsync );
 
-			_s_test_window->GetSwapChain()->Bind();
-			_s_test->OnUpdate(_dt);
-			_s_test_window->GetSwapChain()->Present( vsync_Off );
+			RenderDebug(_dt);
 
 			_dt = frameTimer.gets();
 			
@@ -258,16 +187,9 @@ namespace Fission
 		);
 
 		// sus
-		Console::RegisterCommand( "sus", [=]( const string & ) { return string("SUS AMOGUS"); });
+		Console::RegisterCommand( "sus", [=]( const string & ) { return string("ngl, you kinda be lookin a little SUS!"); });
 
-		_s_test = new Test;
-
-		IFWindow::CreateInfo info = {};
-		info.pEventHandler = _s_test;
-		info.wProperties.style = IFWindow::Style::Borderless;
-		info.wProperties.size = { 300,500 };
-		m_pWindowManager->CreateWindow( &info, &_s_test_window );
-		_s_test->OnCreate( app );
+		CreateDebug( m_pWindowManager.get(), app );
 	}
 
 
@@ -291,6 +213,11 @@ namespace Fission
 	IFDebugLayer * FissionEngine::GetDebug()
 	{
 		return &m_DebugLayer;
+	}
+
+	void FissionEngine::SetFPSLimit( int fps )
+	{
+		//limitFPS = true;
 	}
 
 

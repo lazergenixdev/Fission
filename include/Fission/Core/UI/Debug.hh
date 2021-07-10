@@ -30,31 +30,52 @@
 
 #pragma once
 #include <Fission/config.h>
+#include <Fission/Core/Scene.hh>
 
 #include <Fission/neutron.hpp>
+
+#ifndef FISSION_ENABLE_DEBUG_UI
+	#if defined(FISSION_DIST)
+		#define FISSION_ENABLE_DEBUG_UI 0
+	#else
+		#define FISSION_ENABLE_DEBUG_UI 1
+	#endif
+#endif
+
+#define FISSION_DEBUG_API(RET) FISSION_API static RET
 
 namespace Fission::UI
 {
 
-	class UILayer : public IFLayer
-	{
-	public:
-		UILayer(neutron::Context* ctx, bool owned=false){}
+	//class UILayer : public IFLayer
+	//{
+	//public:
+	//	UILayer(neutron::Context* ctx, bool owned=false){}
 
-	public:	
-		neutron::Context* context;
-	};
+	//public:	
+	//	neutron::Context* context;
+	//};
 
 	class Debug
 	{
 	public:
-		FISSION_API static bool Window( const char * label );
 
-	//	FISSION_API static void Text( const char * text );
-	//	FISSION_API static bool Button( const char * label );
-		FISSION_API static bool CheckBox( const char * label, bool * value );
-		FISSION_API static bool InputFloat( const char * label, float * value );
-	//	FISSION_API static bool InputInt( const char * label, int * value );
+#if FISSION_ENABLE_DEBUG_UI
+
+		FISSION_DEBUG_API(void) SetEnabled( bool enable );
+
+		FISSION_DEBUG_API(void) Text( const char * text );
+
+		FISSION_DEBUG_API(bool) Button( const char * label );
+		FISSION_DEBUG_API(bool) CheckBox( const char * label, bool * value );
+
+		FISSION_DEBUG_API(bool) InputFloat( const char * label, float * value, const char * format = "%.3f");
+		FISSION_DEBUG_API(bool) InputInt( const char * label, int * value );
+
+		FISSION_DEBUG_API(bool) SliderFloat( const char * label, float * value, const char * format = "%.3f" ) {return false;}
+		FISSION_DEBUG_API(bool) SliderInt( const char * label, int * value );
+
+#endif
 	};
 
 } // namespace Fission::UI

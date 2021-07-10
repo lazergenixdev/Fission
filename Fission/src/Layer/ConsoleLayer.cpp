@@ -35,7 +35,7 @@ namespace Fission {
 
 			// Draw Background
 			m_pRenderer2D->FillRectGrad( base::rectf( 0.0f, m_width, 0.0f, extend ), Colors::Black, Colors::Black, color( 0.7f ), color( 0.7f ) );
-			m_pRenderer2D->FillRect( base::rectf( 0.0f, m_width, extend - m_FontSize - m_BottomPadding * 3.0f, extend ), Colors::make_gray( 0.2f, 0.3f ) );
+			m_pRenderer2D->FillRect( base::rectf( 0.0f, m_width, extend - m_FontSize - m_BottomPadding * 3.0f, extend ), Colors::make_gray( 0.11f, 0.5f ) );
 			m_pRenderer2D->FillRect( base::rectf( 0.0f, m_width, extend - 1.0f, extend + 1.0f ), Colors::White );
 
 			// Draw Console Buffer

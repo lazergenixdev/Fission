@@ -320,11 +320,10 @@ namespace Fission::Platform
         case WM_SETCURSOR:
             if( (short)lParam == HTCLIENT )
             {
-                SetCursor(LoadCursorW(NULL,IDC_ARROW));
-                //SetCursorEventArgs ev{ e };
-                //ev.cursor = m_Cursor;
-                //pEventHandler->OnSetCursor( ev );
-                //if( ev.bUseCursor ) ev.cursor->Use();
+                SetCursorEventArgs ev{ e };
+                ev.cursor = m_Cursor;
+                pEventHandler->OnSetCursor( ev );
+                if( ev.bUseCursor ) ev.cursor->Use();
                 return TRUE;
             }
         break;

@@ -5,16 +5,16 @@ namespace Fission::Platform
 	namespace Cursors
 	{
 		static WindowsCursor Hidden		{ NULL };
-		static WindowsCursor Arrow		{ /*LoadCursorW(*/ NULL/*, IDC_ARROW )*/ };
-		static WindowsCursor TextInput	{ /*LoadCursorW(*/ NULL/*, IDC_IBEAM )*/ };
-		static WindowsCursor Hand		{ /*LoadCursorW(*/ NULL/*, IDC_HAND )*/ };
-		static WindowsCursor Move		{ /*LoadCursorW(*/ NULL/*, IDC_SIZEALL )*/ };
-		static WindowsCursor Cross		{ /*LoadCursorW(*/ NULL/*, IDC_CROSS )*/ };
-		static WindowsCursor Wait		{ /*LoadCursorW(*/ NULL/*, IDC_WAIT )*/ };
-		static WindowsCursor SizeY		{ /*LoadCursorW(*/ NULL/*, IDC_SIZENS )*/ };
-		static WindowsCursor SizeX		{ /*LoadCursorW(*/ NULL/*, IDC_SIZEWE )*/ };
-		static WindowsCursor SizeBLTR	{ /*LoadCursorW(*/ NULL/*, IDC_SIZENESW )*/ };
-		static WindowsCursor SizeTLBR	{ /*LoadCursorW(*/ NULL/*, IDC_SIZENWSE )*/ };
+		static WindowsCursor Arrow		{ LoadCursorW( NULL, IDC_ARROW    ) };
+		static WindowsCursor TextInput	{ LoadCursorW( NULL, IDC_IBEAM    ) };
+		static WindowsCursor Hand		{ LoadCursorW( NULL, IDC_HAND     ) };
+		static WindowsCursor Move		{ LoadCursorW( NULL, IDC_SIZEALL  ) };
+		static WindowsCursor Cross		{ LoadCursorW( NULL, IDC_CROSS    ) };
+		static WindowsCursor Wait		{ LoadCursorW( NULL, IDC_WAIT     ) };
+		static WindowsCursor SizeY		{ LoadCursorW( NULL, IDC_SIZENS   ) };
+		static WindowsCursor SizeX		{ LoadCursorW( NULL, IDC_SIZEWE   ) };
+		static WindowsCursor SizeBLTR	{ LoadCursorW( NULL, IDC_SIZENESW ) };
+		static WindowsCursor SizeTLBR	{ LoadCursorW( NULL, IDC_SIZENWSE ) };
 	}
 
 	WindowsCursor::WindowsCursor( HCURSOR hCursor, bool shared )
@@ -42,15 +42,15 @@ namespace Fission::Platform
 
 	bool WindowsCursor::Use()
 	{
-	//	HCURSOR hPrev = GetCursor();
-	//	return ( hPrev == SetCursor( handle ) );
+		HCURSOR hPrev = GetCursor();
+		return ( hPrev == SetCursor( handle ) );
 		return false;
 	}
 
 	WindowsCursor::~WindowsCursor()
 	{
-	//	if( !bShared )
-	//		DestroyCursor( handle );
+		if( !bShared )
+			DestroyCursor( handle );
 	}
 
 }

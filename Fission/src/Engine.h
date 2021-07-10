@@ -75,6 +75,8 @@ namespace Fission
 
 		virtual IFDebugLayer * GetDebug() override;
 
+		virtual void SetFPSLimit( int fps ) override;
+
 		virtual EventResult OnKeyDown( KeyDownEventArgs & )        override;
 		virtual EventResult OnKeyUp( KeyUpEventArgs & )            override;
 		virtual EventResult OnTextInput( TextInputEventArgs & )    override;
