@@ -72,11 +72,14 @@ public:
 			m_pRenderer2D->DrawString( "Press [ENTER] to change to this resolution.", { 300.0f, 200.0f }, Fission::Colors::Snow );
 		}
 
-		m_pRenderer2D->DrawCircle( mousepos, 50.0f, Fission::Colors::White, Fission::color{ Fission::Colors::White,0.0f }, 100.0f );
+		m_pRenderer2D->DrawCircle( mousepos, radius, Fission::Colors::White, Fission::color{ Fission::Colors::White,0.0f }, 100.0f );
 
 		m_pRenderer2D->Render();
 
-		Fission::UI::Debug::SliderFloat( "Test Slider", &pos );
+		sprintf( textBuffer, "scroll location = %.0f", pos );
+		g_App->pEngine->GetDebug()->Text( textBuffer );
+
+		Fission::UI::Debug::SliderFloat( "radius", &radius );
 	}
 
 	virtual Fission::EventResult OnKeyUp( Fission::KeyUpEventArgs & args ) override
@@ -130,6 +133,7 @@ private:
 	Fission::IFWindow * wnd;
 	Fission::Font * font;
 
+	float radius = 50.0f;
 	float pos = 0.0f;
 	Fission::base::vector2f mousepos;
 

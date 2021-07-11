@@ -221,7 +221,12 @@ namespace Fission
 	}
 
 
-	void FissionEngine::Destroy() { this->~FissionEngine(); _aligned_free( this ); }
+	void FissionEngine::Destroy() 
+	{ 
+		DestroyDebug();
+		this->~FissionEngine(); 
+		_aligned_free( this ); 
+	}
 
 
 

@@ -32,8 +32,6 @@
 #include <Fission/config.h>
 #include <Fission/Core/Scene.hh>
 
-#include <Fission/neutron.hpp>
-
 #ifndef FISSION_ENABLE_DEBUG_UI
 	#if defined(FISSION_DIST)
 		#define FISSION_ENABLE_DEBUG_UI 0
@@ -62,8 +60,6 @@ namespace Fission::UI
 
 #if FISSION_ENABLE_DEBUG_UI
 
-		FISSION_DEBUG_API(void) SetEnabled( bool enable );
-
 		FISSION_DEBUG_API(void) Text( const char * text );
 
 		FISSION_DEBUG_API(bool) Button( const char * label );
@@ -72,7 +68,7 @@ namespace Fission::UI
 		FISSION_DEBUG_API(bool) InputFloat( const char * label, float * value, const char * format = "%.3f");
 		FISSION_DEBUG_API(bool) InputInt( const char * label, int * value );
 
-		FISSION_DEBUG_API(bool) SliderFloat( const char * label, float * value, const char * format = "%.3f" ) {return false;}
+		FISSION_DEBUG_API(bool) SliderFloat( const char * label, float * value, const char * format = "%.3f" );
 		FISSION_DEBUG_API(bool) SliderInt( const char * label, int * value );
 
 #endif

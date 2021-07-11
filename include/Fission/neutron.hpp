@@ -96,9 +96,9 @@ _neutron_begin_header_
 
 	/* DEFINE `_neutron_no_cursor` to disable cursors */
 	#ifndef _neutron_no_cursor
+	#define NEUTRON_HAS_CURSOR 1
 	/* Cursor type that is used in SetCursor, DEFINE this before including neutron.hpp if using cursors */
 	#ifndef _neutron_cursor_type
-	#define NEUTRON_HAS_CURSOR 1
 	#define _neutron_cursor_type void *
 	#endif
 	using CursorType = _neutron_cursor_type;
@@ -737,6 +737,7 @@ inline Result DynamicWindow::OnMouseMove( MouseMoveEventArgs & args ) {
 		point p = parent->Rect.clamp( args.pos );
 		OnMove( p );
 		Rect = rect::from_topleft( p - last, size );
+		return Handled;
 	}
 	else if( state & State_Sizing ) {
 		point p = parent->Rect.clamp( args.pos );
@@ -758,6 +759,7 @@ inline Result DynamicWindow::OnMouseMove( MouseMoveEventArgs & args ) {
 			w->OnParentResize( Rect );
 	//	auto size = Rect.size();
 	//	Rect = rect::from_tl( p - last, size );
+		return Handled;
 	}
 	else if( capture ) {
 		return capture->OnMouseMove( args );
@@ -774,7 +776,7 @@ inline Result DynamicWindow::OnMouseMove( MouseMoveEventArgs & args ) {
 		if( hover ) hover->OnMouseLeave();
 		hover = nullptr;
 	}
-	return Handled;
+	return Pass;
 }
 
 inline Result DynamicWindow::OnKeyDown( KeyDownEventArgs & args ) {
@@ -823,7 +825,7 @@ inline Result DynamicWindow::OnKeyDown( KeyDownEventArgs & args ) {
 inline Result DynamicWindow::OnKeyUp( KeyUpEventArgs & args ) {
 	if( focus )
 		return focus->OnKeyUp( args );
-	else if( args.key == g_KeyPrimaryMouse ) {
+	else if( args.key == g_KeyPrimaryMouse && state & (State_Sizing|State_Moving) ) {
 		(int &)state &=~ (State_Sizing|State_Moving);
 		parent->SetCapture( nullptr );
 	}
