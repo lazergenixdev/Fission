@@ -305,7 +305,7 @@ struct rgba_colorf {
 	constexpr rgba_colorf( const hsv_colorf & _Source, float _Alpha = 1.0f );
 	constexpr rgba_colorf( const hsva_colorf & _Source );
 
-	constexpr rgba_colorf( const rgb_color8 & _Source );
+	constexpr rgba_colorf( const rgb_color8 & _Source, float _Alpha = 1.0f );
 	constexpr rgba_colorf( const hsv_color8 & _Source );
 	constexpr rgba_colorf( const rgba_color8 & _Source );
 	constexpr rgba_colorf( const hsva_color8 & _Source );
@@ -504,6 +504,8 @@ inline constexpr rgba_colorf::rgba_colorf( Colors::KnownColor _Known_Color, floa
 	b( float( (_Known_Color      ) & 0xFF ) / 255.0f ),
 	a( _Alpha )
 {}
+inline constexpr rgba_colorf::rgba_colorf( const rgb_color8 & _Source, float _Alpha ) :
+	r( (float)_Source.r / 255.0f ), g( (float)_Source.g / 255.0f ), b( (float)_Source.b / 255.0f ), a( _Alpha ) {}
 inline constexpr rgba_colorf::rgba_colorf( const rgba_color8 & _Source ): 
 	r( (float)_Source.r / 255.0f ), g( (float)_Source.g / 255.0f ), b( (float)_Source.b / 255.0f ), a( (float)_Source.a / 255.0f ) {}
 inline constexpr rgba_colorf::rgba_colorf( const rgb_colorf & _Source, float _Alpha ) : r( _Source.r ), g( _Source.g ), b( _Source.b ), a( _Alpha ) {}

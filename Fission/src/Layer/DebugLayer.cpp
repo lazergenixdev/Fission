@@ -11,7 +11,7 @@
 #ifdef FISSION_DIST
 #define _FISSION_BUILD_STRING
 #else
-#define _FISSION_BUILD_STRING " " FISSION_BUILD_STRING
+#define _FISSION_BUILD_STRING " (dev build)"
 #endif
 
 // todo: move system info gathering to Fission::System

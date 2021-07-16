@@ -71,6 +71,14 @@ namespace Fission::UI
 		FISSION_DEBUG_API(bool) SliderFloat( const char * label, float * value, const char * format = "%.3f" );
 		FISSION_DEBUG_API(bool) SliderInt( const char * label, int * value );
 
+#else
+		static constexpr void Text( const char * text )                                                       {}
+		static constexpr bool Button( const char * label )                                                    {return false;}
+		static constexpr bool CheckBox( const char * label, bool * value )                                    {return false;}
+		static constexpr bool InputFloat( const char * label, float * value, const char * format = "%.3f" )   {return false;}
+		static constexpr bool InputInt( const char * label, int * value )                                     {return false;}
+		static constexpr bool SliderFloat( const char * label, float * value, const char * format = "%.3f" )  {return false;}
+		static constexpr bool SliderInt( const char * label, int * value )                                    {return false;}
 #endif
 	};
 

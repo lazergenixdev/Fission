@@ -72,7 +72,7 @@ struct rect
 
     //! @brief Create rect from another rect with a different type.
     template <typename _From>
-    constexpr rect(const rect<_From>&_Src):x(static_cast<range>(_Src.x)),y(static_cast<range>(_Src.y)){}
+    explicit constexpr rect(const rect<_From>&_Src):x(static_cast<range>(_Src.x)),y(static_cast<range>(_Src.y)){}
 
 
     //! @brief Create a rect from a top-left position and a size.

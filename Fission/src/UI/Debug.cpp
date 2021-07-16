@@ -10,7 +10,12 @@ namespace Fission
 	{
 		bool Debug::SliderFloat( const char * label, float * value, const char * format )
 		{
+			auto widget = s_DebugWindow->GetWidget( label, DebugSlider<float>::ID, format );
 
+			if( auto slider = dynamic_cast<DebugSlider<float> *>( widget ) )
+			{
+				return slider->UpdateValue( value );
+			}
 
 			return false;
 		}
