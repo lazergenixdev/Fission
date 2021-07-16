@@ -8,13 +8,13 @@ namespace Fission
 
 	namespace UI
 	{
-		bool Debug::SliderFloat( const char * label, float * value, const char * format )
+		bool Debug::SliderFloat( const char * label, float * value, float min, float max, const char * format )
 		{
-			auto widget = s_DebugWindow->GetWidget( label, DebugSlider<float>::ID, format );
+			auto widget = s_DebugWindow->GetWidget( label, DebugSlider<float>::ID, format, value );
 
 			if( auto slider = dynamic_cast<DebugSlider<float> *>( widget ) )
 			{
-				return slider->UpdateValue( value );
+				return slider->UpdateValue( value, min, max );
 			}
 
 			return false;

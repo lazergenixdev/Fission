@@ -21,7 +21,9 @@ namespace Fission
 		virtual void OnCreate( FApplication * app ) override;
 		virtual void OnUpdate( timestep dt ) override;
 
-		DebugWidget * GetWidget( const char * label, int WidgetID, const char * format );
+		DebugWidget * GetWidget( const char * label, int WidgetID, const char * format, const void * pvalue );
+
+		virtual void SetCapture( Window * window ) override;
 
 	//	virtual EventResult OnSetCursor( SetCursorEventArgs & args ) override;
 		virtual EventResult OnMouseMove( MouseMoveEventArgs & args ) override;

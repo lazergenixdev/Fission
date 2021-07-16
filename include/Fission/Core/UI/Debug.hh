@@ -30,6 +30,7 @@
 
 #pragma once
 #include <Fission/config.h>
+#include <any>
 #include <Fission/Core/Scene.hh>
 
 #ifndef FISSION_ENABLE_DEBUG_UI
@@ -40,7 +41,15 @@
 	#endif
 #endif
 
-#define FISSION_DEBUG_API(RET) FISSION_API static RET
+#if FISSION_ENABLE_DEBUG_UI
+#define FISSION_DEBUG_UI_FN(ret,func,...) FISSION_API static ret func( __VA_ARGS__ )
+#define FISSION_RET_VOID ;
+#define FISSION_RET_BOOL ;
+#else
+#define FISSION_DEBUG_UI_FN(ret,func,...) static constexpr   ret func( __VA_ARGS__ )
+#define FISSION_RET_VOID {}
+#define FISSION_RET_BOOL {return false;}
+#endif
 
 namespace Fission::UI
 {
@@ -54,32 +63,32 @@ namespace Fission::UI
 	//	neutron::Context* context;
 	//};
 
+	// small little problem with these debug functions,
+	// is that they are designed after ImGui.
+	// 
+	// While this is not a problem on it's own, ImGui is an immediate mode
+	//  GUI where the logic is designed to be run on a single thread (the same thread where you would render).
+	//
+	// This is a problem for two reasons:
+	// - This engine is designed to utilize 2 threads, one for rendering and one for event handling;
+	//     which means that mutexes are necessary for consistant memory access (not good for performance and does not scale very well)
+	//
+	// - These functions can ONLY be used on the rendering thread, this limits their debug capabilities and range for tweaking values.
+
+
 	class Debug
 	{
 	public:
+		FISSION_DEBUG_UI_FN(void, Text, const char * text ) FISSION_RET_VOID
 
-#if FISSION_ENABLE_DEBUG_UI
+		FISSION_DEBUG_UI_FN(bool, Button,   const char * label ) FISSION_RET_BOOL
+	//	FISSION_DEBUG_UI_FN(bool, CheckBox, const char * label, bool * value ) FISSION_RET_BOOL
 
-		FISSION_DEBUG_API(void) Text( const char * text );
+	//	FISSION_DEBUG_UI_FN(bool, InputFloat, const char * label, float * value, const char * format = "%.3f") FISSION_RET_BOOL
+	//	FISSION_DEBUG_UI_FN(bool, InputInt  , const char * label, int   * value, const char * format = "%i"  ) FISSION_RET_BOOL
 
-		FISSION_DEBUG_API(bool) Button( const char * label );
-		FISSION_DEBUG_API(bool) CheckBox( const char * label, bool * value );
-
-		FISSION_DEBUG_API(bool) InputFloat( const char * label, float * value, const char * format = "%.3f");
-		FISSION_DEBUG_API(bool) InputInt( const char * label, int * value );
-
-		FISSION_DEBUG_API(bool) SliderFloat( const char * label, float * value, const char * format = "%.3f" );
-		FISSION_DEBUG_API(bool) SliderInt( const char * label, int * value );
-
-#else
-		static constexpr void Text( const char * text )                                                       {}
-		static constexpr bool Button( const char * label )                                                    {return false;}
-		static constexpr bool CheckBox( const char * label, bool * value )                                    {return false;}
-		static constexpr bool InputFloat( const char * label, float * value, const char * format = "%.3f" )   {return false;}
-		static constexpr bool InputInt( const char * label, int * value )                                     {return false;}
-		static constexpr bool SliderFloat( const char * label, float * value, const char * format = "%.3f" )  {return false;}
-		static constexpr bool SliderInt( const char * label, int * value )                                    {return false;}
-#endif
+		FISSION_DEBUG_UI_FN(bool, SliderFloat, const char * label, float * value, float min, float max, const char * format = "%.3f" ) FISSION_RET_BOOL
+		FISSION_DEBUG_UI_FN(bool, SliderInt  , const char * label, int   * value, int   min, int   max, const char * format = "%i"   ) FISSION_RET_BOOL
 	};
 
 } // namespace Fission::UI

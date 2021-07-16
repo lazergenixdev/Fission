@@ -3,7 +3,11 @@
 #include <Fission/Base/Utility/Timer.h>
 #include <Fission/Simple2DLayer.h>
 
+#if defined(DIST)
+#define FISSION_ENABLE_DEBUG_UI 0
+#else
 #define FISSION_ENABLE_DEBUG_UI 1
+#endif
 #include <Fission/Core/UI/Debug.hh>
 
 static Fission::FApplication * g_App = nullptr;
@@ -80,8 +84,8 @@ public:
 		sprintf( textBuffer, "scroll location = %.0f", pos );
 		g_App->pEngine->GetDebug()->Text( textBuffer );
 
-		Fission::UI::Debug::SliderFloat( "radius", &radius );
-		Fission::UI::Debug::SliderFloat( "scroll_pos", &pos );
+		Fission::UI::Debug::SliderFloat( "radius", &radius, 50.0f, 150.0f );
+		Fission::UI::Debug::SliderFloat( "scroll_pos", &pos, -2000.0f, 100.0f, "%.0f");
 	}
 
 	virtual Fission::EventResult OnKeyUp( Fission::KeyUpEventArgs & args ) override

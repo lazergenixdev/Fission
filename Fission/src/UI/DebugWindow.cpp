@@ -23,35 +23,35 @@ namespace Fission
 	void DebugWindow::OnUpdate( timestep dt )
 	{
 		auto r2d = m_pRenderer2D.get();
-		base::rectf rect = { 0.0f,300.0f,0.0f,500.0f };
+		float offsetY;
+		{
+			std::unique_lock lock(mutex);
 
-		r2d->SelectFont( FontManager::GetFont( "$ui" ) );
-		float border = 2.0f;
+			base::rectf rect = { 0.0f,300.0f,0.0f,500.0f };
 
-		r2d->DrawRect( rect, Colors::Black, border, StrokeStyle::Inside );
+			r2d->SelectFont( FontManager::GetFont( "$ui" ) );
+			float border = 2.0f;
 
-		r2d->FillRect( rect.expand( -border ), Colors::make_gray( 0.18f ) );
+			r2d->DrawRect( rect, Colors::Black, border, StrokeStyle::Inside );
 
-		rect.x.low += 70.0f;
-		rect.y.high = rect.y.low + 20.0f;
-		r2d->FillRect( rect, (rgb_colorf)Colors::make_gray<rgb_color8>( 19 ) );
+			r2d->FillRect( rect.expand( -border ), Colors::make_gray( 0.18f ) );
 
-		r2d->DrawString( "Debug", { 12.0f, 3.0f }, Colors::make_gray( 0.9f ) );
+			rect.x.low += 70.0f;
+			rect.y.high = rect.y.low + 20.0f;
+			r2d->FillRect( rect, (rgb_colorf)Colors::make_gray<rgb_color8>( 19 ) );
 
-		// psuedo slider to see how it looks
-		//auto tl = r2d->DrawString( "Test Slider", { 12.0f, 30.0f }, Colors::make_gray( 0.8f ) );
-		//r2d->FillRect( { 120.0f, 292.0f, 30.0f, 30.0f + tl.height }, (rgb_colorf)Colors::make_gray<rgb_color8>( 33 ) );
-		//r2d->DrawString( "2.04", { 120.0f + 2.0f, 30.0f }, Colors::make_gray( 0.8f ) );
+			r2d->DrawString( "Debug", { 12.0f, 3.0f }, Colors::make_gray( 0.9f ) );
 
-		float offsetY = rect.top() + 20.0f;
+			offsetY = rect.top() + 20.0f;
 
-		std::erase_if( m_Widgets,
-			[] ( WidgetAndLabel & wal ) { 
-				bool remove = !wal.second->active;
-				if( remove ) delete wal.second; 
-				return remove;
-			} 
-		);
+			std::erase_if( m_Widgets,
+				[] ( WidgetAndLabel & wal ) { 
+					bool remove = !wal.second->active;
+					if( remove ) delete wal.second; 
+					return remove;
+				} 
+			);
+		}
 
 		for( auto && widget : m_ActiveWidgets )
 		{
@@ -64,7 +64,7 @@ namespace Fission
 		r2d->Render();
 	}
 
-	DebugWidget * DebugWindow::GetWidget( const char * label, int WidgetID, const char * format )
+	DebugWidget * DebugWindow::GetWidget( const char * label, int WidgetID, const char * format, const void * pvalue )
 	{
 #define RETURN(ptr) m_ActiveWidgets.emplace_back(ptr); return ptr
 		auto widget = m_Widgets.find(label);
@@ -84,7 +84,8 @@ namespace Fission
 		{
 		case DebugSlider<float>::ID:
 		{
-			pair.second = new DebugSlider<float>( pair.first.c_str(), format );
+			pair.second = new DebugSlider<float>( pair.first.c_str(), format, *(float*)pvalue );
+			pair.second->parent = this;
 			// status = contains information about the insertion.
 			auto status = m_Widgets.insert( pair );
 			// .first   = iterator of where the widget was inserted;
@@ -101,28 +102,68 @@ namespace Fission
 	}
 
 
+	void DebugWindow::SetCapture( Window * window ) { capture = window; }
+
+
 	EventResult DebugWindow::OnMouseMove( MouseMoveEventArgs & args )
 	{
+		std::unique_lock lock( mutex );
+
 		neutron::MouseMoveEventArgs nargs;
 		nargs.pos = args.position;
-		if( DynamicWindow::OnMouseMove( nargs ) )
-		{
-			mousepos = args.position;
-			if( mousedown )
-			{
-				POINT currentpos;
-				GetCursorPos( &currentpos );
-				int x = currentpos.x - last.x;
-				int y = currentpos.y - last.y;
-				MoveWindow( args.native_event->hWnd, x, y, 300, 500, false );
-				return EventResult::Handled;
-			}
-			return EventResult::Pass;
+
+		if( capture ) {
+			return (EventResult)capture->OnMouseMove( nargs );
 		}
-		return EventResult::Handled;
+		else 
+		{
+			for( auto && [label,w] : m_Widgets )
+				if( w->isInside( args.position - Rect.topLeft() ) )
+				{
+					if( hover ) hover->OnMouseLeave();
+					hover = w;
+					w->OnMouseMove( nargs );
+					return EventResult::Handled;
+				}
+			if( hover ) hover->OnMouseLeave();
+			hover = nullptr;
+		}
+
+		mousepos = args.position;
+		if( mousedown )
+		{
+			POINT currentpos;
+			GetCursorPos( &currentpos );
+			int x = currentpos.x - last.x;
+			int y = currentpos.y - last.y;
+			MoveWindow( args.native_event->hWnd, x, y, 300, 500, false );
+			return EventResult::Handled;
+		}
+
+		return EventResult::Pass;
 	}
 	EventResult DebugWindow::OnKeyDown( KeyDownEventArgs & args )
 	{
+		neutron::KeyDownEventArgs nargs;
+		nargs.key = args.key;
+
+		if( args.key == Keys::Mouse_Left || args.key == Keys::Mouse_Right ) {
+			if( hover ) {
+				if( focus && focus != hover ) focus->OnFocusLost();
+				focus = hover;
+				focus->OnFocusGain();
+				hover->OnKeyDown( nargs );
+				return EventResult::Handled;
+			}
+		}
+		else if( focus ) {
+			focus->OnKeyDown( nargs );
+			return EventResult::Handled;
+		}
+		if( focus ) {
+			focus->OnFocusLost();
+			focus = nullptr;
+		}
 		if( args.key == Keys::Mouse_Left )
 		{
 			mousedown = true;
@@ -136,8 +177,15 @@ namespace Fission
 	}
 	EventResult DebugWindow::OnKeyUp( KeyUpEventArgs & args )
 	{
-		if( args.key == Keys::Mouse_Left )
+		neutron::KeyUpEventArgs nargs;
+		nargs.key = args.key;
+
+		if( focus )
+			return (EventResult)focus->OnKeyUp( nargs );
+
+		if( mousedown && args.key == Keys::Mouse_Left )
 			mousedown = false;
+
 		return EventResult::Handled;
 	}
 
