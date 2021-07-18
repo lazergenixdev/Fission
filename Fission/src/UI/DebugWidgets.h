@@ -35,7 +35,15 @@ namespace Fission
 
 	};
 
+	struct KeyboardState
+	{
+		bool ctrl_down = false;
+	};
+
+
 	static StyleInformation g_DebugStyle;
+	static KeyboardState g_KeyboardState;
+
 
 	struct WindowContext
 	{
@@ -68,9 +76,13 @@ namespace Fission
 
 			if( internal_value == *pValue ) return false;
 
-			if( priority )
+			if( editing )
 			{
 				*pValue = internal_value;
+				if( typing ) {
+					typing = false;
+					editing = false;
+				}
 				return true;
 			}
 
@@ -85,8 +97,6 @@ namespace Fission
 
 		virtual void OnUpdate( timestep dt, float * offsetY, const WindowContext * ctx ) override
 		{
-			char text[100];
-			sprintf( text, fmt, internal_value );
 
 			auto tl = ctx->r2d->DrawString( label.c_str(), {g_DebugStyle.LeftPadding+g_DebugStyle.LeftTextBoxPadding, *offsetY + g_DebugStyle.VerticalPadding}, Colors::make_gray(0.8f) );
 
@@ -99,8 +109,7 @@ namespace Fission
 			rect.x.low += g_DebugStyle.MaximumLabelWidth;
 			Rect = base::recti( rect );
 
-			ctx->r2d->FillRectGrad( rect, Colors::make_gray<rgb_color8>( 38 ), Colors::make_gray<rgb_color8>( 38 ), 
-				                          Colors::make_gray<rgb_color8>( 33 ), Colors::make_gray<rgb_color8>( 33 ) );
+			ctx->r2d->FillRect( rect, Colors::make_gray<rgb_color8>( 33 ) );
 
 
 			if( parent->GetHover() == this )
@@ -111,7 +120,21 @@ namespace Fission
 			if( highlight != 0.0f )
 			ctx->r2d->DrawRect( rect.expanded(-0.5f), Colors::make_gray(highlight*0.5f,highlight), 1.0f );
 
-			ctx->r2d->DrawString( text, rect.topLeft() + base::vector2f(g_DebugStyle.LeftTextBoxPadding,0.0f), Colors::make_gray(0.8f) );
+			if( typing )
+				tl = ctx->r2d->DrawString( temp_value_str.c_str(), rect.topLeft() + base::vector2f(g_DebugStyle.LeftTextBoxPadding,0.0f), Colors::make_gray(0.8f) );
+			else
+			{
+				char text[100];
+				sprintf( text, fmt, internal_value );
+				tl = ctx->r2d->DrawString( text, rect.topLeft() + base::vector2f(g_DebugStyle.LeftTextBoxPadding,0.0f), Colors::make_gray(0.8f) );
+			}
+
+			if( typing )
+			{
+				ctx->r2d->DrawRect( rect, color(0.8f,0.9f,1.0f, 0.2f), 2.0f );
+				ctx->r2d->FillRect( { rect.left() + tl.width + 2.0f, rect.left() + tl.width + 3.0f, rect.top()+2.0f, rect.bottom()-2.0f }, Colors::White );
+			}
+
 
 			float slider_pos = (rect.width()-g_DebugStyle.SliderKnobWidth) * (std::clamp( internal_value, m_Min, m_Max ) - m_Min) / (m_Max - m_Min);
 
@@ -124,8 +147,18 @@ namespace Fission
 		virtual neutron::Result OnKeyDown( neutron::KeyDownEventArgs & args ) override {
 			if( args.key == Keys::Mouse_Left )
 			{
-				editing = true;
-				parent->SetCapture( this );
+				if( g_KeyboardState.ctrl_down )
+				{
+					typing = true;
+					temp_value_str = std::to_string(internal_value);
+				}
+				else
+				{
+					editing = true;
+					parent->SetCapture( this );
+					neutron::MouseMoveEventArgs mm_args{ neutron::GetMousePosition() };
+					this->OnMouseMove( mm_args );
+				}
 				return neutron::Handled;
 			}
 			return neutron::Pass;
@@ -146,24 +179,58 @@ namespace Fission
 				float slider_pos = ry.clamp( (float)args.pos.x );
 
 				internal_value = ( m_Max - m_Min ) * ( (slider_pos-ry.low) / ry.distance() ) + m_Min;
-				priority = true;
 
 				return neutron::Handled;
 			}
 			return neutron::Pass;
 		}
+		virtual neutron::Result OnTextInput( neutron::TextInputEventArgs & args ) override {
+			if( typing )
+			{
+				switch( args.ch )
+				{
+				case '\b': if( temp_value_str.size() ) temp_value_str.pop_back(); break;
+				case '\r': { StopTyping(); break; }
+
+				default: temp_value_str = temp_value_str.string() += (char)args.ch; break;
+				}
+				return neutron::Handled;
+			}
+			return neutron::Pass;
+		}
+		virtual void OnFocusLost() override {
+			typing = false;
+		}
+
+		void StopTyping()
+		{
+			// try to set our value from the temperary string.
+			try
+			{
+				if constexpr ( std::is_floating_point_v<T> )
+					internal_value = std::stof(temp_value_str.c_str());
+				if constexpr ( std::is_integral_v<T> )
+					internal_value = std::stoi(temp_value_str.c_str());
+			} catch( ... ) {}
+
+			parent->SetFocus( nullptr );
+
+			editing = true;
+		}
 
 	private:
 
 		string label;
-
-		bool editing = false;
-		bool priority = false;
+		string temp_value_str;
 
 		const char * fmt;
 		T internal_value = static_cast<T>(0);
 
 		T m_Min = static_cast<T>( 0 ), m_Max = static_cast<T>( 0 );
+
+		bool editing = false;
+		bool typing = false;
+
 
 		neutron::rect Rect;
 

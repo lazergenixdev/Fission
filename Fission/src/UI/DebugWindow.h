@@ -29,6 +29,8 @@ namespace Fission
 		virtual EventResult OnMouseMove( MouseMoveEventArgs & args ) override;
 		virtual EventResult OnKeyDown( KeyDownEventArgs & args ) override;
 		virtual EventResult OnKeyUp( KeyUpEventArgs & args ) override;
+		virtual EventResult OnTextInput( TextInputEventArgs & args ) override;
+
 
 		virtual void Destroy() override;
 

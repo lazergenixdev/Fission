@@ -3,6 +3,11 @@
 
 #include <Fission/Core/Application.hh>
 
+namespace NotoSansRegularTTF
+{
+#include "Static Fonts/NotoSans-Regular.inl"
+}
+
 namespace Fission
 {
 	DebugWindow::DebugWindow(): 
@@ -14,7 +19,7 @@ namespace Fission
 		CreateRenderer2D( &m_pRenderer2D );
 		m_pRenderer2D->OnCreate( app->pGraphics, Rect.size() );
 
-		FontManager::SetFont( "$ui", "../resources/Fonts/Noto Sans/NotoSans-Regular.ttf", 14.0f, app->pGraphics );
+		FontManager::SetFont( "$ui", NotoSansRegularTTF::data, NotoSansRegularTTF::size, 14.0f, app->pGraphics );
 
 		context.r2d = m_pRenderer2D.get();
 		context.rect = base::rectf( Rect );
@@ -111,6 +116,7 @@ namespace Fission
 
 		neutron::MouseMoveEventArgs nargs;
 		nargs.pos = args.position;
+		neutron::g_MousePosition = args.position;
 
 		if( capture ) {
 			return (EventResult)capture->OnMouseMove( nargs );
@@ -147,6 +153,9 @@ namespace Fission
 		neutron::KeyDownEventArgs nargs;
 		nargs.key = args.key;
 
+		if( args.key == Keys::Control )
+			g_KeyboardState.ctrl_down = true;
+
 		if( args.key == Keys::Mouse_Left || args.key == Keys::Mouse_Right ) {
 			if( hover ) {
 				if( focus && focus != hover ) focus->OnFocusLost();
@@ -180,11 +189,23 @@ namespace Fission
 		neutron::KeyUpEventArgs nargs;
 		nargs.key = args.key;
 
+		if( args.key == Keys::Control )
+			g_KeyboardState.ctrl_down = false;
+
 		if( focus )
 			return (EventResult)focus->OnKeyUp( nargs );
 
 		if( mousedown && args.key == Keys::Mouse_Left )
 			mousedown = false;
+
+		return EventResult::Handled;
+	}
+	EventResult DebugWindow::OnTextInput( TextInputEventArgs & args )
+	{
+		neutron::TextInputEventArgs nargs;
+		nargs.ch = args.codepoint;
+
+		if( focus ) focus->OnTextInput( nargs );
 
 		return EventResult::Handled;
 	}
