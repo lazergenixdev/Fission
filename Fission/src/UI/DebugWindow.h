@@ -35,8 +35,13 @@ namespace Fission
 		virtual void Destroy() override;
 
 	private:
+		DebugWidget * InsertWidget( const char * label, DebugWidget * widget );
+		DebugWidget * InsertTempWidget( DebugWidget * widget );
+
+	private:
 
 		std::vector<DebugWidget *> m_ActiveWidgets;
+		std::vector<DebugWidget *> m_TempWidgets;
 		std::map<std::string, DebugWidget *> m_Widgets;
 
 		WindowContext context;

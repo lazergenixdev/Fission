@@ -8,17 +8,41 @@ namespace Fission
 
 	namespace UI
 	{
+		bool Debug::Button( const char * label )
+		{
+			auto widget = s_DebugWindow->GetWidget( label, DebugButton::ID, nullptr, nullptr );
+
+			if( auto slider = dynamic_cast<DebugButton*>( widget ) )
+				return slider->IsPressed();
+
+			return false;
+		}
+
 		bool Debug::SliderFloat( const char * label, float * value, float min, float max, const char * format )
 		{
 			auto widget = s_DebugWindow->GetWidget( label, DebugSlider<float>::ID, format, value );
 
 			if( auto slider = dynamic_cast<DebugSlider<float> *>( widget ) )
-			{
 				return slider->UpdateValue( value, min, max );
-			}
 
 			return false;
 		}
+
+		bool Debug::SliderInt( const char * label, int * value, int min, int max, const char * format )
+		{
+			auto widget = s_DebugWindow->GetWidget( label, DebugSlider<int>::ID, format, value );
+
+			if( auto slider = dynamic_cast<DebugSlider<int> *>( widget ) )
+				return slider->UpdateValue( value, min, max );
+
+			return false;
+		}
+
+		void Debug::Text( const char * label )
+		{
+			s_DebugWindow->GetWidget( label, DebugText::ID, nullptr, nullptr );
+		}
+
 	}
 
 

@@ -49,6 +49,7 @@ namespace Fission
 
 			offsetY = rect.top() + 20.0f;
 
+			// get rid of any widgets that are not being used.
 			std::erase_if( m_Widgets,
 				[] ( WidgetAndLabel & wal ) { 
 					bool remove = !wal.second->active;
@@ -65,8 +66,24 @@ namespace Fission
 		}
 
 		m_ActiveWidgets.clear();
+		for( auto && widget : m_TempWidgets )
+			delete widget;
+		m_TempWidgets.clear();
 
 		r2d->Render();
+	}
+
+	inline DebugWidget * DebugWindow::InsertWidget( const char * label, DebugWidget * widget )
+	{
+		auto pair = std::make_pair( label, widget );
+		pair.second->parent = this;
+		m_Widgets.emplace( pair );
+		return widget;
+	}
+	inline DebugWidget * DebugWindow::InsertTempWidget( DebugWidget * widget )
+	{
+		m_TempWidgets.emplace_back( widget );
+		return widget;
 	}
 
 	DebugWidget * DebugWindow::GetWidget( const char * label, int WidgetID, const char * format, const void * pvalue )
@@ -82,21 +99,13 @@ namespace Fission
 			RETURN( widget->second );
 		}
 
-		WidgetAndLabel pair = std::make_pair( label, nullptr );
-
 		// no widget was found, we need to create it.
 		switch( WidgetID )
 		{
-		case DebugSlider<float>::ID:
-		{
-			pair.second = new DebugSlider<float>( pair.first.c_str(), format, *(float*)pvalue );
-			pair.second->parent = this;
-			// status = contains information about the insertion.
-			auto status = m_Widgets.insert( pair );
-			// .first   = iterator of where the widget was inserted;
-			// ->second = pointer to the widget
-			RETURN( status.first->second );
-		}
+		case DebugSlider<float>::ID: {RETURN( InsertWidget( label, new DebugSlider<float>( label, format, *(float*)pvalue ) ) );}
+		case DebugSlider<int>::ID:   {RETURN( InsertWidget( label, new DebugSlider<int>  ( label, format, *(int*)pvalue ) ) );}
+		case DebugText::ID:          {RETURN( InsertTempWidget( new DebugText( label ) ) );}
+		case DebugButton::ID:        {RETURN( InsertWidget( label, new DebugButton( label ) ) );}
 
 		default:
 			break;

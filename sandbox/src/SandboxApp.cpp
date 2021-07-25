@@ -86,6 +86,13 @@ public:
 
 		Fission::UI::Debug::SliderFloat( "radius", &radius, 50.0f, 150.0f );
 		Fission::UI::Debug::SliderFloat( "scroll_pos", &pos, -2000.0f, 100.0f, "%.0f");
+
+		Fission::UI::Debug::Text( textBuffer );
+
+		if( Fission::UI::Debug::Button( "do thing" ) )
+		{
+			if( selected ) g_App->pMainWindow->SetSize( selected->resolution );
+		}
 	}
 
 	virtual Fission::EventResult OnKeyUp( Fission::KeyUpEventArgs & args ) override

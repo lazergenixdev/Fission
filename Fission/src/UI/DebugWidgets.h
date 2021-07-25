@@ -33,6 +33,8 @@ namespace Fission
 
 		float SliderKnobWidth = 10.0f;
 
+		float FramePadding = 2.0f;
+
 	};
 
 	struct KeyboardState
@@ -61,11 +63,17 @@ namespace Fission
 		virtual void OnUpdate( timestep dt, float * offsetY, const WindowContext* ctx ) = 0;
 	};
 
+	template <typename T> struct _type_id {};
+	template <> struct _type_id<int>   { static constexpr int value = 0; };
+	template <> struct _type_id<float> { static constexpr int value = 1; };
+	template <typename T> static constexpr int type_id_of = _type_id<T>::value;
+
+
 	template <typename T>
 	class DebugSlider : public DebugWidget
 	{
 	public:
-		static constexpr int ID = 0x45;
+		static constexpr int ID = 0x45 + type_id_of<T>;
 
 		DebugSlider( const char * label, const char * format, T initial_value ): label(label), fmt(format), internal_value(initial_value) {}
 
@@ -175,10 +183,12 @@ namespace Fission
 		virtual neutron::Result OnMouseMove( neutron::MouseMoveEventArgs & args ) override {
 			if( editing )
 			{
-				auto ry = base::rangef( Rect.x ).expanded(g_DebugStyle.SliderKnobWidth*-0.5f);
-				float slider_pos = ry.clamp( (float)args.pos.x );
+				auto ry = base::ranged( Rect.x ).expanded(double(g_DebugStyle.SliderKnobWidth)*-0.5);
+				double slider_pos = ry.clamp( (double)args.pos.x );
 
-				internal_value = ( m_Max - m_Min ) * ( (slider_pos-ry.low) / ry.distance() ) + m_Min;
+				internal_value = static_cast<T>(
+					( (double)m_Max - (double)m_Min ) * ( (slider_pos-ry.low) / ry.distance() ) + (double)m_Min
+				);
 
 				return neutron::Handled;
 			}
@@ -236,6 +246,98 @@ namespace Fission
 
 		float highlight = 0.0f;
 
+	};
+
+
+	class DebugText : public DebugWidget
+	{
+	public:
+		static constexpr int ID = 0x100;
+
+		DebugText( const char * text ) : label( text ) {}
+
+		virtual void OnUpdate( timestep dt, float * offsetY, const WindowContext * ctx ) override
+		{
+			auto tl = ctx->r2d->DrawString( label.c_str(), { g_DebugStyle.LeftPadding + g_DebugStyle.LeftTextBoxPadding, *offsetY + g_DebugStyle.VerticalPadding }, Colors::make_gray( 0.8f ) );
+			*offsetY += g_DebugStyle.VerticalPadding + tl.height;
+		}
+
+	private:
+		string label;
+	};
+
+	class DebugButton : public DebugWidget
+	{
+	public:
+		static constexpr int ID = 0x123;
+
+		DebugButton( const char * label ) : label( label ) {}
+
+		virtual bool IsPressed()
+		{
+			bool out = pressed;
+			pressed = false;
+			return out;
+		}
+
+		virtual bool isInside( neutron::point pt ) override
+		{
+			return Rect[pt];
+		}
+
+		virtual void OnUpdate( timestep dt, float * offsetY, const WindowContext * ctx ) override
+		{
+			if( parent->GetHover() == this )
+				highlight += ( 1.0f - highlight ) * 5.0f * dt;
+			else
+				highlight += ( 0.0f - highlight ) * 2.5f * dt;
+
+			auto pos = base::vector2f(g_DebugStyle.LeftPadding + g_DebugStyle.LeftTextBoxPadding, *offsetY + g_DebugStyle.VerticalPadding);
+			auto tl = ctx->r2d->CreateTextLayout( label.c_str() );
+
+			auto rect = base::rectf::from_topleft( pos, tl.width + g_DebugStyle.FramePadding * 2.0f, tl.height + g_DebugStyle.FramePadding * 2.0f );
+			Rect = base::recti( rect );
+
+			if( down )
+			ctx->r2d->FillRect( rect, Colors::make_gray<rgb_color8>( 88 ) );
+			else
+			ctx->r2d->FillRect( rect, Colors::make_gray<rgb_color8>( 66 ) );
+
+			ctx->r2d->DrawRect( rect.expanded( -0.5f ), Colors::make_gray( highlight * 0.5f, highlight ), 1.0f );
+
+			ctx->r2d->DrawString( label.c_str(), pos+base::vector2f::from1(g_DebugStyle.FramePadding), Colors::make_gray( 0.8f ) );
+
+			*offsetY += g_DebugStyle.VerticalPadding * 2.0f + tl.height;
+		}
+
+
+		virtual neutron::Result OnKeyDown( neutron::KeyDownEventArgs & args ) override {
+			if( args.key == Keys::Mouse_Left )
+			{
+				down = true;
+				return neutron::Result::Pass;
+			}
+			return neutron::Result::Pass;
+		}
+		virtual neutron::Result OnKeyUp( neutron::KeyUpEventArgs & args ) override {
+			if( args.key == Keys::Mouse_Left )
+			{
+				down = false;
+				pressed = true;
+				return neutron::Result::Pass;
+			}
+			return neutron::Result::Handled;
+		}
+
+	private:
+		string label;
+
+		bool pressed = false;
+		bool down = false;
+
+		neutron::rect Rect;
+
+		float highlight = 0.0f;
 	};
 
 }
