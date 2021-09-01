@@ -93,6 +93,16 @@ public:
 		{
 			if( selected ) g_App->pMainWindow->SetSize( selected->resolution );
 		}
+
+		static bool value = true;
+		Fission::UI::Debug::CheckBox( "blue box", &value );
+		if( value )
+		{
+			m_pRenderer2D->DrawRect( { 300.0f, 400.0f, 400.0f, 500.0f }, Fission::Colors::Blue, 3.0f );
+		}
+
+		static int intger = 9;
+		Fission::UI::Debug::InputInt( "ok", &intger );
 	}
 
 	virtual Fission::EventResult OnKeyUp( Fission::KeyUpEventArgs & args ) override

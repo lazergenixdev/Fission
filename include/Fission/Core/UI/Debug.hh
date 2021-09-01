@@ -81,10 +81,10 @@ namespace Fission::UI
 		FISSION_DEBUG_UI_FN(void, Text, const char * text ) FISSION_RET_VOID
 
 		FISSION_DEBUG_UI_FN(bool, Button,   const char * label ) FISSION_RET_BOOL
-	//	FISSION_DEBUG_UI_FN(bool, CheckBox, const char * label, bool * value ) FISSION_RET_BOOL
+		FISSION_DEBUG_UI_FN(bool, CheckBox, const char * label, bool * value ) FISSION_RET_BOOL
 
-	//	FISSION_DEBUG_UI_FN(bool, InputFloat, const char * label, float * value, const char * format = "%.3f") FISSION_RET_BOOL
-	//	FISSION_DEBUG_UI_FN(bool, InputInt  , const char * label, int   * value, const char * format = "%i"  ) FISSION_RET_BOOL
+		FISSION_DEBUG_UI_FN(bool, InputFloat, const char * label, float * value, const char * format = "%.3f") FISSION_RET_BOOL
+		FISSION_DEBUG_UI_FN(bool, InputInt  , const char * label, int   * value, const char * format = "%i"  ) FISSION_RET_BOOL
 
 		FISSION_DEBUG_UI_FN(bool, SliderFloat, const char * label, float * value, float min, float max, const char * format = "%.3f" ) FISSION_RET_BOOL
 		FISSION_DEBUG_UI_FN(bool, SliderInt  , const char * label, int   * value, int   min, int   max, const char * format = "%i"   ) FISSION_RET_BOOL

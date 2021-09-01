@@ -57,6 +57,7 @@ namespace Fission
 					return remove;
 				} 
 			);
+
 		}
 
 		for( auto && widget : m_ActiveWidgets )
@@ -106,6 +107,9 @@ namespace Fission
 		case DebugSlider<int>::ID:   {RETURN( InsertWidget( label, new DebugSlider<int>  ( label, format, *(int*)pvalue ) ) );}
 		case DebugText::ID:          {RETURN( InsertTempWidget( new DebugText( label ) ) );}
 		case DebugButton::ID:        {RETURN( InsertWidget( label, new DebugButton( label ) ) );}
+		case DebugCheckbox::ID:      {RETURN( InsertWidget( label, new DebugCheckbox( label, *(bool*)pvalue ) ) );}
+		case DebugInput<float>::ID:  {RETURN( InsertWidget( label, new DebugInput<float>( label, format, *(float*)pvalue ) ) );}
+		case DebugInput<int>::ID:    {RETURN( InsertWidget( label, new DebugInput<int>  ( label, format, *(int*)pvalue ) ) );}
 
 		default:
 			break;

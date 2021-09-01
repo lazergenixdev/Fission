@@ -2,6 +2,8 @@
 #include <Fission/Core/UI/Debug.hh>
 #include "../Platform/WindowManager.h"
 
+// Internal API
+
 namespace Fission
 {
 #if FISSION_ENABLE_DEBUG_UI

@@ -248,6 +248,144 @@ namespace Fission
 
 	};
 
+	template <typename T>
+	class DebugInput : public DebugWidget
+	{
+	public:
+		static constexpr int ID = 0x67 + type_id_of<T>;
+
+		DebugInput( const char * label, const char * format, T initial_value ) : label( label ), fmt( format ), internal_value( initial_value ) {}
+
+		virtual bool UpdateValue( T * pValue )
+		{
+			if( internal_value == *pValue ) return false;
+
+			if( editing )
+			{
+				*pValue = internal_value;
+				if( typing ) {
+					typing = false;
+					editing = false;
+				}
+				return true;
+			}
+
+			internal_value = *pValue;
+			return false;
+		}
+
+		virtual bool isInside( neutron::point pt ) override { return Rect[pt]; }
+
+		virtual void OnUpdate( timestep dt, float * offsetY, const WindowContext * ctx ) override
+		{
+
+			auto tl = ctx->r2d->DrawString( label.c_str(), { g_DebugStyle.LeftPadding + g_DebugStyle.LeftTextBoxPadding, *offsetY + g_DebugStyle.VerticalPadding }, Colors::make_gray( 0.8f ) );
+
+			base::rectf rect = {
+				g_DebugStyle.LeftPadding, ctx->rect.right() - g_DebugStyle.RightPadding,
+				g_DebugStyle.VerticalPadding, g_DebugStyle.VerticalPadding + tl.height
+			};
+			rect.y += *offsetY;
+
+			rect.x.low += g_DebugStyle.MaximumLabelWidth;
+			Rect = base::recti( rect );
+
+			ctx->r2d->FillRect( rect, Colors::make_gray<rgb_color8>( 33 ) );
+
+
+			if( parent->GetHover() == this )
+				highlight += ( 1.0f - highlight ) * 5.0f * dt;
+			else
+				highlight += ( 0.0f - highlight ) * 2.5f * dt;
+
+			if( highlight != 0.0f )
+				ctx->r2d->DrawRect( rect.expanded( -0.5f ), Colors::make_gray( highlight * 0.5f, highlight ), 1.0f );
+
+			if( typing )
+				tl = ctx->r2d->DrawString( temp_value_str.c_str(), rect.topLeft() + base::vector2f( g_DebugStyle.LeftTextBoxPadding, 0.0f ), Colors::make_gray( 0.8f ) );
+			else
+			{
+				char text[100];
+				sprintf( text, fmt, internal_value );
+				tl = ctx->r2d->DrawString( text, rect.topLeft() + base::vector2f( g_DebugStyle.LeftTextBoxPadding, 0.0f ), Colors::make_gray( 0.8f ) );
+			}
+
+			if( typing )
+			{
+				ctx->r2d->DrawRect( rect, color( 0.8f, 0.9f, 1.0f, 0.2f ), 2.0f );
+				ctx->r2d->FillRect( { rect.left() + tl.width + 2.0f, rect.left() + tl.width + 3.0f, rect.top() + 2.0f, rect.bottom() - 2.0f }, Colors::White );
+			}
+
+			*offsetY += g_DebugStyle.VerticalPadding + tl.height;
+		}
+
+		virtual neutron::Result OnKeyDown( neutron::KeyDownEventArgs & args ) override {
+			if( args.key == Keys::Mouse_Left )
+			{
+				typing = true;
+				temp_value_str = std::to_string( internal_value );
+				return neutron::Handled;
+			}
+			return neutron::Pass;
+		}
+		virtual neutron::Result OnKeyUp( neutron::KeyUpEventArgs & args ) override {
+			if( args.key == Keys::Mouse_Left )
+			{
+			//	editing = false;
+			//	parent->SetCapture( nullptr );
+				return neutron::Handled;
+			}
+			return neutron::Pass;
+		}
+		virtual neutron::Result OnTextInput( neutron::TextInputEventArgs & args ) override {
+			if( typing )
+			{
+				switch( args.ch )
+				{
+				case '\b': if( temp_value_str.size() ) temp_value_str.pop_back(); break;
+				case '\r': { StopTyping(); break; }
+
+				default: temp_value_str = temp_value_str.string() += (char)args.ch; break;
+				}
+				return neutron::Handled;
+			}
+			return neutron::Pass;
+		}
+		virtual void OnFocusLost() override {
+			typing = false;
+		}
+
+		void StopTyping()
+		{
+			// try to set our value from the temperary string.
+			try
+			{
+				if constexpr( std::is_floating_point_v<T> )
+					internal_value = std::stof( temp_value_str.c_str() );
+				if constexpr( std::is_integral_v<T> )
+					internal_value = std::stoi( temp_value_str.c_str() );
+			}
+			catch( ... ) {}
+
+			parent->SetFocus( nullptr );
+
+			editing = true;
+		}
+
+	private:
+
+		string label;
+		string temp_value_str;
+
+		const char * fmt;
+		T internal_value = static_cast<T>( 0 );
+
+		bool editing = false;
+		bool typing = false;
+
+		neutron::rect Rect;
+		float highlight = 0.0f;
+	};
 
 	class DebugText : public DebugWidget
 	{
@@ -315,6 +453,7 @@ namespace Fission
 			if( args.key == Keys::Mouse_Left )
 			{
 				down = true;
+				parent->SetCapture( this );
 				return neutron::Result::Pass;
 			}
 			return neutron::Result::Pass;
@@ -323,7 +462,9 @@ namespace Fission
 			if( args.key == Keys::Mouse_Left )
 			{
 				down = false;
-				pressed = true;
+				if( Rect[neutron::GetMousePosition()] )
+					pressed = true;
+				parent->SetCapture( nullptr );
 				return neutron::Result::Pass;
 			}
 			return neutron::Result::Handled;
@@ -340,4 +481,144 @@ namespace Fission
 		float highlight = 0.0f;
 	};
 
+
+	class DebugCheckbox : public DebugWidget
+	{
+	public:
+		static constexpr int ID = 0x225;
+
+		DebugCheckbox( const char * label, bool initial_value ) : label( label ), internal_value( initial_value ) {}
+
+		virtual bool UpdateValue( bool * pValue )
+		{
+			if( internal_value == *pValue ) return false;
+
+			if( editing )
+			{
+				*pValue = internal_value;
+				editing = false;
+				return true;
+			}
+
+			internal_value = *pValue;
+			return false;
+		}
+
+		virtual bool isInside( neutron::point pt ) override
+		{
+			return Rect[pt];
+		}
+
+		virtual void OnUpdate( timestep dt, float * offsetY, const WindowContext * ctx ) override
+		{
+
+			auto tl = ctx->r2d->DrawString( label.c_str(), { g_DebugStyle.LeftPadding + g_DebugStyle.LeftTextBoxPadding, *offsetY + g_DebugStyle.VerticalPadding }, Colors::make_gray( 0.8f ) );
+
+			base::rectf rect = {
+				g_DebugStyle.LeftPadding, g_DebugStyle.LeftPadding + tl.height,
+				g_DebugStyle.VerticalPadding, g_DebugStyle.VerticalPadding + tl.height
+			};
+			rect.y += *offsetY;
+
+			rect.x.low += g_DebugStyle.MaximumLabelWidth;
+			rect.x.high += g_DebugStyle.MaximumLabelWidth;
+			Rect = base::recti( rect );
+
+			ctx->r2d->FillRect( rect, down ? Colors::make_gray<rgb_color8>( 57 ) : Colors::make_gray<rgb_color8>( 33 ) );
+
+
+			if( parent->GetHover() == this )
+				highlight += ( 1.0f - highlight ) * 5.0f * dt;
+			else
+				highlight += ( 0.0f - highlight ) * 2.5f * dt;
+
+			if( highlight != 0.0f )
+				ctx->r2d->DrawRect( rect.expanded( -0.5f ), Colors::make_gray( highlight * 0.5f, highlight ), 1.0f );
+
+			//if( typing )
+			//	tl = ctx->r2d->DrawString( temp_value_str.c_str(), rect.topLeft() + base::vector2f( g_DebugStyle.LeftTextBoxPadding, 0.0f ), Colors::make_gray( 0.8f ) );
+			//else
+			//{
+			//	char text[100];
+			//	sprintf( text, fmt, internal_value );
+			//	tl = ctx->r2d->DrawString( text, rect.topLeft() + base::vector2f( g_DebugStyle.LeftTextBoxPadding, 0.0f ), Colors::make_gray( 0.8f ) );
+			//}
+
+			//if( typing )
+			//{
+			//	ctx->r2d->DrawRect( rect, color( 0.8f, 0.9f, 1.0f, 0.2f ), 2.0f );
+			//	ctx->r2d->FillRect( { rect.left() + tl.width + 2.0f, rect.left() + tl.width + 3.0f, rect.top() + 2.0f, rect.bottom() - 2.0f }, Colors::White );
+			//}
+
+			/////////////////////////////////////////////////////////
+			static Fission::Mesh mesh = []
+			{
+				Fission::Mesh mesh( 6, 12 );
+
+				mesh.push_vertex( { 0.0f,1.5f }, 0 );
+				mesh.push_vertex( { 0.5f,1.0f }, 0 );
+				mesh.push_vertex( { 1.0f,1.5f }, 0 );
+				mesh.push_vertex( { 1.0f,2.5f }, 0 );
+				mesh.push_vertex( { 2.5f,0.0f }, 0 );
+				mesh.push_vertex( { 3.0f,0.5f }, 0 );
+
+				mesh.push_index( 0 ); mesh.push_index( 1 ); mesh.push_index( 2 );
+				mesh.push_index( 0 ); mesh.push_index( 2 ); mesh.push_index( 3 );
+				mesh.push_index( 2 ); mesh.push_index( 3 ); mesh.push_index( 5 );
+				mesh.push_index( 2 ); mesh.push_index( 5 ); mesh.push_index( 4 );
+
+				mesh.push_color( Colors::White );
+
+				return mesh;
+			}( );
+
+			if( internal_value )
+			{
+				ctx->r2d->PushTransform( base::matrix2x3f::Scaling( 5.0f, 5.0f ) * base::matrix2x3f::Translation( (rect.left()+1.0f)/5.0f, (rect.top()+2.0f)/5.0f ) );
+				ctx->r2d->DrawMesh( &mesh );
+				ctx->r2d->PopTransform();
+			}
+
+			/////////////////////////////////////////////////////////
+
+			*offsetY += g_DebugStyle.VerticalPadding + tl.height;
+		}
+
+		virtual neutron::Result OnKeyDown( neutron::KeyDownEventArgs & args ) override {
+			if( args.key == Keys::Mouse_Left )
+			{
+				down = true;
+				parent->SetCapture( this );
+				return neutron::Handled;
+			}
+			return neutron::Pass;
+		}
+		virtual neutron::Result OnKeyUp( neutron::KeyUpEventArgs & args ) override {
+			if( args.key == Keys::Mouse_Left )
+			{
+				down = false;
+				if( Rect[neutron::GetMousePosition()] )
+				{
+					internal_value = !internal_value;
+					editing = true;
+				}
+				parent->SetCapture( nullptr );
+				return neutron::Handled;
+			}
+			return neutron::Pass;
+		}
+
+	private:
+
+		string label;
+
+		bool internal_value = false;
+		bool down = false;
+		bool editing = false;
+
+		neutron::rect Rect;
+
+		float highlight = 0.0f;
+
+	};
 }

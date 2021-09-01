@@ -12,8 +12,18 @@ namespace Fission
 		{
 			auto widget = s_DebugWindow->GetWidget( label, DebugButton::ID, nullptr, nullptr );
 
-			if( auto slider = dynamic_cast<DebugButton*>( widget ) )
-				return slider->IsPressed();
+			if( auto button = dynamic_cast<DebugButton*>( widget ) )
+				return button->IsPressed();
+
+			return false;
+		}
+
+		bool Debug::CheckBox( const char * label, bool * value )
+		{
+			auto widget = s_DebugWindow->GetWidget( label, DebugCheckbox::ID, nullptr, value );
+
+			if( auto checkbox = dynamic_cast<DebugCheckbox *>( widget ) )
+				return checkbox->UpdateValue( value );
 
 			return false;
 		}
@@ -34,6 +44,26 @@ namespace Fission
 
 			if( auto slider = dynamic_cast<DebugSlider<int> *>( widget ) )
 				return slider->UpdateValue( value, min, max );
+
+			return false;
+		}
+
+		bool Debug::InputFloat( const char * label, float * value, const char * format )
+		{
+			auto widget = s_DebugWindow->GetWidget( label, DebugInput<float>::ID, format, value );
+
+			if( auto input = dynamic_cast<DebugInput<float> *>( widget ) )
+				return input->UpdateValue( value );
+
+			return false;
+		}
+
+		bool Debug::InputInt( const char * label, int * value, const char * format )
+		{
+			auto widget = s_DebugWindow->GetWidget( label, DebugInput<int>::ID, format, value );
+
+			if( auto input = dynamic_cast<DebugInput<int> *>( widget ) )
+				return input->UpdateValue( value );
 
 			return false;
 		}

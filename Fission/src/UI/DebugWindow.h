@@ -12,6 +12,7 @@ namespace Fission
 		FPointer<IFRenderer2D> m_pRenderer2D;
 		FPointer<IFWindow> window;
 
+		// sketchy way to implement window movement
 		POINT last = {};
 		bool mousedown = false;
 		base::vector2i mousepos;
@@ -31,7 +32,6 @@ namespace Fission
 		virtual EventResult OnKeyUp( KeyUpEventArgs & args ) override;
 		virtual EventResult OnTextInput( TextInputEventArgs & args ) override;
 
-
 		virtual void Destroy() override;
 
 	private:
@@ -45,7 +45,6 @@ namespace Fission
 		std::map<std::string, DebugWidget *> m_Widgets;
 
 		WindowContext context;
-
 
 		using WidgetAndLabel = decltype(m_Widgets)::value_type;
 	};
