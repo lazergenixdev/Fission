@@ -9,18 +9,7 @@
 - Runtime Texture Atlas creation utility
 
 # RoadMap 🗓
-Version 0.7 will have a complete focus on UI, both for developer debugging and for general use.
-
-### *Fission v0.7.0-alpha.1* (week 28 2021)
-### *Fission v0.7.0-alpha.2* (week 29 2021)
-### *Fission v0.7.0* (week 30 2021)
-- Functional implementation of debug UI
-  - windows
-  - sliders
-  - buttons
-  - combo boxes
-- [neutron.hpp](https://github.com/lazergenixdev/Fission/blob/master/include/Fission/neutron.hpp), with all features implemented
-- user-defined UI Layers
+(Engine is on hold for right now as I try and fix some bugs and see what I need to add next)
 
 ### Planned Features ⛅
 - SPIR-V for shader reflection
