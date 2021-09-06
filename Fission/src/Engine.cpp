@@ -69,7 +69,6 @@ namespace Fission
 					ctx.renderer->OnResize( m_pGraphics.get(), m_NewSize );
 
 				m_pWindow->GetSwapChain()->Resize( m_NewSize );
-				SwapChain->Bind();
 
 				m_bWantResize = false;
 			}

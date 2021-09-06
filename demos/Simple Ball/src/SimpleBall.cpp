@@ -64,8 +64,8 @@ public:
 		info->window.title = title;
 		info->startScene = new BallScene;
 		info->window.size = { 1280,720 };
-		info->name_utf8 = "Balls";
-		info->version_utf8 = "1.0.0";
+		strcpy(info->name_utf8, "Balls");
+		strcpy(info->version_utf8, "1.0.0");
 	}
 };
 

@@ -1,6 +1,8 @@
 #include "Debug.h"
 #if FISSION_ENABLE_DEBUG_UI
+#include <Fission/Core/Application.hh>
 #include "DebugWindow.h"
+#include <fstream>
 
 namespace Fission
 {
@@ -84,7 +86,22 @@ namespace Fission
 		info.pEventHandler = s_DebugWindow;
 		info.wProperties.style = IFWindow::Style::Borderless;
 		info.wProperties.size = s_DebugWindow->Rect.size();
+
+		if( auto ini = fopen( "etc/debug.ini", "r" ) )
+		{
+			int x, y;
+			int filled = fscanf_s( ini, "%i, %i", &x, &y );
+
+			if( filled == 2 )
+			{
+				info.wProperties.position = { x, y };
+				utility::remove_flag( info.wProperties.flags, IFWindow::Flags::CenterWindow );
+			}
+			fclose( ini );
+		}
 		pWindowManager->CreateWindow( &info, &s_DebugWindow->window );
+
+		SetForegroundWindow( app->pMainWindow->native_handle() );
 
 		s_DebugWindow->OnCreate( app );
 	}
@@ -100,6 +117,15 @@ namespace Fission
 
 	void DestroyDebug()
 	{
+		RECT wr;
+		GetWindowRect( s_DebugWindow->window->native_handle(), &wr );
+		std::filesystem::create_directories( "etc/" );
+		if( auto ini = fopen( "etc/debug.ini", "w" ) )
+		{
+			fprintf( ini, "%i, %i", wr.left, wr.top );
+			fclose( ini );
+		}
+
 		s_DebugWindow->Destroy();
 	}
 }

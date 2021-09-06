@@ -177,8 +177,8 @@ public:
 	{
 		info->startScene = new BallScene;
 		info->window.title = u8"🔥 Sandbox 🔥  👌👌👌👌👌";
-		info->name_utf8 = "sandbox";
-		info->version_utf8 = "1.0.0";
+		strcpy_s( info->name_utf8, "sandbox" );
+		strcpy_s( info->version_utf8, "1.0.0" );
 	}
 };
 

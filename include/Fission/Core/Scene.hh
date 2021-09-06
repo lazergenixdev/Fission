@@ -55,6 +55,14 @@ namespace Fission {
 
 	using DrawCallback = std::function<void( IFRenderer2D * _Renderer, void * _UserData )>;
 
+	struct DebugFrameInfo
+	{
+		float * frame_times_arr;
+		int frame_times_count;
+
+		int current_frame;
+	};
+
 	class IFDebugLayer : public IFLayer
 	{
 	public:
@@ -69,6 +77,8 @@ namespace Fission {
 			sprintf_s( _buffer, fmt, std::forward<T>( args )... );
 			Text( _buffer );
 		}
+
+		virtual void GetFrameInfo( DebugFrameInfo * dest ) {};
 	};
 
 	struct IFConsoleLayer : public IFLayer {};

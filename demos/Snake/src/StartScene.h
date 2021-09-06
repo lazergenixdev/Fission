@@ -4,23 +4,20 @@
 
 class StartMenuLayer : public DefaultDelete<Fission::IFLayer>
 {
-	void OnCreate(Fission::FApplication*app)
-	{
-		r2d = (decltype( r2d ))app->pEngine->GetRenderer( "$internal2D" );
-	}
+	void OnCreate( Fission::FApplication * app );
 
-	void OnUpdate(Fission::timestep dt)
-	{
-		r2d->SelectFont( Fission::FontManager::GetFont( "$debug" ) );
-		r2d->DrawString( "to be continued...", { 10.0f, 10.0f }, Fission::Colors::White );
-		r2d->Render();
-	}
+	void OnUpdate( Fission::timestep dt );
+
+	//virtual Fission::EventResult OnKeyDown( Fission::KeyDownEventArgs & )override;
+	//virtual Fission::EventResult OnKeyUp( Fission::KeyUpEventArgs & )override;
+	//virtual Fission::EventResult OnMouseMove( Fission::MouseMoveEventArgs & )override;
 
 	Fission::IFRenderer2D * r2d;
+	Fission::FApplication * m_App;
 };
 
 class StartScene : public DefaultDelete<Fission::FScene>
 {
 public:
-	StartScene() { PushLayer( new StartMenuLayer ); }
+	StartScene();
 };

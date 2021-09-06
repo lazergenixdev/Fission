@@ -26,3 +26,6 @@ bin-int/
 
 # copyright lol
 **.mp3
+
+# debug stuff
+*.ini

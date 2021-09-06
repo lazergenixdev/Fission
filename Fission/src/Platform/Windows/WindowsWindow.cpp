@@ -68,12 +68,12 @@ namespace Fission::Platform
         // (HWND will not be valid until window is created)
         m_AccessCV.wait( lock );
     }
-//
-//    void WindowsWindow::SetEventHandler( IEventHandler * handler )
-//    {
-//        pEventHandler = handler;
-//    }
-//
+
+    void WindowsWindow::_Call( const std::function<void()> & func )
+    {
+        SendMessageW( m_Handle, FISSION_WM_CALLEXTERNAL, (WPARAM)&func, 0 );
+    }
+
     void WindowsWindow::SetTitle( const string & title )
     {
         m_Properties.title = title;
@@ -420,6 +420,14 @@ namespace Fission::Platform
             ResizeEventArgs ev{ e };
             ev.size = new_size;
             pEventHandler->OnResize( ev );
+            return 0;
+        }
+        break;
+
+        case FISSION_WM_CALLEXTERNAL:
+        {
+            auto function = reinterpret_cast<std::function<void()>*>( wParam );
+            (*function)();
             return 0;
         }
         break;

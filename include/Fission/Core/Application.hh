@@ -39,20 +39,20 @@ namespace Fission
 	class FApplication : public IFObject
 	{
 	public:
-		IFEngine * pEngine   = nullptr;
-		IFWindow * pMainWindow = nullptr;
-		IFGraphics * pGraphics = nullptr;
+		IFEngine *   pEngine     = nullptr;
+		IFWindow *   pMainWindow = nullptr;
+		IFGraphics * pGraphics   = nullptr;
 
 	public:
 
 		struct CreateInfo
 		{
-			FScene *              startScene;
-			IFWindow::Properties  window = {};
-			GraphicsState         graphics = {};
+			FScene *              startScene        = nullptr;
+			IFWindow::Properties  window            = {};
+			GraphicsState         graphics          = {};
 
-			const char *          name_utf8 = "<app name>";
-			const char *          version_utf8 = "0.0.0";
+			char                  name_utf8    [64] = "<app name>";
+			char                  version_utf8 [64] = "0.0.0";
 		};
 
 	public:

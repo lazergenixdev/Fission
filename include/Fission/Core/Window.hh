@@ -102,6 +102,8 @@ namespace Fission
 
 	//	virtual void SetEventHandler( IEventHandler * _Event_Handler ) = 0;
 
+		virtual void _Call( const std::function<void()>& func ) = 0;
+
 		virtual void SetTitle( const string & _Title ) = 0;
 
 		virtual string GetTitle() = 0;

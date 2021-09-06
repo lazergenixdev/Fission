@@ -65,15 +65,21 @@ namespace Fission
 		 */
 		virtual void LoadApplication( class FApplication * app ) = 0;
 
-		virtual void RegisterRenderer( const char * identifier, IFRenderer * renderer ) = 0;
+		/**
+		* @brief Register a render to be used with the engine.
+		*        (can be retrieved using @GetRenderer)
+		* 
+		* @note Renderers are managed by the engine using the IFRenderer interface.
+		*/
+		virtual void RegisterRenderer( const char * _Name, IFRenderer * _Renderer ) = 0;
 
 		/**
 		 * @brief  Get a renderer from it's name.
 		 *
-		 * @param  _Identifier: Name of the renderer you wish to retrieve;
-		 *                       "$internal2D" - type: IFRenderer2D - Engine's internal 2D renderer.
+		 * @param  _Name: Name of the renderer you wish to retrieve;
+		 *                "$internal2D" - type: IFRenderer2D - Engine's internal 2D renderer.
 		 */
-		virtual IFRenderer * GetRenderer( const char * _Identifier ) = 0;
+		virtual IFRenderer * GetRenderer( const char * _Name ) = 0;
 
 		virtual IFDebugLayer * GetDebug() = 0;
 
