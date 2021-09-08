@@ -24,6 +24,7 @@ namespace Fission
 
 	struct FissionEngine : public IFEngine, public IFEventHandler
 	{
+		///////////////////////////////////////////////////////
 		fsn_ptr<WindowManager>      m_pWindowManager;
 		fsn_ptr<GraphicsLoader>     m_pGraphicsLoader;
 
@@ -52,8 +53,9 @@ namespace Fission
 		int                         m_ExitCode = 0;
 
 		base::size                  m_NewSize;
+		///////////////////////////////////////////////////////
 
-
+	public:
 
 		virtual void GetVersion( int * _Maj, int * _Min, int * _Pat ) override;
 
@@ -74,8 +76,6 @@ namespace Fission
 		virtual IFRenderer * GetRenderer( const char * name ) override;
 
 		virtual IFDebugLayer * GetDebug() override;
-
-		virtual void SetFPSLimit( int fps ) override;
 
 		virtual EventResult OnKeyDown( KeyDownEventArgs & )        override;
 		virtual EventResult OnKeyUp( KeyUpEventArgs & )            override;

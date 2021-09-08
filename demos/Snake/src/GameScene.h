@@ -16,6 +16,7 @@ using v2i = Fission::base::vector2i;
 using rectf = Fission::base::rectf;
 
 static float padding = 0.0f;
+static Fission::IFEngine* g_engine = nullptr;
 
 class Field
 {
@@ -109,6 +110,8 @@ public:
 	void SetDirection( v2i dir ) { direction = dir; }
 	bool IsDie() { return dead; }
 
+	v2i GetPosition() const { return body[0]; }
+
 private:
 	bool CheckDead(v2i new_pos, Field* field)
 	{
@@ -153,6 +156,7 @@ public:
 			food_pos = { rand() % field.cell_count.x,rand() % field.cell_count.y };
 
 		Fission::UI::Debug::SliderFloat( "padding", &padding, 0.0f, 10.0f );
+		g_engine->GetDebug()->Text( "position: (%i, %i)", snek.GetPosition().x, snek.GetPosition().y );
 
 		field.DrawTile( m_pRenderer2D, food_pos, Fission::Colors::Red );
 
@@ -187,5 +191,5 @@ private:
 class GameScene : public DefaultDelete<Fission::FScene>
 {
 public:
-	GameScene() { PushLayer( new GameLayer ); }
+	GameScene( Fission::IFEngine * engine ) { g_engine = engine; PushLayer( new GameLayer ); }
 };

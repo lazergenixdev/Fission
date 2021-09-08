@@ -79,7 +79,6 @@ public:
 
 		m_pRenderer2D->DrawCircle( mousepos, radius, Fission::Colors::White, Fission::color{ Fission::Colors::White,0.0f }, 100.0f );
 
-		m_pRenderer2D->Render();
 
 		sprintf( textBuffer, "scroll location = %.0f", pos );
 		g_App->pEngine->GetDebug()->Text( textBuffer );
@@ -98,11 +97,13 @@ public:
 		Fission::UI::Debug::CheckBox( "blue box", &value );
 		if( value )
 		{
-			m_pRenderer2D->DrawRect( { 300.0f, 400.0f, 400.0f, 500.0f }, Fission::Colors::Blue, 3.0f );
+			m_pRenderer2D->DrawRect( { 300.0f, 400.0f, 400.0f, 500.0f }, Fission::Colors::Blue, 4.0f );
 		}
 
 		static int intger = 9;
 		Fission::UI::Debug::InputInt( "ok", &intger );
+
+		m_pRenderer2D->Render();
 	}
 
 	virtual Fission::EventResult OnKeyUp( Fission::KeyUpEventArgs & args ) override

@@ -71,7 +71,7 @@ namespace Fission {
 		virtual void Text( const char * what ) = 0;
 
 		template <size_t Buffer_Size = 128, typename...T>
-		static void Text( const char * fmt, T&&...args )
+		void Text( const char * fmt, T&&...args )
 		{
 			char _buffer[Buffer_Size];
 			sprintf_s( _buffer, fmt, std::forward<T>( args )... );

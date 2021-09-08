@@ -45,7 +45,7 @@ namespace Fission
 		 */
 		virtual void GetVersion( int * _Maj, int * _Min, int * _Pat ) = 0;
 
-		//! @brief Gets version in format: "Fission vX.Y.Z [Debug/Release]"
+		//! @brief Gets version in format: "Fission vX.Y.Z"
 		virtual const char * GetVersionString() = 0;
 
 		virtual void Run( Platform::ExitCode * ) = 0;
@@ -77,7 +77,7 @@ namespace Fission
 		 * @brief  Get a renderer from it's name.
 		 *
 		 * @param  _Name: Name of the renderer you wish to retrieve;
-		 *                "$internal2D" - type: IFRenderer2D - Engine's internal 2D renderer.
+		 *                "$internal2D" | type: IFRenderer2D | Engine's internal 2D renderer.
 		 */
 		virtual IFRenderer * GetRenderer( const char * _Name ) = 0;
 
@@ -86,12 +86,6 @@ namespace Fission
 		virtual void PushScene( FScene * _Ptr_Scene ) = 0;
 
 		virtual void CloseScene() {}
-
-		//! @brief Limits the FPS output by the engine.
-		//! @note FPS Limiter is disabled by default.
-		//! @note 10 is the minimum FPS, anything lower will disable the FPS limit.
-		virtual void SetFPSLimit( int fps ) = 0;
-		
 
 	}; // struct Fission::IFEngine
 

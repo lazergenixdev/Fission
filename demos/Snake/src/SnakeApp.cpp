@@ -10,7 +10,7 @@ void SnakeApp::OnStartUp( CreateInfo * info )
 	sprintf( title, "Snek Demo [%s]", pEngine->GetVersionString() );
 	info->window.title = title;
 	info->window.size = { 800, 600 };
-	info->startScene = new GameScene();
+	info->startScene = new GameScene( pEngine );
 
 	strcpy_s(info->name_utf8, "snek");
 

@@ -214,11 +214,6 @@ namespace Fission
 		return &m_DebugLayer;
 	}
 
-	void FissionEngine::SetFPSLimit( int fps )
-	{
-		//limitFPS = true;
-	}
-
 
 	void FissionEngine::Destroy() 
 	{ 
