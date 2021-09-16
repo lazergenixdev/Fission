@@ -1,5 +1,7 @@
 #include "WindowsMonitor.h"
 #include "../Monitor.h"
+#include <Fission/Core/Console.hh>
+#include <Fission/Base/Exception.h>
 
 namespace Fission
 {
@@ -145,114 +147,85 @@ WindowsMonitor * WindowsMonitor::GetMonitorFromHandle( HMONITOR hMonitor )
 
 struct MonitorEnumData
 {
-	std::vector<std::wstring> names;
-	int index = 0;
+	DISPLAYCONFIG_PATH_INFO * pathArray;
+
+	UINT32 index;
+	UINT32 pathArrayCount;
 };
 
 BOOL CALLBACK Fission::Platform::WindowsMonitor::MonitorEnumCallback( HMONITOR hMonitor, HDC, LPRECT, LPARAM pMonitorEnumData )
 {
-	auto pData = reinterpret_cast<MonitorEnumData *>( pMonitorEnumData );
+	auto pEnumData = reinterpret_cast<MonitorEnumData *>( pMonitorEnumData );
 
-	auto monitor_name = pData->names[pData->index];
+	// Number of monitors changed after our query, this is a big problem.
+	if( pEnumData->index >= pEnumData->pathArrayCount )
+		return FALSE;
 
-	auto name_utf16 = utf16_string((const char16_t*)monitor_name.c_str(), monitor_name.size());
+	DISPLAYCONFIG_TARGET_DEVICE_NAME request;
+	request.header.adapterId = pEnumData->pathArray[pEnumData->index].targetInfo.adapterId;
+	request.header.id = pEnumData->pathArray[pEnumData->index].targetInfo.id;
+	request.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME;
+	request.header.size = sizeof( request );
 
-	s_Monitors.emplace_back( new WindowsMonitor( hMonitor, name_utf16.utf8(), pData->index++ ) );
+	LONG result;
+	if( (result = DisplayConfigGetDeviceInfo( (DISPLAYCONFIG_DEVICE_INFO_HEADER *)&request )) != ERROR_SUCCESS )
+	{
+		char error_msg[64];
+		sprintf( error_msg, "`DisplayConfigGetDeviceInfo` returned (%X)", result );
+		FISSION_THROW( "Monitor Enum Error", .append( error_msg ) );
+	}
+
+	auto name_utf16 = utf16_string((char16_t*)request.monitorFriendlyDeviceName);
+
+	s_Monitors.emplace_back( new WindowsMonitor( hMonitor, name_utf16.utf8(), pEnumData->index++ ) );
+
+	// Continue to enumerate more monitors.
 	return TRUE;
 }
-
-#include <tchar.h>
-#include <initguid.h>
-#include <wmistr.h>
-
-DEFINE_GUID( WmiMonitorID_GUID, 0x671a8285, 0x4edb, 0x4cae, 0x99, 0xfe, 0x69, 0xa1, 0x5c, 0x48, 0xc0, 0xbc );
-
-typedef struct WmiMonitorID {
-	USHORT ProductCodeID[16];
-	USHORT SerialNumberID[16];
-	USHORT ManufacturerName[16];
-	UCHAR WeekOfManufacture;
-	USHORT YearOfManufacture;
-	USHORT UserFriendlyNameLength;
-	USHORT UserFriendlyName[1];
-} WmiMonitorID, * PWmiMonitorID;
-
-#define OFFSET_TO_PTR(Base, Offset) ((PBYTE)((PBYTE)Base + Offset))
-
-typedef HRESULT( WINAPI * WOB ) ( IN LPGUID lpGUID, IN DWORD nAccess, OUT PVOID );
-WOB WmiOpenBlock;
-typedef HRESULT( WINAPI * WQAD ) ( IN LONG_PTR hWMIHandle, ULONG * nBufferSize, OUT UCHAR * pBuffer );
-WQAD WmiQueryAllData;
-typedef HRESULT( WINAPI * WCB ) ( IN LONG_PTR );
-WCB WmiCloseBlock;
 
 void Fission::Platform::EnumMonitors()
 {
 	for( auto && mon : WindowsMonitor::s_Monitors ) delete mon;
 	WindowsMonitor::s_Monitors.clear();
 
-	MonitorEnumData data;
+	UINT32 numPathArrayElements;
+	UINT32 numModeInfoArrayElements;
+	DISPLAYCONFIG_PATH_INFO * pathArray = NULL;
+	DISPLAYCONFIG_MODE_INFO * modeInfoArray = NULL;
+	DISPLAYCONFIG_TOPOLOGY_ID currentTopologyId;
 
-	// Get all the monitor names
-	HRESULT hr = E_FAIL;
-	LONG_PTR hWmiHandle = 0;
-	PWmiMonitorID MonitorID = nullptr;
+	UINT32 count = 3;
+	LONG error = 0;
 
-	HINSTANCE hDLL = LoadLibraryA( "Advapi32.dll" );
-
-	if( hDLL == NULL ) throw 0x45;
-
-	WmiOpenBlock = (WOB)GetProcAddress( hDLL, "WmiOpenBlock" );
-	WmiQueryAllData = (WQAD)GetProcAddress( hDLL, "WmiQueryAllDataW" );
-	WmiCloseBlock = (WCB)GetProcAddress( hDLL, "WmiCloseBlock" );
-
-	if( WmiOpenBlock != NULL && WmiQueryAllData && WmiCloseBlock )
+	do
 	{
-		WCHAR pszDeviceId[256] = L"";
-		hr = WmiOpenBlock( (LPGUID)&WmiMonitorID_GUID, GENERIC_READ, &hWmiHandle );
-		if( hr == ERROR_SUCCESS )
-		{
-			ULONG nBufferSize = 0;
-			UCHAR * pAllDataBuffer = 0;
-			UCHAR * ptr = 0;
-			PWNODE_ALL_DATA pWmiAllData;
-			hr = WmiQueryAllData( hWmiHandle, &nBufferSize, 0 );
-			if( hr == ERROR_INSUFFICIENT_BUFFER )
-			{
-				pAllDataBuffer = (UCHAR *)malloc( nBufferSize );
-				ptr = pAllDataBuffer;
-				hr = WmiQueryAllData( hWmiHandle, &nBufferSize, pAllDataBuffer );
-				if( hr == ERROR_SUCCESS )
-				{
-					while( 1 )
-					{
-						pWmiAllData = (PWNODE_ALL_DATA)pAllDataBuffer;
-						if( pWmiAllData->WnodeHeader.Flags & WNODE_FLAG_FIXED_INSTANCE_SIZE )
-							MonitorID = (PWmiMonitorID)&pAllDataBuffer[pWmiAllData->DataBlockOffset];
-						else
-							MonitorID = (PWmiMonitorID)&pAllDataBuffer[pWmiAllData->OffsetInstanceDataAndLength[0].OffsetInstanceData];
+		numPathArrayElements = count;
+		numModeInfoArrayElements = count * 2u;
+		pathArray = (DISPLAYCONFIG_PATH_INFO *)_aligned_realloc( pathArray, numPathArrayElements * sizeof DISPLAYCONFIG_PATH_INFO, 64u );
+		modeInfoArray = (DISPLAYCONFIG_MODE_INFO *)_aligned_realloc( modeInfoArray, numModeInfoArrayElements * sizeof DISPLAYCONFIG_MODE_INFO, 64u );
 
-						ULONG nOffset = 0;
-						WCHAR * pwsInstanceName = 0;
-						nOffset = (ULONG)pAllDataBuffer[pWmiAllData->OffsetInstanceNameOffsets];
-						pwsInstanceName = (WCHAR *)OFFSET_TO_PTR( pWmiAllData, nOffset + sizeof( USHORT ) );
+		if( pathArray == NULL || modeInfoArray == NULL )
+			throw std::bad_alloc();
 
-						WCHAR * pwsUserFriendlyName = (WCHAR *)MonitorID->UserFriendlyName;
-						data.names.emplace_back( pwsUserFriendlyName );
+		error = QueryDisplayConfig( QDC_DATABASE_CURRENT, &numPathArrayElements, pathArray, &numModeInfoArrayElements, modeInfoArray, &currentTopologyId );
 
-						if( !pWmiAllData->WnodeHeader.Linkage )
-							break;
-						pAllDataBuffer += pWmiAllData->WnodeHeader.Linkage;
-					}
-				}
-				free( ptr );
-			}
-			WmiCloseBlock( hWmiHandle );
-		}
+	} while( error && (count+=3) < 25 );
+
+	if( error == ERROR_INSUFFICIENT_BUFFER )
+	{
+		Console::Error( "How do you have more than 24 monitors?? You are INSANE." );
+		throw std::logic_error( "rip" );
 	}
 
-	FreeLibrary( hDLL );
+	MonitorEnumData enumData;
+	enumData.index = 0;
+	enumData.pathArray = pathArray;
+	enumData.pathArrayCount = numPathArrayElements;
 
 	// Init list of monitors
-	EnumDisplayMonitors( NULL, nullptr, WindowsMonitor::MonitorEnumCallback, (LPARAM)&data );
+	EnumDisplayMonitors( NULL, nullptr, WindowsMonitor::MonitorEnumCallback, (LPARAM)&enumData );
+
+	// Free memory that we are done with.
+	_aligned_free( pathArray );
+	_aligned_free( modeInfoArray );
 }
