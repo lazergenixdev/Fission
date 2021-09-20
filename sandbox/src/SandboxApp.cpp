@@ -35,6 +35,29 @@ public:
 		static char textBuffer[100];
 		bool bFoundHover = false;
 
+		static bool value = true;
+		Fission::UI::Debug::CheckBox( "purp box", &value );
+
+		static float intger = 9, stok = 2.0f;
+		Fission::UI::Debug::SliderFloat( "rad", &intger, 0.0f, 50.0f );
+		Fission::UI::Debug::SliderFloat( "stok", &stok, 0.0f, 30.0f );
+		if( value && selected )
+		{
+			m_pRenderer2D->FillRoundRect(
+				{ 280.0f, 700.0f, 80.0f, 300.0f },
+				intger,
+				Fission::color( Fission::Colors::Violet, 0.3f )
+			);
+			m_pRenderer2D->DrawRoundRect(
+				{ 280.0f, 700.0f, 80.0f, 300.0f },
+				intger,
+				Fission::color( Fission::Colors::Violet, 0.4f ),
+				stok,
+				Fission::StrokeStyle::Inside
+			);
+		//	m_pRenderer2D->DrawRect( Fission::base::rectf{ 300.0f, 700.0f, 400.0f, 600.0f }.expanded(0.5f), Fission::Colors::White, 0.5f );
+		}
+
 		auto monitor = wnd->GetMonitor();
 		if( pos + 20.0f > 0.0f )
 		{
@@ -92,16 +115,6 @@ public:
 		{
 			if( selected ) g_App->pMainWindow->SetSize( selected->resolution );
 		}
-
-		static bool value = true;
-		Fission::UI::Debug::CheckBox( "blue box", &value );
-		if( value )
-		{
-			m_pRenderer2D->DrawRect( { 300.0f, 400.0f, 400.0f, 500.0f }, Fission::Colors::Blue, 4.0f );
-		}
-
-		static int intger = 9;
-		Fission::UI::Debug::InputInt( "ok", &intger );
 
 		m_pRenderer2D->Render();
 	}

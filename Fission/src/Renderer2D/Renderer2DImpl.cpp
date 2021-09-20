@@ -1,4 +1,4 @@
-#include "Renderer2DImpl.h"
+﻿#include "Renderer2DImpl.h"
 #include "Mesh.h"
 #include <numbers>
 #include <Fission/Base/Exception.h>
@@ -21,7 +21,7 @@ namespace Fission {
 		using sincos = Renderer2DImpl::DrawData::sincos;
 		std::vector<sincos> out;
 
-		int geometry_persision = 10;
+		int geometry_persision = 11;
 
 		// restrict the amount of persision to a reasonable range
 		FISSION_ASSERT( geometry_persision >= 1 && geometry_persision < 100 );
@@ -542,12 +542,175 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 
 	void Renderer2DImpl::DrawData::AddRoundRectFilled( base::rectf rect, float rad, color c )
 	{
-		FISSION_THROW_NOT_IMPLEMENTED();
-	}
+		// This is some good fucking code
+		const float & left   = rect.x.low;
+		const float & right  = rect.x.high;
+		const float & top    = rect.y.low;
+		const float & bottom = rect.y.high;
 
-	void Renderer2DImpl::DrawData::AddRoundRect( base::rectf rect, float rad, color color, float stroke_width, StrokeStyle stroke )
+		// don't give me that garbage rect and expect something on the screen smh
+		if( left == right || top == bottom ) return;
+
+		// WHY DID YOU EVEN CALL fill ROUND rect, YOU DISAPPOINT ME
+		if( rad <= 0.0f ) { AddRectFilled( rect, c ); return; }
+
+		// I could probably handle this better
+		rad = std::min( rad, ( bottom - top ) / 2.0f );
+		rad = std::min( rad, ( right - left ) / 2.0f );
+
+		const float inner_left = left + rad;
+		const float inner_right = right - rad;
+		const float inner_top = top + rad;
+		const float inner_bottom = bottom - rad;
+
+		int v_count = 9u + TrigCache.size() * 4;
+		for( auto i = 1; i < v_count - 1; i++ ) {
+			pIdxData[idxCount++] = vtxCount;
+			pIdxData[idxCount++] = vtxCount + i;
+			pIdxData[idxCount++] = vtxCount + i + 1u;
+		}
+		pIdxData[idxCount++] = vtxCount;
+		pIdxData[idxCount++] = vtxCount + 1;
+		pIdxData[idxCount++] = vtxCount + v_count - 1;
+
+#define _push_vertex(X,Y,C) pVtxData[vtxCount++] = vertex( *mat * base::vector2f( X, Y ), C )
+
+		// Center
+		_push_vertex( ( right + left ) / 2.0f, ( bottom + top ) / 2.0f, c );
+
+		// Bottom Left
+		_push_vertex( inner_left, bottom, c );
+		for( int i = 0; i < TrigCache.size(); i++ )
+			_push_vertex( inner_left - TrigCache[i].sin * rad, inner_bottom + TrigCache[i].cos * rad, c );
+		_push_vertex( left, inner_bottom, c );
+
+		// Top Left
+		_push_vertex( left, inner_top, c );
+		for( int i = 0; i < TrigCache.size(); i++ )
+			_push_vertex( inner_left - TrigCache[i].cos * rad, inner_top - TrigCache[i].sin * rad, c );
+		_push_vertex( inner_left, top, c );
+
+		// Top Right
+		_push_vertex( inner_right, top, c );
+		for( int i = 0; i < TrigCache.size(); i++ )
+			_push_vertex( inner_right + TrigCache[i].sin * rad, inner_top - TrigCache[i].cos * rad, c );
+		_push_vertex( right, inner_top, c );
+
+		// Bottom Right
+		_push_vertex( right, inner_bottom, c );
+		for( int i = 0; i < TrigCache.size(); i++ )
+			_push_vertex( inner_right + TrigCache[i].cos * rad, inner_bottom + TrigCache[i].sin * rad, c );
+		_push_vertex( inner_right, bottom, c );
+
+#undef _push_vertex
+	}
+	
+	void Renderer2DImpl::DrawData::AddRoundRect( base::rectf rect, float rad, color c, float stroke_width, StrokeStyle stroke )
 	{
-		FISSION_THROW_NOT_IMPLEMENTED();
+		if( rad <= 0.0f ) { AddRect( rect, c, stroke_width, stroke ); return; }
+
+		rad = std::max( stroke_width, rad );
+
+		switch( stroke )
+		{
+		case Fission::StrokeStyle::Center:
+			rect.expand( -stroke_width / 2.0f );
+			break;
+		case Fission::StrokeStyle::Inside:
+			break;
+		case Fission::StrokeStyle::Outside:
+			break;
+		default:throw std::logic_error("how? 🤔");
+		}
+
+		// same old
+		const float & left = rect.x.low;
+		const float & right = rect.x.high;
+		const float & top = rect.y.low;
+		const float & bottom = rect.y.high;
+		if( left == right || top == bottom ) return;
+
+		// I could probably handle this better
+		//rad = std::min( rad, ( bottom - top ) / 2.0f );
+		//rad = std::min( rad, ( right - left ) / 2.0f );
+
+		const float inner_left = left + rad;
+		const float inner_right = right - rad;
+		const float inner_top = top + rad;
+		const float inner_bottom = bottom - rad;
+
+		int v_count0 = 8u + TrigCache.size() * 4;
+		for( auto i = 0; i < v_count0 - 1; i++ ) {
+			pIdxData[idxCount++] = vtxCount + i;
+			pIdxData[idxCount++] = vtxCount + v_count0 + i;
+			pIdxData[idxCount++] = vtxCount + i + 1;
+
+			pIdxData[idxCount++] = vtxCount + v_count0 + i;
+			pIdxData[idxCount++] = vtxCount + v_count0 + i + 1;
+			pIdxData[idxCount++] = vtxCount + i + 1;
+		}
+		pIdxData[idxCount++] = vtxCount;
+		pIdxData[idxCount++] = vtxCount + v_count0;
+		pIdxData[idxCount++] = vtxCount + v_count0 - 1;
+
+		pIdxData[idxCount++] = vtxCount + v_count0;
+		pIdxData[idxCount++] = vtxCount + v_count0 - 1;
+		pIdxData[idxCount++] = vtxCount + v_count0 * 2 - 1;
+
+#define _push_vertex(X,Y,C) pVtxData[vtxCount++] = vertex( *mat * base::vector2f( X, Y ), C )
+
+		// // // // // // // // INNER // // // // // // // //
+		// Bottom Left
+		_push_vertex( inner_left, bottom, c );
+		for( int i = 0; i < TrigCache.size(); i++ )
+			_push_vertex( inner_left - TrigCache[i].sin * rad, inner_bottom + TrigCache[i].cos * rad, c );
+		_push_vertex( left, inner_bottom, c );
+
+		// Top Left
+		_push_vertex( left, inner_top, c );
+		for( int i = 0; i < TrigCache.size(); i++ )
+			_push_vertex( inner_left - TrigCache[i].cos * rad, inner_top - TrigCache[i].sin * rad, c );
+		_push_vertex( inner_left, top, c );
+
+		// Top Right
+		_push_vertex( inner_right, top, c );
+		for( int i = 0; i < TrigCache.size(); i++ )
+			_push_vertex( inner_right + TrigCache[i].sin * rad, inner_top - TrigCache[i].cos * rad, c );
+		_push_vertex( right, inner_top, c );
+
+		// Bottom Right
+		_push_vertex( right, inner_bottom, c );
+		for( int i = 0; i < TrigCache.size(); i++ )
+			_push_vertex( inner_right + TrigCache[i].cos * rad, inner_bottom + TrigCache[i].sin * rad, c );
+		_push_vertex( inner_right, bottom, c );
+
+		// // // // // // // // OUTER // // // // // // // //
+		rad -= stroke_width;
+		// Bottom Left
+		_push_vertex( inner_left, bottom - stroke_width, c );
+		for( int i = 0; i < TrigCache.size(); i++ )
+			_push_vertex( inner_left - TrigCache[i].sin * rad, inner_bottom + TrigCache[i].cos * rad, c );
+		_push_vertex( left + stroke_width, inner_bottom, c );
+
+		// Top Left
+		_push_vertex( left + stroke_width, inner_top, c );
+		for( int i = 0; i < TrigCache.size(); i++ )
+			_push_vertex( inner_left - TrigCache[i].cos * rad, inner_top - TrigCache[i].sin * rad, c );
+		_push_vertex( inner_left, top + stroke_width, c );
+
+		// Top Right
+		_push_vertex( inner_right, top + stroke_width, c );
+		for( int i = 0; i < TrigCache.size(); i++ )
+			_push_vertex( inner_right + TrigCache[i].sin * rad, inner_top - TrigCache[i].cos * rad, c );
+		_push_vertex( right - stroke_width, inner_top, c );
+
+		// Bottom Right
+		_push_vertex( right - stroke_width, inner_bottom, c );
+		for( int i = 0; i < TrigCache.size(); i++ )
+			_push_vertex( inner_right + TrigCache[i].cos * rad, inner_bottom + TrigCache[i].sin * rad, c );
+		_push_vertex( inner_right, bottom - stroke_width, c );
+
+#undef _push_vertex
 	}
 
 	void Renderer2DImpl::DrawData::AddMesh( const Mesh * m )

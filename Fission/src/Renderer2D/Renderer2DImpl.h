@@ -133,6 +133,8 @@ namespace Fission {
 			uint32_t *	pIdxData = nullptr;
 
 			struct sincos { float sin, cos; };
+
+			// TODO: Create "mips" for this cache to reduce unnecessary geometry
 			static std::vector<sincos> TrigCache;
 
 			const base::matrix2x3f * mat;
