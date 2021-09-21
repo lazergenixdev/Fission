@@ -209,6 +209,8 @@ public:
 	_string_impl & operator=( _string_impl && src ) noexcept
 	{
 		_FISSION_STRING_TRACE( "Move Operator\n" );
+		this->~_string_impl();
+
 		m_pData = src.m_pData;
 		m_Capacity = src.m_Capacity;
 		m_Size = src.m_Size;
