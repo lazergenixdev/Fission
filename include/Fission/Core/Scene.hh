@@ -28,97 +28,62 @@
 *
 */
 
-// todo: redesign debug layer interface to not be SLOW AF!
-
 #pragma once
-#include <Fission/Base/TimeStep.h>
-#include <Fission/Core/Input/Event.hh>
+#include <Fission/Core/Layer.hh>
 #include <Fission/Core/Graphics/Renderer2D.hh>
 
-namespace Fission {
+namespace Fission
+{
+	using SceneID = int;
+	
+	static constexpr SceneID NullSceneID     =  0; // reserved ID, used to represent no scene
+	static constexpr SceneID CMDLineSceneID  = -1; // reserved ID, used to represent scene defined by cmd line
+	static constexpr SceneID ExternalSceneID = -2; // reserved ID, used to represent external scene
 
-	struct IFLayer : public IFEventHandler, public IFObject
+
+	struct SceneKey : public std::map<string, string>
 	{
-		//! @note If you got any resources that need to be sent to the GPU, 
-		//!			now is the time to do it
-		virtual void OnCreate( class FApplication * app ) = 0;
+		using map = std::map<string, string>;
+		using arg_list = std::initializer_list<value_type>;
+		SceneID id;
 
-		//! @brief Function to update what is displayed on a frame
-		virtual void OnUpdate( timestep dt ) = 0;
-		
-	}; // struct Fission::IFLayer
+		SceneKey( SceneID _ID = NullSceneID ) : map(), id( _ID )
+		{}
 
+		SceneKey( SceneID _ID, const arg_list & _Args ): map( _Args ), id(_ID)
+		{}
 
-/* =================================================================================================== */
-/* ----------------------------------------- Default Layers ------------------------------------------ */
-/* =================================================================================================== */
-
-	using DrawCallback = std::function<void( IFRenderer2D * _Renderer, void * _UserData )>;
-
-	struct DebugFrameInfo
-	{
-		float * frame_times_arr;
-		int frame_times_count;
-
-		int current_frame;
 	};
 
-	class IFDebugLayer : public IFLayer
+	struct IFScene : public IFLayer
 	{
-	public:
-		virtual void RegisterDrawCallback( const char * _Key, DrawCallback _Callback, void * _UserData ) = 0;
+		virtual void OnCreate( class FApplication * app ) override {}
 
-		virtual void Text( const char * what ) = 0;
+		virtual void OnUpdate( timestep dt ) override {}
 
-		template <size_t Buffer_Size = 128, typename...T>
-		void Text( const char * fmt, T&&...args )
-		{
-			char _buffer[Buffer_Size];
-			sprintf_s( _buffer, fmt, std::forward<T>( args )... );
-			Text( _buffer );
-		}
+		virtual SceneKey GetKey() = 0;
 
-		virtual void GetFrameInfo( DebugFrameInfo * dest ) {};
 	};
 
-	struct IFConsoleLayer : public IFLayer {};
-
-	struct IFUILayer : public IFLayer {};
-
-/* =================================================================================================== */
-/* ------------------------------------------ Scene System ------------------------------------------- */
-/* =================================================================================================== */
-
-	class FScene : public IFEventHandler, public IFObject
+	struct FMultiLayerScene : public IFScene
 	{
 	public:
-		virtual void OnCreate( class FApplication * app )
+		// This should be called after all layers have been pushed onto the layer stack.
+		virtual void OnCreate( class FApplication * app ) override
 		{
-			for( auto && l : m_vUncreatedLayers )
-				m_vLayerStack.emplace_back( l );
 			for( auto && l : m_vLayerStack )
 				l->OnCreate( app );
-			m_vUncreatedLayers.clear();
 		}
 
-		inline void OnUpdate( timestep dt )
+		virtual void OnUpdate( timestep dt ) override
 		{
-			if( m_vUncreatedLayers.size() )
-			{
-				for( auto && l : m_vUncreatedLayers )
-				{
-					l->OnCreate( mApp );
-					m_vLayerStack.emplace_back( l );
-				}
-				m_vUncreatedLayers.clear();
-			}
 			for( auto && l : m_vLayerStack )
 				l->OnUpdate( dt );
 		}
 
 		inline void PushLayer( IFLayer * layer )
 		{
-			m_vUncreatedLayers.emplace_back( layer );
+			m_vLayerStack.emplace_back( layer );
 		}
 
 // Very boring code, here only for debugging purposes.
@@ -194,9 +159,8 @@ namespace Fission {
 			return EventResult::Handled;
 		}
 
-		virtual ~FScene() 
+		virtual ~FMultiLayerScene() 
 		{
-			FISSION_ASSERT( m_vUncreatedLayers.size() == 0 );
 			for( auto && l : m_vLayerStack )
 				l->Destroy();
 		}
@@ -206,7 +170,6 @@ namespace Fission {
 		friend class SceneStack;
 
 		std::vector<IFLayer *> m_vLayerStack;
-		std::vector<IFLayer *> m_vUncreatedLayers;
 
 		class FApplication * mApp = nullptr;
 

@@ -4,12 +4,11 @@
 
 #include <Fission/Core/Engine.hh>
 #include <Fission/Core/Application.hh>
+#include <Fission/Core/Scene.hh>
 #include <Fission/Core/Console.hh>
 
 #include "Platform/GraphicsLoader.h"
 #include "Platform/WindowManager.h"
-
-#include "SceneStack.h"
 
 #include "Layer/DebugLayer.h"
 #include "Layer/ConsoleLayer.h"
@@ -28,6 +27,8 @@ namespace Fission
 		fsn_ptr<WindowManager>      m_pWindowManager;
 		fsn_ptr<GraphicsLoader>     m_pGraphicsLoader;
 
+		std::vector<SceneKey>		m_SceneKeyHistory;
+
 		fsn_ptr<IFGraphics>         m_pGraphics;
 		fsn_ptr<IFWindow>           m_pWindow;
 
@@ -36,10 +37,9 @@ namespace Fission
 
 		DebugLayerImpl				m_DebugLayer;
 		ConsoleLayerImpl			m_ConsoleLayer;
-		SceneStack                  m_SceneStack;
+		IFScene *                   m_CurrentScene;
 
 		vsync_						m_vsync = vsync_On;
-
 		std::optional<color>        m_clearColor = color{};
 
 		bool                        m_bRunning = true;
@@ -69,7 +69,9 @@ namespace Fission
 
 		virtual void LoadApplication( FApplication * app ) override;
 
-		virtual void PushScene( FScene * _Ptr_Scene ) override;
+		virtual void new_Scene( const SceneKey & key ) override;
+		virtual void back_Scene() override;
+		virtual void ClearSceneHistory() override;
 
 		virtual void RegisterRenderer( const char * name, IFRenderer * r ) override;
 

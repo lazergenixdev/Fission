@@ -39,15 +39,14 @@ namespace Fission
 	class FApplication : public IFObject
 	{
 	public:
-		IFEngine *   pEngine     = nullptr;
-		IFWindow *   pMainWindow = nullptr;
+		IFEngine   * pEngine     = nullptr;
+		IFWindow   * pMainWindow = nullptr;
 		IFGraphics * pGraphics   = nullptr;
 
 	public:
 
 		struct CreateInfo
 		{
-			FScene *              startScene        = nullptr;
 			IFWindow::Properties  window            = {};
 			GraphicsState         graphics          = {};
 
@@ -65,6 +64,9 @@ namespace Fission
 
 		// called right before Graphics context gets destroyed and the program exits.
 		virtual void OnShutdown() {}
+
+		// called on the creation of every new scene
+		virtual IFScene * OnCreateScene( const SceneKey& key ) = 0;
 
 	public:
 		constexpr FApplication() noexcept = default;

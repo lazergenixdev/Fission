@@ -83,9 +83,13 @@ namespace Fission
 
 		virtual IFDebugLayer * GetDebug() = 0;
 
-		virtual void PushScene( FScene * _Ptr_Scene ) = 0;
+		// create a new scene and set switch to that scene.
+		virtual void new_Scene( const SceneKey& key ) = 0;
+		// go to the previous scene in history.
+		virtual void back_Scene() = 0;
+		virtual void ClearSceneHistory() = 0;
 
-		virtual void CloseScene() {}
+	//	virtual void CloseScene() {}
 
 	}; // struct Fission::IFEngine
 

@@ -80,7 +80,7 @@ namespace Fission
 			if( m_clearColor )
 			SwapChain->Clear( m_clearColor.value() );
 
-			m_SceneStack.OnUpdate( m_Application, _dt );
+			m_CurrentScene->OnUpdate( _dt );
 
 			m_ConsoleLayer.OnUpdate( _dt );
 			m_DebugLayer.OnUpdate( _dt );
@@ -109,7 +109,7 @@ namespace Fission
 		m_Application = app;
 		app->pEngine = this;
 
-		// Memory leak, TODO: fix memory leak.
+		// Memory leak LOL. this is fine
 		AppCreateInfo * appCreateInfo = new AppCreateInfo;
 
 		// Fetch start-up information for this app
@@ -122,8 +122,8 @@ namespace Fission
 			m_DebugLayer.SetAppVersionString(appVersionString);
 		}
 
-		// Pass our start scene to the scene stack.
-		m_SceneStack.PushScene( appCreateInfo->startScene );
+		// ??????????????
+		m_CurrentScene = m_Application->OnCreateScene( {} );
 
 
 		// Create everything needed to run our application:
@@ -151,7 +151,7 @@ namespace Fission
 		app->OnCreate();
 		m_DebugLayer.OnCreate(app);
 		m_ConsoleLayer.OnCreate(app);
-		m_SceneStack.OnCreate(app);
+		m_CurrentScene->OnCreate(app);
 
 		base::size wViewportSize = m_pWindow->GetSwapChain()->GetSize();
 		for( auto && [name, context] : m_Renderers )
@@ -192,11 +192,25 @@ namespace Fission
 	}
 
 
-	void FissionEngine::PushScene( FScene * _Ptr_Scene )
+	void FissionEngine::new_Scene( const SceneKey & key )
 	{
-		m_SceneStack.OpenScene( _Ptr_Scene );
+		//auto oldKey = m_CurrentScene->GetKey();
+		//auto scene = m_Application->OnCreateScene( key, &oldKey );
+		//m_CurrentScene->Destroy();
+		//m_CurrentScene = scene;
 	}
+	void FissionEngine::back_Scene()
+	{
+		m_SceneKeyHistory.pop_back();
+		auto scene = m_Application->OnCreateScene( m_SceneKeyHistory.back() );
+		scene->OnCreate( m_Application );
+		m_CurrentScene->Destroy();
+		m_CurrentScene = scene;
+	}
+	void FissionEngine::ClearSceneHistory()
+	{
 
+	}
 
 	void FissionEngine::RegisterRenderer( const char * name, IFRenderer * r )
 	{

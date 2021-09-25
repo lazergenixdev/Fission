@@ -11,7 +11,7 @@ namespace Fission {
 		if( m_ConsoleLayer.OnKeyDown( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-		return m_SceneStack.OnKeyDown( args );
+		return m_CurrentScene->OnKeyDown( args );
 	}
 
 	EventResult FissionEngine::OnKeyUp( KeyUpEventArgs & args )
@@ -22,7 +22,7 @@ namespace Fission {
 		if( m_ConsoleLayer.OnKeyUp( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-		return m_SceneStack.OnKeyUp( args );
+		return m_CurrentScene->OnKeyUp( args );
 	}
 
 	EventResult FissionEngine::OnTextInput( TextInputEventArgs & args )
@@ -33,7 +33,7 @@ namespace Fission {
 		if( m_ConsoleLayer.OnTextInput( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-		return m_SceneStack.OnTextInput( args );
+		return m_CurrentScene->OnTextInput( args );
 	}
 
 	EventResult FissionEngine::OnMouseMove( MouseMoveEventArgs & args )
@@ -44,7 +44,7 @@ namespace Fission {
 		if( m_ConsoleLayer.OnMouseMove( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-		return m_SceneStack.OnMouseMove( args );
+		return m_CurrentScene->OnMouseMove( args );
 	}
 
 	EventResult FissionEngine::OnMouseLeave( MouseLeaveEventArgs & args )
@@ -55,7 +55,7 @@ namespace Fission {
 		if( m_ConsoleLayer.OnMouseLeave( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-		return m_SceneStack.OnMouseLeave( args );
+		return m_CurrentScene->OnMouseLeave( args );
 	}
 
 	EventResult FissionEngine::OnSetCursor( SetCursorEventArgs & args )
@@ -66,12 +66,12 @@ namespace Fission {
 		if( m_ConsoleLayer.OnSetCursor( args ) == EventResult::Handled )
 			return EventResult::Handled;
 
-		return m_SceneStack.OnSetCursor( args );
+		return m_CurrentScene->OnSetCursor( args );
 	}
 
 	EventResult FissionEngine::OnHide()
 	{
-		m_SceneStack.OnHide();
+		m_CurrentScene->OnHide();
 
 		// Pause the Main thread
 		m_bMinimized = true;
@@ -80,7 +80,7 @@ namespace Fission {
 
 	EventResult FissionEngine::OnShow()
 	{
-		m_SceneStack.OnShow();
+		m_CurrentScene->OnShow();
 
 		if( m_bMinimized )
 		{
@@ -101,7 +101,7 @@ namespace Fission {
 
 		m_ExitCode = args.ExitCode;
 
-		m_SceneStack.OnClose( args );
+		m_CurrentScene->OnClose( args );
 
 		m_bRunning = false;
 
@@ -115,7 +115,7 @@ namespace Fission {
 
 		m_DebugLayer.OnResize(args);
 		m_ConsoleLayer.OnResize(args);
-		m_SceneStack.OnResize(args);
+		m_CurrentScene->OnResize(args);
 
 		return EventResult::Handled;
 	}

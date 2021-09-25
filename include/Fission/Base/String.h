@@ -467,6 +467,14 @@ protected:
 		return *reinterpret_cast<_String_Type*>( this );
 	}
 
+	inline int __cmp( const _string_impl & _Right ) const
+	{
+		if constexpr( std::is_same_v<char_type,char8_t> )
+			return strcmp((const char*)m_pData,(const char*)_Right.m_pData);
+		else if constexpr( std::is_same_v<char_type,char> )
+			return strcmp((const char*)m_pData,(const char*)_Right.m_pData);
+	}
+
 
 private:
 	static constexpr size_t s_Capacity = 24 / sizeof( char_type ); //!< Capacity of storage in characters.
@@ -528,6 +536,8 @@ public:
 
 	utf8_string operator+( const utf8_string & _Right ) const { return _string_impl::__add( _Right ); }
 	utf8_string & operator+=( const utf8_string & _Right ) { return _string_impl::__add_eq( _Right ); }
+
+	bool operator<( const utf8_string & _Right ) const { return _string_impl::__cmp( _Right ) < 0; }
 
 	utf16_string utf16() const;
 	utf32_string utf32() const;

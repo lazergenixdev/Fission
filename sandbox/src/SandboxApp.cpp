@@ -178,10 +178,12 @@ private:
 	Fission::DisplayMode * selected = nullptr;
 };
 
-class BallScene : public DefaultDelete<Fission::FScene>
+class MainScene : public DefaultDelete<Fission::FMultiLayerScene>
 {
 public:
-	BallScene() { PushLayer( new BallLayer ); }
+	MainScene() { PushLayer( new BallLayer ); }
+
+	virtual Fission::SceneKey GetKey() override { return {}; }
 };
 
 class BounceBallApp : public DefaultDelete<Fission::FApplication>
@@ -189,10 +191,16 @@ class BounceBallApp : public DefaultDelete<Fission::FApplication>
 public:
 	virtual void OnStartUp( CreateInfo * info ) override
 	{
-		info->startScene = new BallScene;
 		info->window.title = u8"🔥 Sandbox 🔥  👌👌👌👌👌";
 		strcpy_s( info->name_utf8, "sandbox" );
 		strcpy_s( info->version_utf8, "1.0.0" );
+
+	//	pEngine->new_Scene( Fission::SceneKey{ 0x45, {{"user", "Dahrman"}} } );
+	}
+	virtual Fission::IFScene * OnCreateScene( const Fission::SceneKey& key ) override
+	{
+		// ignore scene key and just create the main scene
+		return new MainScene;
 	}
 };
 

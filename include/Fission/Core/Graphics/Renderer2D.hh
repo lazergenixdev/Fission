@@ -76,7 +76,7 @@ namespace Fission
 		struct MeshData * m_Data;
 	};
 
-	class IFRenderer2D : public IFRenderer
+	struct IFRenderer2D : public IFRenderer
 	{
 	public:
 
