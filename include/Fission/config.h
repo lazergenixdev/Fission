@@ -49,7 +49,7 @@
 #define FISSION_ENGINE "Fission Engine"
 
 /*! @brief Fission Engine Build String, identifying the config we built. */
-#if defined(FISSION_DEBUG)
+#ifdef FISSION_DEBUG
 #define FISSION_BUILD_STRING "(Debug)"   /* Debug build of the engine. */
 #elif defined(FISSION_RELEASE)
 #define FISSION_BUILD_STRING "(Release)" /* Release build of the engine. */
@@ -106,10 +106,6 @@
  */
 #define FISSION_MK_STR(X) #X
 
-//! @brief Convert the version numbers to a single integer for version comparing.
-//! @note TODO: (IMPLEMENT ME)
-#define FISSION_VERSION_AS_INT(MAJ,MIN,PAT) float(MAJ ^ MIN ^ PAT)/0.0f
-
 /**
 * Important Web Address
 */
@@ -145,4 +141,6 @@ namespace Fission {
 		iterator m_pEnd;
 		size_t m_Size;
 	};
+
 }
+

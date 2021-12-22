@@ -10,17 +10,31 @@ bCalled = true
 
 #define _FISSION_FULL_BUILD_STRING FISSION_ENGINE " v" FISSION_FULL_VERSION_STRING
 
+#include <Fission/Base/ColoredString.h>
+
 namespace Fission
 {
 	using namespace string_literals;
 
 	using AppCreateInfo = FApplication::CreateInfo;
 
-	void FissionEngine::GetVersion( int * _Maj, int * _Min, int * _Pat )
+	FissionEngine::FissionEngine()
 	{
-		*_Maj = FISSION_VERSION_MAJ;
-		*_Min = FISSION_VERSION_MIN;
-		*_Pat = FISSION_VERSION_PAT;
+		// Initialize Graphics Loader.
+		CreateGraphicsLoader(&m_pGraphicsLoader);
+		m_pGraphicsLoader->Initialize();
+
+		// Initialize Window Manager.
+		CreateWindowManager(&m_pWindowManager);
+		m_pWindowManager->Initialize();
+
+		Fission::Console::WriteLine( GetVersionString() / Colors::LightSteelBlue );
+		Fission::Console::WriteLine( "cmdline: " / Colors::White + GetCommandLineA() / Colors::LightGray );
+	}
+
+	Version FissionEngine::GetVersion()
+	{
+		return { FISSION_VERSION_MAJ, FISSION_VERSION_MIN, FISSION_VERSION_PAT };
 	}
 
 	const char * FissionEngine::GetVersionString()
@@ -28,19 +42,6 @@ namespace Fission
 		return _FISSION_FULL_BUILD_STRING;
 	}
 
-
-	void FissionEngine::LoadEngine()
-	{
-		FISSION_ENGINE_ONCE( "Attempted to call `LoadEngine` more than once." );
-
-		// Initialize Graphics Loader.
-		CreateGraphicsLoader( &m_pGraphicsLoader );
-		m_pGraphicsLoader->Initialize();
-
-		// Initialize Window Manager.
-		CreateWindowManager( &m_pWindowManager );
-		m_pWindowManager->Initialize();
-	}
 
 	void FissionEngine::Shutdown( Platform::ExitCode )
 	{
@@ -109,32 +110,33 @@ namespace Fission
 		m_Application = app;
 		app->pEngine = this;
 
-		// Memory leak LOL. this is fine
-		AppCreateInfo * appCreateInfo = new AppCreateInfo;
-
-		// Fetch start-up information for this app
-		app->OnStartUp( appCreateInfo );
-
-		// Use the app name and version
 		{
-			char appVersionString[144]; AppCreateInfo * info = appCreateInfo;
-			sprintf( appVersionString, "%s %s (%s/vanilla)", info->name_utf8, info->version_utf8, info->version_utf8 );
+			AppCreateInfo appCreateInfo;
+
+			// Fetch start-up information for this app
+			app->OnStartUp( &appCreateInfo );
+
+			// Use the app name and version
+			{
+			char appVersionString[144]; AppCreateInfo * info = &appCreateInfo;
+			sprintf_s( appVersionString, "%s %s (%s/vanilla)", info->name_utf8, info->version_utf8, info->version_utf8 );
 			m_DebugLayer.SetAppVersionString(appVersionString);
+			}
+
+			// uh??????????????
+			m_CurrentScene = m_Application->OnCreateScene( {} );
+
+
+			// Create everything needed to run our application:
+
+			m_pGraphicsLoader->CreateGraphics( &appCreateInfo.graphics, &m_pGraphics );
+			m_pWindowManager->SetGraphics( m_pGraphics.get() );
+
+			IFWindow::CreateInfo winCreateInfo;
+			winCreateInfo.pEventHandler = this;
+			winCreateInfo.wProperties = appCreateInfo.window;
+			m_pWindowManager->CreateWindow( &winCreateInfo, &m_pWindow );
 		}
-
-		// ??????????????
-		m_CurrentScene = m_Application->OnCreateScene( {} );
-
-
-		// Create everything needed to run our application:
-
-		m_pGraphicsLoader->CreateGraphics( &appCreateInfo->graphics, &m_pGraphics );
-		m_pWindowManager->SetGraphics( m_pGraphics.get() );
-
-		IFWindow::CreateInfo winCreateInfo;
-		winCreateInfo.pEventHandler = this;
-		winCreateInfo.wProperties = appCreateInfo->window;
-		m_pWindowManager->CreateWindow( &winCreateInfo, &m_pWindow );
 
 		app->pMainWindow = m_pWindow.get();
 		app->pGraphics = m_pGraphics.get();
@@ -144,14 +146,6 @@ namespace Fission
 		Fission::CreateRenderer2D( &renderer );
 		RegisterRenderer( "$internal2D", renderer );
 		}
-
-		// Now everything should be initialized, we call OnCreate
-		//  for our application and all of its dependencies:
-
-		app->OnCreate();
-		m_DebugLayer.OnCreate(app);
-		m_ConsoleLayer.OnCreate(app);
-		m_CurrentScene->OnCreate(app);
 
 		base::size wViewportSize = m_pWindow->GetSwapChain()->GetSize();
 		for( auto && [name, context] : m_Renderers )
@@ -163,7 +157,7 @@ namespace Fission
 			}
 		}
 
-		Console::RegisterCommand( "exit", [=]( const string & ) { m_pWindow->Close(); return string(); } );
+		Console::RegisterCommand( "exit", [=]( const string & ) { m_pWindow->Close(); } );
 
 		Console::RegisterCommand( "vsync", 
 			[&] ( const string & in ) {
@@ -172,21 +166,27 @@ namespace Fission
 				if( strcmp( in.c_str(), "on" ) == 0 )
 				{
 					m_vsync = vsync_On;
-					return "vsync turned on"_utf8;
+					Console::WriteLine( "vsync turned on"_utf8 );
 				}
 
 				if( strcmp( in.c_str(), "off" ) == 0 )
 				{
 					m_vsync = vsync_Off;
-					return "vsync turned off"_utf8;
+					Console::WriteLine( "vsync turned off"_utf8 );
 				}
-
-				return "incorrect format"_utf8;
 			}
 		);
 
 		// sus
-		Console::RegisterCommand( "sus", [=]( const string & ) { return string("ngl, you kinda be lookin a little SUS!"); });
+		Console::RegisterCommand( "sus", [=]( const string & ) { return string("amogus ded"); });
+
+		// Now everything should be initialized, we call OnCreate
+		//  for our application and all of its dependencies:
+
+		app->OnCreate();
+		m_DebugLayer.OnCreate(app);
+		m_ConsoleLayer.OnCreate(app);
+		m_CurrentScene->OnCreate(app);
 
 		CreateDebug( m_pWindowManager.get(), app );
 	}
@@ -201,11 +201,11 @@ namespace Fission
 	}
 	void FissionEngine::back_Scene()
 	{
-		m_SceneKeyHistory.pop_back();
-		auto scene = m_Application->OnCreateScene( m_SceneKeyHistory.back() );
-		scene->OnCreate( m_Application );
-		m_CurrentScene->Destroy();
-		m_CurrentScene = scene;
+		//m_SceneKeyHistory.pop_back();
+		//auto scene = m_Application->OnCreateScene( m_SceneKeyHistory.back() );
+		//scene->OnCreate( m_Application );
+		//m_CurrentScene->Destroy();
+		//m_CurrentScene = scene;
 	}
 	void FissionEngine::ClearSceneHistory()
 	{
@@ -232,15 +232,17 @@ namespace Fission
 	void FissionEngine::Destroy() 
 	{ 
 		DestroyDebug();
-		this->~FissionEngine(); 
-		_aligned_free( this ); 
+		delete this;
 	}
 
 
 
 	void CreateEngine( void * instance, IFEngine ** ppEngine )
 	{
-		void * mem = _aligned_malloc( ( sizeof( FissionEngine ) + 64-sizeof(FissionEngine)%64 ), 64 );
-		*ppEngine = new(mem) FissionEngine;
+		*ppEngine = new FissionEngine;
 	}
+
+
+	void* _fission_new(size_t _Size) { return ::operator new(_Size, std::align_val_t(32)); }
+	void _fission_delete(void* _Ptr) { return ::operator delete(_Ptr, std::align_val_t(32)); }
 }

@@ -48,10 +48,12 @@ private:
 	Fission::color          color    = Fission::Colors::Red;
 };
 
-class BallScene : public DefaultDelete<Fission::FScene>
+class BallScene : public DefaultDelete<Fission::FMultiLayerScene>
 {
 public:
 	BallScene() { PushLayer( new BallLayer ); }
+
+	virtual Fission::SceneKey GetKey() override { return {}; }
 };
 
 class BounceBallApp : public DefaultDelete<Fission::FApplication>
@@ -62,10 +64,13 @@ public:
 		char title[100];
 		sprintf( title, "Bouncing Ball Demo [%s]", pEngine->GetVersionString() );
 		info->window.title = title;
-		info->startScene = new BallScene;
 		info->window.size = { 1280,720 };
 		strcpy(info->name_utf8, "Balls");
 		strcpy(info->version_utf8, "1.0.0");
+	}
+	virtual Fission::IFScene * OnCreateScene( const Fission::SceneKey & key ) override
+	{
+		return new BallScene;
 	}
 };
 

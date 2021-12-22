@@ -3,22 +3,44 @@
 
 void StartMenuLayer::OnCreate( Fission::FApplication * app )
 {
+	Fission::Simple2DLayer::OnCreate(app);
+
 	m_App = app;
-	r2d = (decltype( r2d ))app->pEngine->GetRenderer( "$internal2D" );
+	ui::g_r2d = m_pRenderer2D;
+
+	auto ws = app->pMainWindow->GetSize();
+	wm.Initialize(ws.width(), ws.height());
+
+	wm.addWindow( new ui::Button("New Game", { 300, 200 }, { 200, 40 }) );
+}
+
+Fission::EventResult StartMenuLayer::OnMouseMove(Fission::MouseMoveEventArgs& args)
+{
+	neutron::MouseMoveEventArgs nargs;
+	nargs.pos = args.position;
+	return (Fission::EventResult)wm.OnMouseMove(nargs);
+}
+
+Fission::EventResult StartMenuLayer::OnSetCursor(Fission::SetCursorEventArgs& args)
+{
+	neutron::SetCursorEventArgs nargs;
+	nargs.cursor = args.cursor;
+	auto r = (Fission::EventResult)wm.OnSetCursor(nargs);
+	if (nargs.cursor != args.cursor)
+	{
+		args.cursor = nargs.cursor;
+		args.bUseCursor = true;
+	}
+	return r;
 }
 
 void StartMenuLayer::OnUpdate( Fission::timestep dt )
 {
-	r2d->SelectFont( Fission::FontManager::GetFont( "$debug" ) );
+	m_pRenderer2D->SelectFont( Fission::FontManager::GetFont( "$debug" ) );
 
-	Fission::base::size szWindow = ((SnakeApp*)m_App)->GetWindowSize();
-	Fission::base::rectf rect;
-	rect.x = { 100.0f, (float)szWindow.width() - 100.0f };
-	rect.y = { 100.0f, (float)szWindow.height() - 100.0f };
+	wm.OnUpdate(0.0f);
 
-	r2d->DrawRect( rect, Fission::Colors::Aqua, 3.0f );
-
-	r2d->Render();
+	m_pRenderer2D->Render();
 }
 
 StartScene::StartScene() { PushLayer( new StartMenuLayer ); }

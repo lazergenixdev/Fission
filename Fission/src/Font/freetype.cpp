@@ -49,7 +49,7 @@ namespace freetype {
 		static char buf[48] = {};
 		sprintf_s( buf, "FreeType Library Version %i.%i.%i", maj, min, pat );
 
-		Fission::Console::WriteLine( buf );
+	//	Fission::Console::WriteLine( buf );
 	}
 
 	Library::~Library() {

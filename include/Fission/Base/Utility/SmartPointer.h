@@ -27,7 +27,7 @@
 * SOFTWARE.
 *
 */
-
+#pragma once
 #include "../config.h"
 #include <memory> /* std::shared_ptr + std::unique_ptr */
 
@@ -40,15 +40,15 @@ template <typename T>
 using scoped = std::unique_ptr<T>;
 
 template <typename T, typename... Args>
-static constexpr ref<T> make_ref(Args &&...args)
+static constexpr ref<T> make_ref( Args &&...args )
 {
-  return std::make_shared<T>(std::forward<Args>(args)...);
+    return std::make_shared<T>( std::forward<Args>( args )... );
 }
 
 template <typename T, typename... Args>
-static constexpr scoped<T> make_scoped(Args &&...args)
+static constexpr scoped<T> make_scoped( Args &&...args )
 {
-  return std::make_unique<T>(std::forward<Args>(args)...);
+    return std::make_unique<T>( std::forward<Args>( args )... );
 }
 
 //! @brief Managed pointer type that destroys the pointer when moves out of scope.
@@ -56,51 +56,51 @@ template <typename T>
 class FPointer
 {
 public:
-  FPointer() = default;
-  FPointer(FPointer&) = delete; /*!< no copi fo u */
-  FPointer(T*_Src) : ptr(_Src){};
+    FPointer() = default;
+    FPointer( FPointer & ) = delete; /*!< no copi fo u */
+    FPointer( T * _Src ) : ptr( _Src ) {};
 
-  FPointer(FPointer&& src)
-  {
-    ptr = src.ptr;
-    src.ptr = nullptr;
-  }
-
-  ~FPointer()
-  {
-    if (ptr)
+    FPointer( FPointer && src )
     {
-      ptr->Destroy();
-      ptr = nullptr;
+        ptr = src.ptr;
+        src.ptr = nullptr;
     }
-  }
 
-  //! @brief Release and Get the address of.
-  inline T** operator&()
-  {
-    this->~FPointer();
-    return &ptr;
-  }
+    ~FPointer()
+    {
+        if( ptr )
+        {
+            ptr->Destroy();
+            ptr = nullptr;
+        }
+    }
 
-  //! @brief Get the address of underlying raw pointer.
-  inline T** address_of()
-  {
-    return &ptr;
-  }
+    //! @brief Release and Get the address of.
+    inline T ** operator&()
+    {
+        this->~FPointer();
+        return &ptr;
+    }
 
-  inline FPointer& operator=(T* _Right)
-  {
-    this->~FPointer();
-    ptr = _Right;
-    return *this;
-  }
+    //! @brief Get the address of underlying raw pointer.
+    inline T ** address_of()
+    {
+        return &ptr;
+    }
 
-  inline T* operator->()      { return ptr; }
-  inline       T* get()       { return ptr; }
-  inline const T* get() const { return ptr; }
+    inline FPointer & operator=( T * _Right )
+    {
+        this->~FPointer();
+        ptr = _Right;
+        return *this;
+    }
+
+    inline T * operator->()      { return ptr; }
+    inline       T * get()       { return ptr; }
+    inline const T * get() const { return ptr; }
 
 private:
-  T* ptr = nullptr;
+    T * ptr = nullptr;
 };
 
 template <typename T>

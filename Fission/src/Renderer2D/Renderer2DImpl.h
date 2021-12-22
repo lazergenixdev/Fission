@@ -56,11 +56,9 @@ namespace Fission {
 
 		virtual void SelectFont( const Font * pFont ) override;
 
-		virtual TextLayout DrawString( const wchar_t * wstr, base::vector2f pos, color color ) override;
-
-		virtual TextLayout CreateTextLayout( const wchar_t * wstr ) override;
-
 		virtual TextLayout DrawString( const char * str, base::vector2f pos, color color ) override;
+
+		virtual TextLayout DrawString( string_view sv, base::vector2f pos, color color ) override;
 
 		virtual TextLayout CreateTextLayout( const char * str ) override;
 

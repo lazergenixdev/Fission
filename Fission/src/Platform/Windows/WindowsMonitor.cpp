@@ -213,7 +213,8 @@ void Fission::Platform::EnumMonitors()
 
 	if( error == ERROR_INSUFFICIENT_BUFFER )
 	{
-		Console::Error( "How do you have more than 24 monitors?? You are INSANE." );
+		// TODO: Fix this function.
+	//	Console::Error( "How do you have more than 24 monitors?? You are INSANE." );
 		throw std::logic_error( "rip" );
 	}
 

@@ -39,30 +39,60 @@ namespace Fission {
 			m_pRenderer2D->FillRect( base::rectf( 0.0f, m_width, extend - 1.0f, extend + 1.0f ), Colors::White );
 
 			// Draw Console Buffer
-			float top = extend - m_FontSize * 2.0f - m_BottomPadding * 2.0f;
+			float top = extend - m_FontSize * 2.0f - m_BottomPadding;
+
 
 			int maxIndex = Console::GetLineCount() - 1;
 			lineOffset = std::min( lineOffset, (uint32_t)maxIndex );
-			for( int i = maxIndex - (int)lineOffset; i >= 0; i-- )
+
+		//	m_pRenderer2D->FillRect( base::rectf( 0.0f, m_width, top, top + 1.0f ), Colors::White ); //debug
+
+			int numLinesVisible = 0;
+			float start = top;
+			for( ; start > 0.0f ; start -= m_FontSize, ++numLinesVisible );
+			if( numLinesVisible > 0 )
 			{
-				string line;
-				color col;
-				Console::GetLine( i, &line, &col );
+				int bottomLine = Console::GetLineCount() - lineOffset;
+				int startLine = bottomLine - numLinesVisible;
 
-				auto LineLayout = m_pRenderer2D->CreateTextLayout( line.c_str() );
-				const float new_top = top - LineLayout.height;
+				auto cursor = base::vector2f{ m_LeftPadding, start };
+				if( startLine < 0 )
+				{
+					cursor.y -= (float)startLine * m_FontSize;
+					startLine = 0;
+				}
 
-				m_pRenderer2D->DrawString( line.c_str(), { 5.0f, new_top }, col );
+				numLinesVisible = std::min( bottomLine, numLinesVisible );
 
-				if( new_top <= 0.0f ) // Only Render Text Visible
-					break;
+				for( auto [view, color, newlines] : console_iterator{ startLine } )
+				{
+					if( view.empty() ) [[unlikely]]
+						cursor.y -= m_FontSize * (float)newlines;
 
-				top = new_top;
+					else [[likely]]
+					{
+						auto tl = m_pRenderer2D->DrawString( view, cursor, color );
+
+						if( newlines )
+						{
+							cursor.y += m_FontSize * (float)newlines;
+							cursor.x = m_LeftPadding;
+						}
+						else
+							cursor.x += tl.width;
+					}
+
+					numLinesVisible -= newlines;
+
+				//	if( numLinesVisible <= 0 ) break;
+					if( cursor.y > top - m_FontSize ) break; // Only Render Text Visible
+				}
 			}
+
 
 			if( lineOffset != 0 )
 			{
-				auto car = m_pRenderer2D->CreateTextLayout( L"^" );
+				auto car = m_pRenderer2D->CreateTextLayout( "^" );
 
 				const float width = car.width;
 				const float space = m_width / 20.0f;
@@ -70,7 +100,7 @@ namespace Fission {
 
 				for( int i = 0; i < 20; i++ )
 				{
-					m_pRenderer2D->DrawString( L"^", base::vector2f( offset, extend - m_FontSize * 2.0f - m_BottomPadding ), Colors::White );
+					m_pRenderer2D->DrawString( "^", base::vector2f( offset, extend - m_FontSize * 2.0f - m_BottomPadding ), Colors::White );
 					offset += space;
 				}
 			}
@@ -78,7 +108,7 @@ namespace Fission {
 
 			constexpr const char * s_DefText = "Enter a command . . .";
 
-			auto tl = m_pRenderer2D->DrawString( "] ", base::vector2f(8.0f, extend - m_FontSize - m_BottomPadding - 1.0f), Colors::White );
+			auto tl = m_pRenderer2D->DrawString( "$ ", base::vector2f(m_LeftPadding, extend - m_FontSize - m_BottomPadding - 1.0f), Colors::White );
 
 			if( m_CommandText.empty() ) {
 				m_pRenderer2D->DrawString( s_DefText, base::vector2f( 8.0f + tl.width, extend - m_FontSize - m_BottomPadding - 1.0f ), Colors::Gray );
@@ -185,7 +215,7 @@ namespace Fission {
 				if( !m_CommandText.empty() )
 				{
 					m_History.emplace_back( m_CommandText );
-					Console::WriteLine( (">> " + m_CommandText).c_str() );
+					Console::WriteLine( "$ " + m_CommandText );
 					Console::ExecuteCommand( m_CommandText );
 					m_CommandText.clear();
 					m_CursorPosition = 0;

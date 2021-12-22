@@ -6,9 +6,9 @@
 class SnakeApp : public DefaultDelete<Fission::FApplication>
 {
 public:
-	void OnStartUp( CreateInfo * info );
+	void OnStartUp( CreateInfo * info ) override;
 
-	Fission::base::size GetWindowSize() const;
+	Fission::IFScene* OnCreateScene( const Fission::SceneKey & key ) override;
 
 	// comment for sake of having comment
 private:

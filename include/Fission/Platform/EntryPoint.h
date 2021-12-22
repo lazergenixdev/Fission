@@ -99,11 +99,9 @@ FISSION_MAIN_EXPORT(Fission::Platform::ExitCode) _fission_main( void * instance 
 	FPointer<IFEngine>      fsnEngine;
 	FPointer<FApplication>  app;
 
-	Fission::CreateEngine( instance, &fsnEngine );
-
 	try
 	{
-		fsnEngine->LoadEngine();
+		Fission::CreateEngine( instance, &fsnEngine );
 
 		app = CreateApplication();
 

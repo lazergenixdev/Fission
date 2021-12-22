@@ -30,6 +30,7 @@
 #pragma once
 #include "config.h"
 #include <string>
+#include <stdexcept>
 
 /*
 * 
@@ -44,6 +45,7 @@
 * [String Types]
 * [String Implementation]
 * [String Helpers]
+* [Expermiental]
 * [String Definitions]
 * [String Operators]
 * [String Literals]
@@ -61,18 +63,28 @@
 #define _FISSION_STRING_TRACE( fmt, ... ) ((void)0)
 #endif
 
-#ifdef __cpp_aligned_new
-#define FISSION_STRING_IMPL_MALLOC(X) ::operator new( X, std::align_val_t(32) )
-#define FISSION_STRING_IMPL_FREE(X) ::operator delete( X, std::align_val_t(32) )
+#if FISSION_STRING_ENABLE_CHECKS
+#define _FISSION_STRING_START_CHECKS
+#define _FISSION_STRING_END_CHECKS
 #else
-#ifdef _WIN32
-#define FISSION_STRING_IMPL_MALLOC(X) _aligned_malloc( X, 32 )
-#define FISSION_STRING_IMPL_FREE(X) _aligned_free( X, 32 )
-#else
-#define FISSION_STRING_IMPL_MALLOC(X) malloc( X )
-#define FISSION_STRING_IMPL_FREE(X) free( X )
+#define _FISSION_STRING_START_CHECKS if constexpr(false) {
+#define _FISSION_STRING_END_CHECKS }
 #endif
-#endif
+
+#define FISSION_STRING_IMPL_MALLOC(X) _fission_new(X)
+#define FISSION_STRING_IMPL_FREE(X) _fission_delete(X)
+//#ifdef __cpp_aligned_new
+//#define FISSION_STRING_IMPL_MALLOC(X) ::operator new( X, std::align_val_t(32) )
+//#define FISSION_STRING_IMPL_FREE(X) ::operator delete( X, std::align_val_t(32) )
+//#else
+//#ifdef _WIN32
+//#define FISSION_STRING_IMPL_MALLOC(X) _aligned_malloc( X, 32 )
+//#define FISSION_STRING_IMPL_FREE(X) _aligned_free( X, 32 )
+//#else
+//#define FISSION_STRING_IMPL_MALLOC(X) malloc( X )
+//#define FISSION_STRING_IMPL_FREE(X) free( X )
+//#endif
+//#endif
 
 _FISSION_BASE_PUBLIC_BEGIN
 
@@ -82,6 +94,13 @@ using codepoint = char32_t;
 using char8_t = char;
 #endif
 
+#ifdef FISSION_BUILD
+__declspec(dllexport) void * _fission_new(size_t _Size);
+__declspec(dllexport) void _fission_delete(void * _Ptr);
+#else
+__declspec(dllimport) void* _fission_new(size_t _Size);
+__declspec(dllimport) void _fission_delete(void* _Ptr);
+#endif
 
 
 /* ======================== [String Types] ======================== */
@@ -115,6 +134,8 @@ public:
 	using char_type = _CharType;
 	using iterator = char_type *;
 	using const_iterator = std::add_const_t<iterator>;
+
+	static constexpr size_t npos = std::string::npos;
 
 	_string_impl() noexcept :
 		m_pData( m_Storage ), m_Capacity( 0 ),
@@ -402,6 +423,78 @@ public:
 			return;
 		}
 	}
+	void resize( size_t _New_Size )
+	{
+		if( m_Capacity )
+		{
+			if( _New_Size + 1 >= m_Capacity )
+			{
+				m_Capacity = _New_Size + 1;
+
+				auto _New_Buffer = (char_type*)FISSION_STRING_IMPL_MALLOC( m_Capacity * sizeof( char_type ) );
+
+				::memcpy( _New_Buffer, m_pData, m_Size );
+				//::memset( _New_Buffer + m_Size, 0, m_Capacity - m_Size );
+				_New_Buffer[m_Size] = static_cast<char_type>( 0 );
+
+				FISSION_STRING_IMPL_FREE( m_pData );
+				m_pData = _New_Buffer;
+
+				return;
+			}
+
+			// There is enough capacity in current buffer.
+			m_Size = _New_Size;
+			m_pData[m_Size] = static_cast<char_type>( 0 );
+			return;
+		}
+
+		// We have our string in local storage, we assume `m_Size < std::size(m_Storage)`
+
+		if( _New_Size + 1 >= ( std::size( m_Storage ) ) )
+		{
+			m_Capacity = _New_Size + 1;
+
+			m_pData = (char_type*)FISSION_STRING_IMPL_MALLOC( m_Capacity * sizeof( char_type ) );
+			::memcpy( m_pData, m_Storage, m_Size );
+
+			m_Size = m_Capacity - 1;
+			m_pData[m_Size] = static_cast<char_type>( 0 );
+
+			return;
+		}
+
+		m_Size = _New_Size;
+	}
+
+	inline size_t find_first_of( const char_type& _Char ) const
+	{ 
+		for( const auto& c : *this )
+			if( c == _Char )
+				return size_t( &c - m_pData );
+		return std::string::npos; 
+	}
+	inline size_t find_first_of( const char_type& _Char, const size_t _Position ) const
+	{
+		const auto end = m_pData + m_Size;
+		for( auto pc = m_pData + _Position; pc != end; ++pc )
+			if( *pc == _Char )
+				return size_t( pc - m_pData );
+		return std::string::npos;
+	}
+
+	inline auto substr( const size_t _Off = 0u, const size_t _Count = npos ) const
+	{
+		_FISSION_STRING_START_CHECKS
+		if( _Off > m_Size )
+			throw std::invalid_argument("[" __FUNCTION__ "] Error: Offset out of bounds");
+
+		if( _Count > m_Size-_Off )
+			throw std::invalid_argument( "[" __FUNCTION__ "] Error: Count is too big" );
+		_FISSION_STRING_END_CHECKS
+
+		return _string_impl( m_pData + _Off, _Count );
+	}
 
 public:
 
@@ -501,6 +594,50 @@ static constexpr size_t strlen( const _T * const _Buf )
 
 
 
+/* ======================== [Experimental] ======================== */
+template <typename _CharType>
+class _string_view_impl
+{
+public:
+	using char_type = _CharType;
+public:
+	_string_view_impl( const char_type* _Str, size_t _Count ) : m_pData( _Str ), m_Size( _Count ) {}
+
+	inline const char_type& operator[]( size_t _Index ) const { return m_pData[_Index]; }
+
+	auto c_str() const {
+		if constexpr( std::is_same_v<char_type, char8_t> )
+		{
+			return reinterpret_cast<const char*>( m_pData );
+		}
+		if constexpr( not std::is_same_v<char_type, char8_t> )
+		{
+			return m_pData;
+		}
+	}
+
+	inline bool empty() const { return m_Size == 0u; }
+	inline size_t size() const { return m_Size; }
+
+private:
+	const _CharType* m_pData;
+	size_t m_Size;
+};
+
+class utf8_string_view : public _string_view_impl<char8_t>
+{
+public:
+	utf8_string_view( const char_type* _Str, size_t _Count ) : _string_view_impl( _Str, _Count ) {}
+#ifdef __cpp_char8_t
+	utf8_string_view( const char* _Str, size_t _Count ) : _string_view_impl( reinterpret_cast<const char8_t*>( _Str ), _Count ) {}
+#endif // __cpp_char8_t
+
+};
+
+using string_view = utf8_string_view;
+
+
+
 /* ===================== [String Definitions] ===================== */
 
 // Having each string type inherit from the base string class
@@ -519,7 +656,10 @@ public:
 	utf8_string( const _string_impl & _Parent ) :_string_impl( _Parent ) {}
 	utf8_string( size_t _Count, char_type _Ch ) :_string_impl( _Count, _Ch ) {}
 	utf8_string( const char_type * _Str, size_t _Count ) :_string_impl( _Str, _Count ) {}
-	utf8_string( const char_type * const _Str ) :_string_impl( _Str, strlen( _Str ) ) {}
+	explicit utf8_string( const char_type * const _Str ) :_string_impl( _Str, strlen( _Str ) ) {}
+
+	template <size_t _Length>
+	utf8_string( const char_type (&_Str)[_Length] ) :_string_impl( _Str, _Length-1u ) {}
 
 	// Since char8_t is not within the C++ Standard until C++20,
 	//    we have to also support 'char' so that this class is

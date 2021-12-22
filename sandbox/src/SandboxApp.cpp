@@ -10,12 +10,48 @@
 #endif
 #include <Fission/Core/UI/Debug.hh>
 
-static Fission::FApplication * g_App = nullptr;
+#define _neutron_key_primary_mouse   Fission::Keys::Mouse_Left
+#define _neutron_key_secondary_mouse Fission::Keys::Mouse_Right
+
+#define _neutron_char_type    char32_t
+#define _neutron_key_type     Fission::Keys::Key
+#define _neutron_cursor_type  Fission::Cursor*
+
+#define _neutron_point_type   Fission::base::vector2i
+#define _neutron_rect_type    Fission::base::recti
+#define _neutron_vector_type  std::vector
+#include <Fission/neutron.hpp>
 
 template <typename T>
 struct DefaultDelete : public T { virtual void Destroy() override { delete this; } };
 
-class BallLayer : public DefaultDelete<Fission::Simple2DLayer>
+using namespace Fission::base;
+
+static Fission::IFRenderer2D * g_r2d;
+
+class Button : public neutron::Button
+{
+public:
+	vector2f pos, size;
+	std::string label;
+
+	Button(const char * label, vector2f pos, vector2f size): pos(pos),size(size),label(label) {}
+
+	virtual void OnUpdate(float) override
+	{
+		auto rect = Fission::base::rectf{ pos.x, pos.x + size.x, pos.y, pos.y + size.y };
+
+		g_r2d->FillRoundRect( rect, 10.0f, Fission::Colors::CadetBlue );
+		g_r2d->DrawRoundRect( rect, 10.0f, Fission::color(Fission::Colors::White,0.5f), 1.0f );
+
+		auto tl = g_r2d->CreateTextLayout( label.c_str() );
+		auto start = Fission::base::vector2f{ ( rect.x.distance() - tl.width ) * 0.5f,( rect.y.distance() - tl.height ) * 0.5f } + pos;
+		g_r2d->DrawString( label.c_str(), start, Fission::Colors::White );
+	}
+
+};
+
+class MenuLayer : public DefaultDelete<Fission::Simple2DLayer>
 {
 public:
 	virtual void OnCreate( Fission::FApplication * app ) override
@@ -23,187 +59,82 @@ public:
 		Simple2DLayer::OnCreate(app);
 		wnd = app->pMainWindow;
 		font = Fission::FontManager::GetFont("$console");
+		g_r2d = m_pRenderer2D;
+
+		{
+			auto[x,y] = wnd->GetSize();
+			wm.Initialize( x, y );
+		}
+
+		wm.addWindow( new Button( "Fake Button", { 100.0f,100.0f }, { 120.0f, 24.0f } ) );
 	}
 
 	virtual void OnUpdate( Fission::timestep dt ) override
 	{
-		using namespace Fission::base;
-
 		m_pRenderer2D->SelectFont( font );
+		wm.OnUpdate( 0.0f );
+		g_r2d->Render();
 
-		float start = 50.0f + pos;
-		static char textBuffer[100];
-		bool bFoundHover = false;
-
-		static bool value = true;
-		Fission::UI::Debug::CheckBox( "purp box", &value );
-
-		static float intger = 9, stok = 2.0f;
-		Fission::UI::Debug::SliderFloat( "rad", &intger, 0.0f, 50.0f );
-		Fission::UI::Debug::SliderFloat( "stok", &stok, 0.0f, 30.0f );
-		if( value && selected )
+		if( show )
 		{
-			m_pRenderer2D->FillRoundRect(
-				{ 280.0f, 700.0f, 80.0f, 300.0f },
-				intger,
-				Fission::color( Fission::Colors::Violet, 0.3f )
-			);
-			m_pRenderer2D->DrawRoundRect(
-				{ 280.0f, 700.0f, 80.0f, 300.0f },
-				intger,
-				Fission::color( Fission::Colors::Violet, 0.4f ),
-				stok,
-				Fission::StrokeStyle::Inside
-			);
-		//	m_pRenderer2D->DrawRect( Fission::base::rectf{ 300.0f, 700.0f, 400.0f, 600.0f }.expanded(0.5f), Fission::Colors::White, 0.5f );
-		}
+			m_pRenderer2D->DrawString( "Showing = True", { 100.0f, 100.0f }, Fission::Colors::White );
 
-		auto monitor = wnd->GetMonitor();
-		if( pos + 20.0f > 0.0f )
-		{
-			sprintf( textBuffer, "Monitor: %s", monitor->GetName() );
-			m_pRenderer2D->DrawString( textBuffer, vector2f{ 12.0f, pos + 2.0f }, Fission::Colors::White );
-		}
-		for( auto && mode : monitor->GetSupportedDisplayModes() )
-		{
-			if( start + 30.0f > 0.0f )
-			{
-				vector2f topleft = { 50.0f, start };
-				auto rect = rectf::from_topleft( topleft, 200.0f, 30.0f );
-
-				if( !bFoundHover && rect[mousepos] )
-				{
-					m_pRenderer2D->FillRect( rect, Fission::Colors::make_gray(0.4f) );
-					hover = &mode;
-					bFoundHover = true;
-				}
-				else
-				m_pRenderer2D->FillRect( rect, Fission::Colors::make_gray( &mode == selected ? 0.4f : 0.2f ) );
-
-				sprintf( textBuffer, "%i x %i @ %ihz", mode.resolution.w, mode.resolution.h, mode.refresh_rate );
-				m_pRenderer2D->DrawString( textBuffer, topleft + vector2f{12.0f, 6.0f}, Fission::Colors::White );
-
-			}
-			start += 35.0f;
-			if( start > 720.0f ) break;
-		}
-
-		if( !bFoundHover ) hover = nullptr;
-
-		if( selected )
-		{
-			m_pRenderer2D->DrawString( "Selected Display Mode:", { 300.0f, 100.0f }, Fission::Colors::White );
-
-			sprintf( textBuffer, "%i x %i @ %ihz", selected->resolution.w, selected->resolution.h, selected->refresh_rate );
-			m_pRenderer2D->DrawString( textBuffer, { 300.0f, 130.0f }, Fission::Colors::Snow );
-
-			m_pRenderer2D->DrawString( "Press [ENTER] to change to this resolution.", { 300.0f, 200.0f }, Fission::Colors::Snow );
-		}
-
-		m_pRenderer2D->DrawCircle( mousepos, radius, Fission::Colors::White, Fission::color{ Fission::Colors::White,0.0f }, 100.0f );
-
-
-		sprintf( textBuffer, "scroll location = %.0f", pos );
-		g_App->pEngine->GetDebug()->Text( textBuffer );
-
-		Fission::UI::Debug::SliderFloat( "radius", &radius, 50.0f, 150.0f );
-		Fission::UI::Debug::SliderFloat( "scroll_pos", &pos, -2000.0f, 100.0f, "%.0f");
-
-		Fission::UI::Debug::Text( textBuffer );
-
-		if( Fission::UI::Debug::Button( "do thing" ) )
-		{
-			if( selected ) g_App->pMainWindow->SetSize( selected->resolution );
-		}
-
-		m_pRenderer2D->Render();
-	}
-
-	virtual Fission::EventResult OnKeyUp( Fission::KeyUpEventArgs & args ) override
-	{
-		switch( args.key )
-		{
-		case Fission::Keys::F11:
-		{
-			if( g_App->pMainWindow->GetStyle() == Fission::IFWindow::Style::Fullscreen )
-			{
-				g_App->pMainWindow->SetStyle( Fission::IFWindow::Style::Border );
-			}
-			else
-			{
-				g_App->pMainWindow->SetStyle( Fission::IFWindow::Style::Fullscreen );
-			}
-		}
-		default:return  Fission::EventResult::Pass;
+			m_pRenderer2D->Render();
 		}
 	}
+
 	virtual Fission::EventResult OnKeyDown( Fission::KeyDownEventArgs & args ) override
 	{
-		switch( args.key )
-		{
-		case Fission::Keys::Mouse_WheelUp:
-			pos += 10.0f;
-		break;
-
-		case Fission::Keys::Mouse_WheelDown:
-			pos -= 10.0f;
-		break;
-
-		case Fission::Keys::Mouse_Left:
-			selected = hover;
-		break;
-
-		case Fission::Keys::Enter:
-			if( selected ) g_App->pMainWindow->SetSize(selected->resolution);
-		break;
-		
-		default:break;
-		}
+		if( !args.repeat && args.key == Fission::Keys::Escape )
+			show =! show; // flip `show`
+		return Fission::EventResult::Handled;
+	}
+	virtual Fission::EventResult OnKeyUp( Fission::KeyUpEventArgs & args ) override
+	{
 		return Fission::EventResult::Handled;
 	}
 	virtual Fission::EventResult OnMouseMove( Fission::MouseMoveEventArgs & args ) override
 	{
-		mousepos = (Fission::base::vector2f)args.position;
 		return Fission::EventResult::Handled;
 	}
 private:
 	Fission::IFWindow * wnd;
 	Fission::Font * font;
 
-	float radius = 50.0f;
-	float pos = 0.0f;
-	Fission::base::vector2f mousepos;
+	bool show = false;
 
-	Fission::DisplayMode * hover = nullptr;
-	Fission::DisplayMode * selected = nullptr;
+	neutron::WindowManager wm;
 };
 
 class MainScene : public DefaultDelete<Fission::FMultiLayerScene>
 {
 public:
-	MainScene() { PushLayer( new BallLayer ); }
+	MainScene() { PushLayer( new MenuLayer ); }
 
 	virtual Fission::SceneKey GetKey() override { return {}; }
 };
 
-class BounceBallApp : public DefaultDelete<Fission::FApplication>
+class MyApp : public DefaultDelete<Fission::FApplication>
 {
 public:
 	virtual void OnStartUp( CreateInfo * info ) override
 	{
 		info->window.title = u8"🔥 Sandbox 🔥  👌👌👌👌👌";
 		strcpy_s( info->name_utf8, "sandbox" );
-		strcpy_s( info->version_utf8, "1.0.0" );
-
-	//	pEngine->new_Scene( Fission::SceneKey{ 0x45, {{"user", "Dahrman"}} } );
+		strcpy_s( info->version_utf8, "2.2.0" );
 	}
 	virtual Fission::IFScene * OnCreateScene( const Fission::SceneKey& key ) override
 	{
+		//if( auto user = key["user"] )
+		//{
+		//	Fission::string username = user.value();
+		//}
+
 		// ignore scene key and just create the main scene
 		return new MainScene;
 	}
 };
 
 Fission::FApplication * CreateApplication() {
-	return( g_App = new BounceBallApp );
+	return new MyApp;
 }

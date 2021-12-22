@@ -36,23 +36,31 @@ namespace Fission
 {
 	using SceneID = int;
 	
-	static constexpr SceneID NullSceneID     =  0; // reserved ID, used to represent no scene
-	static constexpr SceneID CMDLineSceneID  = -1; // reserved ID, used to represent scene defined by cmd line
-	static constexpr SceneID ExternalSceneID = -2; // reserved ID, used to represent external scene
+	static constexpr SceneID NullSceneID     =  0; //!< reserved ID, used to represent that no scene could be found
 
 
-	struct SceneKey : public std::map<string, string>
+	struct SceneKey : private std::map<string, string>
 	{
 		using map = std::map<string, string>;
 		using arg_list = std::initializer_list<value_type>;
 		SceneID id;
 
+	public:
 		SceneKey( SceneID _ID = NullSceneID ) : map(), id( _ID )
 		{}
 
 		SceneKey( SceneID _ID, const arg_list & _Args ): map( _Args ), id(_ID)
 		{}
 
+		std::optional<string> operator[]( const string & k ) const
+		{
+			auto p = map::find( k );
+			if( p == map::end() ) return {};
+
+			auto out = std::move(p->second);
+		//	map::erase( p );
+			return std::make_optional( out );
+		}
 	};
 
 	struct IFScene : public IFLayer

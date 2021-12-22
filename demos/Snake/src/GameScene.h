@@ -188,8 +188,10 @@ private:
 	v2i food_pos;
 };
 
-class GameScene : public DefaultDelete<Fission::FScene>
+class GameScene : public DefaultDelete<Fission::FMultiLayerScene>
 {
 public:
 	GameScene( Fission::IFEngine * engine ) { g_engine = engine; PushLayer( new GameLayer ); }
+
+	virtual Fission::SceneKey GetKey() override { return {}; }
 };

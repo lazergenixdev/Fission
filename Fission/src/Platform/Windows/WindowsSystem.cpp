@@ -18,7 +18,7 @@ namespace Fission {
 		class WindowsVersion
 		{
 		public:
-			inline const char * c_str() { return _Version; }
+			operator const char*() { return _Version; }
 
 			static WindowsVersion & Get()
 			{
@@ -28,31 +28,43 @@ namespace Fission {
 		private:
 			WindowsVersion()
 			{
-				// TODO: Throw proper exceptions if an error occurs, even if it is very unlikely.
-
 				typedef LONG NTSTATUS;
 				typedef NTSTATUS( WINAPI * RtlGetVersionPtr )( PRTL_OSVERSIONINFOW );
+				
+				RtlGetVersionPtr RtlGetVersion;
 
 				RTL_OSVERSIONINFOW version = { 0 };
 				version.dwOSVersionInfoSize = sizeof( version );
 
 				// Since `GetVersion()` depends on your application manifest,
 				// we need to import another function to get the real OS version
-				HMODULE h_ntdll = ::GetModuleHandleA( "ntdll" );
-				if( h_ntdll == NULL ) throw 0x45;
+				auto ntdll = Platform::Module( "ntdll" );
 
-				RtlGetVersionPtr RtlGetVersion = reinterpret_cast<RtlGetVersionPtr>( GetProcAddress(h_ntdll,"RtlGetVersion") );
-				if( RtlGetVersion == nullptr ) throw 0x45;
+				if( ntdll == NULL )
+					goto error;
 
-				if( 0 != RtlGetVersion( &version ) ) throw 0x45;
+				// Get function address
+				RtlGetVersion = reinterpret_cast<RtlGetVersionPtr>( GetProcAddress(ntdll,"RtlGetVersion") );
+
+				if( RtlGetVersion == nullptr )
+					goto error;
+
+				// Retrieve the true windows version for this machine.
+				if( 0 != RtlGetVersion( &version ) )
+					goto error;
 
 			#ifdef FISSION_PLATFORM_WINDOWS32
 				BOOL IsRunningOn64 = FALSE;
-				if( FALSE == IsWow64Process( GetCurrentProcess(), &IsRunningOn64 ) ) throw 0x45;
-				sprintf_s(_Version,"Windows 10 %i-Bit (%u.%u.%u)",IsRunningOn64?64:32,version.dwMajorVersion,version.dwMinorVersion,version.dwBuildNumber);
+				if( FALSE == IsWow64Process( GetCurrentProcess(), &IsRunningOn64 ) ) throw FISSION_THROW("Win32 Error","IsWow64Process() returned false");
+				sprintf_s(_Version,"Windows %i %i-Bit (%u.%u.%u)",version.dwMajorVersion,IsRunningOn64?64:32,version.dwMajorVersion,version.dwMinorVersion,version.dwBuildNumber);
 			#else // FISSION_PLATFORM_WINDOWS64
-				sprintf_s(_Version,"Windows 10 64-Bit (%u.%u.%u)",version.dwMajorVersion,version.dwMinorVersion,version.dwBuildNumber);
+				sprintf_s(_Version,"Windows %i 64-Bit (%u.%u.%u)",version.dwMajorVersion,version.dwMajorVersion,version.dwMinorVersion,version.dwBuildNumber);
 			#endif
+				return;
+
+			error:
+				sprintf_s(_Version,"Windows (Unknown Version)");
+
 			}
 
 			char _Version[64];
@@ -107,7 +119,7 @@ namespace Fission {
 
 	const char * System::GetVersionString()
 	{
-		return detail::WindowsVersion::Get().c_str();
+		return detail::WindowsVersion::Get();
 	}
 }
 

@@ -57,11 +57,11 @@ namespace Fission
 
 	public:
 
-		virtual void GetVersion( int * _Maj, int * _Min, int * _Pat ) override;
+		FissionEngine();
+
+		virtual Version GetVersion() override;
 
 		virtual const char * GetVersionString() override;
-
-		virtual void LoadEngine() override;
 
 		virtual void Shutdown( Platform::ExitCode ) override;
 

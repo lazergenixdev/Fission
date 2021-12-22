@@ -299,59 +299,6 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		m_pSelectedFont = pFont;
 	}
 
-	TextLayout Renderer2DImpl::DrawString( const wchar_t * wstr, base::vector2f pos, color c )
-	{
-		FISSION_ASSERT( m_pSelectedFont, "you're not supposed to do that." );
-
-		SetTexture( m_pSelectedFont->GetTexture2D() );
-
-		float start = 0.0f;
-		const Font::Glyph * glyph;
-
-		while( wstr[0] != L'\0' )
-		{
-			if( *wstr == L'\r' || *wstr == L'\n' ) { wstr++; pos.y += m_pSelectedFont->GetSize(); start = 0.0f; continue; }
-			glyph = m_pSelectedFont->GetGylph( *wstr );
-
-#if __SNAP_TEXT
-			const auto left = _ROUND( pos.x + glyph->offset.x + start );
-			const auto right = _ROUND( left + glyph->size.x );
-			const auto top = _ROUND( pos.y + glyph->offset.y );
-			const auto bottom = _ROUND( top + glyph->size.y );
-#else
-			const auto left = pos.x + glyph->offset.x + start;
-			const auto right = left + glyph->size.x;
-			const auto top = pos.y + glyph->offset.y;
-			const auto bottom = top + glyph->size.y;
-#endif
-			if( *wstr != L' ' )
-			m_DrawBuffer.back().AddRectFilledUV( { left, right, top, bottom }, glyph->rc, c );
-
-			start += glyph->advance;
-
-			wstr++;
-		}
-
-		return TextLayout{ start, (float)m_pSelectedFont->GetSize() };
-	}
-
-	TextLayout Renderer2DImpl::CreateTextLayout( const wchar_t * wstr )
-	{
-		FISSION_ASSERT( m_pSelectedFont, "you're not supposed to do that." );
-
-		TextLayout out{ 0.0f,(float)m_pSelectedFont->GetSize() };
-
-		while( wstr[0] != L'\0' )
-		{
-			const Font::Glyph * g = m_pSelectedFont->GetGylph( *wstr );
-		//	out.ch_divisions.emplace_back( out.width + g->advance * 0.5f, out.width );
-			out.width += g->advance;
-			wstr++;
-		}
-
-		return out;
-	}
-
 	TextLayout Renderer2DImpl::DrawString( const char * str, base::vector2f pos, color c )
 	{
 		FISSION_ASSERT( m_pSelectedFont, "you're not supposed to do that." );
@@ -384,6 +331,45 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			start += glyph->advance;
 
 			str++;
+		}
+
+		return TextLayout{ start, (float)m_pSelectedFont->GetSize() };
+	}
+
+	TextLayout Renderer2DImpl::DrawString( string_view sv, base::vector2f pos, color color )
+	{
+		FISSION_ASSERT( m_pSelectedFont, "you're not supposed to do that." );
+
+		SetTexture( m_pSelectedFont->GetTexture2D() );
+
+		float start = 0.0f;
+		const Font::Glyph* glyph;
+
+		size_t p = 0;
+
+		while( p < sv.size() )
+		{
+			const auto& ch = sv[p];
+			if( ch == L'\r' || ch == L'\n' ) { ++p, pos.y += m_pSelectedFont->GetSize(); start = 0.0f; continue; }
+			glyph = m_pSelectedFont->GetGylph( ch );
+
+#if __SNAP_TEXT
+			const auto left = _ROUND( pos.x + glyph->offset.x + start );
+			const auto right = _ROUND( left + glyph->size.x );
+			const auto top = _ROUND( pos.y + glyph->offset.y );
+			const auto bottom = _ROUND( top + glyph->size.y );
+#else
+			const auto left = pos.x + glyph->offset.x + start;
+			const auto right = left + glyph->size.x;
+			const auto top = pos.y + glyph->offset.y;
+			const auto bottom = top + glyph->size.y;
+#endif
+			if( ch != L' ' )
+				m_DrawBuffer.back().AddRectFilledUV( { left, right, top, bottom }, glyph->rc, color );
+
+			start += glyph->advance;
+
+			++p;
 		}
 
 		return TextLayout{ start, (float)m_pSelectedFont->GetSize() };
@@ -563,7 +549,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		const float inner_top = top + rad;
 		const float inner_bottom = bottom - rad;
 
-		int v_count = 9u + TrigCache.size() * 4;
+		int v_count = 9u + (int)TrigCache.size() * 4;
 		for( auto i = 1; i < v_count - 1; i++ ) {
 			pIdxData[idxCount++] = vtxCount;
 			pIdxData[idxCount++] = vtxCount + i;
@@ -620,7 +606,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			break;
 		case Fission::StrokeStyle::Outside:
 			break;
-		default:throw std::logic_error("how? 🤔");
+		default:throw std::logic_error((const char*)u8"how? 🤔");
 		}
 
 		// same old
@@ -639,7 +625,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		const float inner_top = top + rad;
 		const float inner_bottom = bottom - rad;
 
-		int v_count0 = 8u + TrigCache.size() * 4;
+		int v_count0 = 8u + (int)TrigCache.size() * 4;
 		for( auto i = 0; i < v_count0 - 1; i++ ) {
 			pIdxData[idxCount++] = vtxCount + i;
 			pIdxData[idxCount++] = vtxCount + v_count0 + i;
