@@ -8,7 +8,7 @@ function include_demo(name)
   targetdir ('%{wks.location}/bin/' .. OutputDir)
   objdir ('%{wks.location}/bin-int/' .. OutputDir .. '/%{prj.name}')
 
-  files { '%{prj.location}/src/**.cpp' }
+  files { '%{prj.location}/src/**.cpp', '%{prj.location}/src/**.h' }
   links { 'Fission', 'freetype' }
 
   libdirs
