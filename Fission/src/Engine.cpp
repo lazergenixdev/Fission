@@ -4,11 +4,9 @@
 #include "UI/Debug.h"
 
 #define FISSION_ENGINE_ONCE(MSG) \
-static bool bCalled = false; \
-if( bCalled ) FISSION_THROW( "FEngine Error", .append(MSG) ) \
-bCalled = true
-
-#define _FISSION_FULL_BUILD_STRING FISSION_ENGINE " v" FISSION_FULL_VERSION_STRING
+static bool __bCalled = false; \
+if( __bCalled ) FISSION_THROW( "FEngine Error", .append(MSG) ) \
+__bCalled = true
 
 #include <Fission/Base/ColoredString.h>
 
@@ -29,7 +27,7 @@ namespace Fission
 		m_pWindowManager->Initialize();
 
 		Fission::Console::WriteLine( GetVersionString() / Colors::LightSteelBlue );
-		Fission::Console::WriteLine( "cmdline: " / Colors::White + GetCommandLineA() / Colors::LightGray );
+		Fission::Console::WriteLine( "cmdline: " / Colors::White + GetCommandLineA() / Colors::DimGray );
 	}
 
 	Version FissionEngine::GetVersion()
@@ -39,7 +37,7 @@ namespace Fission
 
 	const char * FissionEngine::GetVersionString()
 	{
-		return _FISSION_FULL_BUILD_STRING;
+		return FISSION_COMPLETE_VERSION_STRING_V;
 	}
 
 
