@@ -11,6 +11,8 @@ void StartMenuLayer::OnCreate( Fission::FApplication * app )
 	auto ws = app->pMainWindow->GetSize();
 	wm.Initialize(ws.width(), ws.height());
 
+//	[&] { s_pEngine->new_Scene( "GameScene" ); }
+
 	wm.addWindow( new ui::Button("New Game", { 300, 200 }, { 200, 40 }) );
 }
 

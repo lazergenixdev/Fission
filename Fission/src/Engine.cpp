@@ -72,6 +72,15 @@ namespace Fission
 				m_bWantResize = false;
 			}
 
+			if( m_pNextScene )
+			{
+				auto last = m_pCurrentScene;
+				m_pCurrentScene = m_pNextScene;
+
+				last->Destroy();
+				m_pNextScene = nullptr;
+			}
+
 	/////////////////////////////////////////////////////////////////////////
 	// Main Render Loop:
 
@@ -79,7 +88,7 @@ namespace Fission
 			if( m_clearColor )
 			SwapChain->Clear( m_clearColor.value() );
 
-			m_CurrentScene->OnUpdate( _dt );
+			m_pCurrentScene->OnUpdate( _dt );
 
 			m_ConsoleLayer.OnUpdate( _dt );
 			m_DebugLayer.OnUpdate( _dt );
@@ -121,8 +130,8 @@ namespace Fission
 			m_DebugLayer.SetAppVersionString(appVersionString);
 			}
 
-			// uh??????????????
-			m_CurrentScene = m_Application->OnCreateScene( {} );
+			// TODO: this not good.
+			m_pCurrentScene = m_Application->OnCreateScene( { 1 } );
 
 
 			// Create everything needed to run our application:
@@ -184,20 +193,28 @@ namespace Fission
 		app->OnCreate();
 		m_DebugLayer.OnCreate(app);
 		m_ConsoleLayer.OnCreate(app);
-		m_CurrentScene->OnCreate(app);
+		m_pCurrentScene->OnCreate(app);
 
 		CreateDebug( m_pWindowManager.get(), app );
 	}
 
 
-	void FissionEngine::new_Scene( const SceneKey & key )
+	void FissionEngine::EnterScene( const SceneKey & key )
 	{
-		//auto oldKey = m_CurrentScene->GetKey();
-		//auto scene = m_Application->OnCreateScene( key, &oldKey );
-		//m_CurrentScene->Destroy();
-		//m_CurrentScene = scene;
+		if( m_pNextScene == nullptr )
+		{
+			m_SceneKeyHistory.emplace_back( m_pCurrentScene->GetKey() );
+
+			auto nextScene = m_Application->OnCreateScene( key );
+
+			nextScene->OnCreate( m_Application );
+
+			Console::WriteLine( "Entering New Scene [id=%i]"_format(key.id) );
+
+			m_pNextScene = nextScene;
+		}
 	}
-	void FissionEngine::back_Scene()
+	void FissionEngine::ExitScene()
 	{
 		//m_SceneKeyHistory.pop_back();
 		//auto scene = m_Application->OnCreateScene( m_SceneKeyHistory.back() );
@@ -207,7 +224,7 @@ namespace Fission
 	}
 	void FissionEngine::ClearSceneHistory()
 	{
-
+		m_SceneKeyHistory.clear();
 	}
 
 	void FissionEngine::RegisterRenderer( const char * name, IFRenderer * r )

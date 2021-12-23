@@ -37,7 +37,8 @@ namespace Fission
 
 		DebugLayerImpl				m_DebugLayer;
 		ConsoleLayerImpl			m_ConsoleLayer;
-		IFScene *                   m_CurrentScene;
+		IFScene *                   m_pCurrentScene;
+		IFScene *                   m_pNextScene = nullptr;
 
 		vsync_						m_vsync = vsync_On;
 		std::optional<color>        m_clearColor = color{};
@@ -69,8 +70,8 @@ namespace Fission
 
 		virtual void LoadApplication( FApplication * app ) override;
 
-		virtual void new_Scene( const SceneKey & key ) override;
-		virtual void back_Scene() override;
+		virtual void EnterScene( const SceneKey & key ) override;
+		virtual void ExitScene() override;
 		virtual void ClearSceneHistory() override;
 
 		virtual void RegisterRenderer( const char * name, IFRenderer * r ) override;

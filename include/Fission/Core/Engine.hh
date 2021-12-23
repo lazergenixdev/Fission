@@ -80,11 +80,11 @@ namespace Fission
 
 
 		// create a new scene and set switch to that scene.
-		virtual void new_Scene( const SceneKey& key ) = 0;
+		virtual void EnterScene( const SceneKey& key ) = 0;
 
 
 		// go to the previous scene in history.
-		virtual void back_Scene() = 0;
+		virtual void ExitScene() = 0;
 
 
 		virtual void ClearSceneHistory() = 0;
