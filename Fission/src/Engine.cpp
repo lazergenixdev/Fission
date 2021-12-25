@@ -9,6 +9,7 @@ if( __bCalled ) FISSION_THROW( "FEngine Error", .append(MSG) ) \
 __bCalled = true
 
 #include <Fission/Base/ColoredString.h>
+#include <Fission/Platform/System.h>
 
 namespace Fission
 {
@@ -207,20 +208,35 @@ namespace Fission
 
 			auto nextScene = m_Application->OnCreateScene( key );
 
-			nextScene->OnCreate( m_Application );
+			Console::WriteLine( "Entering New Scene [id=%i] => [id=%i]"_format(m_SceneKeyHistory.back().id, key.id) );
 
-			Console::WriteLine( "Entering New Scene [id=%i]"_format(key.id) );
+			if( nextScene == nullptr )
+			{
+				System::ShowSimpleMessageBox( "                       how.", "Invalid Scene", System::Error );
+				Shutdown(1);
+				return;
+			}
+			
+			nextScene->OnCreate( m_Application );
 
 			m_pNextScene = nextScene;
 		}
 	}
 	void FissionEngine::ExitScene()
 	{
-		//m_SceneKeyHistory.pop_back();
-		//auto scene = m_Application->OnCreateScene( m_SceneKeyHistory.back() );
-		//scene->OnCreate( m_Application );
-		//m_CurrentScene->Destroy();
-		//m_CurrentScene = scene;
+		if( m_pNextScene == nullptr )
+		{
+			auto key = m_SceneKeyHistory.back();
+			m_SceneKeyHistory.pop_back();
+
+			auto nextScene = m_Application->OnCreateScene( key );
+
+			Console::WriteLine( "Exiting Scene [id=%i] => [id=%i] "_format(m_pCurrentScene->GetKey().id, key.id) );
+
+			nextScene->OnCreate( m_Application );
+
+			m_pNextScene = nextScene;
+		}
 	}
 	void FissionEngine::ClearSceneHistory()
 	{

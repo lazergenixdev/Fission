@@ -36,7 +36,8 @@ namespace ui
 
 			color c = (parent->GetHover() == this) ? Colors::Cyan : Colors::DimGray;
 
-			g_r2d->DrawRoundRect(frect, 10.0f, c, 2.0f, StrokeStyle::Inside);
+			g_r2d->DrawRoundRect(frect, 10.0f, c, 0.75f, StrokeStyle::Inside);
+
 			auto d = vector2f(frect.width() - tl.width, frect.height() - tl.height)*0.5f;
 			g_r2d->DrawString(label.c_str(), frect.topLeft()+d, c);
 		}

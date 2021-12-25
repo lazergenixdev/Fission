@@ -195,5 +195,5 @@ class GameScene : public DefaultDelete<Fission::FMultiLayerScene>
 public:
 	GameScene(Fission::IFEngine * engine);
 
-	virtual Fission::SceneKey GetKey() override { return {}; }
+	virtual Fission::SceneKey GetKey() override { return {1}; }
 };

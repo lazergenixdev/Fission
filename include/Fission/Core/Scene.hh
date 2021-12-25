@@ -38,29 +38,29 @@ namespace Fission
 	
 	static constexpr SceneID NullSceneID     =  0; //!< reserved ID, used to represent that no scene could be found
 
-
-	struct SceneKey : private std::map<string, string>
+	// TODO: Fix memory issue
+	struct SceneKey// : private std::map<string, string>
 	{
-		using map = std::map<string, string>;
-		using arg_list = std::initializer_list<value_type>;
+	//	using map = std::map<string, string>;
+	//	using arg_list = std::initializer_list<value_type>;
 		SceneID id;
 
 	public:
-		SceneKey( SceneID _ID = NullSceneID ) : map(), id( _ID )
+		SceneKey( SceneID _ID = NullSceneID ) : /*map(),*/ id( _ID )
 		{}
 
-		SceneKey( SceneID _ID, const arg_list & _Args ): map( _Args ), id(_ID)
-		{}
+	//	SceneKey( SceneID _ID, const arg_list & _Args ): map( _Args ), id(_ID)
+	//	{}
 
-		std::optional<string> operator[]( const string & k ) const
-		{
-			auto p = map::find( k );
-			if( p == map::end() ) return {};
+		//std::optional<string> operator[]( const string & k ) const
+		//{
+		//	auto p = map::find( k );
+		//	if( p == map::end() ) return {};
 
-			auto out = std::move(p->second);
-		//	map::erase( p );
-			return std::make_optional( out );
-		}
+		//	auto out = std::move(p->second);
+		////	map::erase( p );
+		//	return std::make_optional( out );
+		//}
 	};
 
 	struct IFScene : public IFLayer

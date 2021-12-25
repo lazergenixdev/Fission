@@ -65,7 +65,11 @@ namespace Fission
 		// called right before Graphics context gets destroyed and the program exits.
 		virtual void OnShutdown() {}
 
-		// called on the creation of every new scene
+		/*!
+		* @brief Callback function called on the creation of every new scene.
+		* 
+		* @return Pointer to the newly created scene, or nullptr to signal an invalid scene key.
+		*/
 		virtual IFScene * OnCreateScene( const SceneKey& key ) = 0;
 
 	public:

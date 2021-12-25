@@ -10,7 +10,7 @@ class StartMenuLayer : public DefaultDelete<Fission::Simple2DLayer>
 
 	void OnUpdate( Fission::timestep dt );
 
-	//virtual Fission::EventResult OnKeyDown( Fission::KeyDownEventArgs & )override;
+	virtual Fission::EventResult OnKeyDown( Fission::KeyDownEventArgs & ) override;
 	//virtual Fission::EventResult OnKeyUp( Fission::KeyUpEventArgs & )override;
 	virtual Fission::EventResult OnMouseMove( Fission::MouseMoveEventArgs & ) override;
 	virtual Fission::EventResult OnSetCursor( Fission::SetCursorEventArgs & ) override;
@@ -24,5 +24,5 @@ class StartScene : public DefaultDelete<Fission::FMultiLayerScene>
 public:
 	StartScene();
 
-	virtual Fission::SceneKey GetKey() override { return {}; }
+	virtual Fission::SceneKey GetKey() override { return {0}; }
 };

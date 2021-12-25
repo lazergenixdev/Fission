@@ -45,4 +45,15 @@ void StartMenuLayer::OnUpdate( Fission::timestep dt )
 	m_pRenderer2D->Render();
 }
 
+Fission::EventResult StartMenuLayer::OnKeyDown( Fission::KeyDownEventArgs & args )
+{
+	if( args.key == Fission::Keys::Escape )
+	{
+		m_App->pEngine->ExitScene();
+		return Fission::EventResult::Handled;
+	}
+
+	return Fission::EventResult::Pass;
+}
+
 StartScene::StartScene() { PushLayer( new StartMenuLayer ); }
