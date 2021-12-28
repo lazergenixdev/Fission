@@ -130,20 +130,20 @@ struct rect
         const auto dx = _Size.w / static_cast<type>(2), dy = _Size.h / static_cast<type>(2);
         return rect(_Center_X-dx,_Center_X+dx,_Center_Y-dy,_Center_Y+dy);
     }
-    static inline constexpr rect from_center(const vector&_TopLeft_Vector,const type&_Width,const type&_Height)
+    static inline constexpr rect from_center(const vector&_Center_Vector,const type&_Width,const type&_Height)
     {
         const auto dx = _Width / static_cast<type>(2), dy = _Height / static_cast<type>(2);
-        return rect(_TopLeft_Vector.x-dx,_TopLeft_Vector.x+dx,_TopLeft_Vector.y-dy,_TopLeft_Vector.y+dy);
+        return rect(_Center_Vector.x-dx,_Center_Vector.x+dx,_Center_Vector.y-dy,_Center_Vector.y+dy);
     }
-    static inline constexpr rect from_center(const vector&_TopLeft_Vector,const vector&_Size_Vector)
+    static inline constexpr rect from_center(const vector&_Center_Vector,const vector&_Size_Vector)
     {
         const auto dx = _Size_Vector.x / static_cast<type>(2), dy = _Size_Vector.y / static_cast<type>(2);
-        return rect(_TopLeft_Vector.x-dx,_TopLeft_Vector.x+dx,_TopLeft_Vector.y-dy,_TopLeft_Vector.y+dy);
+        return rect(_Center_Vector.x-dx,_Center_Vector.x+dx,_Center_Vector.y-dy,_Center_Vector.y+dy);
     }
-    static inline constexpr rect from_center(const vector&_TopLeft_Vector,const size2&_Size)
+    static inline constexpr rect from_center(const vector&_Center_Vector,const size2&_Size)
     {
         const auto dx = _Size.w / static_cast<type>(2), dy = _Size.h / static_cast<type>(2);
-        return rect(_TopLeft_Vector.x-dx,_TopLeft_Vector.x+dx,_TopLeft_Vector.y+dy,_TopLeft_Vector.y+dy);
+        return rect(_Center_Vector.x-dx,_Center_Vector.x+dx,_Center_Vector.y-dy,_Center_Vector.y+dy);
     }
     static inline constexpr rect from_center(const type&_Width,const type&_Height)
     {

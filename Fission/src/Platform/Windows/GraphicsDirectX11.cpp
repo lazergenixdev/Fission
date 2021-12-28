@@ -87,8 +87,8 @@ namespace Fission::Platform {
 		// Print what version of D3D we got
 		switch( FeatureLevelGot ) 
 		{
-		case D3D_FEATURE_LEVEL_11_1: Console::WriteLine( Colors::Lime, "Using DirectX 11.1" ); break;
-		case D3D_FEATURE_LEVEL_11_0: Console::WriteLine( Colors::Lime, "Using DirectX 11.0" ); break;
+		case D3D_FEATURE_LEVEL_11_1: Console::WriteLine( "Using DirectX 11.1"/Colors::Lime ); break;
+		case D3D_FEATURE_LEVEL_11_0: Console::WriteLine( "Using DirectX 11.0"/Colors::Lime ); break;
 		default:throw std::logic_error("this don't make no fucking sense");
 		}
 

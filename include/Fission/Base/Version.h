@@ -1,9 +1,6 @@
 /**
 *
-* Contains common headers when using Fission.
-* 
-* 
-* @file: Fission.h
+* @file: Version.h
 * @author: lazergenixdev@gmail.com
 *
 *
@@ -30,8 +27,25 @@
 * SOFTWARE.
 *
 */
+#include "../config.h"
+#include <stdint.h>
 
-#pragma once
-#include <Fission/config.h>
-#include <Fission/Core/Application.hh>
-#include <Fission/Core/Console.hh>
+_FISSION_BASE_PUBLIC_BEGIN
+
+struct Version
+{
+  uint16_t maj, min, pat;
+
+  constexpr bool operator>=( const Version & rhs ) const
+  {
+    return as_number() >= rhs.as_number();
+  }
+  constexpr bool operator<( const Version & rhs ) const
+  {
+    return as_number() < rhs.as_number();
+  }
+
+  constexpr uint64_t as_number() const { return (uint64_t)maj << 48 | (uint64_t)min << 32 | (uint64_t)pat << 16; }
+};
+
+_FISSION_BASE_PUBLIC_END

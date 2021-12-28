@@ -514,18 +514,16 @@ namespace Fission::Platform
             auto sStyle = "<style>";
             switch( m_Properties.style )
             {
-            case Style::Border:         sStyle = "Border";         break;
-            case Style::Borderless:     sStyle = "Borderless";     break;
+            case Style::Border:         sStyle = "Border        "; break;
+            case Style::Borderless:     sStyle = "Borderless    "; break;
             case Style::BorderSizeable: sStyle = "BorderSizeable"; break;
-            case Style::Fullscreen:     sStyle = "Fullscreen";     break;
+            case Style::Fullscreen:     sStyle = "Fullscreen    "; break;
             default:break;
             }
 
-            Console::WriteLine( Colors::LightBlue, "Created Window with properties:" );
-            Console::WriteLine( Colors::LightBlue, " - Position: (%d, %d)", pos.x, pos.y );
-
-            Console::WriteLine( Colors::LightBlue, " - Size: [%d x %d]", m_Properties.size.w, m_Properties.size.h );
-            Console::WriteLine( Colors::LightBlue, " - Style: %s", sStyle );
+            Console::WriteLine(
+                "Created Window: (%d, %d) [%dx%d] %s (HWND:0x%x)"_format(pos.x, pos.y, m_Properties.size.w, m_Properties.size.h, sStyle, m_Handle)/Colors::Lavender
+            );
         }
 
         // Tell Constructor to exit, window should be created now

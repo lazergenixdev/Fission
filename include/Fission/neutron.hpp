@@ -567,6 +567,8 @@ inline const window_uid Window::getuid() const { return uid; }
 inline WindowManager::WindowManager( int width, int height ) { Rect = rect::from_topleft( {}, point{ width, height } ); }
 inline WindowManager::~WindowManager() { for( auto && w : windowStack ) delete w; }
 
+inline void WindowManager::Initialize( int width, int height ) { Rect = rect::from_topleft( {}, point{ width, height } ); }
+
 inline void WindowManager::SetCapture( Window * window ) { capture = window; }
 inline void WindowManager::SetFocus( Window * window ) { if( focus ) focus->OnFocusLost(); focus = window; if( focus ) focus->OnFocusGain(); }
 inline void WindowManager::SetHover( Window * window ) { if( hover ) hover->OnMouseLeave(); hover = window; }

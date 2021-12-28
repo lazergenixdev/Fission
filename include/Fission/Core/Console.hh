@@ -30,23 +30,26 @@
 
 #pragma once
 #include <Fission/config.h>
-#include <Fission/Base/Color.h>
-#include <Fission/Base/String.h>
+#include <Fission/Base/ColoredString.h>
 
-#if defined(FISSION_DEBUG) and not defined(FISSION_CREATE_CONSOLE_WINDOW)
+#if defined(FISSION_DEBUG)
 #define FISSION_CREATE_CONSOLE_WINDOW
 #endif
 
-#ifndef FISSION_ERROR_COLOR
-#define FISSION_ERROR_COLOR Fission::Colors::Red
+#ifndef FISSION_CONSOLE_ERROR_COLOR
+#define FISSION_CONSOLE_ERROR_COLOR Fission::Colors::Red
 #endif
 
-#ifndef FISSION_WARNING_COLOR
-#define FISSION_WARNING_COLOR Fission::Colors::Yellow
+#ifndef FISSION_CONSOLE_WARNING_COLOR
+#define FISSION_CONSOLE_WARNING_COLOR Fission::Colors::Yellow
 #endif
 
-#ifndef FISSION_MESSAGE_COLOR
-#define FISSION_MESSAGE_COLOR Fission::Colors::LightGray
+#ifndef FISSION_CONSOLE_INFO_COLOR
+#define FISSION_CONSOLE_INFO_COLOR Fission::Colors::LightGray
+#endif
+
+#ifndef FISSION_CONSOLE_DEFAULT_COLOR
+#define FISSION_CONSOLE_DEFAULT_COLOR Fission::Colors::LightGray
 #endif
 
 namespace Fission
@@ -67,114 +70,150 @@ namespace Fission
 	 *   Wide String message which outputs to the console if command was unsuccessful.
 	 * 
 	 */
-	using CommandCallback = std::function<string( string command_args )>;
+	using CommandCallback = std::function<void( string command_args )>;
+
+	
+	struct FISSION_API console_iterator
+	{
+	private:
+		struct _string
+		{
+			string_view str;
+			color col;
+			int newlines;
+		};
+	public:
+		struct FISSION_API console_string_view
+		{
+			_string operator*() const;
+
+			console_string_view& operator++(); // Go up one line.
+			bool operator!=( const console_string_view& ) const;
+
+			void* parent;
+			int pos, line;
+		};
+
+	public:
+
+		console_iterator( int _Line );
+
+		console_string_view begin();
+		console_string_view end();
+
+	private:
+		void* parent;
+		int pos, line;
+
+	}; // Fission::console_iterator
 
 
 	/*!
 	 * @brief 
 	 *   Console, it is a console not much else to say.. 
 	 */
-	class Console
+	class FISSION_API Console
 	{
+	private:
 		static constexpr size_t Default_Format_Buffer_Size = 128;
+
 	public:
 
 		//! @brief Sets whether the Console should be active to the user.
 		//! @param _Enable: New state for the Console.
 		//! @note Use this to stop console from showing when typing.
-		FISSION_THREAD_SAFE FISSION_API static void SetEnabled( bool _Enable );
+		FISSION_THREAD_SAFE static void SetEnabled( bool _Enable );
 
 
 		//! @brief Check to see if the Console is active for the user.
 		//! @return `true` => Console is enabled; `false` otherwise.
-		FISSION_THREAD_SAFE FISSION_API static bool IsEnabled();
+		FISSION_THREAD_SAFE static bool IsEnabled();
 
 
 		//! @brief Clears all text from the Console.
-		FISSION_THREAD_SAFE FISSION_API static void Clear();
+		FISSION_THREAD_SAFE static void Clear();
 
 
 		//! @brief  Registers a command name to a callback.
 		//! @param  _Command_Name: Name the command will be referred as.
 		//! @param  _Callback: Command callback function that will be called when the command is executed.
 		//! @note This function cannot fail, and will simply override commands that already exist.
-		FISSION_THREAD_SAFE FISSION_API static void RegisterCommand( const string & _Command_Name, CommandCallback _Callback );
+		FISSION_THREAD_SAFE static void RegisterCommand( const string& _Command_Name, CommandCallback _Callback );
 
 
 		//! @brief Removes a command from the Console.
 		//! @param _Command_Name: Name of the command to remove.
-		FISSION_THREAD_SAFE FISSION_API static void UnregisterCommand( const string & _Command_Name );
+		FISSION_THREAD_SAFE static void UnregisterCommand( const string & _Command_Name );
 
 
 		//! @brief Executes a full command string.
 		//! @param _Full_Command: Wide string of the command to be executed.
 		//! @note Syntax of commands should be: <command name> [command arguments]
-		FISSION_THREAD_SAFE FISSION_API static void ExecuteCommand( const string & _Full_Command );
+		FISSION_THREAD_SAFE static void ExecuteCommand( const string & _Full_Command );
 
 
-		//! @brief Writes a line to the Console.
-		//! @param _Color: Color of the line of text outputted.
+		//! @brief Writes a line to the Console, then advances to the next line.
 		//! @param _Text: [in] Text to be put onto the Console.
-		FISSION_THREAD_SAFE FISSION_API static void WriteLine( color _Color, const char * _Text );
+		FISSION_THREAD_SAFE static void WriteLine( const colored_stream& _Text );
 
 
 		//! @brief Writes a string to the Console.
+		//! @since v0.7.1
+		FISSION_THREAD_SAFE static void Write( const colored_stream& _Text );
+
+
 		//! @warning THIS FUNCTION IS NOT IMPLEMENTED AS OF v0.1.0
-		FISSION_THREAD_SAFE FISSION_API static void Write( color _Color, const char * _Text );
+	//	FISSION_THREAD_SAFE static void Log(color _Color, const char* _Text);
 
 
-		//! @brief Gets a line of text and the text color from the Console.
-		//! @param _Line_Number Line number of the line retrieved.
-		//! @param _Output_Text [out] Destination of where the line of the console is copied to.
-		//! @param _Output_Color [out] Destination of where the color of the text is copied to. This may be omitted.
-		//! @return `true` => Success; `False` => Function did not find a line at that index.
-		FISSION_THREAD_SAFE FISSION_API static bool GetLine( int _Line_Number, string * _Output_Text, color * _Output_Color = nullptr );
+		////! @brief Gets a line of text and the text color from the Console.
+		//FISSION_THREAD_SAFE static console_buffer_iterator GetLine( int _Line_Number,  );
 
 
 		//! @brief Gets Console line count.
 		//! @return Number of lines of text in the Console.
-		FISSION_THREAD_SAFE FISSION_API static int GetLineCount();
+		FISSION_THREAD_SAFE static int GetLineCount();
 
 		//! @warning THIS FUNCTION IS NOT IMPLEMENTED AS OF v0.1.0
 		//! @note: This might be needed for thread safety when reading console.
-		FISSION_API static std::lock_guard<std::mutex> Lock();
+		static std::lock_guard<std::mutex> Lock();
 
 
 
 /* ------------------------------------------ Begin Console Helpers ----------------------------------------------- */
 
-		static inline void WriteLine( const char * _Text ) { WriteLine( FISSION_MESSAGE_COLOR, _Text ); }
+		//static inline void WriteLine( const char * _Text ) { WriteLine( FISSION_MESSAGE_COLOR, _Text ); }
 
-		template <size_t _Format_Buffer_Size = Default_Format_Buffer_Size, typename...T>
-		static inline void WriteLine( color _Color, const char * const _Text, T&&...t )
-		{
-			char buffer[_Format_Buffer_Size] = {};
-			sprintf_s( buffer, _Text, std::forward<T>( t )... );
-			WriteLine( _Color, (const char *)buffer );
-		}
+		//template <size_t _Format_Buffer_Size = Default_Format_Buffer_Size, typename...T>
+		//static inline void WriteLine( color _Color, const char * const _Text, T&&...t )
+		//{
+		//	char buffer[_Format_Buffer_Size] = {};
+		//	sprintf_s( buffer, _Text, std::forward<T>( t )... );
+		//	WriteLine( _Color, (const char *)buffer );
+		//}
 
-		template <size_t _Format_Buffer_Size = Default_Format_Buffer_Size, typename...T>
-		static inline void WriteLine( const char * const _Text, T&&...t )
-		{
-			char buffer[_Format_Buffer_Size];
-			sprintf_s( buffer, _Text, std::forward<T>( t )... );
-			WriteLine( (const char *)buffer );
-		}
+		//template <size_t _Format_Buffer_Size = Default_Format_Buffer_Size, typename...T>
+		//static inline void WriteLine( const char * const _Text, T&&...t )
+		//{
+		//	char buffer[_Format_Buffer_Size];
+		//	sprintf_s( buffer, _Text, std::forward<T>( t )... );
+		//	WriteLine( (const char *)buffer );
+		//}
 
-		template <size_t _Format_Buffer_Size = Default_Format_Buffer_Size, typename...T>
-		static inline void Error( const char * _Text, T&&...t ) {
-			WriteLine( FISSION_ERROR_COLOR, _Text, std::forward<T>( t )... );
-		}
+		//template <size_t _Format_Buffer_Size = Default_Format_Buffer_Size, typename...T>
+		//static inline void Error( const char * _Text, T&&...t ) {
+		//	WriteLine( FISSION_ERROR_COLOR, _Text, std::forward<T>( t )... );
+		//}
 
-		template <size_t _Format_Buffer_Size = Default_Format_Buffer_Size, typename...T>
-		static inline void Warning( const char * _Text, T&&...t ) {
-			WriteLine( FISSION_WARNING_COLOR, _Text, std::forward<T>( t )... );
-		}
+		//template <size_t _Format_Buffer_Size = Default_Format_Buffer_Size, typename...T>
+		//static inline void Warning( const char * _Text, T&&...t ) {
+		//	WriteLine( FISSION_WARNING_COLOR, _Text, std::forward<T>( t )... );
+		//}
 
-		template <size_t _Format_Buffer_Size = Default_Format_Buffer_Size, typename...T>
-		static inline void Message( const char * _Text, T&&...t ) {
-			WriteLine( FISSION_MESSAGE_COLOR, _Text, std::forward<T>( t )... );
-		}
+		//template <size_t _Format_Buffer_Size = Default_Format_Buffer_Size, typename...T>
+		//static inline void Info( const char * _Text, T&&...t ) {
+		//	WriteLine( FISSION_INFO_COLOR, _Text, std::forward<T>( t )... );
+		//}
 
 /* ------------------------------------------- End Console Helpers ------------------------------------------------ */
 

@@ -1,4 +1,5 @@
-#include <Fission/Core/Scene.hh>
+#pragma once
+#include <Fission/Core/Application.hh>
 
 namespace Fission
 {

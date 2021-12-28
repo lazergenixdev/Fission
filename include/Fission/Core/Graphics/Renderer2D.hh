@@ -76,7 +76,7 @@ namespace Fission
 		struct MeshData * m_Data;
 	};
 
-	class IFRenderer2D : public IFRenderer
+	struct IFRenderer2D : public IFRenderer
 	{
 	public:
 
@@ -114,11 +114,9 @@ namespace Fission
 
 		virtual void SelectFont( const Font * pFont ) = 0;
 
-		virtual TextLayout DrawString( const wchar_t * wstr, base::vector2f pos, color color ) = 0;
-
-		virtual TextLayout CreateTextLayout( const wchar_t * wstr ) = 0;
-
 		virtual TextLayout DrawString( const char * str, base::vector2f pos, color color ) = 0;
+
+		virtual TextLayout DrawString( string_view sv, base::vector2f pos, color color ) = 0;
 
 		virtual TextLayout CreateTextLayout( const char * str ) = 0;
 

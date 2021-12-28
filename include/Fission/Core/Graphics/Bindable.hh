@@ -54,10 +54,14 @@ namespace Fission::Resource
 {
 	struct IFBindable : public IFObject
 	{
+		//! @brief Bind this current Object to the Graphics Pipeline.
 		virtual void Bind() = 0;
+
+		//! @brief Sets object in pipeline to it's default.
 		virtual void Unbind() = 0;
 	};
 
+	//! @brief Texture Object.
 	struct IFTexture2D : public IFBindable
 	{
 		enum class Type {

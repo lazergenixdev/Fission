@@ -10,7 +10,7 @@
 
 #define FISSION_VERSION_MAJ 0
 #define FISSION_VERSION_MIN 7
-#define FISSION_VERSION_PAT 0
+#define FISSION_VERSION_PAT 1
 
 #define FISSION_VERSION_EX ""
 
@@ -29,3 +29,10 @@ _FISSION_VERSION_STRING(FISSION_VERSION_MAJ, FISSION_VERSION_MIN, FISSION_VERSIO
 #define FISSION_COMPANY_NAME "Lazergenix Software"
 
 #define FISSION_COPYRIGHT "Copyright (c) " FISSION_COPYRIGHT_YEAR " " FISSION_COMPANY_NAME
+
+
+//////////////////////////////////////////////////////////////////////////////
+// Common
+#define FISSION_COMPLETE_VERSION_STRING   FISSION_ENGINE " " FISSION_FULL_VERSION_STRING
+#define FISSION_COMPLETE_VERSION_STRING_V FISSION_ENGINE " v" FISSION_FULL_VERSION_STRING
+//////////////////////////////////////////////////////////////////////////////

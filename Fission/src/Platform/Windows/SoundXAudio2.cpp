@@ -25,7 +25,8 @@ namespace Fission::Platform {
 SoundEngineXAudio2::SoundEngineXAudio2( const CreateInfo & info )
 {
 	HRESULT hr;
-
+	// todo: move this.
+	hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED | COINIT_SPEED_OVER_MEMORY | COINIT_DISABLE_OLE1DDE);
 
 	if( FAILED( hr = XAudio2Create( &m_pXAudio2Engine, 0, XAUDIO2_ANY_PROCESSOR ) ) )
 		FISSION_THROW( "XAudio2 Exception", .append( "Failed to Initialize Sound Engine." ) );
@@ -43,12 +44,13 @@ SoundEngineXAudio2::SoundEngineXAudio2( const CreateInfo & info )
 	if( FAILED(hr = m_pXAudio2Engine->StartEngine() ) )
 		FISSION_THROW( "XAudio2 Exception", .append( "Failed to start audio processing thread." ) );
 
-	Console::WriteLine( Colors::Blanchedalmond, "Using XAudio2" );
+//	Console::WriteLine( Colors::Blanchedalmond, "Using XAudio2" );
 }
 
 ref<Fission::ISound> SoundEngineXAudio2::CreateSound( const std::filesystem::path & filepath )
 {
 	auto sound = make_ref<SoundXAudio2>();
+	// TODO: this is terrible code.
 	LoadSoundDataFromFile( filepath, &sound->m_Sound );
 	return sound;
 }
@@ -232,8 +234,8 @@ uint32_t SoundSourceXAudio2::GetPosition()
 }
 
 
-#define DEBUG_PRINT( fmt, ... ) printf(fmt,__VA_ARGS__)
-#define DEBUG_WPRINT( fmt, ... ) wprintf(fmt,__VA_ARGS__)
+#define DEBUG_PRINT( fmt, ... ) Console::Message<512>(fmt,__VA_ARGS__)
+#define DEBUG_WPRINT( fmt, ... ) Console::Message<512>(fmt,__VA_ARGS__)
 
 #define BREAK_ON_FAIL( hrcall ) if( FAILED( hr = hrcall ) ) break;
 #define RETURN_ON_FAIL( hrcall ) if( FAILED( hr = hrcall ) ) return {};
@@ -252,14 +254,20 @@ LoadSoundResult LoadSoundDataFromFile( const std::filesystem::path & filepath, S
 
 	Microsoft::WRL::ComPtr<IMFSourceReader> pReader;
 
+	Console::WriteLine(
+		"Reading Sound File: %s"_format(
+			filepath.string().c_str()
+		) / Colors::LightSeaGreen
+	);
+
 	hr = MFCreateSourceReaderFromURL( filepath.c_str(), NULL, &pReader );
 
 	if( FAILED( hr ) )
 	{
-		Console::Warning( "Could not load [%s] as a sound!", filepath.string().c_str() );
+	//	Console::Warning( "Could not load [%s] as a sound!", filepath.string().c_str() );
 		return LoadSoundResult::Failure;
 	}
-	else DEBUG_WPRINT( L"\nBegin read [%s]\n", filepath.c_str() );
+	else {}//DEBUG_WPRINT( "\nBegin read [%s]\n", filepath.string().c_str() );
 
 	Microsoft::WRL::ComPtr<IMFMediaType> pAudioType; // Represents the PCM audio format.
 	{
@@ -292,30 +300,22 @@ LoadSoundResult LoadSoundDataFromFile( const std::filesystem::path & filepath, S
 	RETURN_ON_FAIL( MFCreateWaveFormatExFromMFMediaType( pAudioType.Get(), &pWav, &cbFormat ) );
 
 	auto FormatTagString = [] ( WORD tag ) {
-#define CASE_RETURN( macro ) case macro: return #macro
 		switch( tag )
 		{
-			CASE_RETURN( WAVE_FORMAT_PCM );
-			CASE_RETURN( WAVE_FORMAT_EXTENSIBLE );
+		case WAVE_FORMAT_PCM:        return "PCM";
+		case WAVE_FORMAT_EXTENSIBLE: return "PCM-Ext";
 		default: return "Unknown";
 		}
-#undef CASE_RETURN
 	};
 
-	DEBUG_PRINT( "Uncompressed Format:\n"
-		"\ttag = [%s]\n"
-		"\tchannels = [%i]\n"
-		"\tSample Rate Frequency = [%i]\n"
-		"\tAverage Bytes/sec = [%i]\n"
-		"\tBlock Align = [%i]\n"
-		"\tBits per Sample = [%i]\n"
-		,
-		FormatTagString( pWav->wFormatTag ),
-		pWav->nChannels,
-		pWav->nSamplesPerSec,
-		pWav->nAvgBytesPerSec,
-		pWav->nBlockAlign,
-		pWav->wBitsPerSample );
+	Console::WriteLine(
+		"Uncompressed Format: %s %i channel %i-bit @ %iHz"_format(
+			FormatTagString( pWav->wFormatTag ),
+			pWav->nChannels,
+			pWav->wBitsPerSample,
+			pWav->nSamplesPerSec
+		)/Colors::LightSeaGreen
+	);
 
 	DWORD cbBuffer = 0;
 	BYTE * pAudioData = NULL;
@@ -334,17 +334,17 @@ LoadSoundResult LoadSoundDataFromFile( const std::filesystem::path & filepath, S
 
 		if( dwFlags & MF_SOURCE_READERF_CURRENTMEDIATYPECHANGED )
 		{
-			DEBUG_WPRINT( L"\nType change - not supported by WAVE file format.\n" );
+		//	DEBUG_WPRINT( "\nType change - not supported by WAVE file format.\n" );
 			break;
 		}
 		if( dwFlags & MF_SOURCE_READERF_ENDOFSTREAM )
 		{
-			DEBUG_WPRINT( L"\nEnd of input file.\n" );
+		//	DEBUG_WPRINT( "\nEnd of input file.\n" );
 			break;
 		}
 		if( pSample == NULL )
 		{
-			DEBUG_WPRINT( L"\nNo sample\n" );
+		//	DEBUG_WPRINT( "\nNo sample\n" );
 			continue;
 		}
 		// Get a pointer to the audio data in the sample.
@@ -358,7 +358,7 @@ LoadSoundResult LoadSoundDataFromFile( const std::filesystem::path & filepath, S
 		pAudioData = NULL;
 		BREAK_ON_FAIL( pBuffer->Unlock() );
 	}
-	if( SUCCEEDED( hr ) ) DEBUG_WPRINT( L"Got %.2f MB bytes of audio data.\n\n", (float)bytes.size()/1e6f );
+	if( SUCCEEDED( hr ) ) {}// DEBUG_WPRINT( "Got %.2f MB bytes of audio data.\n\n", (float)bytes.size() / 1e6f );
 
 	if( pAudioData ) pBuffer->Unlock();
 

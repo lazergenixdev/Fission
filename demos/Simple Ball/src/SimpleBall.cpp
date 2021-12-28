@@ -1,5 +1,4 @@
 ﻿#include <Fission/Platform/EntryPoint.h>
-#include <Fission/Base/Utility/Timer.h>
 #include <Fission/Simple2DLayer.h>
 #include <random>
 
@@ -12,10 +11,6 @@ struct DefaultDelete : public T { virtual void Destroy() override { delete this;
 class BallLayer : public DefaultDelete<Fission::Simple2DLayer>
 {
 public:
-	Fission::color rand_color() { 
-		return Fission::hsv_colorf( dist( rng ), 1.0f, 1.0f ); 
-	}
-
 	void OnUpdate(Fission::timestep dt)
 	{
 		// Update ball position
@@ -23,15 +18,15 @@ public:
 
 		// Collide with the top and bottom
 		if( pos.y + radius >= 720.0f )
-			pos.y = 720.0f - radius, velocity.y =- velocity.y, color = rand_color();
+			pos.y = 720.0f - radius, velocity.y =- velocity.y, color = Fission::hsv_colorf( dist(rng), 1.0f, 1.0f );
 		else if( pos.y - radius <= 0.0f )
-			pos.y = radius,          velocity.y =- velocity.y, color = rand_color();
+			pos.y = radius,          velocity.y =- velocity.y, color = Fission::hsv_colorf( dist(rng), 1.0f, 1.0f );
 
 		// Collide with the left and right
 		if( pos.x + radius >= 1280.0f )
-			pos.x = 1280.0f - radius, velocity.x =- velocity.x, color = rand_color();
+			pos.x = 1280.0f - radius, velocity.x =- velocity.x, color = Fission::hsv_colorf( dist(rng), 1.0f, 1.0f );
 		else if( pos.x - radius <= 0.0f )
-			pos.x = radius,           velocity.x =- velocity.x, color = rand_color();
+			pos.x = radius,           velocity.x =- velocity.x, color = Fission::hsv_colorf( dist(rng), 1.0f, 1.0f );
 
 		// Draw the circle to the screen
 		m_pRenderer2D->DrawCircle( pos, radius, {0.0f}, Fission::color( color, 0.5f ), 20.0f, Fission::StrokeStyle::Inside ); // inner glow
@@ -48,10 +43,12 @@ private:
 	Fission::color          color    = Fission::Colors::Red;
 };
 
-class BallScene : public DefaultDelete<Fission::FScene>
+class BallScene : public DefaultDelete<Fission::FMultiLayerScene>
 {
 public:
 	BallScene() { PushLayer( new BallLayer ); }
+
+	virtual Fission::SceneKey GetKey() override { return {}; }
 };
 
 class BounceBallApp : public DefaultDelete<Fission::FApplication>
@@ -62,10 +59,13 @@ public:
 		char title[100];
 		sprintf( title, "Bouncing Ball Demo [%s]", pEngine->GetVersionString() );
 		info->window.title = title;
-		info->startScene = new BallScene;
 		info->window.size = { 1280,720 };
 		strcpy(info->name_utf8, "Balls");
 		strcpy(info->version_utf8, "1.0.0");
+	}
+	virtual Fission::IFScene * OnCreateScene( const Fission::SceneKey & key ) override
+	{
+		return new BallScene;
 	}
 };
 

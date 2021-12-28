@@ -18,6 +18,7 @@ namespace Fission::Platform
 		wClassDesc.lpfnWndProc =    SetupWindowsProc;
 
 		HMODULE hGDI = LoadLibraryA( "gdi32" );
+		// if this doesn't work, no big deal. It just means we don't get black as the startup window color.
 		if( hGDI != NULL )
 		{
 			auto GetStockObj = (PFN_GET_STOCK_OBJECT)GetProcAddress( hGDI, "GetStockObject" );

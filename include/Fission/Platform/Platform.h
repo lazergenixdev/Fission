@@ -72,7 +72,6 @@
 
 #ifdef FISSION_PLATFORM_WINDOWS
 	#include <Fission/Platform/Windows/winapi.h>
-	#include <wrl/client.h>
 
 	//! @note Our main will be called only from WinMain,
 	//!	       thus we just want to inline the code
@@ -91,9 +90,6 @@
 			WPARAM wParam;
 			LPARAM lParam;
 		};
-
-		template <typename T>
-		using com_ptr = Microsoft::WRL::ComPtr<T>;
 	}
 
 #elif FISSION_PLATFORM_ANDROID

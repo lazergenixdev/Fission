@@ -176,6 +176,8 @@ public:
 		case Fission::Keys::Down:  snek.SetDirection( { 0, 1} ); break;
 
 		case Fission::Keys::Space: if( snek.IsDie() ) snek = Snake{ &field }; break;
+
+		case Fission::Keys::Escape: { g_engine->EnterScene( {0} ); break; }
 		default:break;
 		}
 		return Fission::EventResult::Pass;
@@ -188,8 +190,10 @@ private:
 	v2i food_pos;
 };
 
-class GameScene : public DefaultDelete<Fission::FScene>
+class GameScene : public DefaultDelete<Fission::FMultiLayerScene>
 {
 public:
-	GameScene( Fission::IFEngine * engine ) { g_engine = engine; PushLayer( new GameLayer ); }
+	GameScene(Fission::IFEngine * engine);
+
+	virtual Fission::SceneKey GetKey() override { return {1}; }
 };

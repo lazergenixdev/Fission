@@ -31,29 +31,21 @@
 #include <Fission/config.h>
 #include <Fission/Core/Scene.hh>
 #include <Fission/Core/Graphics/Renderer.hh>
+#include <Fission/Base/Version.h>
 
 namespace Fission
 {
 	struct IFEngine : public IFObject
 	{
-		/**
-		 * @brief  Get Fission Engine Version.
-		 * 
-		 * @param  _Maj: [out] Major Version Number.
-		 * @param  _Min: [out] Minor Version Number.
-		 * @param  _Pat: [out] Patch Version Number.
-		 */
-		virtual void GetVersion( int * _Maj, int * _Min, int * _Pat ) = 0;
 
-		//! @brief Gets version in format: "Fission vX.Y.Z"
-		virtual const char * GetVersionString() = 0;
-
+		//! @brief Function that contains the main game loop, the
+		//!	       application is expected to terminate after this function returns.
 		virtual void Run( Platform::ExitCode * ) = 0;
+
 
 		//! @brief Starts a shutdown of the engine, resulting in the application closing.
 		virtual void Shutdown( Platform::ExitCode ) = 0;
 
-		virtual void LoadEngine() = 0;
 
 		/**
 		 * @brief Loads all the reasources need to run our application,
@@ -65,6 +57,7 @@ namespace Fission
 		 */
 		virtual void LoadApplication( class FApplication * app ) = 0;
 
+
 		/**
 		* @brief Register a render to be used with the engine.
 		*        (can be retrieved using @GetRenderer)
@@ -72,6 +65,7 @@ namespace Fission
 		* @note Renderers are managed by the engine using the IFRenderer interface.
 		*/
 		virtual void RegisterRenderer( const char * _Name, IFRenderer * _Renderer ) = 0;
+
 
 		/**
 		 * @brief  Get a renderer from it's name.
@@ -81,11 +75,28 @@ namespace Fission
 		 */
 		virtual IFRenderer * GetRenderer( const char * _Name ) = 0;
 
+
 		virtual IFDebugLayer * GetDebug() = 0;
 
-		virtual void PushScene( FScene * _Ptr_Scene ) = 0;
 
-		virtual void CloseScene() {}
+		// create a new scene and set switch to that scene.
+		virtual void EnterScene( const SceneKey& key ) = 0;
+
+
+		// go to the previous scene in history.
+		virtual void ExitScene() = 0;
+
+
+		virtual void ClearSceneHistory() = 0;
+
+
+		//! @brief  Get Fission Engine Version.
+		virtual Version GetVersion() = 0;
+
+
+		//! @brief Gets version in format: "Fission vX.Y.Z"
+		virtual const char * GetVersionString() = 0;
+
 
 	}; // struct Fission::IFEngine
 
