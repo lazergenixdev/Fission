@@ -21,8 +21,157 @@
 // TODO: Fix Sizing of window when switching Window styles
 // TODO: Use raw input for keyboard and mouse
 
+#include <uxtheme.h>
+
 namespace Fission::Platform
 {
+
+    enum IMMERSIVE_HC_CACHE_MODE
+    {
+        IHCM_USE_CACHED_VALUE,
+        IHCM_REFRESH
+    };
+    enum WINDOWCOMPOSITIONATTRIB
+    {
+        WCA_UNDEFINED = 0,
+        WCA_NCRENDERING_ENABLED = 1,
+        WCA_NCRENDERING_POLICY = 2,
+        WCA_TRANSITIONS_FORCEDISABLED = 3,
+        WCA_ALLOW_NCPAINT = 4,
+        WCA_CAPTION_BUTTON_BOUNDS = 5,
+        WCA_NONCLIENT_RTL_LAYOUT = 6,
+        WCA_FORCE_ICONIC_REPRESENTATION = 7,
+        WCA_EXTENDED_FRAME_BOUNDS = 8,
+        WCA_HAS_ICONIC_BITMAP = 9,
+        WCA_THEME_ATTRIBUTES = 10,
+        WCA_NCRENDERING_EXILED = 11,
+        WCA_NCADORNMENTINFO = 12,
+        WCA_EXCLUDED_FROM_LIVEPREVIEW = 13,
+        WCA_VIDEO_OVERLAY_ACTIVE = 14,
+        WCA_FORCE_ACTIVEWINDOW_APPEARANCE = 15,
+        WCA_DISALLOW_PEEK = 16,
+        WCA_CLOAK = 17,
+        WCA_CLOAKED = 18,
+        WCA_ACCENT_POLICY = 19,
+        WCA_FREEZE_REPRESENTATION = 20,
+        WCA_EVER_UNCLOAKED = 21,
+        WCA_VISUAL_OWNER = 22,
+        WCA_HOLOGRAPHIC = 23,
+        WCA_EXCLUDED_FROM_DDA = 24,
+        WCA_PASSIVEUPDATEMODE = 25,
+        WCA_USEDARKMODECOLORS = 26,
+        WCA_LAST = 27
+    };
+    enum PreferredAppMode
+    {
+        Default,
+        AllowDark,
+        ForceDark,
+        ForceLight,
+        Max
+    };
+    struct WINDOWCOMPOSITIONATTRIBDATA
+    {
+        WINDOWCOMPOSITIONATTRIB Attrib;
+        PVOID pvData;
+        SIZE_T cbData;
+    };
+
+    using fnRtlGetNtVersionNumbers = void (WINAPI*)(LPDWORD major, LPDWORD minor, LPDWORD build);
+    using fnSetWindowCompositionAttribute = BOOL(WINAPI*)(HWND hWnd, WINDOWCOMPOSITIONATTRIBDATA*);
+    // 1809 17763
+    using fnShouldAppsUseDarkMode = bool (WINAPI*)(); // ordinal 132
+    using fnAllowDarkModeForApp = bool (WINAPI*)(bool allow); // ordinal 135, in 1809
+    using fnFlushMenuThemes = void (WINAPI*)(); // ordinal 136
+    using fnRefreshImmersiveColorPolicyState = void (WINAPI*)(); // ordinal 104
+    using fnIsDarkModeAllowedForWindow = bool (WINAPI*)(HWND hWnd); // ordinal 137
+    using fnGetIsImmersiveColorUsingHighContrast = bool (WINAPI*)(IMMERSIVE_HC_CACHE_MODE mode); // ordinal 106
+    using fnOpenNcThemeData = HTHEME(WINAPI*)(HWND hWnd, LPCWSTR pszClassList); // ordinal 49
+    // 1903 18362
+    using fnSetPreferredAppMode = PreferredAppMode(WINAPI*)(PreferredAppMode appMode); // ordinal 135, in 1903
+    using fnIsDarkModeAllowedForApp = bool (WINAPI*)(); // ordinal 139
+    using fnShouldSystemUseDarkMode = bool (WINAPI*)(); // ordinal 138
+    using fnAllowDarkModeForWindow = bool (WINAPI*)(HWND hWnd, bool allow); // ordinal 133
+
+    static fnAllowDarkModeForWindow _AllowDarkModeForWindow = nullptr;
+    static fnShouldAppsUseDarkMode _ShouldAppsUseDarkMode = nullptr;
+    static fnIsDarkModeAllowedForWindow _IsDarkModeAllowedForWindow = nullptr;
+    static fnSetWindowCompositionAttribute _SetWindowCompositionAttribute = nullptr;
+    static DWORD g_buildNumber = 0;
+
+    bool IsHighContrast()
+    {
+        HIGHCONTRASTW highContrast = { sizeof(highContrast) };
+        if (SystemParametersInfoW(SPI_GETHIGHCONTRAST, sizeof(highContrast), &highContrast, FALSE))
+            return bool(highContrast.dwFlags & HCF_HIGHCONTRASTON);
+        return false;
+    }
+
+    // TODO: what is this naming??
+    void FunctionThatDoesThingsAndStuff()
+    {
+
+        fnAllowDarkModeForApp _AllowDarkModeForApp = nullptr;
+        fnFlushMenuThemes _FlushMenuThemes = nullptr;
+        fnRefreshImmersiveColorPolicyState _RefreshImmersiveColorPolicyState = nullptr;
+        fnGetIsImmersiveColorUsingHighContrast _GetIsImmersiveColorUsingHighContrast = nullptr;
+        fnOpenNcThemeData _OpenNcThemeData = nullptr;
+        // 1903 18362
+        fnShouldSystemUseDarkMode _ShouldSystemUseDarkMode = nullptr;
+        fnSetPreferredAppMode _SetPreferredAppMode = nullptr;
+
+        bool g_darkModeSupported = false;
+        bool g_darkModeEnabled = false;
+
+
+        auto AllowDarkModeForApp = [&](bool allow)
+        {
+            if (_AllowDarkModeForApp)
+                _AllowDarkModeForApp(allow);
+            else if (_SetPreferredAppMode)
+                _SetPreferredAppMode(allow ? AllowDark : Default);
+        };
+
+        HMODULE hUxtheme = LoadLibraryExW(L"uxtheme.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+        if (hUxtheme)
+        {
+            _OpenNcThemeData = reinterpret_cast<fnOpenNcThemeData>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(49)));
+            _RefreshImmersiveColorPolicyState = reinterpret_cast<fnRefreshImmersiveColorPolicyState>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(104)));
+            _GetIsImmersiveColorUsingHighContrast = reinterpret_cast<fnGetIsImmersiveColorUsingHighContrast>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(106)));
+            _ShouldAppsUseDarkMode = reinterpret_cast<fnShouldAppsUseDarkMode>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(132)));
+            _AllowDarkModeForWindow = reinterpret_cast<fnAllowDarkModeForWindow>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(133)));
+
+            auto ord135 = GetProcAddress(hUxtheme, MAKEINTRESOURCEA(135));
+            if (g_buildNumber < 18362)
+                _AllowDarkModeForApp = reinterpret_cast<fnAllowDarkModeForApp>(ord135);
+            else
+                _SetPreferredAppMode = reinterpret_cast<fnSetPreferredAppMode>(ord135);
+
+            //_FlushMenuThemes = reinterpret_cast<fnFlushMenuThemes>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(136)));
+            _IsDarkModeAllowedForWindow = reinterpret_cast<fnIsDarkModeAllowedForWindow>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(137)));
+
+            _SetWindowCompositionAttribute = reinterpret_cast<fnSetWindowCompositionAttribute>(GetProcAddress(GetModuleHandleW(L"user32.dll"), "SetWindowCompositionAttribute"));
+
+            if (_OpenNcThemeData &&
+                _RefreshImmersiveColorPolicyState &&
+                _ShouldAppsUseDarkMode &&
+                _AllowDarkModeForWindow &&
+                (_AllowDarkModeForApp || _SetPreferredAppMode) &&
+                //_FlushMenuThemes &&
+                _IsDarkModeAllowedForWindow)
+            {
+                g_darkModeSupported = true;
+
+                AllowDarkModeForApp(true);
+                _RefreshImmersiveColorPolicyState();
+
+                g_darkModeEnabled = _ShouldAppsUseDarkMode() && !IsHighContrast();
+
+                //FixDarkScrollBar();
+            }
+        }
+    }
+
 
 	LRESULT CALLBACK MainWindowsProc( _In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wParam, _In_ LPARAM lParam )
 	{
@@ -180,6 +329,25 @@ namespace Fission::Platform
 
         switch( Msg )
         {
+        case WM_CREATE:
+        {
+            _AllowDarkModeForWindow(hWnd, true);
+
+            BOOL dark = FALSE;
+            if (_IsDarkModeAllowedForWindow(hWnd) &&
+                _ShouldAppsUseDarkMode() &&
+                !IsHighContrast())
+            {
+                dark = TRUE;
+            }
+            if (_SetWindowCompositionAttribute)
+            {
+                WINDOWCOMPOSITIONATTRIBDATA data = { WCA_USEDARKMODECOLORS, &dark, sizeof(dark) };
+                _SetWindowCompositionAttribute(hWnd, &data);
+            }
+            break;
+        }
+
         case WM_DESTROY:
         case FISSION_WM_CLOSE:
             PostQuitMessage( 0 );
@@ -482,6 +650,8 @@ namespace Fission::Platform
                 pos = base::vector2i(info.rcMonitor.left,info.rcMonitor.top) + offset;
             }
 
+            FunctionThatDoesThingsAndStuff();
+
             m_Handle = CreateWindowExW(
                 0L,                                         // Ex Style
                 m_pGlobalInfo->WindowClassName,             // Window Class Name
@@ -522,7 +692,7 @@ namespace Fission::Platform
             }
 
             Console::WriteLine(
-                "Created Window: (%d, %d) [%dx%d] %s (HWND:0x%x)"_format(pos.x, pos.y, m_Properties.size.w, m_Properties.size.h, sStyle, m_Handle)/Colors::Lavender
+                "Created Window: (%4d, %4d) [%dx%d] %s (HWND:0x%x)"_format(pos.x, pos.y, m_Properties.size.w, m_Properties.size.h, sStyle, m_Handle)/Colors::Lavender
             );
         }
 
