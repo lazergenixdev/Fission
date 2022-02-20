@@ -167,6 +167,8 @@ namespace Fission
 
 		Console::RegisterCommand( "exit", [=]( const string & ) { m_pWindow->Close(); } );
 
+		Console::RegisterCommand("ver", [=](const string&) { Console::WriteLine(FISSION_COMPLETE_VERSION_STRING_V / Colors::White); });
+
 		Console::RegisterCommand( "vsync", 
 			[&] ( const string & in ) {
 				std::for_each( in.begin(), in.end(), [] ( char8_t & c ) {c = tolower(c);} );
@@ -186,7 +188,7 @@ namespace Fission
 		);
 
 		// sus
-		Console::RegisterCommand( "sus", [=]( const string & ) { return string("amogus ded"); });
+		Console::RegisterCommand( "sus", [=]( const string & ) { Console::WriteLine(string("amogus ded")/Colors::MedAquamarine); });
 
 		// Now everything should be initialized, we call OnCreate
 		//  for our application and all of its dependencies:

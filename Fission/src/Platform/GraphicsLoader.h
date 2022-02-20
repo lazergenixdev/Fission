@@ -3,7 +3,7 @@
 
 namespace Fission
 {
-	struct GraphicsLoader
+	struct GraphicsLoader : public IFObject
 	{
 		virtual void Initialize() = 0;
 
@@ -11,8 +11,6 @@ namespace Fission
 
 		// TODO: make a function to give the reason why an API is not supported.
 		virtual bool CheckSupport( IFGraphics::API api ) = 0;
-
-		virtual void Destroy() = 0;
 	};
 
 	extern void CreateGraphicsLoader( GraphicsLoader ** ppGraphicsLoader );

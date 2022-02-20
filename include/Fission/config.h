@@ -111,6 +111,11 @@
 */
 #define FISSION_Rx2 "https://youtu.be/dQw4w9WgXcQ"
 
+/**
+* Bool to string
+*/
+#define FISSION_BOOL_STR(B) (B?("True"):("False"))
+
 //\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\
 
 /**

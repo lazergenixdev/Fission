@@ -35,6 +35,11 @@ _FISSION_BASE_PUBLIC_BEGIN
 struct Version
 {
   uint16_t maj, min, pat;
+  char ext[18] = {0}; // reserved
+
+  constexpr Version(): maj(0), min(0), pat(0) {}
+
+  constexpr Version(uint16_t major, uint16_t minor, uint16_t patch): maj(major), min(minor), pat(patch) {}
 
   constexpr bool operator>=( const Version & rhs ) const
   {

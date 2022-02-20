@@ -333,18 +333,17 @@ namespace Fission::Platform
         {
             _AllowDarkModeForWindow(hWnd, true);
 
-            BOOL dark = FALSE;
-            if (_IsDarkModeAllowedForWindow(hWnd) &&
-                _ShouldAppsUseDarkMode() &&
-                !IsHighContrast())
-            {
-                dark = TRUE;
-            }
+            BOOL dark = TRUE;
+
+            // Window should use dark mode when: ( _IsDarkModeAllowedForWindow(hWnd) && _ShouldAppsUseDarkMode() && !IsHighContrast() )
+            // however, _IsDarkModeAllowedForWindow only returns true in debug builds.
+            // I'm not sure of why this is the case, this could be looked into further.
             if (_SetWindowCompositionAttribute)
             {
                 WINDOWCOMPOSITIONATTRIBDATA data = { WCA_USEDARKMODECOLORS, &dark, sizeof(dark) };
                 _SetWindowCompositionAttribute(hWnd, &data);
             }
+
             break;
         }
 

@@ -132,7 +132,7 @@ namespace Fission {
 		auto itt = m_CommandMap.find( name );
 		if( itt == m_CommandMap.end() )
 		{
-			WriteLine( string("Unknown command: '" + name + "'") / Colors::DarkGray );
+			WriteLine( string("Unknown command: '" + name + "'") / Colors::PaleVioletRed );
 			return;
 		}
 
