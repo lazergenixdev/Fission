@@ -70,12 +70,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", FISSION_COMPANY_NAME
             VALUE "FileDescription", "Fission Game Engine"
-            VALUE "FileVersion", FISSION_VERSION_STRING ".69"
+            VALUE "FileVersion", FISSION_VERSION_NUMBER ".69"
             VALUE "InternalName", FISSION_ENGINE
             VALUE "LegalCopyright", FISSION_COPYRIGHT
             VALUE "OriginalFilename", "Fission.dll"
             VALUE "ProductName", "Fission Engine"
-            VALUE "ProductVersion", FISSION_FULL_VERSION_STRING
+            VALUE "ProductVersion", FISSION_VERSION_STR
         END
     END
     BLOCK "VarFileInfo"

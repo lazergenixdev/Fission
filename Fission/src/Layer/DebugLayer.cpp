@@ -106,7 +106,7 @@ void DebugLayerImpl::OnCreate(class FApplication * app) {
 	gpu_name = utf16_string( (char16_t*)descAdapter.Description ).utf8().string();
 }
 
-#define _DEBUG_LAYER FISSION_COMPLETE_VERSION_STRING _FISSION_BUILD_STRING
+#define _DEBUG_LAYER FISSION_VERSION_STRV _FISSION_BUILD_STRING
 
 void DebugLayerImpl::OnUpdate(timestep dt) {
 	

@@ -38,7 +38,7 @@ namespace Fission
 
 	const char * FissionEngine::GetVersionString()
 	{
-		return FISSION_COMPLETE_VERSION_STRING_V;
+		return FISSION_VERSION_STRV;
 	}
 
 
@@ -167,7 +167,7 @@ namespace Fission
 
 		Console::RegisterCommand( "exit", [=]( const string & ) { m_pWindow->Close(); } );
 
-		Console::RegisterCommand("ver", [=](const string&) { Console::WriteLine(FISSION_COMPLETE_VERSION_STRING_V / Colors::White); });
+		Console::RegisterCommand("ver", [=](const string&) { Console::WriteLine(FISSION_VERSION_STRV / Colors::White); });
 
 		Console::RegisterCommand( "vsync", 
 			[&] ( const string & in ) {
