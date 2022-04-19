@@ -9,7 +9,7 @@ namespace Fission
   public:
     virtual void OnCreate(FApplication * app) override
     {
-      m_pRenderer2D = static_cast<IFRenderer2D *>( app->pEngine->GetRenderer("$internal2D") );
+      m_pRenderer2D = app->f_pEngine->GetRenderer<IFRenderer2D>( "$internal2D" );
     }
 
     IFRenderer2D * m_pRenderer2D;

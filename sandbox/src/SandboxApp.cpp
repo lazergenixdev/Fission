@@ -9,6 +9,7 @@
 #define FISSION_ENABLE_DEBUG_UI 1
 #endif
 #include <Fission/Core/UI/Debug.hh>
+#include <Fission/Core/Console.hh>
 
 #define _neutron_key_primary_mouse   Fission::Keys::Mouse_Left
 #define _neutron_key_secondary_mouse Fission::Keys::Mouse_Right
@@ -37,11 +38,21 @@ public:
 
 	Button(const char * label, vector2f pos, vector2f size): pos(pos),size(size),label(label) {}
 
+	virtual bool isInside( neutron::point pos ) override
+	{
+		rectf rc = rectf::from_topleft( this->pos, size );
+		return rc[(vector2f)pos];
+	}
+
 	virtual void OnUpdate(float) override
 	{
 		auto rect = Fission::base::rectf{ pos.x, pos.x + size.x, pos.y, pos.y + size.y };
 
+		if( parent->GetHover() == this )
 		g_r2d->FillRoundRect( rect, 10.0f, Fission::Colors::CadetBlue );
+		else
+		g_r2d->FillRoundRect( rect, 10.0f, Fission::color(Fission::Colors::CadetBlue,0.5f) );
+
 		g_r2d->DrawRoundRect( rect, 10.0f, Fission::color(Fission::Colors::White,0.5f), 1.0f );
 
 		auto tl = g_r2d->CreateTextLayout( label.c_str() );
@@ -57,7 +68,7 @@ public:
 	virtual void OnCreate( Fission::FApplication * app ) override
 	{
 		Simple2DLayer::OnCreate(app);
-		wnd = app->pMainWindow;
+		wnd = app->f_pMainWindow;
 		font = Fission::FontManager::GetFont("$console");
 		g_r2d = m_pRenderer2D;
 
@@ -95,7 +106,8 @@ public:
 	}
 	virtual Fission::EventResult OnMouseMove( Fission::MouseMoveEventArgs & args ) override
 	{
-		return Fission::EventResult::Handled;
+		neutron::MouseMoveEventArgs nargs = { args.position };
+		return (Fission::EventResult)wm.OnMouseMove( nargs );
 	}
 private:
 	Fission::IFWindow * wnd;
@@ -114,14 +126,24 @@ public:
 	virtual Fission::SceneKey GetKey() override { return {}; }
 };
 
-class MyApp : public DefaultDelete<Fission::FApplication>
+class MyApp : public Fission::FApplication
 {
 public:
+	MyApp() : FApplication( "Sandbox", {2,2,8} ) {}
+
 	virtual void OnStartUp( CreateInfo * info ) override
 	{
 		info->window.title = u8"🔥 Sandbox 🔥  👌👌👌👌👌";
-		strcpy_s( info->name_utf8, "sandbox" );
-		strcpy_s( info->version_utf8, "2.2.0" );
+		//strcpy_s( info->name_utf8, "sandbox" );
+		//strcpy_s( info->version_utf8, "2.2.0" );
+
+		using namespace Fission;
+		Version v = { 3, 2, 69 };
+		Version v1 = { 2, 3, 43 };
+
+		Console::WriteLine( "v >= v1 == "/Colors::AliceBlue + FISSION_BOOL_STR(v >= v1) / Colors::White);
+		Console::WriteLine( "v <  v1 == "/Colors::AliceBlue + FISSION_BOOL_STR(v < v1) / Colors::White);
+
 	}
 	virtual Fission::IFScene * OnCreateScene( const Fission::SceneKey& key ) override
 	{
@@ -132,6 +154,10 @@ public:
 
 		// ignore scene key and just create the main scene
 		return new MainScene;
+	}
+	virtual void Destroy() override
+	{
+		delete this;
 	}
 };
 

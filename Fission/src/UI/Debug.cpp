@@ -101,7 +101,7 @@ namespace Fission
 		}
 		pWindowManager->CreateWindow( &info, &s_DebugWindow->window );
 
-		SetForegroundWindow( app->pMainWindow->native_handle() );
+		SetForegroundWindow( app->f_pMainWindow->native_handle() );
 
 		s_DebugWindow->OnCreate( app );
 	}

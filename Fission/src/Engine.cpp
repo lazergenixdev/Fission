@@ -116,7 +116,7 @@ namespace Fission
 
 		// Link the application to our engine instance
 		m_Application = app;
-		app->pEngine = this;
+		app->f_pEngine = this;
 
 		{
 			AppCreateInfo appCreateInfo;
@@ -127,7 +127,16 @@ namespace Fission
 			// Use the app name and version
 			{
 			char appVersionString[144]; AppCreateInfo * info = &appCreateInfo;
-			sprintf_s( appVersionString, "%s %s (%s/vanilla)", info->name_utf8, info->version_utf8, info->version_utf8 );
+			sprintf_s( appVersionString, "%s " FISSION_VERSION_FORMAT " (" FISSION_VERSION_FORMAT "/%s)",
+				app->f_Name.c_str(),
+				app->f_Version.Major,
+				app->f_Version.Minor,
+				app->f_Version.Patch,
+				app->f_Version.Major,
+				app->f_Version.Minor,
+				app->f_Version.Patch,
+				app->f_VersionInfo.c_str()
+			);
 			m_DebugLayer.SetAppVersionString(appVersionString);
 			}
 
@@ -146,8 +155,8 @@ namespace Fission
 			m_pWindowManager->CreateWindow( &winCreateInfo, &m_pWindow );
 		}
 
-		app->pMainWindow = m_pWindow.get();
-		app->pGraphics = m_pGraphics.get();
+		app->f_pMainWindow = m_pWindow.get();
+		app->f_pGraphics = m_pGraphics.get();
 
 		{
 		Fission::IFRenderer2D * renderer;

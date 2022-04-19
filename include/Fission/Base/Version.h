@@ -27,30 +27,51 @@
 * SOFTWARE.
 *
 */
-#include "../config.h"
-#include <stdint.h>
+#include "config.h"
+#include <cstdint>
 
 _FISSION_BASE_PUBLIC_BEGIN
 
+// Use this when printing versions
+#define FISSION_VERSION_FORMAT "%i.%i.%i"
+
+/*!
+* @brief Version Number
+* @see https://semver.org/
+*/
 struct Version
 {
-  uint16_t maj, min, pat;
-  char ext[18] = {0}; // reserved
+	// Version: Major.Minor.Patch
+	// e.g. 2.2.0
+	uint16_t    Major,Minor,Patch;
 
-  constexpr Version(): maj(0), min(0), pat(0) {}
+	// For simplicity, this will NOT be considered in precedence
+	char _ext[18] = { 0 };
 
-  constexpr Version(uint16_t major, uint16_t minor, uint16_t patch): maj(major), min(minor), pat(patch) {}
 
-  constexpr bool operator>=( const Version & rhs ) const
-  {
-    return as_number() >= rhs.as_number();
-  }
-  constexpr bool operator<( const Version & rhs ) const
-  {
-    return as_number() < rhs.as_number();
-  }
+	constexpr Version() : Major( 0 ), Minor( 0 ), Patch( 0 ) {}
 
-  constexpr uint64_t as_number() const { return (uint64_t)maj << 48 | (uint64_t)min << 32 | (uint64_t)pat << 16; }
+	constexpr Version( uint16_t major, uint16_t minor, uint16_t patch ) : Major( major ), Minor( minor ), Patch( patch ) {}
+
+	constexpr Version( uint16_t major, uint16_t minor, uint16_t patch, const char * ext ) : Major( major ), Minor( minor ), Patch( patch )
+	{
+		for( int i = 0; i < 18 && *ext; ++i )
+			_ext[i] = *ext++;
+	}
+
+
+	constexpr bool operator>=( const Version &rhs ) const
+	{
+		return as_number() >= rhs.as_number();
+	}
+	constexpr bool operator<( const Version &rhs ) const
+	{
+		return as_number() < rhs.as_number();
+	}
+
+
+	constexpr uint64_t as_number() const { return (uint64_t)Major << 32 | (uint64_t)Minor << 16 | (uint64_t)Patch; }
+
 };
 
 _FISSION_BASE_PUBLIC_END

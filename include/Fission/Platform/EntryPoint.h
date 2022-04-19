@@ -101,32 +101,36 @@ FISSION_MAIN_EXPORT(Fission::Platform::ExitCode) _fission_main( void * instance 
 
 	try
 	{
+		/* Initialize Fission Engine. */
 		Fission::CreateEngine( instance, &fsnEngine );
 
+		/* Initialize the Application. */
 		app = CreateApplication();
 
+		/* Attach the Application to Fission Engine. */
 		fsnEngine->LoadApplication( app.get() );
 
 		try 
 		{
+			/* Use the Engine to run our Application. */
 			fsnEngine->Run( &nExitCode );
 		}
 
 		catch( base::runtime_error & e )
 		{
-			System::ShowSimpleMessageBox( string( e.name() ) + " caught"_utf8, e.what(), System::Error, app->pMainWindow );
+			System::ShowSimpleMessageBox( string( e.name() ) + " caught"_utf8, e.what(), System::Error, app->f_pMainWindow );
 			nExitCode = FISSION_EXIT_FAILURE;
 		}
 
 		catch( std::exception & e )
 		{
-			System::ShowSimpleMessageBox( "C++ exception caught"_utf8, e.what(), System::Error, app->pMainWindow );
+			System::ShowSimpleMessageBox( "C++ exception caught"_utf8, e.what(), System::Error, app->f_pMainWindow );
 			nExitCode = FISSION_EXIT_FAILURE;
 		}
 
 		catch( ... ) 
 		{
-			System::ShowSimpleMessageBox( "Unknown Error"_utf8, "No information provided, lol"_utf8, System::Error, app->pMainWindow );
+			System::ShowSimpleMessageBox( "Unknown Error"_utf8, "No information provided, lol"_utf8, System::Error, app->f_pMainWindow );
 		}
 	}
 

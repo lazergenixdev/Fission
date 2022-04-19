@@ -39,20 +39,21 @@ namespace Fission
 	class FApplication : public IFObject
 	{
 	public:
-		IFEngine   * pEngine     = nullptr;
-		IFWindow   * pMainWindow = nullptr;
-		IFGraphics * pGraphics   = nullptr;
-
-	public:
 
 		struct CreateInfo
 		{
-			IFWindow::Properties  window            = {};
-			GraphicsState         graphics          = {};
-
-			char                  name_utf8    [64] = "<app name>";
-			char                  version_utf8 [64] = "0.0.0";
+			IFWindow::Properties window   = {};
+			GraphicsState        graphics = {};
 		};
+
+	public:
+		IFEngine   * f_pEngine        = nullptr;
+		IFWindow   * f_pMainWindow    = nullptr;
+		IFGraphics * f_pGraphics      = nullptr;
+
+		utf8_string  f_Name;
+		Version      f_Version;
+		utf8_string  f_VersionInfo;
 
 	public:
 
@@ -67,15 +68,23 @@ namespace Fission
 
 		/*!
 		* @brief Callback function called on the creation of every new scene.
-		* 
+		* @param key key
 		* @return Pointer to the newly created scene, or nullptr to signal an invalid scene key.
 		*/
 		virtual IFScene * OnCreateScene( const SceneKey& key ) = 0;
 
 	public:
-		constexpr FApplication() noexcept = default;
+		FApplication() noexcept
+		:	f_Name("<app name>"), f_Version(0,1,0), f_VersionInfo("vanilla/alpha")
+		{}
+
+		FApplication( const utf8_string & name, const Version & version ) noexcept
+		:	f_Name(name), f_Version(version), f_VersionInfo("vanilla/alpha")
+		{}
 
 		FApplication( const FApplication & ) = delete; /*!< Copying Applications is not allowed. */
+
+		~FApplication() noexcept = default;
 
 	}; // class Fission::FApplication
 

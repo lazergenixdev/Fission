@@ -54,11 +54,11 @@ static std::string gpu_name;
 void DebugLayerImpl::Destroy() { FontManager::DelFont( "$debug" ); delete this; }
 
 void DebugLayerImpl::OnCreate(class FApplication * app) {
-	pRenderer2D = (IFRenderer2D*)app->pEngine->GetRenderer("$internal2D");
+	pRenderer2D = (IFRenderer2D*)app->f_pEngine->GetRenderer("$internal2D");
 
-	m_width = (float)app->pMainWindow->GetSwapChain()->GetSize().w;
+	m_width = (float)app->f_pMainWindow->GetSwapChain()->GetSize().w;
 
-	FontManager::SetFont( "$debug", IBMPlexMono_MediumTTF::data, IBMPlexMono_MediumTTF::size, 18.0f, app->pGraphics );
+	FontManager::SetFont( "$debug", IBMPlexMono_MediumTTF::data, IBMPlexMono_MediumTTF::size, 18.0f, app->f_pGraphics );
 
 	int CPUInfo[4] = { -1 };
 	unsigned   nExIds, i = 0;

@@ -75,6 +75,13 @@ namespace Fission
 		 */
 		virtual IFRenderer * GetRenderer( const char * _Name ) = 0;
 
+		template <class RendererType>
+		inline RendererType * GetRenderer( const char * _Name )
+		{
+			return dynamic_cast<RendererType*>( GetRenderer( _Name ) );
+		}
+
+
 
 		virtual IFDebugLayer * GetDebug() = 0;
 

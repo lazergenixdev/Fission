@@ -11,12 +11,12 @@ namespace Fission {
 	void ConsoleLayerImpl::OnCreate( FApplication * app )
 	{
 		m_CommandText.reserve( s_MaxCommandSize );
-		m_pRenderer2D = (IFRenderer2D*)app->pEngine->GetRenderer("$internal2D");
-		FontManager::SetFont( "$console", JetBrainsMonoTTF::data, JetBrainsMonoTTF::size, 14.0f, app->pGraphics );
+		m_pRenderer2D = (IFRenderer2D*)app->f_pEngine->GetRenderer("$internal2D");
+		FontManager::SetFont( "$console", JetBrainsMonoTTF::data, JetBrainsMonoTTF::size, 14.0f, app->f_pGraphics );
 		m_pFont = FontManager::GetFont( "$console" );
 		m_FontSize = m_pFont->GetSize();
 
-		m_width = (float)app->pMainWindow->GetSwapChain()->GetSize().w;
+		m_width = (float)app->f_pMainWindow->GetSwapChain()->GetSize().w;
 	}
 
 	void ConsoleLayerImpl::OnUpdate(timestep dt)

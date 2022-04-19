@@ -17,9 +17,9 @@ namespace Fission
 	void DebugWindow::OnCreate( FApplication * app )
 	{
 		CreateRenderer2D( &m_pRenderer2D );
-		m_pRenderer2D->OnCreate( app->pGraphics, Rect.size() );
+		m_pRenderer2D->OnCreate( app->f_pGraphics, Rect.size() );
 
-		FontManager::SetFont( "$ui", NotoSansRegularTTF::data, NotoSansRegularTTF::size, 14.0f, app->pGraphics );
+		FontManager::SetFont( "$ui", NotoSansRegularTTF::data, NotoSansRegularTTF::size, 14.0f, app->f_pGraphics );
 
 		context.r2d = m_pRenderer2D.get();
 		context.rect = base::rectf( Rect );

@@ -15,7 +15,7 @@ using v2f = Fission::base::vector2f;
 using v2i = Fission::base::vector2i;
 using rectf = Fission::base::rectf;
 
-static float padding = 0.0f;
+static float padding = 0.6f;
 static Fission::IFEngine* g_engine = nullptr;
 
 class Field
@@ -27,18 +27,18 @@ public:
 		rect( rectf::from_topleft(left,top,width,height) )
 	{}
 
-	void Draw( Fission::IFRenderer2D * r2d )
+	void Draw( Fission::IFRenderer2D * r2d, bool drawAllTiles )
 	{
-#ifdef DRAW_ALL_TILES
-		for( int x = 0; x < (int)cell_count.x; ++x )
-			for( int y = 0; y < (int)cell_count.y; ++y )
-			{
-				r2d->FillRect(
-					rectf::from_topleft( { (float)x * cell_size.x + offset.x,(float)y * cell_size.y + offset.y }, cell_size ).expanded( -2.0f ),
-					Fission::color( Fission::Colors::Blue, 0.2f )
-				);
-			}
-#endif
+		if( drawAllTiles )
+			for( int x = 0; x < (int)cell_count.x; ++x )
+				for( int y = 0; y < (int)cell_count.y; ++y )
+				{
+					r2d->FillRect(
+						rectf::from_topleft( { (float)x * cell_size.x + offset.x,(float)y * cell_size.y + offset.y }, cell_size ).expanded( -2.0f ),
+						Fission::color( 0.1f, 0.1f, 0.1f, 0.5f )
+					);
+				}
+		
 		r2d->DrawRect( rect, Fission::Colors::White, 2.0f, Fission::StrokeStyle::Inside );
 	}
 
@@ -66,22 +66,36 @@ public:
 		const auto cells = field->cell_count;
 		auto start = v2i( rand() % cells.x, rand() % cells.y );
 
-		v2i v = start - cells / 2;
-		int weightx = Fission::base::dot( v, { 1,0 } );
-		int weighty = Fission::base::dot( v, { 0,1 } );
-		if( weightx * weightx > weighty * weighty )
-			direction.x = weightx > 0 ? -1 : 1;
+		const v2i v = start - cells / 2;
+		if( v.x * v.x > v.y * v.y )
+			direction.x = v.x > 0 ? -1 : 1;
 		else
-			direction.y = weighty > 0 ? -1 : 1;
+			direction.y = v.y > 0 ? -1 : 1;
 
 		body.emplace_back( start );
 	}
 
 	void Draw( Fission::IFRenderer2D * r2d, Field* field )
 	{
-		for( auto && pos : body )
+		static constexpr Fission::color dead_color = Fission::Colors::Green;
+		static constexpr auto color = Fission::hsva_colorf( Fission::rgb_colorf(Fission::Colors::LimeGreen) );
+		static constexpr auto color2 = Fission::hsva_colorf( Fission::rgb_colorf(Fission::Colors::Teal) );
+
+		static constexpr float factor = (color2.h - color.h) / 50.0f;
+
+		if( dead )
 		{
-			field->DrawTile( r2d, pos, dead ? Fission::Colors::Green : Fission::Colors::LimeGreen );
+			for( auto &&pos : body )
+				field->DrawTile( r2d, pos, dead_color );
+		}
+		else
+		{
+			auto c = color;
+			for( auto && pos : body )
+			{
+				field->DrawTile( r2d, pos, c );
+				c.h += factor;
+			}
 		}
 	}
 
@@ -92,6 +106,8 @@ public:
 		t += dt;
 		if( t >= delta )
 		{
+			// \/ Who wrote this comment? What framerate bugs? I am soo confused.. \/
+			//
 			// fuck those weird framerate bugs, will be the same as `t -= delta` in most cases.
 			t = fmod( t, delta );
 
@@ -155,13 +171,16 @@ public:
 		if( snek.GrowIf( food_pos ) )
 			food_pos = { rand() % field.cell_count.x,rand() % field.cell_count.y };
 
-		Fission::UI::Debug::SliderFloat( "padding", &padding, 0.0f, 10.0f );
+		Fission::UI::Debug::SliderFloat( "Padding", &padding, 0.0f, 10.0f );
 		g_engine->GetDebug()->Text( "position: (%i, %i)", snek.GetPosition().x, snek.GetPosition().y );
+
+		static bool drawtiles = false;
+		Fission::UI::Debug::CheckBox( "Draw All Tiles", &drawtiles );
 
 		field.DrawTile( m_pRenderer2D, food_pos, Fission::Colors::Red );
 
 		snek.Draw( m_pRenderer2D, &field );
-		field.Draw( m_pRenderer2D );
+		field.Draw( m_pRenderer2D, drawtiles );
 		m_pRenderer2D->Render();
 	}
 

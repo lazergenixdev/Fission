@@ -6,6 +6,9 @@
 class SnakeApp : public DefaultDelete<Fission::FApplication>
 {
 public:
+	SnakeApp() : DefaultDelete( "Snek", Fission::Version{ 1,0,0 } )
+	{}
+
 	void OnStartUp( CreateInfo * info ) override;
 
 	Fission::IFScene* OnCreateScene( const Fission::SceneKey & key ) override;

@@ -19,7 +19,7 @@
 #define FISSION_VERSION_MAJ 0
 #define FISSION_VERSION_MIN 7
 #define FISSION_VERSION_PAT 0
-#define FISSION_VERSION_EX alpha
+#define FISSION_VERSION_EX
 //////////////////////////////////////////////////////////////////////////////
 
 

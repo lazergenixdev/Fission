@@ -8,7 +8,7 @@ void StartMenuLayer::OnCreate( Fission::FApplication * app )
 	m_App = app;
 	ui::g_r2d = m_pRenderer2D;
 
-	auto ws = app->pMainWindow->GetSize();
+	auto ws = app->f_pMainWindow->GetSize();
 	wm.Initialize(ws.width(), ws.height());
 
 //	[&] { s_pEngine->new_Scene( "GameScene" ); }
@@ -49,7 +49,7 @@ Fission::EventResult StartMenuLayer::OnKeyDown( Fission::KeyDownEventArgs & args
 {
 	if( args.key == Fission::Keys::Escape )
 	{
-		m_App->pEngine->ExitScene();
+		m_App->f_pEngine->ExitScene();
 		return Fission::EventResult::Handled;
 	}
 
