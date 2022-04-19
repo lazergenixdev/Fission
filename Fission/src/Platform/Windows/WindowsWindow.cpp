@@ -683,15 +683,15 @@ namespace Fission::Platform
             auto sStyle = "<style>";
             switch( m_Properties.style )
             {
-            case Style::Border:         sStyle = "Border        "; break;
-            case Style::Borderless:     sStyle = "Borderless    "; break;
+            case Style::Border:         sStyle = "Border"; break;
+            case Style::Borderless:     sStyle = "Borderless"; break;
             case Style::BorderSizeable: sStyle = "BorderSizeable"; break;
-            case Style::Fullscreen:     sStyle = "Fullscreen    "; break;
+            case Style::Fullscreen:     sStyle = "Fullscreen"; break;
             default:break;
             }
 
             Console::WriteLine(
-                "Created Window: (%4d, %4d) [%dx%d] %s (HWND:0x%x)"_format(pos.x, pos.y, m_Properties.size.w, m_Properties.size.h, sStyle, m_Handle)/Colors::Lavender
+                "Created Window: (%4d, %4d) [%4dx%4d] %-14s (HWND:0x%x)"_format(pos.x, pos.y, m_Properties.size.w, m_Properties.size.h, sStyle, m_Handle)/Colors::Lavender
             );
         }
 

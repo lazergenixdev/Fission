@@ -1,6 +1,7 @@
 #pragma once
 #include <Fission/Base/Color.h>
 #include <Fission/Base/String.h>
+#include <vector>
 #include <optional>
 
 _FISSION_BASE_PUBLIC_BEGIN

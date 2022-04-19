@@ -115,13 +115,15 @@ namespace Fission {
 
 		int dpi = 64;
 
-		if( error = FT_Set_Char_Size(
-			face,					/* handle to face object           */
-			0,						/* char_width in 1/64th of points  */
-			(FT_F26Dot6)size * 64,	/* char_height in 1/64th of points */
-			dpi,					/* horizontal device resolution    */
-			dpi ) )					/* vertical device resolution      */
-			return;
+		//if( error = FT_Set_Char_Size(
+		//	face,					/* handle to face object           */
+		//	0,						/* char_width in 1/64th of points  */
+		//	(FT_F26Dot6)size * 64,	/* char_height in 1/64th of points */
+		//	dpi,					/* horizontal device resolution    */
+		//	dpi ) )					/* vertical device resolution      */
+		//	return;
+		if( error = FT_Set_Pixel_Sizes( face, 0, size ) ) // is this better?
+			throw std::logic_error( "failed to set char size" );
 
 		float yMax = float( face->size->metrics.ascender >> 6 );
 		font.height = float( face->size->metrics.height >> 6 );

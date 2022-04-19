@@ -16,6 +16,8 @@ sandbox/etc/
 **.vcxproj
 **.vcxproj.user
 **.vcxproj.filters
+# Complement to resource files
+**.aps
 
 # get tf outta here "Visual Studio Code"
 **.vscode
@@ -29,3 +31,4 @@ bin-int/
 
 # debug stuff
 *.ini
+*.args.json

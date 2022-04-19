@@ -415,9 +415,8 @@ public:
 			m_Capacity = _New_Capacity + 1;
 
 			m_pData = (char_type *)FISSION_STRING_IMPL_MALLOC( m_Capacity * sizeof( char_type ) );
-			::memcpy( m_pData, m_Storage, m_Size );
 
-			m_Size = m_Capacity - 1;
+			::memcpy( m_pData, m_Storage, m_Size );
 			m_pData[m_Size] = static_cast<char_type>( 0 );
 
 			return;
@@ -822,7 +821,7 @@ inline utf16_string utf8_string::utf16() const
 		{
 			if( ( *src & 0b11111000 ) == 0b11110000 )
 			{
-				if( end - src < 4 ) { ++dst; continue; }
+				if( end - src < 4 ) { ++src; continue; }
 				// 4 bytes
 				_ax = *src++ & 0b00000111;
 				_bx = *src++ & 0b00111111;
@@ -838,7 +837,7 @@ inline utf16_string utf8_string::utf16() const
 				continue;
 			}
 
-			if( end - src < 3 ) { ++dst; continue; }
+			if( end - src < 3 ) { ++src; continue; }
 			// 3 bytes
 			_ax = *src++ & 0b00001111;
 			_bx = *src++ & 0b00111111;
@@ -849,7 +848,7 @@ inline utf16_string utf8_string::utf16() const
 			continue;
 		}
 
-		if( end - src < 2 ) { ++dst; continue; }
+		if( end - src < 2 ) { ++src; continue; }
 		// 2 bytes
 		_ax = *src++ & 0b00011111;
 		_bx = *src++ & 0b00111111;
@@ -883,7 +882,7 @@ inline utf8_string utf16_string::utf8() const
 	{
 	if( *src > 0xD7FF )
 	{
-		if( end - src < 2 ) { ++dst; continue; }
+		if( end - src < 2 ) { ++src; continue; }
 
 		// 4 bytes
 

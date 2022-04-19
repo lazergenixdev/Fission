@@ -29,6 +29,7 @@
 */
 #pragma once
 #include "config.h"
+#include <type_traits> /* std::bool_constant<> */
 
 /**
 * 	INDEX:
