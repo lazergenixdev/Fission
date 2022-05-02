@@ -239,7 +239,7 @@ namespace Fission {
 				if( start == str.size() )
 					break;
 
-				add_line( str.c_str() + start, uint32_t(end - start), 0u, col.value_or( FISSION_CONSOLE_DEFAULT_COLOR ) );
+				add_line( str.c_str() + start, uint32_t(str.length() - start), 0u, col.value_or(FISSION_CONSOLE_DEFAULT_COLOR));
 				break; 
 			}
 			else

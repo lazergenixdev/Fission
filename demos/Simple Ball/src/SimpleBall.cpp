@@ -78,7 +78,7 @@ public:
 	}
 	virtual Fission::IFScene * OnCreateScene( const Fission::SceneKey & key ) override
 	{
-		return nullptr;
+		return new BallScene;
 	}
 };
 
