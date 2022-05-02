@@ -9,7 +9,7 @@ project 'Fission'
     files { "%{prj.location}/src/**.cpp", "%{prj.location}/src/**.h", "%{prj.location}/src/**.hh" }
 
     -- public headers
-    files '%{wks.location}/include/**'
+    files '../include/**'
 
     links { "yaml", "freetype" }
 
@@ -20,11 +20,11 @@ project 'Fission'
 
 	includedirs
 	{
-        "%{wks.location}/include",
+        "../include",
         "%{IncludeDir.yaml}",
         "%{IncludeDir.json}",
         '%{IncludeDir.freetype}',
-        '%{wks.location}/resources'
+        '../resources'
 	}
     
     staticruntime "On"
