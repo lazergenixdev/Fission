@@ -15,16 +15,15 @@ namespace Fission::Platform
 		wClassDesc.cbSize = sizeof( WNDCLASSEXW );
 		wClassDesc.lpszClassName =  m_Info.WindowClassName;
 		wClassDesc.hInstance =      m_Info.hInstance;
-		wClassDesc.lpfnWndProc =    SetupWindowsProc;
+		wClassDesc.lpfnWndProc =    WindowsProcSetup;
 
-		HMODULE hGDI = LoadLibraryA( "gdi32" );
 		// if this doesn't work, no big deal. It just means we don't get black as the startup window color.
-		if( hGDI != NULL )
+		if( auto gdi = Module("gdi32") )
 		{
-			auto GetStockObj = (PFN_GET_STOCK_OBJECT)GetProcAddress( hGDI, "GetStockObject" );
-			if( GetStockObj != NULL )
-				wClassDesc.hbrBackground = (HBRUSH)GetStockObj(BLACK_BRUSH);
-			FreeLibrary( hGDI );
+			if( auto GetStockObj = gdi.Get<PFN_GET_STOCK_OBJECT>("GetStockObject") )
+			{
+				wClassDesc.hbrBackground = static_cast<HBRUSH>( GetStockObj(BLACK_BRUSH) );
+			}
 		}
 
 		RegisterClassExW( &wClassDesc );

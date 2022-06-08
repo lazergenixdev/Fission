@@ -29,9 +29,9 @@ namespace Fission {
 			WindowsVersion()
 			{
 				typedef LONG NTSTATUS;
-				typedef NTSTATUS( WINAPI * RtlGetVersionPtr )( PRTL_OSVERSIONINFOW );
+				typedef NTSTATUS( WINAPI * pfn_RtlGetVersion )( PRTL_OSVERSIONINFOW );
 				
-				RtlGetVersionPtr RtlGetVersion;
+				pfn_RtlGetVersion RtlGetVersion;
 
 				RTL_OSVERSIONINFOW version = { 0 };
 				version.dwOSVersionInfoSize = sizeof( version );
@@ -40,11 +40,11 @@ namespace Fission {
 				// we need to import another function to get the real OS version
 				auto ntdll = Platform::Module( "ntdll" );
 
-				if( ntdll == NULL )
+				if( ntdll.is_null() )
 					goto error;
 
 				// Get function address
-				RtlGetVersion = reinterpret_cast<RtlGetVersionPtr>( GetProcAddress(ntdll,"RtlGetVersion") );
+				RtlGetVersion = ntdll.Get<pfn_RtlGetVersion>("RtlGetVersion");
 
 				if( RtlGetVersion == nullptr )
 					goto error;

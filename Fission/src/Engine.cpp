@@ -27,8 +27,8 @@ namespace Fission
 		CreateWindowManager(&m_pWindowManager);
 		m_pWindowManager->Initialize();
 
-		Fission::Console::WriteLine( GetVersionString() / Colors::LightSteelBlue );
-		Fission::Console::WriteLine( "cmdline: " / Colors::White + GetCommandLineA() / Colors::DimGray );
+		Console::WriteLine( GetVersionString() / Colors::LightSteelBlue );
+		Console::WriteLine( "cmdline: " / Colors::White + GetCommandLineA() / Colors::DimGray );
 	}
 
 	Version FissionEngine::GetVersion()
@@ -159,19 +159,9 @@ namespace Fission
 		app->f_pGraphics = m_pGraphics.get();
 
 		{
-		Fission::IFRenderer2D * renderer;
-		Fission::CreateRenderer2D( &renderer );
-		RegisterRenderer( "$internal2D", renderer );
-		}
-
-		base::size wViewportSize = m_pWindow->GetSwapChain()->GetSize();
-		for( auto && [name, context] : m_Renderers )
-		{
-			if( !context.bCreated )
-			{
-				context.renderer->OnCreate( m_pGraphics.get(), wViewportSize );
-				context.bCreated = true;
-			}
+			Fission::IFRenderer2D * renderer;
+			Fission::CreateRenderer2D( &renderer );
+			RegisterRenderer( "$internal2D", renderer );
 		}
 
 		Console::RegisterCommand( "exit", [=]( const string & ) { m_pWindow->Close(); } );
@@ -206,6 +196,16 @@ namespace Fission
 		m_DebugLayer.OnCreate(app);
 		m_ConsoleLayer.OnCreate(app);
 		m_pCurrentScene->OnCreate(app);
+
+		base::size wViewportSize = m_pWindow->GetSwapChain()->GetSize();
+		for( auto && [name, context] : m_Renderers )
+		{
+			if( !context.bCreated )
+			{
+				context.renderer->OnCreate( m_pGraphics.get(), wViewportSize );
+				context.bCreated = true;
+			}
+		}
 
 		CreateDebug( m_pWindowManager.get(), app );
 	}

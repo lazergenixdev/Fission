@@ -61,18 +61,23 @@ namespace Fission::Platform
 	// HMODULE wrapper that will automatically free the handle as it exits scope.
 	struct Module
 	{
+		Module( HMODULE hModule ) noexcept : m_hModule( hModule ) {}
 		Module( const char * _Module_Name ) : m_hModule( GetModuleHandleA(_Module_Name) ) {}
 
-		Module( HMODULE hModule ) : m_hModule( hModule ) {}
+		static Module Load( const char *_Lib_Name ) noexcept { return { LoadLibraryA(_Lib_Name) }; }
+
 		~Module() { if( m_hModule ) FreeModule( m_hModule ); }
 
-		explicit Module( HMODULE& ) = delete;
-		explicit Module( HMODULE&& ) = delete;
+		Module( Module& ) = delete;
+		Module( Module &&src ) : m_hModule( src.m_hModule ) { src.m_hModule = NULL; }
 
-		HMODULE operator*() { return m_hModule; }
-		operator HMODULE() { return m_hModule; }
+		constexpr operator HMODULE() const noexcept { return m_hModule; }
+		constexpr operator bool() const noexcept { return m_hModule != NULL; }
 
-		bool is_null() const { return m_hModule == NULL; }
+		constexpr bool is_null() const noexcept { return m_hModule == NULL; }
+
+		template <typename F>
+		F Get( const char *name ) const noexcept { return reinterpret_cast<F>( GetProcAddress(m_hModule,name) ); }
 
 	private:
 		HMODULE m_hModule;

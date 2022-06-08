@@ -173,7 +173,7 @@ namespace Fission::Platform
     }
 
 
-	LRESULT CALLBACK MainWindowsProc( _In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wParam, _In_ LPARAM lParam )
+	LRESULT CALLBACK WindowsProcMain( _In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wParam, _In_ LPARAM lParam )
 	{
 		// retrieve ptr to window class
 		WindowsWindow * const pWnd = reinterpret_cast<WindowsWindow *>( GetWindowLongPtrW( hWnd, GWLP_USERDATA ) );
@@ -183,7 +183,7 @@ namespace Fission::Platform
 		return pWnd->HandleEvent( &event );
 	}
 
-	LRESULT CALLBACK SetupWindowsProc( _In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wParam, _In_ LPARAM lParam )
+	LRESULT CALLBACK WindowsProcSetup( _In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wParam, _In_ LPARAM lParam )
 	{
 		// use create parameter passed in from CreateWindow() to store window class pointer at WinAPI side
 		if( Msg == WM_NCCREATE )
@@ -196,7 +196,7 @@ namespace Fission::Platform
 			// set WinAPI-managed user data to store ptr to window class
 			SetWindowLongPtrW( hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>( pWnd ) );
 			// set message proc to normal (non-setup) handler now that setup is finished
-			SetWindowLongPtrW( hWnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>( &MainWindowsProc ) );
+			SetWindowLongPtrW( hWnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>( &WindowsProcMain ) );
 
 			Event event = { hWnd, Msg, wParam, lParam };
 			// forward message to window class handler

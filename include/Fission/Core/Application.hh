@@ -84,7 +84,7 @@ namespace Fission
 
 		FApplication( const FApplication & ) = delete; /*!< Copying Applications is not allowed. */
 
-		~FApplication() noexcept = default;
+		virtual ~FApplication() noexcept = default;
 
 	}; // class Fission::FApplication
 

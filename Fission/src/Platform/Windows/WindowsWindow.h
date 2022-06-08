@@ -8,8 +8,8 @@ namespace Fission::Platform
 		DWORD Style, ExStyle;
 	};
 
-	extern LRESULT CALLBACK SetupWindowsProc( _In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wParam, _In_ LPARAM lParam );
-	extern LRESULT CALLBACK MainWindowsProc( _In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wParam, _In_ LPARAM lParam );
+	extern LRESULT CALLBACK WindowsProcSetup( _In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wParam, _In_ LPARAM lParam );
+	extern LRESULT CALLBACK WindowsProcMain( _In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wParam, _In_ LPARAM lParam );
 
 	class WindowsWindow : public IFWindow
 	{
