@@ -44,6 +44,12 @@ public:
 		return rc[(vector2f)pos];
 	}
 
+	virtual neutron::Result OnSetCursor( neutron::SetCursorEventArgs & args ) override
+	{
+		args.cursor = Fission::Cursor::Get( Fission::Cursor::Default_Hand );
+		return neutron::Handled;
+	}
+
 	virtual void OnUpdate(float) override
 	{
 		auto rect = Fission::base::rectf{ pos.x, pos.x + size.x, pos.y, pos.y + size.y };
@@ -61,6 +67,49 @@ public:
 	}
 
 };
+
+struct Meter
+{
+	Meter(float damping, float maxv): bar_damping(damping), maxv(maxv)
+	{
+		x = startx;
+		startx += 15.0f;
+	}
+
+	Meter& update( float dt )
+	{
+		if( val < ((float)rand()/(float)RAND_MAX)*100.0f )
+			v = maxv;
+
+		val += v * dt;
+		v += ( -250.0f - v ) * bar_damping;
+
+		bar += ( val - bar ) * 0.01f;
+		bar = std::max( val, bar );
+
+		return *this;
+	}
+
+	void draw( Fission::IFRenderer2D *r2d )
+	{
+		r2d->FillRect( rectf{ x, x+10.0f, 300.0f, 600.0f }, Fission::Colors::make_gray(0.04f) );
+		r2d->FillRect( rectf{ x, x+10.0f, 600.0f - val, 600.0f }, Fission::Colors::White );
+		r2d->FillRect( rectf{ x, x+10.0f, 594.0f - bar, 597.0f - bar }, Fission::Colors::White );
+	}
+
+	float bar_damping = 0.3f;
+	float maxv = 8000.0f;
+
+	float val = 10.0f;
+	float bar = 10.0f;
+	float v = 0.0f;
+	float x;
+
+private:
+	static float startx;
+};
+
+float Meter::startx = 100.0f;
 
 class MenuLayer : public DefaultDelete<Fission::Simple2DLayer>
 {
@@ -86,12 +135,14 @@ public:
 		wm.OnUpdate( 0.0f );
 		g_r2d->Render();
 
+		for( auto &meter : meters )
+			meter.update(dt).draw(m_pRenderer2D);
+
 		if( show )
 		{
-			m_pRenderer2D->DrawString( "Showing = True", { 100.0f, 100.0f }, Fission::Colors::White );
-
-			m_pRenderer2D->Render();
+			m_pRenderer2D->DrawString( "Showing = True", { 100.0f, 200.0f }, Fission::Colors::White );
 		}
+		m_pRenderer2D->Render();
 	}
 
 	virtual Fission::EventResult OnKeyDown( Fission::KeyDownEventArgs & args ) override
@@ -109,6 +160,17 @@ public:
 		neutron::MouseMoveEventArgs nargs = { args.position };
 		return (Fission::EventResult)wm.OnMouseMove( nargs );
 	}
+	virtual Fission::EventResult OnSetCursor( Fission::SetCursorEventArgs & args ) override
+	{
+		neutron::SetCursorEventArgs nargs = { args.cursor };
+		auto r = (Fission::EventResult)wm.OnSetCursor( nargs );
+		if( nargs.cursor != args.cursor )
+		{
+			args.cursor = nargs.cursor;
+			args.bUseCursor = true;
+		}
+		return r;
+	}
 private:
 	Fission::IFWindow * wnd;
 	Fission::Font * font;
@@ -116,6 +178,7 @@ private:
 	bool show = false;
 
 	neutron::WindowManager wm;
+	Meter meters[4] = { {0.3f,8'000.0f}, {0.4f, 10'000.0f}, {0.25f, 7'500.0f}, {0.5f, 12'000.0f} };
 };
 
 class MainScene : public DefaultDelete<Fission::FMultiLayerScene>
@@ -136,14 +199,6 @@ public:
 		info->window.title = u8"🔥 Sandbox 🔥  👌👌👌👌👌";
 		//strcpy_s( info->name_utf8, "sandbox" );
 		//strcpy_s( info->version_utf8, "2.2.0" );
-
-		using namespace Fission;
-		Version v = { 3, 2, 69 };
-		Version v1 = { 2, 3, 43 };
-
-		Console::WriteLine( "v >= v1 == "/Colors::AliceBlue + FISSION_BOOL_STR(v >= v1) / Colors::White);
-		Console::WriteLine( "v <  v1 == "/Colors::AliceBlue + FISSION_BOOL_STR(v < v1) / Colors::White);
-
 	}
 	virtual Fission::IFScene * OnCreateScene( const Fission::SceneKey& key ) override
 	{
