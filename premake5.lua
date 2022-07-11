@@ -3,10 +3,6 @@ IncludeDir["yaml"] 		= "vendor/yaml-cpp/include"
 IncludeDir["json"] 		= "vendor/json/single_include"
 IncludeDir["freetype"] 	= 'vendor/freetype/include'
 
-group "Dependencies"
-	include "Fission/vendor/yaml-cpp"
-group ""
-
 if _FISSION_EXTERNAL then
 	include 'Fission'
 else
@@ -25,3 +21,7 @@ else
 	include 'sandbox'
 	include 'demos'
 end
+
+group "Dependencies"
+	include "Fission/vendor/yaml-cpp"
+group ""

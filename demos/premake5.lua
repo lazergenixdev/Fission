@@ -4,7 +4,7 @@ function include_demo(name)
   location(name)
   kind 'WindowedApp'
   language 'C++'
-  cppdialect 'C++latest'
+  cppdialect 'c++20'
   targetdir ('%{wks.location}/bin/' .. OutputDir)
   objdir ('%{wks.location}/bin-int/' .. OutputDir .. '/%{prj.name}')
 

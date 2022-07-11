@@ -1,7 +1,7 @@
 project 'Fission'
     kind 'SharedLib'
     language 'C++'
-    cppdialect "C++latest"
+    cppdialect "c++20"
 
     targetdir ("%{wks.location}/bin/" .. OutputDir)
 	objdir ("%{wks.location}/bin-int/" .. OutputDir .. "/%{prj.name}")
