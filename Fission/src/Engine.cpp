@@ -5,7 +5,7 @@
 
 #define FISSION_ENGINE_ONCE(MSG) \
 static bool __bCalled = false; \
-if( __bCalled ) FISSION_THROW( "FEngine Error", .append(MSG) ) \
+if( __bCalled ) FISSION_THROW( "FEngine Error", .append(MSG) ); \
 __bCalled = true
 
 #define FISSION_VERSION_FORMAT "%i.%i.%i"

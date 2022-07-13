@@ -1,5 +1,5 @@
 #include "WinWindowManager.h"
-#include <Fission/Base/Exception.h>
+#include <Fission/Base/Exception.hpp>
 #include "WindowsWindow.h"
 #include "../Monitor.h"
 

@@ -1,5 +1,5 @@
 #include "WindowsWindow.h"
-#include <Fission/Base/Exception.h>
+#include <Fission/Base/Exception.hpp>
 #include <Fission/Core/Console.hh>
 #include <Fission/Core/Configuration.hh>
 #include <Fission/Platform/System.h>
@@ -292,7 +292,7 @@ namespace Fission::Platform
                 }
 
                 if( pMonitor == nullptr )
-                    FISSION_THROW( "Window Error", .append( "Monitor not found! (caused by new monitor being connected)" ) )
+                    FISSION_THROW( "Window Error", .append( "Monitor not found! (caused by new monitor being connected)" ) );
 
                 m_pMonitor = pMonitor;
             }

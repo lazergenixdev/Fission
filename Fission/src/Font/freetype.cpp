@@ -1,7 +1,7 @@
 #include "freetype.h"
 
 #include <Fission/Core/Console.hh>
-#include <Fission/Base/Exception.h>
+#include <Fission/Base/Exception.hpp>
 
 #define _FREETYPE_THROW_FAILED( _ft_call, _Info )			if( _ft_call ) { FISSION_THROW("FreeType Exception",.append( _Info )); } (void)0
 #define _FREETYPE_THROW_FAILED_EX( _ft_call, _Info, _Ex ) if( err = _ft_call ) { FISSION_THROW("FreeType Exception",.append("Error",FT_Error_String(err)).append(_Info,_Ex)); } (void)0

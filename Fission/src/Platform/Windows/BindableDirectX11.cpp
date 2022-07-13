@@ -1,6 +1,6 @@
 #include "BindableDirectX11.h"
 #include <Fission/Core/Window.hh>
-#include <Fission/Base/Exception.h>
+#include <Fission/Base/Exception.hpp>
 #include <d3dcompiler.h>
 
 namespace Fission::Platform {

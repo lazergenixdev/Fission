@@ -630,7 +630,7 @@ namespace rbp {
 /*                                         Start Implementation                                                                     */
 /************************************************************************************************************************************/
 
-#include <Fission/Base/Exception.h>
+#include <Fission/Base/Exception.hpp>
 #include <Fission/Base/Math/Vector.h>
 using namespace Fission;
 

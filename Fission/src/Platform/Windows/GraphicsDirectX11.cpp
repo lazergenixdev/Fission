@@ -1,7 +1,7 @@
 #include "GraphicsDirectX11.h"
 #include "WindowsWindow.h"
 #include <Fission/Core/Console.hh>
-#include <Fission/Base/Exception.h>
+#include <Fission/Base/Exception.hpp>
 
 namespace Fission::Platform {
 
@@ -144,7 +144,7 @@ namespace Fission::Platform {
 	}
 
 	Resource::IFFrameBuffer* GraphicsDirectX11::CreateFrameBuffer( const FrameBuffer::CreateInfo & info ) {
-		FISSION_THROW_NOT_IMPLEMENTED()
+		FISSION_THROW_NOT_IMPLEMENTED();
 		return nullptr;
 	}
 

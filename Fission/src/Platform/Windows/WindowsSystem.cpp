@@ -1,6 +1,6 @@
 #pragma once
 #include "Fission/Platform/System.h"
-#include "Fission/Base/Exception.h"
+#include "Fission/Base/Exception.hpp"
 #include "WindowsMonitor.h"
 
 #ifdef FISSION_PLATFORM_WINDOWS

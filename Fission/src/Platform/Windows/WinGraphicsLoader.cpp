@@ -1,5 +1,5 @@
 #include "WinGraphicsLoader.h"
-#include "Fission/Base/Exception.h"
+#include "Fission/Base/Exception.hpp"
 
 namespace Fission::Platform
 {

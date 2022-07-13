@@ -1,6 +1,7 @@
+#include <Fission/Base/Exception.hpp>
 #include "ConsoleImpl.h"
 #include <fstream>
-#include <Fission/Base/Exception.h>
+#include <filesystem>
 
 #define _Fission_Console_Log_Location "console.log"
 

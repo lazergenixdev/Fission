@@ -1,7 +1,7 @@
 #include "WindowsMonitor.h"
 #include "../Monitor.h"
 #include <Fission/Core/Console.hh>
-#include <Fission/Base/Exception.h>
+#include <Fission/Base/Exception.hpp>
 
 namespace Fission
 {

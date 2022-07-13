@@ -2,7 +2,7 @@
 #include <DirectXTex/DirectXTex.h>
 #include <DXErr/dxerr.hpp>
 
-#include <Fission/Base/Exception.h>
+#include <Fission/Base/Exception.hpp>
 
 namespace Fission {
 

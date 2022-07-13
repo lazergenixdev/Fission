@@ -1,7 +1,7 @@
 ﻿#include "Renderer2DImpl.h"
 #include "Mesh.h"
 #include <numbers>
-#include <Fission/Base/Exception.h>
+#include <Fission/Base/Exception.hpp>
 
 // might look into text snapping in more detail,
 //    but for now it looks better than not and there

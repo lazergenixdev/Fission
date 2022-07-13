@@ -1,6 +1,6 @@
 #include "SoundXAudio2.h"
 #include <Fission/Core/Console.hh>
-#include <Fission/Base/Exception.h>
+#include <Fission/Base/Exception.hpp>
 
 #include <windows.h>
 #include <mfapi.h>
