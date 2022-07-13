@@ -60,7 +60,7 @@ namespace Fission
 
 		FissionEngine();
 
-		virtual Version GetVersion() override;
+		virtual version GetVersion() override;
 
 		virtual const char * GetVersionString() override;
 

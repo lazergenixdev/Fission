@@ -6,7 +6,7 @@
 class SnakeApp : public DefaultDelete<Fission::FApplication>
 {
 public:
-	SnakeApp() : DefaultDelete( "Snek", Fission::Version{ 1,0,0 } )
+	SnakeApp() : DefaultDelete( "Snek", Fission::version{ 1,0,0 } )
 	{}
 
 	void OnStartUp( CreateInfo * info ) override;

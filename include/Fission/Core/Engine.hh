@@ -30,7 +30,7 @@
 #pragma once
 #include <Fission/Core/Graphics/Renderer.hh>
 #include <Fission/Core/Scene.hh>
-#include <Fission/Base/Version.h>
+#include <Fission/Base/Version.hpp>
 
 namespace Fission
 {
@@ -97,7 +97,7 @@ namespace Fission
 
 
 		//! @brief  Get Fission Engine Version.
-		virtual Version GetVersion() = 0;
+		virtual version GetVersion() = 0;
 
 
 		//! @brief Gets version in format: "Fission vX.Y.Z"

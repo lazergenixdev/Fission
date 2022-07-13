@@ -8,6 +8,8 @@ static bool __bCalled = false; \
 if( __bCalled ) FISSION_THROW( "FEngine Error", .append(MSG) ) \
 __bCalled = true
 
+#define FISSION_VERSION_FORMAT "%i.%i.%i"
+
 #include <Fission/Platform/System.h>
 
 namespace Fission
@@ -28,7 +30,7 @@ namespace Fission
 		Console::WriteLine( "cmdline: " / Colors::White + string{GetCommandLineA()} / Colors::DimGray );
 	}
 
-	Version FissionEngine::GetVersion()
+	version FissionEngine::GetVersion()
 	{
 		return { FISSION_VERSION_MAJ, FISSION_VERSION_MIN, FISSION_VERSION_PAT };
 	}

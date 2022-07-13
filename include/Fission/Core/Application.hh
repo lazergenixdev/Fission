@@ -51,7 +51,7 @@ namespace Fission
 		IFGraphics * f_pGraphics      = nullptr;
 
 		utf8_string  f_Name;
-		Version      f_Version;
+		version      f_Version;
 		utf8_string  f_VersionInfo;
 
 	public:
@@ -74,11 +74,11 @@ namespace Fission
 
 	public:
 		FApplication() noexcept
-		:	f_Name("<app name>"), f_Version(0,1,0), f_VersionInfo("vanilla/alpha")
+		:	f_Name("<app name>"), f_Version(0,1,0), f_VersionInfo("vanilla/dev")
 		{}
 
-		FApplication( const utf8_string & name, const Version & version ) noexcept
-		:	f_Name(name), f_Version(version), f_VersionInfo("vanilla/alpha")
+		FApplication( const utf8_string & name, const version & ver ) noexcept
+		:	f_Name(name), f_Version(ver), f_VersionInfo("vanilla")
 		{}
 
 		FApplication( const FApplication & ) = delete; /*!< Copying Applications is not allowed. */
