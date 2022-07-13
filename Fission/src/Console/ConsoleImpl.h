@@ -1,6 +1,5 @@
 #pragma once
 #include <Fission/Core/Console.hh>
-#include <Fission/Base/Utility/BitFlag.h>
 
 namespace Fission {
 

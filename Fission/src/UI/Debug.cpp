@@ -95,7 +95,7 @@ namespace Fission
 			if( filled == 2 )
 			{
 				info.wProperties.position = { x, y };
-				utility::remove_flag( info.wProperties.flags, IFWindow::Flags::CenterWindow );
+				util::remove_flag( info.wProperties.flags, IFWindow::Flags::CenterWindow );
 			}
 			fclose( ini );
 		}

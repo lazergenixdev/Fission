@@ -1,6 +1,6 @@
 #pragma once
 #include <Fission/Core/Application.hh>
-#include <Fission/Base/Utility/Timer.h>
+#include <Fission/Base/Time.hpp>
 #include "DefaultDelete.h"
 
 class SnakeApp : public DefaultDelete<Fission::FApplication>

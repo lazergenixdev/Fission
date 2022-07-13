@@ -1,6 +1,6 @@
 ﻿#include <Fission/Platform/EntryPoint.h>
 #include <Fission/Core/Monitor.hh>
-#include <Fission/Base/Utility/Timer.h>
+#include <Fission/Base/Time.hpp>
 #include <Fission/Simple2DLayer.h>
 
 #if defined(DIST)

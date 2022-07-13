@@ -1,5 +1,5 @@
 #pragma once
-#include <Fission/Base/Utility/Timer.h>
+#include <Fission/Base/Time.hpp>
 #include <Fission/Core/Scene.hh>
 #include <map>
 

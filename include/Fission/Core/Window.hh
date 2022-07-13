@@ -35,7 +35,7 @@
 #include <Fission/Base/Size.h>
 #include <Fission/Base/String.hpp>
 #include <Fission/Base/Math/Vector.h>
-#include <Fission/Base/Utility/BitFlag.h>
+#include <Fission/Base/util/BitFlag.hpp>
 
 // todo: implement fixed aspect-ratio flag
 // todo: implement fullscreen
@@ -63,18 +63,18 @@ namespace Fission
 			Default = Border
 		};
 
-		enum Flags : utility::bit_flag<32>
+		enum Flags : util::bit_flag<32>
 		{
 			None                = 0,
-			RestrictAspectRatio = utility::make_flag<0,32>, /*!< Restrict the window to only have one aspect ratio. */
-			CenterWindow        = utility::make_flag<1,32>, /*!< Center the window to the screen when created. */
-			SavePosition        = utility::make_flag<2,32>, /*!< Saves the window position when closed. */
-			SaveSize            = utility::make_flag<3,32>, /*!< Saves the window size when closed. */
-			AlwaysOnTop         = utility::make_flag<4,32>,
+			RestrictAspectRatio = util::make_flag<0>, /*!< Restrict the window to only have one aspect ratio. */
+			CenterWindow        = util::make_flag<1>, /*!< Center the window to the screen when created. */
+			SavePosition        = util::make_flag<2>, /*!< Saves the window position when closed. */
+			SaveSize            = util::make_flag<3>, /*!< Saves the window size when closed. */
+			AlwaysOnTop         = util::make_flag<4>,
 
 			Default	= RestrictAspectRatio | SavePosition | SaveSize | CenterWindow,
 		};
-		using Flag_t = utility::bit_flag_t<Flags>;
+		using Flag_t = util::bit_flag_t<Flags>;
 
 
 		//! @brief struct defining the properties of a given Window
@@ -141,5 +141,3 @@ namespace Fission
 	static constexpr IFWindow::SaveID WindowSaveID_Begin = 1; 
 
 } // namespace Fission
-
-_Fission_Declare_Enum_Operators( Fission::IFWindow::Flags );

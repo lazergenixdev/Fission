@@ -36,13 +36,13 @@ namespace Fission
 	class System
 	{
 	public:
-		enum MessageBoxFlags : utility::bit_flag<32> {
+		enum MessageBoxFlags : util::bit_flag<32> {
 			None    = 0,
-			Error   = utility::make_flag<0,32>,
-			Warning = utility::make_flag<1,32>,
-			Info    = utility::make_flag<2,32>
+			Error   = util::make_flag<0>,
+			Warning = util::make_flag<1>,
+			Info    = util::make_flag<2>
 		};
-		using MessageBoxFlag_t = utility::bit_flag_t<MessageBoxFlags>;
+		using MessageBoxFlag_t = util::bit_flag_t<MessageBoxFlags>;
 
 
 		FISSION_API static void ShowSimpleMessageBox( 
