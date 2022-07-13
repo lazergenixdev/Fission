@@ -1,6 +1,7 @@
 #pragma once
 #include <Fission/Core/Scene.hh>
 #include <Fission/Core/Application.hh>
+#include <Fission/Base/Rect.hpp>
 #include <Fission/Simple2DLayer.h>
 #include "DefaultDelete.h"
 
@@ -13,7 +14,7 @@
 
 using v2f = Fission::v2f32;
 using v2i = Fission::v2i32;
-using rectf = Fission::base::rectf;
+using rectf = Fission::rf32;
 
 static float padding = 0.6f;
 static Fission::IFEngine* g_engine = nullptr;

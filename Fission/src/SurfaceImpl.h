@@ -18,7 +18,7 @@ namespace Fission
 		virtual void set_height( int _New_Height, ResizeOptions_ _Options ) override;
 
 		virtual void insert( int _X, int _Y, PixelCallback _Source, size2 _Source_Size ) override;
-		virtual void insert( int _X, int _Y, const Surface * _Source, std::optional<base::recti> _Source_Rect ) override;
+		virtual void insert( int _X, int _Y, const Surface * _Source, std::optional<ri32> _Source_Rect ) override;
 
 		virtual void PutPixel( int _X, int _Y, color _Color ) override;
 		virtual color GetPixel( int _X, int _Y ) const override;

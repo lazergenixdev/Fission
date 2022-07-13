@@ -739,7 +739,7 @@ bool surface_map::Load( const std::filesystem::path & file )
 			subs.region.flipped = value["[flip]"].get<bool>();
 			subs.meta = from_json( value["__metadata__"] );
 
-			subs.region.rel = base::rectf( (rangef32)rc.x * scale.x, (rangef32)rc.y * scale.y );
+			subs.region.rel = rf32( (rangef32)rc.x * scale.x, (rangef32)rc.y * scale.y );
 
 			m_Map.emplace( key, subs );
 		}
@@ -870,8 +870,8 @@ bool surface_map::build( BuildFlags flags )
 	for( auto && r : out_rects )
 	{
 		sub_surface * sub = reinterpret_cast<sub_surface *>( r.userdata );
-		sub->region.abs = base::recti( r.x, r.x + r.width, r.y, ( r.y + r.height ) );
-		sub->region.rel = (base::rectf)sub->region.abs * scale.x; // todo: fix for differing width and height
+		sub->region.abs = ri32( r.x, r.x + r.width, r.y, ( r.y + r.height ) );
+		sub->region.rel = (rf32)sub->region.abs * scale.x; // todo: fix for differing width and height
 
 		m_Surface->insert( r.x, r.y, sub->source );
 	}

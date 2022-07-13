@@ -1,6 +1,6 @@
 #pragma once
 #include <Fission/Base/TimeStep.h>
-#include <Fission/Base/Rect.h>
+#include <Fission/Base/Rect.hpp>
 
 #include <Fission/Core/Input/Event.hh>
 #include <Fission/Core/Graphics/Renderer2D.hh>
@@ -13,7 +13,7 @@
 #define _neutron_cursor_type  Fission::Cursor*
 
 #define _neutron_point_type   Fission::v2i32
-#define _neutron_rect_type    Fission::base::recti
+#define _neutron_rect_type    Fission::ri32
 #define _neutron_vector_type  std::vector
 
 #include <Fission/neutron.hpp>
@@ -49,7 +49,7 @@ namespace Fission
 
 	struct WindowContext
 	{
-		base::rectf rect;
+		rf32 rect;
 		IFRenderer2D * r2d;
 	};
 
@@ -108,14 +108,14 @@ namespace Fission
 
 			auto tl = ctx->r2d->DrawString( label.c_str(), {g_DebugStyle.LeftPadding+g_DebugStyle.LeftTextBoxPadding, *offsetY + g_DebugStyle.VerticalPadding}, Colors::make_gray(0.8f) );
 
-			base::rectf rect = { 
+			rf32 rect = { 
 				g_DebugStyle.LeftPadding, ctx->rect.right() - g_DebugStyle.RightPadding, 
 				g_DebugStyle.VerticalPadding, g_DebugStyle.VerticalPadding + tl.height
 			};
 			rect.y += *offsetY;
 
 			rect.x.low += g_DebugStyle.MaximumLabelWidth;
-			Rect = base::recti( rect );
+			Rect = ri32( rect );
 
 			ctx->r2d->FillRect( rect, Colors::make_gray<rgb_color8>( 33 ) );
 
@@ -281,14 +281,14 @@ namespace Fission
 
 			auto tl = ctx->r2d->DrawString( label.c_str(), { g_DebugStyle.LeftPadding + g_DebugStyle.LeftTextBoxPadding, *offsetY + g_DebugStyle.VerticalPadding }, Colors::make_gray( 0.8f ) );
 
-			base::rectf rect = {
+			rf32 rect = {
 				g_DebugStyle.LeftPadding, ctx->rect.right() - g_DebugStyle.RightPadding,
 				g_DebugStyle.VerticalPadding, g_DebugStyle.VerticalPadding + tl.height
 			};
 			rect.y += *offsetY;
 
 			rect.x.low += g_DebugStyle.MaximumLabelWidth;
-			Rect = base::recti( rect );
+			Rect = ri32( rect );
 
 			ctx->r2d->FillRect( rect, Colors::make_gray<rgb_color8>( 33 ) );
 
@@ -433,8 +433,8 @@ namespace Fission
 			auto pos = v2f32(g_DebugStyle.LeftPadding + g_DebugStyle.LeftTextBoxPadding, *offsetY + g_DebugStyle.VerticalPadding);
 			auto tl = ctx->r2d->CreateTextLayout( label.c_str() );
 
-			auto rect = base::rectf::from_topleft( pos, tl.width + g_DebugStyle.FramePadding * 2.0f, tl.height + g_DebugStyle.FramePadding * 2.0f );
-			Rect = base::recti( rect );
+			auto rect = rf32::from_topleft( pos, tl.width + g_DebugStyle.FramePadding * 2.0f, tl.height + g_DebugStyle.FramePadding * 2.0f );
+			Rect = ri32( rect );
 
 			if( down )
 			ctx->r2d->FillRect( rect, Colors::make_gray<rgb_color8>( 88 ) );
@@ -514,7 +514,7 @@ namespace Fission
 
 			auto tl = ctx->r2d->DrawString( label.c_str(), { g_DebugStyle.LeftPadding + g_DebugStyle.LeftTextBoxPadding, *offsetY + g_DebugStyle.VerticalPadding }, Colors::make_gray( 0.8f ) );
 
-			base::rectf rect = {
+			rf32 rect = {
 				g_DebugStyle.LeftPadding, g_DebugStyle.LeftPadding + tl.height,
 				g_DebugStyle.VerticalPadding, g_DebugStyle.VerticalPadding + tl.height
 			};
@@ -522,7 +522,7 @@ namespace Fission
 
 			rect.x.low += g_DebugStyle.MaximumLabelWidth;
 			rect.x.high += g_DebugStyle.MaximumLabelWidth;
-			Rect = base::recti( rect );
+			Rect = ri32( rect );
 
 			ctx->r2d->FillRect( rect, down ? Colors::make_gray<rgb_color8>( 57 ) : Colors::make_gray<rgb_color8>( 33 ) );
 

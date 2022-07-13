@@ -34,7 +34,7 @@
 #include <Fission/Core/Object.hh>
 #include <Fission/Base/util/SmartPointer.hpp>
 #include <Fission/Base/Color.h>
-#include <Fission/Base/Rect.h>
+#include <Fission/Base/Rect.hpp>
 #include <functional>
 
 // todo: add documentation
@@ -79,7 +79,7 @@ namespace Fission
 		virtual color GetPixel( int _X, int _Y ) const = 0;
 
 		virtual void insert( int _X, int _Y, PixelCallback _Source, size2 _Source_Size ) = 0;
-		virtual void insert( int _X, int _Y, const Surface * _Source, std::optional<base::recti> _Source_Rect = {} ) = 0;
+		virtual void insert( int _X, int _Y, const Surface * _Source, std::optional<ri32> _Source_Rect = {} ) = 0;
 
 		// shrink the surface if there is any 'clear_color' on any side
 		virtual void shrink_to_fit( color _Clear_Color = color{0.0f} ) = 0;

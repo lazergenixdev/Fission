@@ -22,7 +22,7 @@ namespace Fission
 		FontManager::SetFont( "$ui", NotoSansRegularTTF::data, NotoSansRegularTTF::size, 14.0f, app->f_pGraphics );
 
 		context.r2d = m_pRenderer2D.get();
-		context.rect = base::rectf( Rect );
+		context.rect = rf32( Rect );
 	}
 
 	void DebugWindow::OnUpdate( timestep dt )
@@ -32,7 +32,7 @@ namespace Fission
 		{
 			std::unique_lock lock(mutex);
 
-			base::rectf rect = { 0.0f,300.0f,0.0f,500.0f };
+			rf32 rect = { 0.0f,300.0f,0.0f,500.0f };
 
 			r2d->SelectFont( FontManager::GetFont( "$ui" ) );
 			float border = 2.0f;

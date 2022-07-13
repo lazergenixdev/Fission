@@ -32,7 +32,7 @@
 //	many issues when it comes to trying to reuse font faces and memory usage
 
 #pragma once
-#include "Fission/Base/Rect.h"
+#include "Fission/Base/Rect.hpp"
 #include "Fission/Core/Graphics/Bindable.hh"
 
 namespace Fission {
@@ -41,7 +41,7 @@ namespace Fission {
 	{
 	public:
 		struct Glyph {
-			base::rectf rc;
+			rf32 rc;
 			v2f32 offset, size;
 			float advance;
 		};

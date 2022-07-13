@@ -28,15 +28,15 @@ namespace Fission {
 
 		virtual void FillTriangleUV( v2f32 p0, v2f32 p1, v2f32 p2, v2f32 uv0, v2f32 uv1, v2f32 uv2, Resource::IFTexture2D * pTexture, color tint ) override;
 
-		virtual void FillRect( base::rectf rect, color color ) override;
+		virtual void FillRect( rf32 rect, color color ) override;
 
-		virtual void DrawRect( base::rectf rect, color color, float stroke_width, StrokeStyle stroke ) override;
+		virtual void DrawRect( rf32 rect, color color, float stroke_width, StrokeStyle stroke ) override;
 
-		virtual void FillRectGrad( base::rectf rect, color color_topleft, color color_topright, color color_bottomleft, color color_bottomright ) override;
+		virtual void FillRectGrad( rf32 rect, color color_topleft, color color_topright, color color_bottomleft, color color_bottomright ) override;
 
-		virtual void FillRoundRect( base::rectf rect, float rad, color color ) override;
+		virtual void FillRoundRect( rf32 rect, float rad, color color ) override;
 
-		virtual void DrawRoundRect( base::rectf rect, float rad, color color, float stroke_width, StrokeStyle stroke ) override;
+		virtual void DrawRoundRect( rf32 rect, float rad, color color, float stroke_width, StrokeStyle stroke ) override;
 
 		virtual void DrawLine( v2f32 start, v2f32 end, color color, float stroke_width, StrokeStyle stroke ) override;
 
@@ -48,9 +48,9 @@ namespace Fission {
 
 		virtual void FillArrow( v2f32 start, v2f32 end, float width, color color ) override;
 
-		virtual void DrawImage( Resource::IFTexture2D * pTexture, base::rectf rect, base::rectf uv, color tint ) override;
+		virtual void DrawImage( Resource::IFTexture2D * pTexture, rf32 rect, rf32 uv, color tint ) override;
 
-		virtual void DrawImage( Resource::IFTexture2D * pTexture, base::rectf rect, color tint ) override;
+		virtual void DrawImage( Resource::IFTexture2D * pTexture, rf32 rect, color tint ) override;
 
 		virtual void DrawMesh( const Mesh * m ) override;
 
@@ -106,13 +106,13 @@ namespace Fission {
 			DrawData( Renderer2DImpl * parent, uint32_t vc, uint32_t ic );
 
 			void AddRectFilled( v2f32 tl, v2f32 tr, v2f32 bl, v2f32 br, color c );
-			void AddRectFilled( base::rectf rect, color c );
-			void AddRectFilled( base::rectf rect, color tl, color tr, color bl, color br );
-			void AddRectFilledUV( base::rectf rect, base::rectf uv, color c );
-			void AddRect( base::rectf rect, color color, float stroke_width, StrokeStyle stroke );
+			void AddRectFilled( rf32 rect, color c );
+			void AddRectFilled( rf32 rect, color tl, color tr, color bl, color br );
+			void AddRectFilledUV( rf32 rect, rf32 uv, color c );
+			void AddRect( rf32 rect, color color, float stroke_width, StrokeStyle stroke );
 
-			void AddRoundRectFilled( base::rectf rect, float rad, color c );
-			void AddRoundRect( base::rectf rect, float rad, color color, float stroke_width, StrokeStyle stroke );
+			void AddRoundRectFilled( rf32 rect, float rad, color c );
+			void AddRoundRect( rf32 rect, float rad, color color, float stroke_width, StrokeStyle stroke );
 
 			void AddMesh( const Mesh * mesh );
 			void AddCircleFilled( v2f32 center, float rad, color c );

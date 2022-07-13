@@ -123,8 +123,8 @@ namespace Fission {
 	{
         struct region_uv
         {
-            base::rectf rel; // relative rect (UV texture coordinates)
-            base::recti abs; // absolute rect (pixel coordinates)
+            rf32 rel; // relative rect (UV texture coordinates)
+            ri32 abs; // absolute rect (pixel coordinates)
             bool flipped = false;
         };
 

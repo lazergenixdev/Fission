@@ -60,7 +60,7 @@ namespace Fission {
 		}
 	}
 
-	void SurfaceRGBA8_UNormImpl::insert( int _X, int _Y, const Surface * _Source, std::optional<base::recti> _Source_Rect )
+	void SurfaceRGBA8_UNormImpl::insert( int _X, int _Y, const Surface * _Source, std::optional<ri32> _Source_Rect )
 	{
 		if( _Source->format() == Texture::Format_RGBA8_UNORM )
 		{

@@ -19,7 +19,7 @@
 #define _neutron_cursor_type  Fission::Cursor*
 
 #define _neutron_point_type   Fission::v2i32
-#define _neutron_rect_type    Fission::base::recti
+#define _neutron_rect_type    Fission::ri32
 #define _neutron_vector_type  std::vector
 #include <Fission/neutron.hpp>
 
@@ -27,7 +27,7 @@ template <typename T>
 struct DefaultDelete : public T { virtual void Destroy() override { delete this; } };
 
 using namespace Fission::base;
-using Fission::v2f32;
+using Fission::v2f32, Fission::rf32;
 
 static Fission::IFRenderer2D * g_r2d;
 
@@ -41,7 +41,7 @@ public:
 
 	virtual bool isInside( neutron::point pos ) override
 	{
-		rectf rc = rectf::from_topleft( this->pos, size );
+		rf32 rc = rf32::from_topleft( this->pos, size );
 		return rc[(v2f32)pos];
 	}
 
@@ -53,7 +53,7 @@ public:
 
 	virtual void OnUpdate(float) override
 	{
-		auto rect = Fission::base::rectf{ pos.x, pos.x + size.x, pos.y, pos.y + size.y };
+		auto rect = Fission::rf32{ pos.x, pos.x + size.x, pos.y, pos.y + size.y };
 
 		if( parent->GetHover() == this )
 		g_r2d->FillRoundRect( rect, 10.0f, Fission::Colors::CadetBlue );
@@ -93,9 +93,9 @@ struct Meter
 
 	void draw( Fission::IFRenderer2D *r2d )
 	{
-		r2d->FillRect( rectf{ x, x+10.0f, 300.0f, 600.0f }, Fission::Colors::make_gray(0.04f) );
-		r2d->FillRect( rectf{ x, x+10.0f, 600.0f - val, 600.0f }, Fission::Colors::White );
-		r2d->FillRect( rectf{ x, x+10.0f, 594.0f - bar, 597.0f - bar }, Fission::Colors::White );
+		r2d->FillRect( rf32{ x, x+10.0f, 300.0f, 600.0f }, Fission::Colors::make_gray(0.04f) );
+		r2d->FillRect( rf32{ x, x+10.0f, 600.0f - val, 600.0f }, Fission::Colors::White );
+		r2d->FillRect( rf32{ x, x+10.0f, 594.0f - bar, 597.0f - bar }, Fission::Colors::White );
 	}
 
 	float bar_damping = 0.3f;

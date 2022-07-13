@@ -44,13 +44,13 @@ namespace Fission {
 
 				if( dw > dh )
 				{
-					A->rc = base::recti( rc.left(), rc.left() + width, rc.top(), rc.bottom() );
-					B->rc = base::recti( rc.left() + width, rc.right(), rc.top(), rc.bottom() );
+					A->rc = ri32( rc.left(), rc.left() + width, rc.top(), rc.bottom() );
+					B->rc = ri32( rc.left() + width, rc.right(), rc.top(), rc.bottom() );
 				}
 				else
 				{
-					A->rc = base::recti( rc.left(), rc.right(), rc.top(), rc.top() + height );
-					B->rc = base::recti( rc.left(), rc.right(), rc.top() + height, rc.bottom() );
+					A->rc = ri32( rc.left(), rc.right(), rc.top(), rc.top() + height );
+					B->rc = ri32( rc.left(), rc.right(), rc.top() + height, rc.bottom() );
 				}
 
 				//( insert into first child we created )
@@ -68,7 +68,7 @@ namespace Fission {
 
 		Node * A = nullptr, * B = nullptr;
 		bool isFilled = false;
-		base::recti rc;
+		ri32 rc;
 	};
 
 	// Bitmap Font
@@ -134,7 +134,7 @@ namespace Fission {
 		auto pSurface = Surface::Create( surf_info );
 
 		Node root;
-		root.rc = base::recti( 0, pSurface->width(), 0, pSurface->height() );
+		root.rc = ri32( 0, pSurface->width(), 0, pSurface->height() );
 
 		auto save_glyph = [&] ( wchar_t ch ) {
 			Font::Glyph g;

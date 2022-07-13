@@ -34,9 +34,9 @@ namespace Fission {
 			extend += ( 200.0f - extend ) * dt * extend_rate;
 
 			// Draw Background
-			m_pRenderer2D->FillRectGrad( base::rectf( 0.0f, m_width, 0.0f, extend ), Colors::Black, Colors::Black, color( 0.7f ), color( 0.7f ) );
-			m_pRenderer2D->FillRect( base::rectf( 0.0f, m_width, extend - m_FontSize - m_BottomPadding * 3.0f, extend ), Colors::make_gray( 0.11f, 0.5f ) );
-			m_pRenderer2D->FillRect( base::rectf( 0.0f, m_width, extend - 1.0f, extend + 1.0f ), Colors::White );
+			m_pRenderer2D->FillRectGrad( rf32( 0.0f, m_width, 0.0f, extend ), Colors::Black, Colors::Black, color( 0.7f ), color( 0.7f ) );
+			m_pRenderer2D->FillRect( rf32( 0.0f, m_width, extend - m_FontSize - m_BottomPadding * 3.0f, extend ), Colors::make_gray( 0.11f, 0.5f ) );
+			m_pRenderer2D->FillRect( rf32( 0.0f, m_width, extend - 1.0f, extend + 1.0f ), Colors::White );
 
 			// Draw Console Buffer
 			float top = extend - m_FontSize * 2.0f - m_BottomPadding;
@@ -121,7 +121,7 @@ namespace Fission {
 				{
 					auto cmd_tl = m_pRenderer2D->CreateTextLayout( m_CommandText.c_str(), m_CursorPosition );
 					auto left = 9.0f + tl.width + cmd_tl.width;
-					m_pRenderer2D->FillRect( base::rectf( left, 1.0f + left, extend - m_FontSize - m_BottomPadding - 1.0f, extend - m_BottomPadding - 1.0f ), Colors::White );
+					m_pRenderer2D->FillRect( rf32( left, 1.0f + left, extend - m_FontSize - m_BottomPadding - 1.0f, extend - m_BottomPadding - 1.0f ), Colors::White );
 				}
 
 				m_pRenderer2D->DrawString( m_CommandText.c_str(), v2f32( 8.0f + tl.width, extend - m_FontSize - m_BottomPadding - 1.0f ), Colors::White );

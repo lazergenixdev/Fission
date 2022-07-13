@@ -2,7 +2,7 @@
 #include <Fission/Core/Application.hh>
 #include <Fission/Core/Console.hh>
 #include <Fission/Platform/System.h>
-#include <Fission/Base/Rect.h>
+#include <Fission/Base/Rect.hpp>
 #include "../Version.h"
 
 #include <dxgi.h>
@@ -154,7 +154,7 @@ void DebugLayerImpl::OnUpdate(timestep dt) {
 		//{ // Memory
 		//	tl = pRenderer2D->CreateTextLayout( memory_str.c_str() );
 		//	v2f32 pos = { m_width - tl.width, offsety };
-		//	pRenderer2D->FillRect( base::rectf::from_topleft( pos, tl.width, tl.height ), c );
+		//	pRenderer2D->FillRect( rf32::from_topleft( pos, tl.width, tl.height ), c );
 		//	pRenderer2D->DrawString( memory_str.c_str(), pos, Colors::White );
 		//	offsety += tl.height;
 		//}
@@ -171,13 +171,13 @@ void DebugLayerImpl::OnUpdate(timestep dt) {
 
 		// App Version
 		tl = pRenderer2D->CreateTextLayout( m_AppVersionString.c_str() );
-		pRenderer2D->FillRect( base::rectf( 0.0f, tl.width, offsety, offsety + tl.height ), c );
+		pRenderer2D->FillRect( rf32( 0.0f, tl.width, offsety, offsety + tl.height ), c );
 		pRenderer2D->DrawString( m_AppVersionString.c_str(), { 0.0f, offsety }, Colors::White );
 		offsety += tl.height;
 
 		// FPS
 		tl = pRenderer2D->CreateTextLayout( sFPS );
-		pRenderer2D->FillRect( base::rectf( 0.0f, tl.width, offsety, offsety + tl.height ), c );
+		pRenderer2D->FillRect( rf32( 0.0f, tl.width, offsety, offsety + tl.height ), c );
 		pRenderer2D->DrawString( sFPS, { 0.0f, offsety }, Colors::White );
 		offsety += tl.height;
 
@@ -185,7 +185,7 @@ void DebugLayerImpl::OnUpdate(timestep dt) {
 		{
 			auto tl = pRenderer2D->CreateTextLayout( text.c_str() );
 
-			pRenderer2D->FillRect( base::rectf( 0.0f, tl.width, offsety, offsety + tl.height ), c );
+			pRenderer2D->FillRect( rf32( 0.0f, tl.width, offsety, offsety + tl.height ), c );
 			pRenderer2D->DrawString( text.c_str(), { 0.0f, offsety }, Colors::White );
 
 			offsety += tl.height;
