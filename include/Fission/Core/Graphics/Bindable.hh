@@ -29,8 +29,7 @@
 */
 
 #pragma once
-#include <Fission/config.h>
-#include <Fission/Base/String.h>
+#include <Fission/Base/String.hpp>
 #include <Fission/Base/Math/Matrix.h>
 #include <Fission/Core/Object.hh>
 #include <Fission/Core/Surface.hh>

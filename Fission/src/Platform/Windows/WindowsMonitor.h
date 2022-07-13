@@ -1,5 +1,5 @@
 #pragma once
-#include <Fission/Base/String.h>
+#include <Fission/Base/String.hpp>
 #include <Fission/Core/Monitor.hh>
 
 namespace Fission::Platform
@@ -16,7 +16,7 @@ namespace Fission::Platform
 
 		virtual int GetIndex() const override;
 
-		virtual list_view<DisplayMode> GetSupportedDisplayModes() override;
+		virtual buffer<DisplayMode> GetSupportedDisplayModes() override;
 
 		virtual bool SetDisplayMode( const DisplayMode * ) override;
 

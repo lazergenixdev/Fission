@@ -29,8 +29,8 @@
 */
 
 #pragma once
-#include <Fission/config.h>
-#include <Fission/Base/Utility/SmartPointer.h>
+#include <Fission/Base/util/SmartPointer.hpp>
+#include <filesystem>
 
 // todo: more options in API (getting raw samples, or possibly 'baked' samples)
 

@@ -1,6 +1,7 @@
 #pragma once
-#include "Fission/config.h"
 #include "freetype/freetype.h"
+#include <map>
+#include <filesystem>
 
 namespace freetype
 {

@@ -27,9 +27,7 @@
 * SOFTWARE.
 *
 */
-
 #pragma once
-#include <Fission/config.h>
 
 namespace Fission
 {

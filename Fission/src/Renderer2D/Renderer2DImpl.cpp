@@ -55,7 +55,6 @@ namespace Fission {
 		m_pGraphics = gfx;
 		using namespace Resource;
 		using namespace Resource::VertexLayoutTypes;
-		using namespace string_literals;
 
 		auto vl = VertexLayout{};
 		vl.Append( Float2, "Position" );
@@ -120,7 +119,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 	if( tc.x < -0.5f ) return color;
 	return tex.Sample( ss, tc ) * color;
 }
-			)"_utf8;
+			)";
 			m_pShader = gfx->CreateShader( info );
 		}
 		{ // todo: more blenders
@@ -349,7 +348,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 
 		while( p < sv.size() )
 		{
-			const auto& ch = sv[p];
+			const auto& ch = sv.c_str()[p];
 			if( ch == L'\r' || ch == L'\n' ) { ++p, pos.y += m_pSelectedFont->GetSize(); start = 0.0f; continue; }
 			glyph = m_pSelectedFont->GetGylph( ch );
 

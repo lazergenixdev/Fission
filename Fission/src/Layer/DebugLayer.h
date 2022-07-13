@@ -1,6 +1,7 @@
 #pragma once
 #include <Fission/Base/Utility/Timer.h>
 #include <Fission/Core/Scene.hh>
+#include <map>
 
 namespace Fission {
 

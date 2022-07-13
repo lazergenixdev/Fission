@@ -215,7 +215,7 @@ namespace Fission {
 				if( !m_CommandText.empty() )
 				{
 					m_History.emplace_back( m_CommandText );
-					Console::WriteLine( "$ " + m_CommandText );
+					Console::WriteLine( string{"$ " + m_CommandText.str()} );
 					Console::ExecuteCommand( m_CommandText );
 					m_CommandText.clear();
 					m_CursorPosition = 0;
@@ -230,7 +230,7 @@ namespace Fission {
 				{
 					m_BlinkPosition = 0.0f;
 					--m_CursorPosition;
-					m_CommandText = m_CommandText.string().erase( m_CursorPosition, 1 );
+					m_CommandText = m_CommandText.str().erase( m_CursorPosition, 1 );
 				}
 				break;
 			}
@@ -238,7 +238,7 @@ namespace Fission {
 				if( m_CommandText.size() < s_MaxCommandSize )
 				{
 					m_BlinkPosition = 0.0f;
-					m_CommandText = m_CommandText.string().insert( m_CursorPosition, 1, (char)args.codepoint );
+					m_CommandText = m_CommandText.str().insert( m_CursorPosition, 1, (char)args.codepoint );
 					++m_CursorPosition;
 				}
 				break;

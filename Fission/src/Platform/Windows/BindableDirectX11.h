@@ -1,6 +1,7 @@
 #pragma once
 #include <Fission/Core/Graphics/Bindable.hh>
 #include <d3d11.h>
+#include <mutex>
 
 namespace Fission::Platform {
 

@@ -79,8 +79,8 @@ namespace Fission {
 	)
 	{
 		// Convert strings from UTF-8 to UTF-16
-		auto title = _Title.utf16();
-		auto text = _Text.utf16();
+		auto title = _Title.as<utf16>();
+		auto text = _Text.as<utf16>();
 
 		HWND hwnd = NULL;
 		if( _Parent_Window )

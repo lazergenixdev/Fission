@@ -202,7 +202,7 @@ namespace Fission
 				case '\b': if( temp_value_str.size() ) temp_value_str.pop_back(); break;
 				case '\r': { StopTyping(); break; }
 
-				default: temp_value_str = temp_value_str.string() += (char)args.ch; break;
+				default: temp_value_str = temp_value_str.str() += (char)args.ch; break;
 				}
 				return neutron::Handled;
 			}
@@ -345,7 +345,7 @@ namespace Fission
 				case '\b': if( temp_value_str.size() ) temp_value_str.pop_back(); break;
 				case '\r': { StopTyping(); break; }
 
-				default: temp_value_str = temp_value_str.string() += (char)args.ch; break;
+				default: temp_value_str = temp_value_str.str() += (char)args.ch; break;
 				}
 				return neutron::Handled;
 			}

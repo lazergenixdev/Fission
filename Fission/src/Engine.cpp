@@ -8,13 +8,10 @@ static bool __bCalled = false; \
 if( __bCalled ) FISSION_THROW( "FEngine Error", .append(MSG) ) \
 __bCalled = true
 
-#include <Fission/Base/ColoredString.h>
 #include <Fission/Platform/System.h>
 
 namespace Fission
 {
-	using namespace string_literals;
-
 	using AppCreateInfo = FApplication::CreateInfo;
 
 	FissionEngine::FissionEngine()
@@ -27,8 +24,8 @@ namespace Fission
 		CreateWindowManager(&m_pWindowManager);
 		m_pWindowManager->Initialize();
 
-		Console::WriteLine( GetVersionString() / Colors::LightSteelBlue );
-		Console::WriteLine( "cmdline: " / Colors::White + GetCommandLineA() / Colors::DimGray );
+		Console::WriteLine( string{GetVersionString()} / Colors::LightSteelBlue );
+		Console::WriteLine( "cmdline: " / Colors::White + string{GetCommandLineA()} / Colors::DimGray );
 	}
 
 	Version FissionEngine::GetVersion()
@@ -169,19 +166,20 @@ namespace Fission
 		Console::RegisterCommand("ver", [=](const string&) { Console::WriteLine(FISSION_VERSION_STRV / Colors::White); });
 
 		Console::RegisterCommand( "vsync", 
-			[&] ( const string & in ) {
-				std::for_each( in.begin(), in.end(), [] ( char8_t & c ) {c = tolower(c);} );
+			[&] ( string in ) {
 
-				if( strcmp( in.c_str(), "on" ) == 0 )
+				std::for_each( in.data(), in.data()+in.size(), [](char8_t& c) {c = tolower(c); });
+
+				if( in == "on" )
 				{
 					m_vsync = vsync_On;
-					Console::WriteLine( "vsync turned on"_utf8 );
+					Console::WriteLine( string{"vsync turned on"} );
 				}
 
-				if( strcmp( in.c_str(), "off" ) == 0 )
+				if( in == "off" )
 				{
 					m_vsync = vsync_Off;
-					Console::WriteLine( "vsync turned off"_utf8 );
+					Console::WriteLine( string{"vsync turned off"} );
 				}
 			}
 		);

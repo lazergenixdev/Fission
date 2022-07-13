@@ -1,9 +1,8 @@
-﻿#include <Fission/Base/ColoredString.h>
-#include <Fission/Platform/EntryPoint.h>
+﻿#include <Fission/Platform/EntryPoint.h>
 #include <Fission/Simple2DLayer.h>
 #include <random>
 
-static std::mt19937 rng( (unsigned int)time(nullptr) ); /* Use current time as seed for rng. */
+static std::mt19937 rng{ (unsigned int)time(nullptr) }; /* Use current time as seed for rng. */
 static std::uniform_real_distribution<float> dist{ 0.0f, 1.0f };
 
 // This will set the Destroy() function to just use "delete" function.
@@ -67,12 +66,7 @@ class BallApp : public DefaultDelete<Fission::FApplication>
 public:
 	void OnStartUp( CreateInfo * info )
 	{
-		{
-			char buffer[64];
-			auto length = sprintf_s( buffer, "Ball Demo [%s]", f_pEngine->GetVersionString() );
-
-			info->window.title = Fission::string( buffer, length );
-		}
+		info->window.title = std::format("Ball Demo [{}]", f_pEngine->GetVersionString());
 		info->window.size = { 1280,720 };
 		this->f_Name = "Balls";
 	}

@@ -1,16 +1,17 @@
 #pragma once
+#include <Fission/Base/util/SmartPointer.hpp>
 #include "Debug.h"
 #include "DebugWidgets.h"
-
-#include <Fission/Base/Utility/SmartPointer.h>
+#include <mutex>
+#include <map>
 
 namespace Fission
 {
 	struct DebugWindow : public IFLayer, public neutron::DynamicWindow
 	{
 		std::mutex mutex;
-		FPointer<IFRenderer2D> m_pRenderer2D;
-		FPointer<IFWindow> window;
+		fsn_ptr<IFRenderer2D> m_pRenderer2D;
+		fsn_ptr<IFWindow> window;
 
 		// sketchy way to implement window movement
 		POINT last = {};

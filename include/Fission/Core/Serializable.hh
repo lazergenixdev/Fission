@@ -29,10 +29,9 @@
 */
 
 #pragma once
-#include <Fission/config.h>
+#include <filesystem>
 
 // todo: documentation
-// todo: move to "Base/"
 
 namespace Fission {
 

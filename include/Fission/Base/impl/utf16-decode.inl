@@ -1,12 +1,7 @@
-/**
+/*
+* UTF-16 Decode
 *
-* @file: System.h
-* @author: lazergenixdev@gmail.com
-*
-*
-* This file is provided under the MIT License:
-*
-* Copyright (c) 2021 Lazergenix Software
+* Copyright (c) 2022 Lazergenix Software
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -26,38 +21,23 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 *
+* USAGE:
+*
+* defines:
+*   _utfdecode_CurrentLocation              Pointer to start of character
+*   _utfdecode_ThrowException(name)         Throws Exception of type 'name'
+*   _utfdecode_ReturnCodepoint(codepoint)   Saves 'codepoint' as the codepoint at current location
+* optional:
+*   _utfdecode_ReplacementChr
 */
 
-#pragma once
-#include <Fission/Core/Window.hh>
+#ifndef _utfdecode_ReplacementChr
+#define _utfdecode_ReplacementChr U'\uFFFD'
+#define __utfdecodeUndefReplacementChr 1
+#endif
 
-namespace Fission
-{
-	class System
-	{
-	public:
-		enum MessageBoxFlags : utility::bit_flag<32> {
-			None    = 0,
-			Error   = utility::make_flag<0,32>,
-			Warning = utility::make_flag<1,32>,
-			Info    = utility::make_flag<2,32>
-		};
-		using MessageBoxFlag_t = utility::bit_flag_t<MessageBoxFlags>;
+_utfdecode_ReturnCodepoint( _utfdecode_ReplacementChr );
 
-
-		FISSION_API static void ShowSimpleMessageBox( 
-			const string& _Title, 
-			const string& _Text, 
-			const MessageBoxFlag_t& _Flags = MessageBoxFlags::None,
-			IFWindow * _Parent_Window = nullptr
-		);
-
-		FISSION_API static bool OpenURL( const std::filesystem::path & _URL );
-
-		FISSION_API static bool OpenFileLocation( const std::filesystem::path & _File );
-
-		FISSION_API static const char * GetVersionString();
-
-	}; // class Fission::System
-
-} // namespace Fission
+#ifdef __utfdecodeUndefReplacementChr
+#undef _utfdecodeReplacementChr
+#endif

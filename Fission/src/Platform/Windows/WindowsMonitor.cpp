@@ -5,10 +5,10 @@
 
 namespace Fission
 {
-	list_view<MonitorPtr> Monitor::GetMonitors()
+	buffer<MonitorPtr> Monitor::GetMonitors()
 	{
 		using m = Platform::WindowsMonitor;
-		return list_view<MonitorPtr>( (MonitorPtr *)( &m::s_Monitors.front() ), (MonitorPtr *)( &m::s_Monitors.back() + 1 ) );
+		return buffer<MonitorPtr>( m::s_Monitors );
 	}
 }
 
@@ -78,9 +78,9 @@ const DisplayMode * WindowsMonitor::GetCurrentDisplayMode() const
     return m_pCurrentMode;
 }
 
-list_view<DisplayMode> WindowsMonitor::GetSupportedDisplayModes()
+buffer<DisplayMode> WindowsMonitor::GetSupportedDisplayModes()
 {
-    return list_view<DisplayMode>( (DisplayMode *)( &m_SupportedModes.front() ), (DisplayMode *)( &m_SupportedModes.back() + 1 ) );
+    return buffer<DisplayMode>( m_SupportedModes );
 }
 
 bool WindowsMonitor::SetDisplayMode( const DisplayMode * pMode )
@@ -177,7 +177,7 @@ BOOL CALLBACK Fission::Platform::WindowsMonitor::MonitorEnumCallback( HMONITOR h
 
 	auto name_utf16 = utf16_string((char16_t*)request.monitorFriendlyDeviceName);
 
-	s_Monitors.emplace_back( new WindowsMonitor( hMonitor, name_utf16.utf8(), pEnumData->index++ ) );
+	s_Monitors.emplace_back( new WindowsMonitor( hMonitor, name_utf16.as<utf8>(), pEnumData->index++ ) );
 
 	// Continue to enumerate more monitors.
 	return TRUE;

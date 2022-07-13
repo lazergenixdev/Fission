@@ -1,6 +1,6 @@
 #pragma once
 #include <Fission/Base/Exception.h>
-#include <Fission/Base/Utility/SmartPointer.h>
+#include <Fission/Base/util/SmartPointer.hpp>
 
 #include <Fission/Core/Engine.hh>
 #include <Fission/Core/Application.hh>

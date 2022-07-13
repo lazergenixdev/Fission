@@ -28,9 +28,8 @@
 * 
 */
 #pragma once
-#include <Fission/config.h>
-#include <Fission/Core/Scene.hh>
 #include <Fission/Core/Graphics/Renderer.hh>
+#include <Fission/Core/Scene.hh>
 #include <Fission/Base/Version.h>
 
 namespace Fission

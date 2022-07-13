@@ -29,11 +29,13 @@
 */
 
 #pragma once
-#include <Fission/config.h>
+#include <Fission/config.hpp>
+#include <Fission/Core/Serializable.hh>
+#include <Fission/Core/Object.hh>
+#include <Fission/Base/util/SmartPointer.hpp>
 #include <Fission/Base/Color.h>
 #include <Fission/Base/Rect.h>
-#include <Fission/Core/Object.hh>
-#include <Fission/Core/Serializable.hh>
+#include <functional>
 
 // todo: add documentation
 
@@ -65,7 +67,7 @@ namespace Fission
 			ResizeOptions_Stretch,
 		};
 	public:
-		FISSION_API static std::unique_ptr<Surface> Create( const CreateInfo & _Create_Info = {} );
+		FISSION_API static ptr<Surface> Create( const CreateInfo & _Create_Info = {} );
 
 
 		virtual void resize( base::size _New_Size, ResizeOptions_ _Options = ResizeOptions_Clip ) = 0;

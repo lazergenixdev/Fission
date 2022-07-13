@@ -31,12 +31,11 @@
 // todo: MESHES SUCK! improve interface
 
 #pragma once
-#include "Fission/config.h"
-#include "Fission/Base/Math/Matrix.h"
-#include "Fission/Base/Rect.h"
 #include "Fission/Core/Graphics.hh"
 #include "Fission/Core/Graphics/Renderer.hh"
 #include "Fission/Core/Graphics/Font.hh"
+#include "Fission/Base/Math/Matrix.h"
+#include "Fission/Base/Rect.h"
 
 namespace Fission
 {

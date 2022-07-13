@@ -103,7 +103,7 @@ void DebugLayerImpl::OnCreate(class FApplication * app) {
 	DXGI_ADAPTER_DESC descAdapter;
 	pAdapter->GetDesc( &descAdapter );
 
-	gpu_name = utf16_string( (char16_t*)descAdapter.Description ).utf8().string();
+	gpu_name = utf16_string( (char16_t*)descAdapter.Description ).as<utf8>().str();
 }
 
 #define _DEBUG_LAYER FISSION_VERSION_STRV _FISSION_BUILD_STRING

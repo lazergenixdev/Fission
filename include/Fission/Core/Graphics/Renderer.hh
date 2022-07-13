@@ -29,9 +29,8 @@
 */
 
 #pragma once
-#include <Fission/config.h>
-#include <Fission/Base/Size.h>
 #include <Fission/Core/Object.hh>
+#include <Fission/Base/Size.h>
 
 namespace Fission
 {

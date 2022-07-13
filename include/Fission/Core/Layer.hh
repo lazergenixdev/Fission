@@ -31,9 +31,10 @@
 // todo: redesign debug layer interface to not be SLOW AF!
 
 #pragma once
-#include <Fission/Base/TimeStep.h>
-#include <Fission/Core/Object.hh>
 #include <Fission/Core/Input/Event.hh>
+#include <Fission/Core/Object.hh>
+#include <Fission/Base/TimeStep.h>
+#include <functional>
 
 namespace Fission
 {

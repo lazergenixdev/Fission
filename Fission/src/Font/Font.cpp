@@ -1,5 +1,5 @@
 #include <Fission/Core/Application.hh>
-#include <Fission/Base/Utility/SmartPointer.h>
+#include <Fission/Base/util/SmartPointer.hpp>
 #include <Fission/Core/Graphics/Font.hh>
 #include <Fission/Core/Surface.hh>
 #include "freetype.h"
@@ -122,7 +122,7 @@ namespace Fission {
 		//	dpi,					/* horizontal device resolution    */
 		//	dpi ) )					/* vertical device resolution      */
 		//	return;
-		if( error = FT_Set_Pixel_Sizes( face, 0, size ) ) // is this better?
+		if( error = FT_Set_Pixel_Sizes( face, 0, (FT_UInt)size ) ) // is this better?
 			throw std::logic_error( "failed to set char size" );
 
 		float yMax = float( face->size->metrics.ascender >> 6 );

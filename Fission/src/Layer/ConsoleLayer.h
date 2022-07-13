@@ -1,5 +1,5 @@
 #pragma once
-#include <Fission/Base/String.h>
+#include <Fission/Base/String.hpp>
 #include <Fission/Base/Utility/Timer.h>
 #include <Fission/Core/Scene.hh>
 

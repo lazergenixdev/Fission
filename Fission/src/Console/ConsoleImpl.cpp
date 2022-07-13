@@ -113,17 +113,17 @@ namespace Fission {
 
 	void ConsoleImpl::RegisterCommand( const string& _Command_Name, CommandCallback _Callback )
 	{
-		m_CommandMap.emplace( _Command_Name.string(), _Callback);
+		m_CommandMap.emplace( _Command_Name.str(), _Callback);
 	}
 
 	void ConsoleImpl::UnregisterCommand( const string & _Command_Name )
 	{
-		m_CommandMap.erase( _Command_Name.string() );
+		m_CommandMap.erase( _Command_Name.str() );
 	}
 
 	void ConsoleImpl::ExecuteCommand( const string & _Command )
 	{
-		std::string cmd = _Command.string();
+		std::string cmd = _Command.str();
 
 		size_t begin_parameters = cmd.find_first_of( ' ' );
 
@@ -177,7 +177,7 @@ namespace Fission {
 #ifdef FISSION_CREATE_CONSOLE_WINDOW
 			printf( "%s", str.c_str() );
 #endif
-			f << str.string();
+			f << str.str();
 
 		find_end:
 			size_t end = str.find_first_of( '\n', start );
@@ -222,7 +222,7 @@ namespace Fission {
 			printf( "%s", str.c_str() );
 	#endif
 			if( auto f = std::ofstream( _Fission_Console_Log_Location, std::ios::app ) )
-				f << str.string();
+				f << str.str();
 
 		find_end:
 			size_t end = str.find_first_of( '\n', start );

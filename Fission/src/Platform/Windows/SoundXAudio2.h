@@ -1,6 +1,7 @@
 #pragma once
 #include <Fission/Core/Sound.hh>
 #include <xaudio2.h>
+#include <vector>
 
 namespace Fission::Platform
 {

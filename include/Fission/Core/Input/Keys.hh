@@ -32,7 +32,7 @@
 // todo: add documentation
 
 #pragma once
-#include <Fission/config.h>
+#include <Fission/config.hpp>
 
 namespace Fission
 {

@@ -174,7 +174,7 @@ public:
 		Fission::UI::Debug::SliderFloat( "Padding", &padding, 0.0f, 10.0f );
 		g_engine->GetDebug()->Text( "position: (%i, %i)", snek.GetPosition().x, snek.GetPosition().y );
 
-		static bool drawtiles = false;
+		static bool drawtiles = true;
 		Fission::UI::Debug::CheckBox( "Draw All Tiles", &drawtiles );
 
 		field.DrawTile( m_pRenderer2D, food_pos, Fission::Colors::Red );

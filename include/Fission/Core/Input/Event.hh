@@ -29,12 +29,10 @@
 */
 
 #pragma once
-#include <Fission/config.h>
-#include <Fission/Base/Math/Vector.h>
-#include <Fission/Base/Size.h>
-#include <Fission/Base/String.h>
 #include <Fission/Core/Input/Keys.hh>
 #include <Fission/Core/Input/Cursor.hh>
+#include <Fission/Base/Math/Vector.h>
+#include <Fission/Base/Size.h>
 
 /*! @brief Event has been handled */
 #define FISSION_EVENT_HANDLED  ::Fission::EventResult::Handled

@@ -29,7 +29,7 @@
 */
 
 #pragma once
-#include <Fission/config.h>
+#include <Fission/Base/Buffer.hpp>
 
 namespace Fission::Resource {
 
@@ -116,8 +116,8 @@ namespace Fission::Resource {
 		}
 
 	private:
-		std::vector<char> m_SemanticBuffer;
-		std::vector<vertex_type> m_TypeBuffer;
+		dynamic_buffer<char> m_SemanticBuffer;
+		dynamic_buffer<vertex_type> m_TypeBuffer;
 		uint32_t m_Stride;
 
 	}; // class Fission::Resource::VertexLayout

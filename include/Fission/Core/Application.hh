@@ -29,7 +29,6 @@
 */
 
 #pragma once
-#include <Fission/config.h>
 #include <Fission/Core/Engine.hh>
 #include <Fission/Core/Graphics.hh>
 #include <Fission/Core/Window.hh>

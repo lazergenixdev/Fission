@@ -29,8 +29,9 @@
 */
 
 #pragma once
-#include <Fission/config.h>
+#include <Fission/config.hpp>
 #include <Fission/Base/Size.h>
+#include <Fission/Base/Buffer.hpp>
 
 namespace Fission
 {
@@ -65,7 +66,7 @@ public:
 
 public:
 
-	FISSION_API static list_view<MonitorPtr> GetMonitors();
+	FISSION_API static buffer<MonitorPtr> GetMonitors();
 
 	virtual const char * GetName() const = 0;
 
@@ -85,7 +86,7 @@ public:
 	//! @brief Revert the display mode to the user's default for this monitor.
 	virtual bool RevertDisplayMode() = 0;
 
-	virtual list_view<DisplayMode> GetSupportedDisplayModes() = 0;
+	virtual buffer<DisplayMode> GetSupportedDisplayModes() = 0;
 
 	virtual native_handle_type native_handle() = 0;
 

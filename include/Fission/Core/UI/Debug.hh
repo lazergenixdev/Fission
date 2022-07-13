@@ -29,7 +29,6 @@
 */
 
 #pragma once
-#include <Fission/config.h>
 #include <Fission/Core/Scene.hh>
 
 #ifndef FISSION_ENABLE_DEBUG_UI

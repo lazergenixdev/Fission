@@ -29,10 +29,9 @@
 */
 
 #pragma once
-#include <Fission/config.h>
 #include <Fission/Core/Surface.hh>
 
-// todo: documentation
+// TODO: documentation
 
 namespace Fission {
 

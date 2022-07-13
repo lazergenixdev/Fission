@@ -1,6 +1,7 @@
 #pragma once
-#include <Fission/Base/Utility/SmartPointer.h>
+#include <Fission/Base/util/SmartPointer.hpp>
 #include "WinWindowManager.h"
+#include <condition_variable>
 
 namespace Fission::Platform
 {
@@ -72,7 +73,7 @@ namespace Fission::Platform
 		base::size GetWindowsSize();
 
 	private:
-		FPointer<Resource::IFSwapChain> m_pSwapChain;
+		fsn_ptr<Resource::IFSwapChain> m_pSwapChain;
 		IFEventHandler * pEventHandler = IFEventHandler::Default();
 
 		short m_MouseWheelDelta = 0;

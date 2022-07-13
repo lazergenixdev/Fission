@@ -4,7 +4,7 @@
 #define _neutron_key_primary_mouse   Fission::Keys::Mouse_Left
 #define _neutron_key_secondary_mouse Fission::Keys::Mouse_Right
 
-#define _neutron_char_type    Fission::string::char_type
+#define _neutron_char_type    Fission::chr
 #define _neutron_key_type     Fission::Keys::Key
 #define _neutron_cursor_type  Fission::Cursor*
 

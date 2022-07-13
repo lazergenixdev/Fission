@@ -25,7 +25,7 @@ void SnakeApp::OnStartUp( CreateInfo * info )
 	Console::RegisterCommand("sped",
 		[&](const string& in) -> string {
 			float value;
-			try { value = std::clamp(std::stof(in.string()), 0.05f, 3.0f); }
+			try { value = std::clamp(std::stof(in.str()), 0.05f, 3.0f); }
 			catch (...)
 			{
 				return "Could not determine value.";
@@ -33,13 +33,13 @@ void SnakeApp::OnStartUp( CreateInfo * info )
 
 			source->SetPlaybackSpeed(value);
 
-			return string("Playback speed set to: ") + std::to_string(value);
+			return cat("Playback speed set to: ", std::to_string(value));
 		}
 	);
 	Console::RegisterCommand("goto",
 		[&](const string& in) -> string {
 			float value;
-			try { value = std::stof(in.string()); }
+			try { value = std::stof(in.str()); }
 			catch (...)
 			{
 				return "Could not determine value.";
@@ -47,7 +47,7 @@ void SnakeApp::OnStartUp( CreateInfo * info )
 
 			source->SetPosition(uint32_t(value*1000.0f));
 			
-			return string("Playback speed set to: ") + std::to_string(value);
+			return cat("Playback speed set to: ", std::to_string(value));
 		}
 	);
 

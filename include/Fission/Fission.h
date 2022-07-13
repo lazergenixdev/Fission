@@ -32,6 +32,5 @@
 */
 
 #pragma once
-#include <Fission/config.h>
 #include <Fission/Core/Application.hh>
 #include <Fission/Core/Console.hh>

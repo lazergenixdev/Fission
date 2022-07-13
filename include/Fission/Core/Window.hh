@@ -29,14 +29,13 @@
 */
 
 #pragma once
-#include <Fission/config.h>
+#include <Fission/Core/Graphics.hh>
+#include <Fission/Core/Monitor.hh>
+#include <Fission/Core/Input/Event.hh>
 #include <Fission/Base/Size.h>
-#include <Fission/Base/String.h>
+#include <Fission/Base/String.hpp>
 #include <Fission/Base/Math/Vector.h>
 #include <Fission/Base/Utility/BitFlag.h>
-#include <Fission/Core/Input/Event.hh>
-#include <Fission/Core/Monitor.hh>
-#include <Fission/Core/Graphics.hh>
 
 // todo: implement fixed aspect-ratio flag
 // todo: implement fullscreen

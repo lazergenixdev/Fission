@@ -226,7 +226,7 @@ namespace Fission::Platform
     void WindowsWindow::SetTitle( const string & title )
     {
         m_Properties.title = title;
-        auto _New_Title = m_Properties.title.utf16();
+        auto _New_Title = m_Properties.title.as<utf16>();
         SendMessageW( m_Handle, FISSION_WM_SETTITLE, (WPARAM)_New_Title.c_str(), 0 );
     }
 
@@ -654,7 +654,7 @@ namespace Fission::Platform
             m_Handle = CreateWindowExW(
                 0L,                                         // Ex Style
                 m_pGlobalInfo->WindowClassName,             // Window Class Name
-                (LPWSTR)m_Properties.title.utf16().c_str(), // Window Title
+                (LPWSTR)m_Properties.title.as<utf16>().c_str(), // Window Title
                 GetWindowsStyle(),                          // Style
                 pos.x, pos.y,                               // Position
                 size.w, size.h,                             // Size
@@ -724,7 +724,7 @@ namespace Fission::Platform
         {
             char title[64];
             sprintf( title, "Fatal Error (%s)", e.name() );
-            System::ShowSimpleMessageBox( title, e.what(), System::Error, this );
+            System::ShowSimpleMessageBox( title, string{ e.what() }, System::Error, this );
             wExitCode = 0x45;
         }
 

@@ -47,8 +47,8 @@
  */
 
 #pragma once
-#include <Fission/config.h>
 #include <Fission/Core/Window.hh>
+#include <filesystem>
 
 //! TODO: merge this interface into FEngine
 

@@ -29,9 +29,9 @@
 */
 
 #pragma once
-#include <Fission/config.h>
+#include <Fission/Base/util/SmartPointer.hpp>
 
-// todo: documentation + flesh out API
+// TODO: documentation + flesh out API
 
 namespace Fission {
 
@@ -60,7 +60,7 @@ namespace Fission {
     public:
 
         // create a custom cursor
-        FISSION_API static std::unique_ptr<Cursor> Create( const CreateInfo & info );
+        FISSION_API static ptr<Cursor> Create( const CreateInfo & info );
 
         FISSION_API static Cursor * Get( Default_ default_cursor );
 
