@@ -108,7 +108,7 @@
 //					}
 //					if( auto size = w.second["Size"] )
 //					{
-//						props.size = base::size( size[0].as<int>(0), size[1].as<int>(0) );
+//						props.size = size2( size[0].as<int>(0), size[1].as<int>(0) );
 //					}
 //					if( auto ssz = w.second["Save Size"] )
 //					{

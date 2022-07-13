@@ -29,9 +29,9 @@
 */
 #pragma once
 #include "config.h"
-#include "Range.h"
-#include "Size.h"
-#include "Math/Vector.h"
+#include <Fission/Base/Range.hpp>
+#include <Fission/Base/Size.hpp>
+#include <Fission/Base/Math/Vector.h>
 #include <utility>
 
 _FISSION_BASE_BEGIN

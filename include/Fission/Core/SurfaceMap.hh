@@ -186,7 +186,7 @@ namespace Fission {
         FISSION_API std::unique_ptr<Surface> && release();
 
     private:
-        base::size m_MaxSize;
+        size2 m_MaxSize;
         metadata m_MetaData;
 
         std::unordered_map<std::string,sub_surface> m_Map;

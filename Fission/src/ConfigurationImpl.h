@@ -26,7 +26,7 @@
 //		{
 //			std::optional<IFWindow::Flag_t>	flags;
 //			std::optional<base::vector2i>	position;
-//			std::optional<base::size>		size;
+//			std::optional<size2>		size;
 //			std::optional<int>				monitor_idx = 0;
 //		};
 //

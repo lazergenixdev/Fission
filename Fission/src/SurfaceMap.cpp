@@ -739,7 +739,7 @@ bool surface_map::Load( const std::filesystem::path & file )
 			subs.region.flipped = value["[flip]"].get<bool>();
 			subs.meta = from_json( value["__metadata__"] );
 
-			subs.region.rel = base::rectf( (base::rangef)rc.x * scale.x, (base::rangef)rc.y * scale.y );
+			subs.region.rel = base::rectf( (rangef32)rc.x * scale.x, (rangef32)rc.y * scale.y );
 
 			m_Map.emplace( key, subs );
 		}

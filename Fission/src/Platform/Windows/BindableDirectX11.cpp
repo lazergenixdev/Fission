@@ -492,7 +492,7 @@ namespace Fission::Platform {
 		m_Resolution = { (int)dBuffer.Width, (int)dBuffer.Height };
 	}
 
-	void SwapChainDX11::Resize(base::size size)
+	void SwapChainDX11::Resize(size2 size)
 	{
 	//	std::scoped_lock lock( m_Mutex );
 		HRESULT hr = S_OK;
@@ -523,7 +523,7 @@ namespace Fission::Platform {
 		m_Resolution = { (int)dBuffer.Width, (int)dBuffer.Height };
 	}
 
-	base::size SwapChainDX11::GetSize()
+	size2 SwapChainDX11::GetSize()
 	{
 		return m_Resolution;
 	}

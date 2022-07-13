@@ -250,7 +250,7 @@ namespace Fission::Platform
 	//	SendMessageW( m_Handle, FISSION_WM_CALLEXTERNAL, (WPARAM)&function, 0 );
 	//}
 //
-    base::size WindowsWindow::GetSize()
+    size2 WindowsWindow::GetSize()
     {
         RECT cr;
         GetClientRect( m_Handle, &cr );
@@ -258,7 +258,7 @@ namespace Fission::Platform
         return m_Properties.size;
     }
 
-    void WindowsWindow::SetSize( const base::size & size )
+    void WindowsWindow::SetSize( const size2 & size )
     {
         SendMessageW( m_Handle, FISSION_WM_SETSIZE, (WPARAM)size.w, (LPARAM)size.h );
     }
@@ -569,7 +569,7 @@ namespace Fission::Platform
 
         case FISSION_WM_SETSIZE:
         {
-            base::size new_size = { (int)wParam, (int)lParam };
+            size2 new_size = { (int)wParam, (int)lParam };
             if( new_size == m_Properties.size ) return 0;
 
             m_Properties.size = new_size;
@@ -765,7 +765,7 @@ namespace Fission::Platform
         }
     }
 
-    base::size WindowsWindow::GetWindowsSize()
+    size2 WindowsWindow::GetWindowsSize()
     {
         switch( m_Properties.style )
         {

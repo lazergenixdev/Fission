@@ -11,13 +11,13 @@ namespace Fission {
 
 		Renderer2DImpl() = default;
 
-		virtual void OnCreate( IFGraphics * gfx, base::size _Viewport_Size ) override;
+		virtual void OnCreate( IFGraphics * gfx, size2 _Viewport_Size ) override;
 
 		virtual void OnRecreate( IFGraphics * gfx ) override;
 
 		virtual void Destroy() override;
 
-		virtual void OnResize( IFGraphics * gfx, base::size size ) override;
+		virtual void OnResize( IFGraphics * gfx, size2 size ) override;
 
 		// Inherited via Renderer2D
 		virtual void Render() override;
@@ -146,7 +146,7 @@ namespace Fission {
 		static constexpr int vertex_max_count = 100000;
 		static constexpr int index_max_count = 200000;
 
-		base::size _viewport_size;
+		size2 _viewport_size;
 	};
 
 }

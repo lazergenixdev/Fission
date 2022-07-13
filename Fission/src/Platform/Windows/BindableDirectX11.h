@@ -131,9 +131,9 @@ namespace Fission::Platform {
 	public:
 		SwapChainDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info );
 
-		virtual void Resize( base::size ) override;
+		virtual void Resize( size2 ) override;
 
-		virtual base::size GetSize() override;
+		virtual size2 GetSize() override;
 
 	//	virtual Resource::FrameBuffer * GetBackBuffer() override;
 
@@ -151,7 +151,7 @@ namespace Fission::Platform {
 	private:
 		std::mutex							m_Mutex;
 		uint32_t *							m_pSyncInterval = nullptr;
-		base::size							m_Resolution;
+		size2							m_Resolution;
 		D3D11_VIEWPORT						m_ViewPort;
 		ID3D11DeviceContext *				m_pContext;
 		com_ptr<ID3D11RenderTargetView>		m_pRenderTargetView;

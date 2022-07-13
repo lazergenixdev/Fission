@@ -183,7 +183,7 @@ namespace Fission
 		virtual neutron::Result OnMouseMove( neutron::MouseMoveEventArgs & args ) override {
 			if( editing )
 			{
-				auto ry = base::ranged( Rect.x ).expanded(double(g_DebugStyle.SliderKnobWidth)*-0.5);
+				auto ry = rangef64(Rect.x).expanded(double(g_DebugStyle.SliderKnobWidth)*-0.5);
 				double slider_pos = ry.clamp( (double)args.pos.x );
 
 				internal_value = static_cast<T>(

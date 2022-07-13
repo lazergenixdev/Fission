@@ -31,9 +31,9 @@ namespace Fission::Platform
 
 		virtual Style GetStyle() override;
 
-		virtual void SetSize( const base::size & size ) override;
+		virtual void SetSize( const size2 & size ) override;
 
-		virtual base::size GetSize() override;
+		virtual size2 GetSize() override;
 
 	//	virtual void Call( std::function<void()> function ) override;
 
@@ -70,7 +70,7 @@ namespace Fission::Platform
 
 	public:
 		DWORD GetWindowsStyle();
-		base::size GetWindowsSize();
+		size2 GetWindowsSize();
 
 	private:
 		fsn_ptr<Resource::IFSwapChain> m_pSwapChain;

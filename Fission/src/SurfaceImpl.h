@@ -13,11 +13,11 @@ namespace Fission
 		virtual bool Load( const std::filesystem::path & _FilePath ) override;
 		virtual bool Save( const std::filesystem::path & _FilePath ) const override;
 
-		virtual void resize( base::size _New_Size, ResizeOptions_ _Options ) override;
+		virtual void resize( size2 _New_Size, ResizeOptions_ _Options ) override;
 		virtual void set_width( int _New_Width, ResizeOptions_ _Options ) override;
 		virtual void set_height( int _New_Height, ResizeOptions_ _Options ) override;
 
-		virtual void insert( int _X, int _Y, PixelCallback _Source, base::size _Source_Size ) override;
+		virtual void insert( int _X, int _Y, PixelCallback _Source, size2 _Source_Size ) override;
 		virtual void insert( int _X, int _Y, const Surface * _Source, std::optional<base::recti> _Source_Rect ) override;
 
 		virtual void PutPixel( int _X, int _Y, color _Color ) override;
@@ -30,7 +30,7 @@ namespace Fission
 		virtual void * data() override;
 		virtual int width() const override;
 		virtual int height() const override;
-		virtual base::size size() const override;
+		virtual size2 size() const override;
 		virtual base::size_t byte_size() const override;
 		virtual base::size_t pixel_count() const override;
 		virtual bool empty() const override;

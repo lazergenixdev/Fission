@@ -72,7 +72,7 @@ namespace Fission::Resource
 			const wchar_t * filePath = nullptr;
 			Surface * pSurface = nullptr;
 			Texture::Format format = Texture::Format_RGBA8_UNORM;
-			base::size size = {};
+			size2 size = {};
 		};
 
 		virtual uint32_t GetWidth() = 0;
@@ -88,13 +88,13 @@ namespace Fission::Resource
 	{
 
 		struct CreateInfo {
-			base::size size = {};
+			size2 size = {};
 			Texture::Format format = Texture::Format_RGBA8_UNORM;
 		};
 
 		using Properties = CreateInfo; // optional alias
 
-		virtual base::size GetSize() = 0;
+		virtual size2 GetSize() = 0;
 
 		virtual void Clear( color clear_color ) = 0;
 
@@ -107,13 +107,13 @@ namespace Fission::Resource
 	{
 		struct CreateInfo {
 			IFWindow * pWindow;
-			base::size size = {};
+			size2 size = {};
 			Texture::Format format = Texture::Format_RGBA8_UNORM;
 		};
 
-		virtual base::size GetSize() = 0;
+		virtual size2 GetSize() = 0;
 
-		virtual void Resize( base::size ) = 0;
+		virtual void Resize( size2 ) = 0;
 
 	//	virtual FrameBuffer * GetBackBuffer() = 0;
 

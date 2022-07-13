@@ -32,7 +32,7 @@
 #include <Fission/Core/Input/Keys.hh>
 #include <Fission/Core/Input/Cursor.hh>
 #include <Fission/Base/Math/Vector.h>
-#include <Fission/Base/Size.h>
+#include <Fission/Base/Size.hpp>
 
 /*! @brief Event has been handled */
 #define FISSION_EVENT_HANDLED  ::Fission::EventResult::Handled
@@ -89,7 +89,7 @@ namespace Fission {
 	};
 
 	struct ResizeEventArgs : public NativeEventArgs {
-		base::size size; 
+		size2 size; 
 	};
 
 

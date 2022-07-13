@@ -30,7 +30,7 @@
 
 #pragma once
 #include <Fission/config.hpp>
-#include <Fission/Base/Size.h>
+#include <Fission/Base/Size.hpp>
 #include <Fission/Base/Buffer.hpp>
 
 namespace Fission
@@ -38,7 +38,7 @@ namespace Fission
 
 struct DisplayMode
 {
-	base::size resolution;
+	size2 resolution;
 	int refresh_rate;
 };
 

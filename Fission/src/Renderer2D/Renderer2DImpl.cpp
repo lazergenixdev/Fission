@@ -39,7 +39,7 @@ namespace Fission {
 		return out;
 	}();
 
-	void Renderer2DImpl::OnCreate( IFGraphics * gfx, base::size _Viewport_Size )
+	void Renderer2DImpl::OnCreate( IFGraphics * gfx, size2 _Viewport_Size )
 	{
 		// Allocate aligned memory for faster access
 		vertex_data = (vertex *)_aligned_malloc( vertex_max_count * sizeof vertex, 32 );
@@ -145,7 +145,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		delete this;
 	}
 
-	void Renderer2DImpl::OnResize( IFGraphics * , base::size size )
+	void Renderer2DImpl::OnResize( IFGraphics * , size2 size )
 	{
 		const auto screen = base::matrix4x4f(
 			2.0f / (float)size.w, 0.0f,                -1.0f, 0.0f,

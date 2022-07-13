@@ -32,7 +32,7 @@
 #include <Fission/Core/Graphics.hh>
 #include <Fission/Core/Monitor.hh>
 #include <Fission/Core/Input/Event.hh>
-#include <Fission/Base/Size.h>
+#include <Fission/Base/Size.hpp>
 #include <Fission/Base/String.hpp>
 #include <Fission/Base/Math/Vector.h>
 #include <Fission/Base/util/BitFlag.hpp>
@@ -81,7 +81,7 @@ namespace Fission
 		struct Properties
 		{
 			string         title       = "Window Title";       /*!< Title of the window that will show in the title bar. */
-			base::size     size        = { 1280, 720 };        /*!< Client size of the window. */
+			size2     size        = { 1280, 720 };        /*!< Client size of the window. */
 			base::vector2i position    = {};                   /*!< Position of the window's Top-Left coordinate. */
 			Style          style       = Style::Default;       /*!< Style of the window, can be one of @IFWindow::Style. */
 			Flag_t         flags       = Flags::Default;       /*!< Flags of the window, can be any combination of @IFWindow::Flags. */
@@ -111,9 +111,9 @@ namespace Fission
 
 		virtual Style GetStyle() = 0;
 
-		virtual void SetSize( const base::size & _Size ) = 0;
+		virtual void SetSize( const size2 & _Size ) = 0;
 
-		virtual base::size GetSize() = 0;
+		virtual size2 GetSize() = 0;
 
 		virtual Resource::IFSwapChain * GetSwapChain() = 0;
 

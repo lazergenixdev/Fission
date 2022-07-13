@@ -34,7 +34,7 @@ namespace Fission {
 		}
 	}
 
-	void SurfaceRGBA8_UNormImpl::resize( base::size _New_Size, ResizeOptions_ _Options ) {
+	void SurfaceRGBA8_UNormImpl::resize( size2 _New_Size, ResizeOptions_ _Options ) {
 		FISSION_THROW_NOT_IMPLEMENTED();
 	}
 	void SurfaceRGBA8_UNormImpl::set_width( int _New_Width, ResizeOptions_ _Options ) {
@@ -45,7 +45,7 @@ namespace Fission {
 	}
 
 
-	void SurfaceRGBA8_UNormImpl::insert( int _X, int _Y, PixelCallback _Source, base::size _Source_Size )
+	void SurfaceRGBA8_UNormImpl::insert( int _X, int _Y, PixelCallback _Source, size2 _Source_Size )
 	{
 		FISSION_ASSERT( _X + _Source_Size.w <= static_cast<signed int>(m_Width) );
 		FISSION_ASSERT( _Y + _Source_Size.h <= static_cast<signed int>(m_Height) );
@@ -68,9 +68,9 @@ namespace Fission {
 		}
 
 		base::vector2i start;
-		base::size size;
+		size2 size;
 		if( _Source_Rect.has_value() )
-			size = base::size(_Source_Rect->size()), start = _Source_Rect->topLeft();
+			size = size2(_Source_Rect->size()), start = _Source_Rect->topLeft();
 		else
 			size = _Source->size();
 
@@ -129,9 +129,9 @@ namespace Fission {
 		return m_Height;
 	}
 
-	base::size SurfaceRGBA8_UNormImpl::size() const
+	size2 SurfaceRGBA8_UNormImpl::size() const
 	{
-		return base::size( (int)m_Width, (int)m_Height );
+		return size2( (int)m_Width, (int)m_Height );
 	}
 
 	base::size_t SurfaceRGBA8_UNormImpl::byte_size() const

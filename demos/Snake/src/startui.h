@@ -23,7 +23,7 @@ namespace ui
 	class Button : public neutron::Button
 	{
 	public:
-		Button( string label, vector2i centerpos, size2i size )
+		Button( string label, vector2i centerpos, Fission::size2 size )
 			: rect(recti::from_center(centerpos,size)), label(label)
 		{}
 

@@ -53,7 +53,7 @@ namespace Fission
 		FApplication *              m_Application = nullptr;
 		int                         m_ExitCode = 0;
 
-		base::size                  m_NewSize;
+		size2                  m_NewSize;
 		///////////////////////////////////////////////////////
 
 	public:

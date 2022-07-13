@@ -197,7 +197,7 @@ namespace Fission
 		m_ConsoleLayer.OnCreate(app);
 		m_pCurrentScene->OnCreate(app);
 
-		base::size wViewportSize = m_pWindow->GetSwapChain()->GetSize();
+		size2 wViewportSize = m_pWindow->GetSwapChain()->GetSize();
 		for( auto && [name, context] : m_Renderers )
 		{
 			if( !context.bCreated )

@@ -16,5 +16,5 @@ public:
 	// comment for sake of having comment
 private:
 
-	Fission::base::size m_WindowSize;
+	Fission::size2 m_WindowSize;
 };

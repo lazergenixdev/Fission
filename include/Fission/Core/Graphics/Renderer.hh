@@ -30,20 +30,20 @@
 
 #pragma once
 #include <Fission/Core/Object.hh>
-#include <Fission/Base/Size.h>
+#include <Fission/Base/Size.hpp>
 
 namespace Fission
 {
 	struct IFRenderer : public IFObject
 	{
-		virtual void OnCreate( struct IFGraphics * _Ptr_Graphics, base::size _Viewport_Size /*, void * userdata*/) = 0;
+		virtual void OnCreate( struct IFGraphics * _Ptr_Graphics, size2 _Viewport_Size /*, void * userdata*/) = 0;
 
 		//! @note Always called by the engine inbetween frames,
 		//!        and never in the middle of one being rendered.
 		virtual void OnRecreate( struct IFGraphics * _Ptr_Graphics /*, void * userdata*/ ) = 0;
 
 		//! @brief Called when the main window has been resized.
-		virtual void OnResize( struct IFGraphics * _Ptr_Graphics, base::size _New_Size /*, void * userdata*/ ) = 0;
+		virtual void OnResize( struct IFGraphics * _Ptr_Graphics, size2 _New_Size /*, void * userdata*/ ) = 0;
 
 	}; // struct Fission::IFRenderer
 

@@ -28,7 +28,7 @@ namespace Fission {
 					return NULL;
 
 				//( if we're just right, accept )
-				if( sz == base::size{ width, height } )
+				if( sz == size2{ width, height } )
 				{
 					isFilled = true;
 					return this;
@@ -156,7 +156,7 @@ namespace Fission {
 				[&] ( int x, int y ) -> color {
 					return rgba_color8( 255, 255, 255, bitmap.buffer[y * bitmap.width + x] );
 				},
-				base::size{ (int)bitmap.width, (int)bitmap.rows }
+				size2{ (int)bitmap.width, (int)bitmap.rows }
 			);
 
 			g.rc = {

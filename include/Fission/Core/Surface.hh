@@ -57,7 +57,7 @@ namespace Fission
 	{
 	public:
 		struct CreateInfo {
-			base::size size;
+			size2 size;
 			std::optional<color> fillColor = {};
 			Texture::Format format = Texture::Format_RGBA8_UNORM;
 		};
@@ -70,7 +70,7 @@ namespace Fission
 		FISSION_API static ptr<Surface> Create( const CreateInfo & _Create_Info = {} );
 
 
-		virtual void resize( base::size _New_Size, ResizeOptions_ _Options = ResizeOptions_Clip ) = 0;
+		virtual void resize( size2 _New_Size, ResizeOptions_ _Options = ResizeOptions_Clip ) = 0;
 		virtual void set_width( int _New_Width, ResizeOptions_ _Options = ResizeOptions_Clip ) = 0;
 		virtual void set_height( int _New_Height, ResizeOptions_ _Options = ResizeOptions_Clip ) = 0;
 
@@ -78,7 +78,7 @@ namespace Fission
 		virtual void PutPixel( int _X, int _Y, color _Color ) = 0;
 		virtual color GetPixel( int _X, int _Y ) const = 0;
 
-		virtual void insert( int _X, int _Y, PixelCallback _Source, base::size _Source_Size ) = 0;
+		virtual void insert( int _X, int _Y, PixelCallback _Source, size2 _Source_Size ) = 0;
 		virtual void insert( int _X, int _Y, const Surface * _Source, std::optional<base::recti> _Source_Rect = {} ) = 0;
 
 		// shrink the surface if there is any 'clear_color' on any side
@@ -92,7 +92,7 @@ namespace Fission
 		virtual int width() const = 0;
 		virtual int height() const = 0;
 
-		virtual base::size size() const = 0;
+		virtual size2 size() const = 0;
 
 		virtual base::size_t byte_size() const = 0;
 		virtual base::size_t pixel_count() const = 0;
