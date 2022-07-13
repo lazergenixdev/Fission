@@ -631,7 +631,7 @@ namespace rbp {
 /************************************************************************************************************************************/
 
 #include <Fission/Base/Exception.hpp>
-#include <Fission/Base/Math/Vector.h>
+#include <Fission/Base/Math/Vector.hpp>
 using namespace Fission;
 
 static nlohmann::json to_json( const metadata & md )
@@ -720,7 +720,7 @@ bool surface_map::Load( const std::filesystem::path & file )
 		m_MetaData = from_json( desc["__metadata__"] );
 		desc.erase( "__metadata__" );
 
-		base::vector2f scale;
+		v2f32 scale;
 		{
 			auto size = m_Surface->size();
 			if( size.h <= 0 || size.h <= 0 ) return false;
@@ -866,7 +866,7 @@ bool surface_map::build( BuildFlags flags )
 		m_Surface = Surface::Create( info );
 	}
 
-	base::vector2f scale = { 1.0f / (float)m_MaxSize.w, 1.0f / (float)m_MaxSize.h };
+	v2f32 scale = { 1.0f / (float)m_MaxSize.w, 1.0f / (float)m_MaxSize.h };
 	for( auto && r : out_rects )
 	{
 		sub_surface * sub = reinterpret_cast<sub_surface *>( r.userdata );

@@ -18,7 +18,7 @@
 #define _neutron_key_type     Fission::Keys::Key
 #define _neutron_cursor_type  Fission::Cursor*
 
-#define _neutron_point_type   Fission::base::vector2i
+#define _neutron_point_type   Fission::v2i32
 #define _neutron_rect_type    Fission::base::recti
 #define _neutron_vector_type  std::vector
 #include <Fission/neutron.hpp>
@@ -27,21 +27,22 @@ template <typename T>
 struct DefaultDelete : public T { virtual void Destroy() override { delete this; } };
 
 using namespace Fission::base;
+using Fission::v2f32;
 
 static Fission::IFRenderer2D * g_r2d;
 
 class Button : public neutron::Button
 {
 public:
-	vector2f pos, size;
+	v2f32 pos, size;
 	std::string label;
 
-	Button(const char * label, vector2f pos, vector2f size): pos(pos),size(size),label(label) {}
+	Button(const char * label, v2f32 pos, v2f32 size): pos(pos),size(size),label(label) {}
 
 	virtual bool isInside( neutron::point pos ) override
 	{
 		rectf rc = rectf::from_topleft( this->pos, size );
-		return rc[(vector2f)pos];
+		return rc[(v2f32)pos];
 	}
 
 	virtual neutron::Result OnSetCursor( neutron::SetCursorEventArgs & args ) override
@@ -62,7 +63,7 @@ public:
 		g_r2d->DrawRoundRect( rect, 10.0f, Fission::color(Fission::Colors::White,0.5f), 1.0f );
 
 		auto tl = g_r2d->CreateTextLayout( label.c_str() );
-		auto start = Fission::base::vector2f{ ( rect.x.distance() - tl.width ) * 0.5f,( rect.y.distance() - tl.height ) * 0.5f } + pos;
+		auto start = Fission::v2f32{ ( rect.x.distance() - tl.width ) * 0.5f,( rect.y.distance() - tl.height ) * 0.5f } + pos;
 		g_r2d->DrawString( label.c_str(), start, Fission::Colors::White );
 	}
 

@@ -12,7 +12,7 @@
 #define _neutron_key_type     Fission::Keys::Key
 #define _neutron_cursor_type  Fission::Cursor*
 
-#define _neutron_point_type   Fission::base::vector2i
+#define _neutron_point_type   Fission::v2i32
 #define _neutron_rect_type    Fission::base::recti
 #define _neutron_vector_type  std::vector
 
@@ -129,12 +129,12 @@ namespace Fission
 			ctx->r2d->DrawRect( rect.expanded(-0.5f), Colors::make_gray(highlight*0.5f,highlight), 1.0f );
 
 			if( typing )
-				tl = ctx->r2d->DrawString( temp_value_str.c_str(), rect.topLeft() + base::vector2f(g_DebugStyle.LeftTextBoxPadding,0.0f), Colors::make_gray(0.8f) );
+				tl = ctx->r2d->DrawString( temp_value_str.c_str(), rect.topLeft() + v2f32(g_DebugStyle.LeftTextBoxPadding,0.0f), Colors::make_gray(0.8f) );
 			else
 			{
 				char text[100];
 				sprintf( text, fmt, internal_value );
-				tl = ctx->r2d->DrawString( text, rect.topLeft() + base::vector2f(g_DebugStyle.LeftTextBoxPadding,0.0f), Colors::make_gray(0.8f) );
+				tl = ctx->r2d->DrawString( text, rect.topLeft() + v2f32(g_DebugStyle.LeftTextBoxPadding,0.0f), Colors::make_gray(0.8f) );
 			}
 
 			if( typing )
@@ -302,12 +302,12 @@ namespace Fission
 				ctx->r2d->DrawRect( rect.expanded( -0.5f ), Colors::make_gray( highlight * 0.5f, highlight ), 1.0f );
 
 			if( typing )
-				tl = ctx->r2d->DrawString( temp_value_str.c_str(), rect.topLeft() + base::vector2f( g_DebugStyle.LeftTextBoxPadding, 0.0f ), Colors::make_gray( 0.8f ) );
+				tl = ctx->r2d->DrawString( temp_value_str.c_str(), rect.topLeft() + v2f32( g_DebugStyle.LeftTextBoxPadding, 0.0f ), Colors::make_gray( 0.8f ) );
 			else
 			{
 				char text[100];
 				sprintf( text, fmt, internal_value );
-				tl = ctx->r2d->DrawString( text, rect.topLeft() + base::vector2f( g_DebugStyle.LeftTextBoxPadding, 0.0f ), Colors::make_gray( 0.8f ) );
+				tl = ctx->r2d->DrawString( text, rect.topLeft() + v2f32( g_DebugStyle.LeftTextBoxPadding, 0.0f ), Colors::make_gray( 0.8f ) );
 			}
 
 			if( typing )
@@ -430,7 +430,7 @@ namespace Fission
 			else
 				highlight += ( 0.0f - highlight ) * 2.5f * dt;
 
-			auto pos = base::vector2f(g_DebugStyle.LeftPadding + g_DebugStyle.LeftTextBoxPadding, *offsetY + g_DebugStyle.VerticalPadding);
+			auto pos = v2f32(g_DebugStyle.LeftPadding + g_DebugStyle.LeftTextBoxPadding, *offsetY + g_DebugStyle.VerticalPadding);
 			auto tl = ctx->r2d->CreateTextLayout( label.c_str() );
 
 			auto rect = base::rectf::from_topleft( pos, tl.width + g_DebugStyle.FramePadding * 2.0f, tl.height + g_DebugStyle.FramePadding * 2.0f );
@@ -443,7 +443,7 @@ namespace Fission
 
 			ctx->r2d->DrawRect( rect.expanded( -0.5f ), Colors::make_gray( highlight * 0.5f, highlight ), 1.0f );
 
-			ctx->r2d->DrawString( label.c_str(), pos+base::vector2f::from1(g_DebugStyle.FramePadding), Colors::make_gray( 0.8f ) );
+			ctx->r2d->DrawString( label.c_str(), pos+v2f32::from1(g_DebugStyle.FramePadding), Colors::make_gray( 0.8f ) );
 
 			*offsetY += g_DebugStyle.VerticalPadding * 2.0f + tl.height;
 		}
@@ -536,12 +536,12 @@ namespace Fission
 				ctx->r2d->DrawRect( rect.expanded( -0.5f ), Colors::make_gray( highlight * 0.5f, highlight ), 1.0f );
 
 			//if( typing )
-			//	tl = ctx->r2d->DrawString( temp_value_str.c_str(), rect.topLeft() + base::vector2f( g_DebugStyle.LeftTextBoxPadding, 0.0f ), Colors::make_gray( 0.8f ) );
+			//	tl = ctx->r2d->DrawString( temp_value_str.c_str(), rect.topLeft() + v2f32( g_DebugStyle.LeftTextBoxPadding, 0.0f ), Colors::make_gray( 0.8f ) );
 			//else
 			//{
 			//	char text[100];
 			//	sprintf( text, fmt, internal_value );
-			//	tl = ctx->r2d->DrawString( text, rect.topLeft() + base::vector2f( g_DebugStyle.LeftTextBoxPadding, 0.0f ), Colors::make_gray( 0.8f ) );
+			//	tl = ctx->r2d->DrawString( text, rect.topLeft() + v2f32( g_DebugStyle.LeftTextBoxPadding, 0.0f ), Colors::make_gray( 0.8f ) );
 			//}
 
 			//if( typing )
@@ -574,7 +574,7 @@ namespace Fission
 
 			if( internal_value )
 			{
-				ctx->r2d->PushTransform( base::matrix2x3f::Scaling( 5.0f, 5.0f ) * base::matrix2x3f::Translation( (rect.left()+1.0f)/5.0f, (rect.top()+2.0f)/5.0f ) );
+				ctx->r2d->PushTransform( m23::Scaling( 5.0f, 5.0f ) * m23::Translation( (rect.left()+1.0f)/5.0f, (rect.top()+2.0f)/5.0f ) );
 				ctx->r2d->DrawMesh( &mesh );
 				ctx->r2d->PopTransform();
 			}

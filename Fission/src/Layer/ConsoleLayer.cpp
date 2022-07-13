@@ -55,7 +55,7 @@ namespace Fission {
 				int bottomLine = Console::GetLineCount() - lineOffset;
 				int startLine = bottomLine - numLinesVisible;
 
-				auto cursor = base::vector2f{ m_LeftPadding, start };
+				auto cursor = v2f32{ m_LeftPadding, start };
 				if( startLine < 0 )
 				{
 					cursor.y -= (float)startLine * m_FontSize;
@@ -100,7 +100,7 @@ namespace Fission {
 
 				for( int i = 0; i < 20; i++ )
 				{
-					m_pRenderer2D->DrawString( "^", base::vector2f( offset, extend - m_FontSize * 2.0f - m_BottomPadding ), Colors::White );
+					m_pRenderer2D->DrawString( "^", v2f32( offset, extend - m_FontSize * 2.0f - m_BottomPadding ), Colors::White );
 					offset += space;
 				}
 			}
@@ -108,10 +108,10 @@ namespace Fission {
 
 			constexpr const char * s_DefText = "Enter a command . . .";
 
-			auto tl = m_pRenderer2D->DrawString( "$ ", base::vector2f(m_LeftPadding, extend - m_FontSize - m_BottomPadding - 1.0f), Colors::White );
+			auto tl = m_pRenderer2D->DrawString( "$ ", v2f32(m_LeftPadding, extend - m_FontSize - m_BottomPadding - 1.0f), Colors::White );
 
 			if( m_CommandText.empty() ) {
-				m_pRenderer2D->DrawString( s_DefText, base::vector2f( 8.0f + tl.width, extend - m_FontSize - m_BottomPadding - 1.0f ), Colors::Gray );
+				m_pRenderer2D->DrawString( s_DefText, v2f32( 8.0f + tl.width, extend - m_FontSize - m_BottomPadding - 1.0f ), Colors::Gray );
 			} else {
 				m_BlinkPosition += 1.5f * dt;
 				if( m_BlinkPosition >= 2.0f )
@@ -124,7 +124,7 @@ namespace Fission {
 					m_pRenderer2D->FillRect( base::rectf( left, 1.0f + left, extend - m_FontSize - m_BottomPadding - 1.0f, extend - m_BottomPadding - 1.0f ), Colors::White );
 				}
 
-				m_pRenderer2D->DrawString( m_CommandText.c_str(), base::vector2f( 8.0f + tl.width, extend - m_FontSize - m_BottomPadding - 1.0f ), Colors::White );
+				m_pRenderer2D->DrawString( m_CommandText.c_str(), v2f32( 8.0f + tl.width, extend - m_FontSize - m_BottomPadding - 1.0f ), Colors::White );
 			}
 
 			m_pRenderer2D->Render();

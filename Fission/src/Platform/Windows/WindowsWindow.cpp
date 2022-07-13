@@ -371,7 +371,7 @@ namespace Fission::Platform
         case WM_MOVE:
         {
             auto point = MAKEPOINTS( lParam );
-            m_Properties.position = base::vector2i::from( point );
+            m_Properties.position = v2i32::from( point );
             m_bResetMonitor = true;
             break;
         }
@@ -645,8 +645,8 @@ namespace Fission::Platform
                 auto hMonitor = m_pMonitor->native_handle();
                 MONITORINFO info; info.cbSize = sizeof( info );
                 GetMonitorInfoA( hMonitor, &info );
-                auto offset = base::vector2i( mode->resolution.w - size.w, mode->resolution.h - size.h ) / 2;
-                pos = base::vector2i(info.rcMonitor.left,info.rcMonitor.top) + offset;
+                auto offset = v2i32( mode->resolution.w - size.w, mode->resolution.h - size.h ) / 2;
+                pos = v2i32(info.rcMonitor.left,info.rcMonitor.top) + offset;
             }
 
             FunctionThatDoesThingsAndStuff();

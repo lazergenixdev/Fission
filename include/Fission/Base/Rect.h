@@ -31,7 +31,7 @@
 #include "config.h"
 #include <Fission/Base/Range.hpp>
 #include <Fission/Base/Size.hpp>
-#include <Fission/Base/Math/Vector.h>
+#include <Fission/Base/Math/Vector.hpp>
 #include <utility>
 
 _FISSION_BASE_BEGIN

@@ -53,8 +53,8 @@ public:
 	}
 	virtual Fission::SceneKey GetKey() override { return {}; }
 private:
-	Fission::base::vector2f velocity = { 150.0f, 300.0f };
-	Fission::base::vector2f pos      = { 100.0f, 100.0f };
+	Fission::v2f32 velocity = { 150.0f, 300.0f };
+	Fission::v2f32 pos      = { 100.0f, 100.0f };
 	float                   radius   = 50.0f;
 	Fission::color          color    = Fission::Colors::Red;
 	float                   count    = 0.0f;

@@ -22,11 +22,11 @@ namespace Fission {
 		// Inherited via Renderer2D
 		virtual void Render() override;
 
-		virtual void FillTriangle( base::vector2f p0, base::vector2f p1, base::vector2f p2, color color ) override;
+		virtual void FillTriangle( v2f32 p0, v2f32 p1, v2f32 p2, color color ) override;
 
-		virtual void FillTriangleGrad( base::vector2f p0, base::vector2f p1, base::vector2f p2, color c0, color c1, color c2 ) override;
+		virtual void FillTriangleGrad( v2f32 p0, v2f32 p1, v2f32 p2, color c0, color c1, color c2 ) override;
 
-		virtual void FillTriangleUV( base::vector2f p0, base::vector2f p1, base::vector2f p2, base::vector2f uv0, base::vector2f uv1, base::vector2f uv2, Resource::IFTexture2D * pTexture, color tint ) override;
+		virtual void FillTriangleUV( v2f32 p0, v2f32 p1, v2f32 p2, v2f32 uv0, v2f32 uv1, v2f32 uv2, Resource::IFTexture2D * pTexture, color tint ) override;
 
 		virtual void FillRect( base::rectf rect, color color ) override;
 
@@ -38,15 +38,15 @@ namespace Fission {
 
 		virtual void DrawRoundRect( base::rectf rect, float rad, color color, float stroke_width, StrokeStyle stroke ) override;
 
-		virtual void DrawLine( base::vector2f start, base::vector2f end, color color, float stroke_width, StrokeStyle stroke ) override;
+		virtual void DrawLine( v2f32 start, v2f32 end, color color, float stroke_width, StrokeStyle stroke ) override;
 
-		virtual void FillCircle( base::vector2f point, float radius, color color ) override;
+		virtual void FillCircle( v2f32 point, float radius, color color ) override;
 
-		virtual void DrawCircle( base::vector2f point, float radius, color color, float stroke_width, StrokeStyle stroke ) override;
+		virtual void DrawCircle( v2f32 point, float radius, color color, float stroke_width, StrokeStyle stroke ) override;
 
-		virtual void DrawCircle( base::vector2f point, float radius, color inner_color, color outer_color, float stroke_width, StrokeStyle stroke ) override;
+		virtual void DrawCircle( v2f32 point, float radius, color inner_color, color outer_color, float stroke_width, StrokeStyle stroke ) override;
 
-		virtual void FillArrow( base::vector2f start, base::vector2f end, float width, color color ) override;
+		virtual void FillArrow( v2f32 start, v2f32 end, float width, color color ) override;
 
 		virtual void DrawImage( Resource::IFTexture2D * pTexture, base::rectf rect, base::rectf uv, color tint ) override;
 
@@ -56,9 +56,9 @@ namespace Fission {
 
 		virtual void SelectFont( const Font * pFont ) override;
 
-		virtual TextLayout DrawString( const char * str, base::vector2f pos, color color ) override;
+		virtual TextLayout DrawString( const char * str, v2f32 pos, color color ) override;
 
-		virtual TextLayout DrawString( string_view sv, base::vector2f pos, color color ) override;
+		virtual TextLayout DrawString( string_view sv, v2f32 pos, color color ) override;
 
 		virtual TextLayout CreateTextLayout( const char * str ) override;
 
@@ -66,7 +66,7 @@ namespace Fission {
 
 		virtual void SetBlendMode( BlendMode mode ) override;
 
-		virtual void PushTransform( const base::matrix2x3f & transform ) override;
+		virtual void PushTransform( m23 const& transform ) override;
 
 		virtual void PopTransform() override;
 
@@ -74,8 +74,8 @@ namespace Fission {
 		void _set_accumulated_transform();
 
 	private:
-		base::matrix2x3f m_accTransform = base::matrix2x3f::Identity();
-		std::vector<base::matrix2x3f> m_TransformStack;
+		m23 m_accTransform = m23::Identity();
+		dynamic_buffer<m23> m_TransformStack;
 
 	private:
 		IFGraphics * m_pGraphics = nullptr;
@@ -92,10 +92,10 @@ namespace Fission {
 	private:
 		struct vertex {
 			vertex() = default;
-			vertex( base::vector2f pos, color c ) : pos( pos ), tc( -1.0f, 0.0f ), color( c ) {}
-			vertex( base::vector2f pos, base::vector2f tc, color c ) : pos( pos ), tc( tc ), color( c ) {}
+			vertex( v2f32 pos, color c ) : pos( pos ), tc( -1.0f, 0.0f ), color( c ) {}
+			vertex( v2f32 pos, v2f32 tc, color c ) : pos( pos ), tc( tc ), color( c ) {}
 
-			base::vector2f pos, tc;
+			v2f32 pos, tc;
 			color color;
 		};
 
@@ -105,7 +105,7 @@ namespace Fission {
 		{
 			DrawData( Renderer2DImpl * parent, uint32_t vc, uint32_t ic );
 
-			void AddRectFilled( base::vector2f tl, base::vector2f tr, base::vector2f bl, base::vector2f br, color c );
+			void AddRectFilled( v2f32 tl, v2f32 tr, v2f32 bl, v2f32 br, color c );
 			void AddRectFilled( base::rectf rect, color c );
 			void AddRectFilled( base::rectf rect, color tl, color tr, color bl, color br );
 			void AddRectFilledUV( base::rectf rect, base::rectf uv, color c );
@@ -115,11 +115,11 @@ namespace Fission {
 			void AddRoundRect( base::rectf rect, float rad, color color, float stroke_width, StrokeStyle stroke );
 
 			void AddMesh( const Mesh * mesh );
-			void AddCircleFilled( base::vector2f center, float rad, color c );
-			void AddCircle( base::vector2f center, float rad, color inc, color outc, float stroke_width, StrokeStyle stroke );
-			void AddTriangle( base::vector2f p0, base::vector2f p1, base::vector2f p2, color c0, color c1, color c2 );
-			void AddTriangleUV( base::vector2f p0, base::vector2f p1, base::vector2f p2, base::vector2f uv0, base::vector2f uv1, base::vector2f uv2, color c );
-			void AddLine( base::vector2f start, base::vector2f end, float stroke, color startColor, color endColor );
+			void AddCircleFilled( v2f32 center, float rad, color c );
+			void AddCircle( v2f32 center, float rad, color inc, color outc, float stroke_width, StrokeStyle stroke );
+			void AddTriangle( v2f32 p0, v2f32 p1, v2f32 p2, color c0, color c1, color c2 );
+			void AddTriangleUV( v2f32 p0, v2f32 p1, v2f32 p2, v2f32 uv0, v2f32 uv1, v2f32 uv2, color c );
+			void AddLine( v2f32 start, v2f32 end, float stroke, color startColor, color endColor );
 
 
 			uint32_t vtxCount = 0, vtxStart;
@@ -135,7 +135,7 @@ namespace Fission {
 			// TODO: Create "mips" for this cache to reduce unnecessary geometry
 			static std::vector<sincos> TrigCache;
 
-			const base::matrix2x3f * mat;
+			m23 const* mat;
 		};
 
 		std::vector<DrawData> m_DrawBuffer;

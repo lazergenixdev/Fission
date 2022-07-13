@@ -25,7 +25,7 @@
 //		struct OptWindowProperties
 //		{
 //			std::optional<IFWindow::Flag_t>	flags;
-//			std::optional<base::vector2i>	position;
+//			std::optional<v2i32>	position;
 //			std::optional<size2>		size;
 //			std::optional<int>				monitor_idx = 0;
 //		};

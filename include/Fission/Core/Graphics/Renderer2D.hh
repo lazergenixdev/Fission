@@ -34,7 +34,7 @@
 #include "Fission/Core/Graphics.hh"
 #include "Fission/Core/Graphics/Renderer.hh"
 #include "Fission/Core/Graphics/Font.hh"
-#include "Fission/Base/Math/Matrix.h"
+#include "Fission/Base/Math/Matrix.hpp"
 #include "Fission/Base/Rect.h"
 
 namespace Fission
@@ -62,7 +62,7 @@ namespace Fission
 		FISSION_API ~Mesh();
 
 		FISSION_API void push_color( color col );
-		FISSION_API void push_vertex( base::vector2f position, int color_index );
+		FISSION_API void push_vertex( v2f32 position, int color_index );
 		FISSION_API void push_index( uint32_t index );
 
 		FISSION_API void set_color( uint32_t index, color new_color );
@@ -83,11 +83,11 @@ namespace Fission
 
 		virtual void DrawRect( base::rectf rect, color color, float stroke_width, StrokeStyle stroke = StrokeStyle::Default ) = 0;
 
-		virtual void FillTriangle( base::vector2f p0, base::vector2f p1, base::vector2f p2, color color ) = 0;
+		virtual void FillTriangle( v2f32 p0, v2f32 p1, v2f32 p2, color color ) = 0;
 
-		virtual void FillTriangleGrad( base::vector2f p0, base::vector2f p1, base::vector2f p2, color c0, color c1, color c2 ) = 0;
+		virtual void FillTriangleGrad( v2f32 p0, v2f32 p1, v2f32 p2, color c0, color c1, color c2 ) = 0;
 
-		virtual void FillTriangleUV( base::vector2f p0, base::vector2f p1, base::vector2f p2, base::vector2f uv0, base::vector2f uv1, base::vector2f uv2, Resource::IFTexture2D * pTexture, color tint = Colors::White ) = 0;
+		virtual void FillTriangleUV( v2f32 p0, v2f32 p1, v2f32 p2, v2f32 uv0, v2f32 uv1, v2f32 uv2, Resource::IFTexture2D * pTexture, color tint = Colors::White ) = 0;
 
 		virtual void FillRectGrad( base::rectf rect, color color_topleft, color color_topright, color color_bottomleft, color color_bottomright ) = 0;
 
@@ -95,15 +95,15 @@ namespace Fission
 
 		virtual void DrawRoundRect( base::rectf rect, float rad, color color, float stroke_width, StrokeStyle stroke = StrokeStyle::Default ) = 0;
 
-		virtual void DrawLine( base::vector2f start, base::vector2f end, color color, float stroke_width = 1.0f, StrokeStyle stroke = StrokeStyle::Default ) = 0;
+		virtual void DrawLine( v2f32 start, v2f32 end, color color, float stroke_width = 1.0f, StrokeStyle stroke = StrokeStyle::Default ) = 0;
 
-		virtual void FillCircle( base::vector2f point, float radius, color color ) = 0;
+		virtual void FillCircle( v2f32 point, float radius, color color ) = 0;
 
-		virtual void DrawCircle( base::vector2f point, float radius, color color, float stroke_width, StrokeStyle stroke = StrokeStyle::Default ) = 0;
+		virtual void DrawCircle( v2f32 point, float radius, color color, float stroke_width, StrokeStyle stroke = StrokeStyle::Default ) = 0;
 
-		virtual void DrawCircle( base::vector2f point, float radius, color inner_color, color outer_color, float stroke_width, StrokeStyle stroke = StrokeStyle::Default ) = 0;
+		virtual void DrawCircle( v2f32 point, float radius, color inner_color, color outer_color, float stroke_width, StrokeStyle stroke = StrokeStyle::Default ) = 0;
 
-		virtual void FillArrow( base::vector2f start, base::vector2f end, float width, color color ) = 0;
+		virtual void FillArrow( v2f32 start, v2f32 end, float width, color color ) = 0;
 
 		virtual void DrawImage( Resource::IFTexture2D * pTexture, base::rectf rect, base::rectf uv, color tint = Colors::White ) = 0;
 
@@ -113,9 +113,9 @@ namespace Fission
 
 		virtual void SelectFont( const Font * pFont ) = 0;
 
-		virtual TextLayout DrawString( const char * str, base::vector2f pos, color color ) = 0;
+		virtual TextLayout DrawString( const char * str, v2f32 pos, color color ) = 0;
 
-		virtual TextLayout DrawString( string_view sv, base::vector2f pos, color color ) = 0;
+		virtual TextLayout DrawString( string_view sv, v2f32 pos, color color ) = 0;
 
 		virtual TextLayout CreateTextLayout( const char * str ) = 0;
 
@@ -123,7 +123,7 @@ namespace Fission
 
 		virtual void SetBlendMode( BlendMode mode ) = 0;
 
-		virtual void PushTransform( const base::matrix2x3f & transform ) = 0;
+		virtual void PushTransform( m23 const& transform ) = 0;
 
 		virtual void PopTransform() = 0;
 

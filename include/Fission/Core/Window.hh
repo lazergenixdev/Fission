@@ -34,7 +34,7 @@
 #include <Fission/Core/Input/Event.hh>
 #include <Fission/Base/Size.hpp>
 #include <Fission/Base/String.hpp>
-#include <Fission/Base/Math/Vector.h>
+#include <Fission/Base/Math/Vector.hpp>
 #include <Fission/Base/util/BitFlag.hpp>
 
 // todo: implement fixed aspect-ratio flag
@@ -82,7 +82,7 @@ namespace Fission
 		{
 			string         title       = "Window Title";       /*!< Title of the window that will show in the title bar. */
 			size2     size        = { 1280, 720 };        /*!< Client size of the window. */
-			base::vector2i position    = {};                   /*!< Position of the window's Top-Left coordinate. */
+			v2i32 position    = {};                   /*!< Position of the window's Top-Left coordinate. */
 			Style          style       = Style::Default;       /*!< Style of the window, can be one of @IFWindow::Style. */
 			Flag_t         flags       = Flags::Default;       /*!< Flags of the window, can be any combination of @IFWindow::Flags. */
 			int            monitor_idx = MonitorIdx_Automatic; /*!< Monitor to use for fullscreen mode. (0 is always the primary) */

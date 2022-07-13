@@ -16,7 +16,7 @@ namespace Fission
 		// sketchy way to implement window movement
 		POINT last = {};
 		bool mousedown = false;
-		base::vector2i mousepos;
+		v2i32 mousepos;
 
 		DebugWindow();
 

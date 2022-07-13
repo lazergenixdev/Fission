@@ -8,7 +8,7 @@ namespace Fission {
 		using index = uint32_t;
 
 		struct vertex {
-			base::vector2f pos;
+			v2f32 pos;
 			uint32_t color_index;
 		};
 

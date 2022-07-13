@@ -100,7 +100,7 @@
 //
 //					if( auto position = w.second["Position"] )
 //					{
-//						props.position = base::vector2i( position[0].as<int>(0), position[1].as<int>(0) );
+//						props.position = v2i32( position[0].as<int>(0), position[1].as<int>(0) );
 //					}
 //					if( auto spos = w.second["Save Position"] )
 //					{

@@ -42,7 +42,7 @@ namespace Fission {
 	public:
 		struct Glyph {
 			base::rectf rc;
-			base::vector2f offset, size;
+			v2f32 offset, size;
 			float advance;
 		};
 

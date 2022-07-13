@@ -81,9 +81,9 @@ namespace Fission {
 			info.max_size = 128;
 			m_pTransformBuffer = gfx->CreateConstantBuffer( info );
 
-			const auto res = base::vector2f{ (float)_viewport_size.w, (float)_viewport_size.h };
+			const auto res = v2f32{ (float)_viewport_size.w, (float)_viewport_size.h };
 
-			const auto screen = base::matrix4x4f(
+			const auto screen = m44(
 				2.0f / res.x,	0.0f,		   -1.0f, 0.0f,
 				0.0f,		   -2.0f / res.y,	1.0f, 0.0f,
 				0.0f,			0.0f,			1.0f, 0.0f,
@@ -147,7 +147,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 
 	void Renderer2DImpl::OnResize( IFGraphics * , size2 size )
 	{
-		const auto screen = base::matrix4x4f(
+		const auto screen = m44(
 			2.0f / (float)size.w, 0.0f,                -1.0f, 0.0f,
 			0.0f,                -2.0f / (float)size.h, 1.0f, 0.0f,
 			0.0f,                 0.0f,                 1.0f, 0.0f,
@@ -182,17 +182,17 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 
 	}
 
-	void Renderer2DImpl::FillTriangle( base::vector2f p0, base::vector2f p1, base::vector2f p2, color color )
+	void Renderer2DImpl::FillTriangle( v2f32 p0, v2f32 p1, v2f32 p2, color color )
 	{
 		m_DrawBuffer.back().AddTriangle( p0, p1, p2, color, color, color );
 	}
 
-	void Renderer2DImpl::FillTriangleGrad( base::vector2f p0, base::vector2f p1, base::vector2f p2, color c0, color c1, color c2 )
+	void Renderer2DImpl::FillTriangleGrad( v2f32 p0, v2f32 p1, v2f32 p2, color c0, color c1, color c2 )
 	{
 		m_DrawBuffer.back().AddTriangle( p0, p1, p2, c0, c1, c2 );
 	}
 
-	void Renderer2DImpl::FillTriangleUV( base::vector2f p0, base::vector2f p1, base::vector2f p2, base::vector2f uv0, base::vector2f uv1, base::vector2f uv2, Resource::IFTexture2D * pTexture, color tint )
+	void Renderer2DImpl::FillTriangleUV( v2f32 p0, v2f32 p1, v2f32 p2, v2f32 uv0, v2f32 uv1, v2f32 uv2, Resource::IFTexture2D * pTexture, color tint )
 	{
 		SetTexture( pTexture );
 		m_DrawBuffer.back().AddTriangleUV( p0, p1, p2, uv0, uv1, uv2, tint );
@@ -223,28 +223,28 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		m_DrawBuffer.back().AddRoundRect( rect, rad, color, stroke_width, stroke );
 	}
 
-	void Renderer2DImpl::DrawLine( base::vector2f start, base::vector2f end, color color, float stroke_width, StrokeStyle stroke )
+	void Renderer2DImpl::DrawLine( v2f32 start, v2f32 end, color color, float stroke_width, StrokeStyle stroke )
 	{
 		(void)stroke;
 		m_DrawBuffer.back().AddLine( start, end, stroke_width, color, color );
 	}
 
-	void Renderer2DImpl::FillCircle( base::vector2f point, float radius, color color )
+	void Renderer2DImpl::FillCircle( v2f32 point, float radius, color color )
 	{
 		m_DrawBuffer.back().AddCircleFilled( point, radius, color );
 	}
 
-	void Renderer2DImpl::DrawCircle( base::vector2f point, float radius, color color, float stroke_width, StrokeStyle stroke )
+	void Renderer2DImpl::DrawCircle( v2f32 point, float radius, color color, float stroke_width, StrokeStyle stroke )
 	{
 		m_DrawBuffer.back().AddCircle( point, radius, color, color, stroke_width, stroke );
 	}
 
-	void Renderer2DImpl::DrawCircle( base::vector2f point, float radius, color inner_color, color outer_color, float stroke_width, StrokeStyle stroke )
+	void Renderer2DImpl::DrawCircle( v2f32 point, float radius, color inner_color, color outer_color, float stroke_width, StrokeStyle stroke )
 	{
 		m_DrawBuffer.back().AddCircle( point, radius, inner_color, outer_color, stroke_width, stroke );
 	}
 
-	void Renderer2DImpl::FillArrow( base::vector2f start, base::vector2f end, float width, color c )
+	void Renderer2DImpl::FillArrow( v2f32 start, v2f32 end, float width, color c )
 	{
 		if( start == end )
 		{
@@ -252,23 +252,23 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			return;
 		}
 
-		base::vector2f diff = start - end;
-		base::vector2f par = diff.norm();
+		v2f32 diff = start - end;
+		v2f32 par = diff.norm();
 		float lensq = diff.lensq();
 
 		if( lensq < width * width )
 		{
-			const base::vector2f center = start;
-			const base::vector2f perp = par.perp() * ( sqrtf( lensq ) * 0.5f );
-			const base::vector2f l = center - perp, r = center + perp;
+			const v2f32 center = start;
+			const v2f32 perp = par.perp() * ( sqrtf( lensq ) * 0.5f );
+			const v2f32 l = center - perp, r = center + perp;
 
 			m_DrawBuffer.back().AddTriangle( end, l, r, c, c, c );
 		}
 		else
 		{
-			const base::vector2f perp = par.perp() * ( width * 0.5f );
-			const base::vector2f center = end + par * width;
-			const base::vector2f l = center - perp, r = center + perp;
+			const v2f32 perp = par.perp() * ( width * 0.5f );
+			const v2f32 center = end + par * width;
+			const v2f32 l = center - perp, r = center + perp;
 
 			m_DrawBuffer.back().AddTriangle( end, l, r, c, c, c );
 			m_DrawBuffer.back().AddLine( start, center, 0.4f * width, c, c );
@@ -298,7 +298,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		m_pSelectedFont = pFont;
 	}
 
-	TextLayout Renderer2DImpl::DrawString( const char * str, base::vector2f pos, color c )
+	TextLayout Renderer2DImpl::DrawString( const char * str, v2f32 pos, color c )
 	{
 		FISSION_ASSERT( m_pSelectedFont, "you're not supposed to do that." );
 
@@ -335,7 +335,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		return TextLayout{ start, (float)m_pSelectedFont->GetSize() };
 	}
 
-	TextLayout Renderer2DImpl::DrawString( string_view sv, base::vector2f pos, color color )
+	TextLayout Renderer2DImpl::DrawString( string_view sv, v2f32 pos, color color )
 	{
 		FISSION_ASSERT( m_pSelectedFont, "you're not supposed to do that." );
 
@@ -412,7 +412,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		m_pUseBlender = m_pBlenders[(int)mode].get();
 	}
 
-	void Renderer2DImpl::PushTransform( const base::matrix2x3f & transform )
+	void Renderer2DImpl::PushTransform( m23 const& transform )
 	{
 		m_TransformStack.emplace_back( transform );
 		_set_accumulated_transform();
@@ -428,7 +428,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 	void Renderer2DImpl::_set_accumulated_transform()
 	{
 		if( m_TransformStack.empty() ) {
-			m_accTransform = base::matrix2x3f::Identity();
+			m_accTransform = m23::Identity();
 			return;
 		}
 
@@ -512,17 +512,17 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		default:throw std::logic_error( "this don't make no fucking sense" );
 		}
 
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( out_l, out_b ), c );
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( in_l , in_b  ), c );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( out_l, out_b ), c );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( in_l , in_b  ), c );
 
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( out_l, out_t ), c );
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( in_l , in_t  ), c );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( out_l, out_t ), c );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( in_l , in_t  ), c );
 
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( out_r, out_t ), c );
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( in_r , in_t  ), c );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( out_r, out_t ), c );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( in_r , in_t  ), c );
 
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( out_r, out_b ), c );
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( in_r , in_b  ), c );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( out_r, out_b ), c );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( in_r , in_b  ), c );
 	}
 
 	void Renderer2DImpl::DrawData::AddRoundRectFilled( base::rectf rect, float rad, color c )
@@ -558,7 +558,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		pIdxData[idxCount++] = vtxCount + 1;
 		pIdxData[idxCount++] = vtxCount + v_count - 1;
 
-#define _push_vertex(X,Y,C) pVtxData[vtxCount++] = vertex( *mat * base::vector2f( X, Y ), C )
+#define _push_vertex(X,Y,C) pVtxData[vtxCount++] = vertex( *mat * v2f32( X, Y ), C )
 
 		// Center
 		_push_vertex( ( right + left ) / 2.0f, ( bottom + top ) / 2.0f, c );
@@ -642,7 +642,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		pIdxData[idxCount++] = vtxCount + v_count0 - 1;
 		pIdxData[idxCount++] = vtxCount + v_count0 * 2 - 1;
 
-#define _push_vertex(X,Y,C) pVtxData[vtxCount++] = vertex( *mat * base::vector2f( X, Y ), C )
+#define _push_vertex(X,Y,C) pVtxData[vtxCount++] = vertex( *mat * v2f32( X, Y ), C )
 
 		// // // // // // // // INNER // // // // // // // //
 		// Bottom Left
@@ -709,7 +709,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			pVtxData[vtxCount++] = vertex( *mat * v.pos, colors[v.color_index] );
 	}
 
-	void Renderer2DImpl::DrawData::AddCircleFilled( base::vector2f center, float rad, color c )
+	void Renderer2DImpl::DrawData::AddCircleFilled( v2f32 center, float rad, color c )
 	{
 		const int count = ( (int)TrigCache.size() + 1u ) * 4u - 2;
 		for( int i = 0; i < count; i++ )
@@ -719,24 +719,24 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			pIdxData[idxCount++] = vtxCount + i + 2u;
 		}
 
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( center.x + rad, center.y ), c );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( center.x + rad, center.y ), c );
 		for( auto && trig : TrigCache )
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( center.x + trig.cos * rad, center.y + trig.sin * rad ), c );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( center.x + trig.cos * rad, center.y + trig.sin * rad ), c );
 
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( center.x, center.y + rad ), c );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( center.x, center.y + rad ), c );
 		for( auto && trig : TrigCache )
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( center.x - trig.sin * rad, center.y + trig.cos * rad ), c );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( center.x - trig.sin * rad, center.y + trig.cos * rad ), c );
 
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( center.x - rad, center.y ), c );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( center.x - rad, center.y ), c );
 		for( auto && trig : TrigCache )
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( center.x - trig.cos * rad, center.y - trig.sin * rad ), c );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( center.x - trig.cos * rad, center.y - trig.sin * rad ), c );
 
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( center.x, center.y - rad ), c );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( center.x, center.y - rad ), c );
 		for( auto && trig : TrigCache )
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( center.x + trig.sin * rad, center.y - trig.cos * rad ), c );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( center.x + trig.sin * rad, center.y - trig.cos * rad ), c );
 	}
 
-	void Renderer2DImpl::DrawData::AddCircle( base::vector2f center, float rad, color inc, color outc, float stroke_width, StrokeStyle stroke )
+	void Renderer2DImpl::DrawData::AddCircle( v2f32 center, float rad, color inc, color outc, float stroke_width, StrokeStyle stroke )
 	{
 		const int count = ( (int)TrigCache.size() + 1u ) * 4u;
 		float hw = stroke_width * 0.5f;
@@ -764,32 +764,32 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			pIdxData[idxCount++] = vtxCount + (i * 2u + 2u)%count2;
 		}
 
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( center.x + inner_rad, center.y ), inc );
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( center.x + outer_rad, center.y ), outc );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( center.x + inner_rad, center.y ), inc );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( center.x + outer_rad, center.y ), outc );
 		for( auto && trig : TrigCache )
-			pVtxData[vtxCount++] = vertex( *mat * base::vector2f( center.x + trig.cos * inner_rad, center.y + trig.sin * inner_rad ), inc ),
-			pVtxData[vtxCount++] = vertex( *mat * base::vector2f( center.x + trig.cos * outer_rad, center.y + trig.sin * outer_rad ), outc );
+			pVtxData[vtxCount++] = vertex( *mat * v2f32( center.x + trig.cos * inner_rad, center.y + trig.sin * inner_rad ), inc ),
+			pVtxData[vtxCount++] = vertex( *mat * v2f32( center.x + trig.cos * outer_rad, center.y + trig.sin * outer_rad ), outc );
 
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( center.x, center.y + inner_rad ), inc );
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( center.x, center.y + outer_rad ), outc );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( center.x, center.y + inner_rad ), inc );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( center.x, center.y + outer_rad ), outc );
 		for( auto && trig : TrigCache )
-			pVtxData[vtxCount++] = vertex( *mat * base::vector2f( center.x - trig.sin * inner_rad, center.y + trig.cos * inner_rad ), inc ),
-			pVtxData[vtxCount++] = vertex( *mat * base::vector2f( center.x - trig.sin * outer_rad, center.y + trig.cos * outer_rad ), outc );
+			pVtxData[vtxCount++] = vertex( *mat * v2f32( center.x - trig.sin * inner_rad, center.y + trig.cos * inner_rad ), inc ),
+			pVtxData[vtxCount++] = vertex( *mat * v2f32( center.x - trig.sin * outer_rad, center.y + trig.cos * outer_rad ), outc );
 
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( center.x - inner_rad, center.y ), inc );
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( center.x - outer_rad, center.y ), outc );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( center.x - inner_rad, center.y ), inc );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( center.x - outer_rad, center.y ), outc );
 		for( auto && trig : TrigCache )
-			pVtxData[vtxCount++] = vertex( *mat * base::vector2f( center.x - trig.cos * inner_rad, center.y - trig.sin * inner_rad ), inc ),
-			pVtxData[vtxCount++] = vertex( *mat * base::vector2f( center.x - trig.cos * outer_rad, center.y - trig.sin * outer_rad ), outc );
+			pVtxData[vtxCount++] = vertex( *mat * v2f32( center.x - trig.cos * inner_rad, center.y - trig.sin * inner_rad ), inc ),
+			pVtxData[vtxCount++] = vertex( *mat * v2f32( center.x - trig.cos * outer_rad, center.y - trig.sin * outer_rad ), outc );
 
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( center.x, center.y - inner_rad ), inc );
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( center.x, center.y - outer_rad ), outc );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( center.x, center.y - inner_rad ), inc );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( center.x, center.y - outer_rad ), outc );
 		for( auto && trig : TrigCache )
-			pVtxData[vtxCount++] = vertex( *mat * base::vector2f( center.x + trig.sin * inner_rad, center.y - trig.cos * inner_rad ), inc ),
-			pVtxData[vtxCount++] = vertex( *mat * base::vector2f( center.x + trig.sin * outer_rad, center.y - trig.cos * outer_rad ), outc );
+			pVtxData[vtxCount++] = vertex( *mat * v2f32( center.x + trig.sin * inner_rad, center.y - trig.cos * inner_rad ), inc ),
+			pVtxData[vtxCount++] = vertex( *mat * v2f32( center.x + trig.sin * outer_rad, center.y - trig.cos * outer_rad ), outc );
 	}
 
-	void Renderer2DImpl::DrawData::AddTriangle( base::vector2f p0, base::vector2f p1, base::vector2f p2, color c0, color c1, color c2 )
+	void Renderer2DImpl::DrawData::AddTriangle( v2f32 p0, v2f32 p1, v2f32 p2, color c0, color c1, color c2 )
 	{
 		pIdxData[idxCount++] = vtxCount;
 		pIdxData[idxCount++] = vtxCount + 1u;
@@ -800,7 +800,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		pVtxData[vtxCount++] = vertex( *mat * p2, c2 );
 	}
 
-	void Renderer2DImpl::DrawData::AddTriangleUV( base::vector2f p0, base::vector2f p1, base::vector2f p2, base::vector2f uv0, base::vector2f uv1, base::vector2f uv2, color c )
+	void Renderer2DImpl::DrawData::AddTriangleUV( v2f32 p0, v2f32 p1, v2f32 p2, v2f32 uv0, v2f32 uv1, v2f32 uv2, color c )
 	{
 		pIdxData[idxCount++] = vtxCount;
 		pIdxData[idxCount++] = vtxCount + 1u;
@@ -811,7 +811,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		pVtxData[vtxCount++] = vertex( *mat * p2, uv2, c );
 	}
 
-	void Renderer2DImpl::DrawData::AddLine( base::vector2f start, base::vector2f end, float stroke, color startColor, color endColor )
+	void Renderer2DImpl::DrawData::AddLine( v2f32 start, v2f32 end, float stroke, color startColor, color endColor )
 	{
 		const auto edge_vector = ( end - start ).perp().norm() * stroke / 2.0f;
 
@@ -837,13 +837,13 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		pIdxData[idxCount++] = vtxCount;
 		pIdxData[idxCount++] = vtxCount + 2u;
 
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( rect.x.low , rect.y.high ), base::vector2f( uv.x.low , uv.y.high ), c );
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( rect.x.low , rect.y.low  ), base::vector2f( uv.x.low , uv.y.low  ), c );
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( rect.x.high, rect.y.low  ), base::vector2f( uv.x.high, uv.y.low  ), c );
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( rect.x.high, rect.y.high ), base::vector2f( uv.x.high, uv.y.high ), c );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( rect.x.low , rect.y.high ), v2f32( uv.x.low , uv.y.high ), c );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( rect.x.low , rect.y.low  ), v2f32( uv.x.low , uv.y.low  ), c );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( rect.x.high, rect.y.low  ), v2f32( uv.x.high, uv.y.low  ), c );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( rect.x.high, rect.y.high ), v2f32( uv.x.high, uv.y.high ), c );
 	}
 
-	void Renderer2DImpl::DrawData::AddRectFilled( base::vector2f tl, base::vector2f tr, base::vector2f bl, base::vector2f br, color c )
+	void Renderer2DImpl::DrawData::AddRectFilled( v2f32 tl, v2f32 tr, v2f32 bl, v2f32 br, color c )
 	{
 		pIdxData[idxCount++] = vtxCount;
 		pIdxData[idxCount++] = vtxCount + 1u;
@@ -867,10 +867,10 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		pIdxData[idxCount++] = vtxCount;
 		pIdxData[idxCount++] = vtxCount + 2u;
 
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( rect.x.low , rect.y.high ), c );
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( rect.x.low , rect.y.low  ), c );
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( rect.x.high, rect.y.low  ), c );
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( rect.x.high, rect.y.high ), c );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( rect.x.low , rect.y.high ), c );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( rect.x.low , rect.y.low  ), c );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( rect.x.high, rect.y.low  ), c );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( rect.x.high, rect.y.high ), c );
 	}
 
 	void Renderer2DImpl::DrawData::AddRectFilled( base::rectf rect, color tl, color tr, color bl, color br )
@@ -882,10 +882,10 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		pIdxData[idxCount++] = vtxCount;
 		pIdxData[idxCount++] = vtxCount + 2u;
 
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( rect.x.low , rect.y.high ), bl );
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( rect.x.low , rect.y.low  ), tl );
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( rect.x.high, rect.y.low  ), tr );
-		pVtxData[vtxCount++] = vertex( *mat * base::vector2f( rect.x.high, rect.y.high ), br );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( rect.x.low , rect.y.high ), bl );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( rect.x.low , rect.y.low  ), tl );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( rect.x.high, rect.y.low  ), tr );
+		pVtxData[vtxCount++] = vertex( *mat * v2f32( rect.x.high, rect.y.high ), br );
 	}
 
 }

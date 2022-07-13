@@ -8,7 +8,7 @@
 #define _neutron_key_type     Fission::Keys::Key
 #define _neutron_cursor_type  Fission::Cursor*
 
-#define _neutron_point_type   Fission::base::vector2i
+#define _neutron_point_type   Fission::v2i32
 #define _neutron_rect_type    Fission::base::recti
 #define _neutron_vector_type  std::vector
 #include "Fission/neutron.hpp"
@@ -23,7 +23,7 @@ namespace ui
 	class Button : public neutron::Button
 	{
 	public:
-		Button( string label, vector2i centerpos, Fission::size2 size )
+		Button( string label, v2i32 centerpos, Fission::size2 size )
 			: rect(recti::from_center(centerpos,size)), label(label)
 		{}
 
@@ -38,7 +38,7 @@ namespace ui
 
 			g_r2d->DrawRoundRect(frect, 10.0f, c, 0.75f, StrokeStyle::Inside);
 
-			auto d = vector2f(frect.width() - tl.width, frect.height() - tl.height)*0.5f;
+			auto d = v2f32(frect.width() - tl.width, frect.height() - tl.height)*0.5f;
 			g_r2d->DrawString(label.c_str(), frect.topLeft()+d, c);
 		}
 

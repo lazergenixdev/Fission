@@ -11,8 +11,8 @@
 #endif
 #include <Fission/Core/UI/Debug.hh>
 
-using v2f = Fission::base::vector2f;
-using v2i = Fission::base::vector2i;
+using v2f = Fission::v2f32;
+using v2i = Fission::v2i32;
 using rectf = Fission::base::rectf;
 
 static float padding = 0.6f;

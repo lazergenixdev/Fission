@@ -49,7 +49,7 @@ namespace Fission::Platform
 
 		virtual void Destroy() override;
 
-		base::vector2i GetPosition() const { return m_Properties.position; }
+		v2i32 GetPosition() const { return m_Properties.position; }
 
 		LRESULT HandleEvent( Event * _Ptr_Event );
 

@@ -1,6 +1,6 @@
 #include "SurfaceImpl.h"
 #include <Fission/Base/Exception.hpp>
-#include <Fission/Base/Math/Vector.h>
+#include <Fission/Base/Math/Vector.hpp>
 
 namespace Fission {
 
@@ -67,7 +67,7 @@ namespace Fission {
 			// implement this
 		}
 
-		base::vector2i start;
+		v2i32 start;
 		size2 size;
 		if( _Source_Rect.has_value() )
 			size = size2(_Source_Rect->size()), start = _Source_Rect->topLeft();

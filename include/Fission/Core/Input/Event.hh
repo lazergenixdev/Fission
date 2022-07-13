@@ -31,7 +31,7 @@
 #pragma once
 #include <Fission/Core/Input/Keys.hh>
 #include <Fission/Core/Input/Cursor.hh>
-#include <Fission/Base/Math/Vector.h>
+#include <Fission/Base/Math/Vector.hpp>
 #include <Fission/Base/Size.hpp>
 
 /*! @brief Event has been handled */
@@ -78,7 +78,7 @@ namespace Fission {
 	};
 
 	struct MouseMoveEventArgs : public NativeEventArgs {
-		base::vector2i position;
+		v2i32 position;
 	};
 
 	struct MouseLeaveEventArgs : public NativeEventArgs {};

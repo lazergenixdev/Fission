@@ -30,7 +30,7 @@
 
 #pragma once
 #include <Fission/Base/String.hpp>
-#include <Fission/Base/Math/Matrix.h>
+#include <Fission/Base/Math/Matrix.hpp>
 #include <Fission/Core/Object.hh>
 #include <Fission/Core/Surface.hh>
 #include <Fission/Core/Monitor.hh>
