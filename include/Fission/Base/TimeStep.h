@@ -28,9 +28,9 @@
 *
 */
 #pragma once
-#include "config.h"
+#include <Fission/config.hpp>
 
-_FISSION_BASE_PUBLIC_BEGIN
+__FISSION_BEGIN__
 
 struct timestep
 {
@@ -50,4 +50,4 @@ private:
 
 }; // struct Fission::timestep
 
-_FISSION_BASE_PUBLIC_END
+__FISSION_END__

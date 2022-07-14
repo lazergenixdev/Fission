@@ -69,7 +69,7 @@ namespace Fission {
 		{
 		[[unlikely]] default:
 		{
-			return { string_view{ "",0u }, { 0.0f }, (int)line };
+			return { string_view{ "",0u }, {}, (int)line };
 		}
 		[[likely]] case 0:
 		{

@@ -37,15 +37,15 @@ namespace Fission
 			r2d->SelectFont( FontManager::GetFont( "$ui" ) );
 			float border = 2.0f;
 
-			r2d->DrawRect( rect, Colors::Black, border, StrokeStyle::Inside );
+			r2d->DrawRect( rect, colors::Black, border, StrokeStyle::Inside );
 
-			r2d->FillRect( rect.expand( -border ), Colors::make_gray( 0.18f ) );
+			r2d->FillRect( rect.expand( -border ), colors::gray( 0.18f ) );
 
 			rect.x.low += 70.0f;
 			rect.y.high = rect.y.low + 20.0f;
-			r2d->FillRect( rect, (rgb_colorf)Colors::make_gray<rgb_color8>( 19 ) );
+			r2d->FillRect( rect, (rgb_colorf)colors::gray<rgb_color8>( 19 ) );
 
-			r2d->DrawString( "Debug", { 12.0f, 3.0f }, Colors::make_gray( 0.9f ) );
+			r2d->DrawString( "Debug", { 12.0f, 3.0f }, colors::gray( 0.9f ) );
 
 			offsetY = rect.top() + 20.0f;
 

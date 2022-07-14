@@ -30,7 +30,7 @@
 
 #pragma once
 #include <Fission/Base/String.hpp>
-#include <Fission/Base/Color.h>
+#include <Fission/Base/Color.hpp>
 
 #include <optional>
 #include <mutex>
@@ -40,19 +40,19 @@
 #endif
 
 #ifndef FISSION_CONSOLE_ERROR_COLOR
-#define FISSION_CONSOLE_ERROR_COLOR Fission::Colors::Red
+#define FISSION_CONSOLE_ERROR_COLOR Fission::colors::Red
 #endif
 
 #ifndef FISSION_CONSOLE_WARNING_COLOR
-#define FISSION_CONSOLE_WARNING_COLOR Fission::Colors::Yellow
+#define FISSION_CONSOLE_WARNING_COLOR Fission::colors::Yellow
 #endif
 
 #ifndef FISSION_CONSOLE_INFO_COLOR
-#define FISSION_CONSOLE_INFO_COLOR Fission::Colors::LightGray
+#define FISSION_CONSOLE_INFO_COLOR Fission::colors::LightGray
 #endif
 
 #ifndef FISSION_CONSOLE_DEFAULT_COLOR
-#define FISSION_CONSOLE_DEFAULT_COLOR Fission::Colors::LightGray
+#define FISSION_CONSOLE_DEFAULT_COLOR Fission::colors::LightGray
 #endif
 
 namespace Fission
@@ -124,11 +124,11 @@ namespace Fission
 
 
 	template <size_t _Size>
-	static colored_string operator/( const char( &_Buffer )[_Size], const Colors::KnownColor& _Color )
+	static colored_string operator/( const char( &_Buffer )[_Size], colors::known const& _Color )
 	{
 		return colored_string( string( _Buffer, _Size - 1u ), _Color );
 	}
-	static colored_string operator/( const string& _String, const Colors::KnownColor& _Color )
+	static colored_string operator/( const string& _String, colors::known const& _Color )
 	{
 		return colored_string( _String, _Color );
 	}

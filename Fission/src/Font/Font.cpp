@@ -130,7 +130,7 @@ namespace Fission {
 
 		Surface::CreateInfo surf_info;
 		surf_info.size = { 1024, 256 };
-		surf_info.fillColor = color{0.0f};
+		surf_info.fillColor = color{};
 		auto pSurface = Surface::Create( surf_info );
 
 		Node root;
@@ -154,7 +154,7 @@ namespace Fission {
 			pSurface->insert(
 				node->rc.left(), node->rc.top(),
 				[&] ( int x, int y ) -> color {
-					return rgba_color8( 255, 255, 255, bitmap.buffer[y * bitmap.width + x] );
+					return rgba8( 255, 255, 255, bitmap.buffer[y * bitmap.width + x] );
 				},
 				size2{ (int)bitmap.width, (int)bitmap.rows }
 			);

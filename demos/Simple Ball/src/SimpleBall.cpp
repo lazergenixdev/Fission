@@ -27,25 +27,25 @@ public:
 		if( pos.y + radius >= 720.0f )
 			pos.y = 720.0f - radius,
 			velocity.y =- velocity.y,
-			color = Fission::hsv_colorf( dist(rng), 1.0f, 1.0f );
+			color = static_cast<Fission::rgb>( Fission::hsv( dist(rng), 1.0f, 1.0f ) );
 		else if( pos.y - radius <= 0.0f )
 			pos.y = radius,
 			velocity.y =- velocity.y,
-			color = Fission::hsv_colorf( dist(rng), 1.0f, 1.0f );
+			color = static_cast<Fission::rgb>( Fission::hsv( dist(rng), 1.0f, 1.0f ) );
 
 		// Collide with the left and right
 		if( pos.x + radius >= 1280.0f )
 			pos.x = 1280.0f - radius,
 			velocity.x =- velocity.x,
-			color = Fission::hsv_colorf( dist(rng), 1.0f, 1.0f );
+			color = static_cast<Fission::rgb>( Fission::hsv( dist(rng), 1.0f, 1.0f ) );
 		else if( pos.x - radius <= 0.0f )
 			pos.x = radius,
 			velocity.x =- velocity.x,
-			color = Fission::hsv_colorf( dist(rng), 1.0f, 1.0f );
+			color = static_cast<Fission::rgb>( Fission::hsv( dist(rng), 1.0f, 1.0f ) );
 
 		// Draw the circle to the screen
-		renderer2d->DrawCircle( pos, radius, {0.0f}, Fission::color( color, 0.5f ), 20.0f, Fission::StrokeStyle::Inside ); // inner glow
-		renderer2d->DrawCircle( pos, radius, Fission::color( color, 0.5f ), {0.0f}, 20.0f, Fission::StrokeStyle::Outside ); // outer glow
+		renderer2d->DrawCircle( pos, radius, {}, Fission::color( color, 0.5f ), 20.0f, Fission::StrokeStyle::Inside ); // inner glow
+		renderer2d->DrawCircle( pos, radius, Fission::color( color, 0.5f ), {}, 20.0f, Fission::StrokeStyle::Outside ); // outer glow
 		renderer2d->DrawCircle( pos, radius, color, 5.0f, Fission::StrokeStyle::Center ); // circle
 		renderer2d->SetBlendMode( Fission::BlendMode::Add );
 		renderer2d->Render();
@@ -55,9 +55,9 @@ public:
 private:
 	Fission::v2f32 velocity = { 150.0f, 300.0f };
 	Fission::v2f32 pos      = { 100.0f, 100.0f };
-	float                   radius   = 50.0f;
-	Fission::color          color    = Fission::Colors::Red;
-	float                   count    = 0.0f;
+	float          radius   = 50.0f;
+	Fission::rgb   color    = Fission::colors::Red;
+	float          count    = 0.0f;
 	Fission::IFRenderer2D * renderer2d;
 };
 

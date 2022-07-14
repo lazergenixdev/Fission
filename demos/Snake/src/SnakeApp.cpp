@@ -52,14 +52,14 @@ void SnakeApp::OnStartUp( CreateInfo * info )
 	);
 
 	Fission::Console::WriteLine(
-		"r"/Colors::Red
-	  + "a"/Colors::Orange
-	  + "i"/Colors::Yellow
-	  + "n"/Colors::Lime
-	  + "b"/Colors::DodgerBlue
-	  + "o"/Colors::Indigo
-	  + "w"/Colors::Violet
-	  + " Console!"/Colors::White
+		"r"/colors::Red
+	  + "a"/colors::Orange
+	  + "i"/colors::Yellow
+	  + "n"/colors::Lime
+	  + "b"/colors::DodgerBlue
+	  + "o"/colors::Indigo
+	  + "w"/colors::Violet
+	  + " Console!"/colors::White
 	);
 }
 

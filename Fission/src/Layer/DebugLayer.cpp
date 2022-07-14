@@ -129,15 +129,15 @@ void DebugLayerImpl::OnUpdate(timestep dt) {
 
 		auto tl = pRenderer2D->CreateTextLayout( _DEBUG_LAYER );
 		pRenderer2D->FillRect( { m_width - tl.width, m_width, 0.0f, tl.height }, c );
-		pRenderer2D->DrawString( _DEBUG_LAYER, { m_width - tl.width, 0.0f }, Colors::White );
-	//	pRenderer2D->DrawString( L"(F3)", { tl.width + 4.0f, offsety }, color( Colors::White, 0.5f ) );
+		pRenderer2D->DrawString( _DEBUG_LAYER, { m_width - tl.width, 0.0f }, colors::White );
+	//	pRenderer2D->DrawString( L"(F3)", { tl.width + 4.0f, offsety }, color( colors::White, 0.5f ) );
 		offsety += tl.height;
 
 		{ // Platform
 			tl = pRenderer2D->CreateTextLayout( System::GetVersionString() );
 			v2f32 pos = { m_width - tl.width, offsety };
 			pRenderer2D->FillRect( { m_width - tl.width, m_width, offsety, offsety + tl.height }, c );
-			pRenderer2D->DrawString( System::GetVersionString(), pos, Colors::White );
+			pRenderer2D->DrawString( System::GetVersionString(), pos, colors::White );
 			offsety += tl.height;
 		}
 
@@ -147,7 +147,7 @@ void DebugLayerImpl::OnUpdate(timestep dt) {
 			tl = pRenderer2D->CreateTextLayout( cpu_name.c_str() );
 			v2f32 pos = { m_width - tl.width, offsety };
 			pRenderer2D->FillRect( { m_width - tl.width, m_width, offsety, offsety + tl.height }, c );
-			pRenderer2D->DrawString( cpu_name.c_str(), pos, Colors::White );
+			pRenderer2D->DrawString( cpu_name.c_str(), pos, colors::White );
 			offsety += tl.height;
 		}
 
@@ -155,7 +155,7 @@ void DebugLayerImpl::OnUpdate(timestep dt) {
 		//	tl = pRenderer2D->CreateTextLayout( memory_str.c_str() );
 		//	v2f32 pos = { m_width - tl.width, offsety };
 		//	pRenderer2D->FillRect( rf32::from_topleft( pos, tl.width, tl.height ), c );
-		//	pRenderer2D->DrawString( memory_str.c_str(), pos, Colors::White );
+		//	pRenderer2D->DrawString( memory_str.c_str(), pos, colors::White );
 		//	offsety += tl.height;
 		//}
 		 
@@ -163,7 +163,7 @@ void DebugLayerImpl::OnUpdate(timestep dt) {
 			tl = pRenderer2D->CreateTextLayout( gpu_name.c_str() );
 			v2f32 pos = { m_width - tl.width, offsety };
 			pRenderer2D->FillRect( { m_width - tl.width, m_width, offsety, offsety + tl.height }, c );
-			pRenderer2D->DrawString( gpu_name.c_str(), pos, Colors::White );
+			pRenderer2D->DrawString( gpu_name.c_str(), pos, colors::White );
 			offsety += tl.height;
 		}
 
@@ -172,13 +172,13 @@ void DebugLayerImpl::OnUpdate(timestep dt) {
 		// App Version
 		tl = pRenderer2D->CreateTextLayout( m_AppVersionString.c_str() );
 		pRenderer2D->FillRect( rf32( 0.0f, tl.width, offsety, offsety + tl.height ), c );
-		pRenderer2D->DrawString( m_AppVersionString.c_str(), { 0.0f, offsety }, Colors::White );
+		pRenderer2D->DrawString( m_AppVersionString.c_str(), { 0.0f, offsety }, colors::White );
 		offsety += tl.height;
 
 		// FPS
 		tl = pRenderer2D->CreateTextLayout( sFPS );
 		pRenderer2D->FillRect( rf32( 0.0f, tl.width, offsety, offsety + tl.height ), c );
-		pRenderer2D->DrawString( sFPS, { 0.0f, offsety }, Colors::White );
+		pRenderer2D->DrawString( sFPS, { 0.0f, offsety }, colors::White );
 		offsety += tl.height;
 
 		for( auto && text : m_UserInfo )
@@ -186,7 +186,7 @@ void DebugLayerImpl::OnUpdate(timestep dt) {
 			auto tl = pRenderer2D->CreateTextLayout( text.c_str() );
 
 			pRenderer2D->FillRect( rf32( 0.0f, tl.width, offsety, offsety + tl.height ), c );
-			pRenderer2D->DrawString( text.c_str(), { 0.0f, offsety }, Colors::White );
+			pRenderer2D->DrawString( text.c_str(), { 0.0f, offsety }, colors::White );
 
 			offsety += tl.height;
 		}

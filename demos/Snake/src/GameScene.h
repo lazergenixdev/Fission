@@ -40,7 +40,7 @@ public:
 					);
 				}
 		
-		r2d->DrawRect( rect, Fission::Colors::White, 2.0f, Fission::StrokeStyle::Inside );
+		r2d->DrawRect( rect, Fission::colors::White, 2.0f, Fission::StrokeStyle::Inside );
 	}
 
 	void DrawTile( Fission::IFRenderer2D * r2d, v2i location, Fission::color col )
@@ -78,9 +78,9 @@ public:
 
 	void Draw( Fission::IFRenderer2D * r2d, Field* field )
 	{
-		static constexpr Fission::color dead_color = Fission::Colors::Green;
-		static constexpr auto color = Fission::hsva_colorf( Fission::rgb_colorf(Fission::Colors::LimeGreen) );
-		static constexpr auto color2 = Fission::hsva_colorf( Fission::rgb_colorf(Fission::Colors::Teal) );
+		static constexpr Fission::color dead_color = Fission::colors::Green;
+		static constexpr auto color = Fission::hsva( Fission::rgb(Fission::colors::LimeGreen) );
+		static constexpr auto color2 = Fission::hsva( Fission::rgb(Fission::colors::Teal) );
 
 		static constexpr float factor = (color2.h - color.h) / 50.0f;
 
@@ -178,7 +178,7 @@ public:
 		static bool drawtiles = true;
 		Fission::UI::Debug::CheckBox( "Draw All Tiles", &drawtiles );
 
-		field.DrawTile( m_pRenderer2D, food_pos, Fission::Colors::Red );
+		field.DrawTile( m_pRenderer2D, food_pos, Fission::colors::Red );
 
 		snek.Draw( m_pRenderer2D, &field );
 		field.Draw( m_pRenderer2D, drawtiles );

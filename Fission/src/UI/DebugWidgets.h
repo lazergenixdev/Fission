@@ -106,7 +106,7 @@ namespace Fission
 		virtual void OnUpdate( timestep dt, float * offsetY, const WindowContext * ctx ) override
 		{
 
-			auto tl = ctx->r2d->DrawString( label.c_str(), {g_DebugStyle.LeftPadding+g_DebugStyle.LeftTextBoxPadding, *offsetY + g_DebugStyle.VerticalPadding}, Colors::make_gray(0.8f) );
+			auto tl = ctx->r2d->DrawString( label.c_str(), {g_DebugStyle.LeftPadding+g_DebugStyle.LeftTextBoxPadding, *offsetY + g_DebugStyle.VerticalPadding}, colors::gray(0.8f) );
 
 			rf32 rect = { 
 				g_DebugStyle.LeftPadding, ctx->rect.right() - g_DebugStyle.RightPadding, 
@@ -117,7 +117,7 @@ namespace Fission
 			rect.x.low += g_DebugStyle.MaximumLabelWidth;
 			Rect = ri32( rect );
 
-			ctx->r2d->FillRect( rect, Colors::make_gray<rgb_color8>( 33 ) );
+			ctx->r2d->FillRect( rect, colors::known(0x212121FF) );
 
 
 			if( parent->GetHover() == this )
@@ -126,21 +126,21 @@ namespace Fission
 			highlight += ( 0.0f - highlight ) * 2.5f * dt;
 
 			if( highlight != 0.0f )
-			ctx->r2d->DrawRect( rect.expanded(-0.5f), Colors::make_gray(highlight*0.5f,highlight), 1.0f );
+			ctx->r2d->DrawRect( rect.expanded(-0.5f), colors::gray(highlight*0.5f,highlight), 1.0f );
 
 			if( typing )
-				tl = ctx->r2d->DrawString( temp_value_str.c_str(), rect.topLeft() + v2f32(g_DebugStyle.LeftTextBoxPadding,0.0f), Colors::make_gray(0.8f) );
+				tl = ctx->r2d->DrawString( temp_value_str.c_str(), rect.topLeft() + v2f32(g_DebugStyle.LeftTextBoxPadding,0.0f), colors::gray(0.8f) );
 			else
 			{
 				char text[100];
 				sprintf( text, fmt, internal_value );
-				tl = ctx->r2d->DrawString( text, rect.topLeft() + v2f32(g_DebugStyle.LeftTextBoxPadding,0.0f), Colors::make_gray(0.8f) );
+				tl = ctx->r2d->DrawString( text, rect.topLeft() + v2f32(g_DebugStyle.LeftTextBoxPadding,0.0f), colors::gray(0.8f) );
 			}
 
 			if( typing )
 			{
 				ctx->r2d->DrawRect( rect, color(0.8f,0.9f,1.0f, 0.2f), 2.0f );
-				ctx->r2d->FillRect( { rect.left() + tl.width + 2.0f, rect.left() + tl.width + 3.0f, rect.top()+2.0f, rect.bottom()-2.0f }, Colors::White );
+				ctx->r2d->FillRect( { rect.left() + tl.width + 2.0f, rect.left() + tl.width + 3.0f, rect.top()+2.0f, rect.bottom()-2.0f }, colors::White );
 			}
 
 
@@ -279,7 +279,7 @@ namespace Fission
 		virtual void OnUpdate( timestep dt, float * offsetY, const WindowContext * ctx ) override
 		{
 
-			auto tl = ctx->r2d->DrawString( label.c_str(), { g_DebugStyle.LeftPadding + g_DebugStyle.LeftTextBoxPadding, *offsetY + g_DebugStyle.VerticalPadding }, Colors::make_gray( 0.8f ) );
+			auto tl = ctx->r2d->DrawString( label.c_str(), { g_DebugStyle.LeftPadding + g_DebugStyle.LeftTextBoxPadding, *offsetY + g_DebugStyle.VerticalPadding }, colors::gray( 0.8f ) );
 
 			rf32 rect = {
 				g_DebugStyle.LeftPadding, ctx->rect.right() - g_DebugStyle.RightPadding,
@@ -290,7 +290,7 @@ namespace Fission
 			rect.x.low += g_DebugStyle.MaximumLabelWidth;
 			Rect = ri32( rect );
 
-			ctx->r2d->FillRect( rect, Colors::make_gray<rgb_color8>( 33 ) );
+			ctx->r2d->FillRect( rect, (colors::known)0x212121FF );
 
 
 			if( parent->GetHover() == this )
@@ -299,21 +299,21 @@ namespace Fission
 				highlight += ( 0.0f - highlight ) * 2.5f * dt;
 
 			if( highlight != 0.0f )
-				ctx->r2d->DrawRect( rect.expanded( -0.5f ), Colors::make_gray( highlight * 0.5f, highlight ), 1.0f );
+				ctx->r2d->DrawRect( rect.expanded( -0.5f ), colors::gray( highlight * 0.5f, highlight ), 1.0f );
 
 			if( typing )
-				tl = ctx->r2d->DrawString( temp_value_str.c_str(), rect.topLeft() + v2f32( g_DebugStyle.LeftTextBoxPadding, 0.0f ), Colors::make_gray( 0.8f ) );
+				tl = ctx->r2d->DrawString( temp_value_str.c_str(), rect.topLeft() + v2f32( g_DebugStyle.LeftTextBoxPadding, 0.0f ), colors::gray( 0.8f ) );
 			else
 			{
 				char text[100];
 				sprintf( text, fmt, internal_value );
-				tl = ctx->r2d->DrawString( text, rect.topLeft() + v2f32( g_DebugStyle.LeftTextBoxPadding, 0.0f ), Colors::make_gray( 0.8f ) );
+				tl = ctx->r2d->DrawString( text, rect.topLeft() + v2f32( g_DebugStyle.LeftTextBoxPadding, 0.0f ), colors::gray( 0.8f ) );
 			}
 
 			if( typing )
 			{
 				ctx->r2d->DrawRect( rect, color( 0.8f, 0.9f, 1.0f, 0.2f ), 2.0f );
-				ctx->r2d->FillRect( { rect.left() + tl.width + 2.0f, rect.left() + tl.width + 3.0f, rect.top() + 2.0f, rect.bottom() - 2.0f }, Colors::White );
+				ctx->r2d->FillRect( { rect.left() + tl.width + 2.0f, rect.left() + tl.width + 3.0f, rect.top() + 2.0f, rect.bottom() - 2.0f }, colors::White );
 			}
 
 			*offsetY += g_DebugStyle.VerticalPadding + tl.height;
@@ -396,7 +396,7 @@ namespace Fission
 
 		virtual void OnUpdate( timestep dt, float * offsetY, const WindowContext * ctx ) override
 		{
-			auto tl = ctx->r2d->DrawString( label.c_str(), { g_DebugStyle.LeftPadding + g_DebugStyle.LeftTextBoxPadding, *offsetY + g_DebugStyle.VerticalPadding }, Colors::make_gray( 0.8f ) );
+			auto tl = ctx->r2d->DrawString( label.c_str(), { g_DebugStyle.LeftPadding + g_DebugStyle.LeftTextBoxPadding, *offsetY + g_DebugStyle.VerticalPadding }, colors::gray( 0.8f ) );
 			*offsetY += g_DebugStyle.VerticalPadding + tl.height;
 		}
 
@@ -437,13 +437,13 @@ namespace Fission
 			Rect = ri32( rect );
 
 			if( down )
-			ctx->r2d->FillRect( rect, Colors::make_gray<rgb_color8>( 88 ) );
+			ctx->r2d->FillRect( rect, (colors::known)0x585858FF );
 			else
-			ctx->r2d->FillRect( rect, Colors::make_gray<rgb_color8>( 66 ) );
+			ctx->r2d->FillRect( rect, (colors::known)0x424242FF );
 
-			ctx->r2d->DrawRect( rect.expanded( -0.5f ), Colors::make_gray( highlight * 0.5f, highlight ), 1.0f );
+			ctx->r2d->DrawRect( rect.expanded( -0.5f ), colors::gray( highlight * 0.5f, highlight ), 1.0f );
 
-			ctx->r2d->DrawString( label.c_str(), pos+v2f32::from1(g_DebugStyle.FramePadding), Colors::make_gray( 0.8f ) );
+			ctx->r2d->DrawString( label.c_str(), pos+v2f32::from1(g_DebugStyle.FramePadding), colors::gray( 0.8f ) );
 
 			*offsetY += g_DebugStyle.VerticalPadding * 2.0f + tl.height;
 		}
@@ -512,7 +512,7 @@ namespace Fission
 		virtual void OnUpdate( timestep dt, float * offsetY, const WindowContext * ctx ) override
 		{
 
-			auto tl = ctx->r2d->DrawString( label.c_str(), { g_DebugStyle.LeftPadding + g_DebugStyle.LeftTextBoxPadding, *offsetY + g_DebugStyle.VerticalPadding }, Colors::make_gray( 0.8f ) );
+			auto tl = ctx->r2d->DrawString( label.c_str(), { g_DebugStyle.LeftPadding + g_DebugStyle.LeftTextBoxPadding, *offsetY + g_DebugStyle.VerticalPadding }, colors::gray( 0.8f ) );
 
 			rf32 rect = {
 				g_DebugStyle.LeftPadding, g_DebugStyle.LeftPadding + tl.height,
@@ -524,7 +524,7 @@ namespace Fission
 			rect.x.high += g_DebugStyle.MaximumLabelWidth;
 			Rect = ri32( rect );
 
-			ctx->r2d->FillRect( rect, down ? Colors::make_gray<rgb_color8>( 57 ) : Colors::make_gray<rgb_color8>( 33 ) );
+			ctx->r2d->FillRect( rect, down ? (colors::known)0x393939FF : (colors::known)0x212121FF );
 
 
 			if( parent->GetHover() == this )
@@ -533,21 +533,21 @@ namespace Fission
 				highlight += ( 0.0f - highlight ) * 2.5f * dt;
 
 			if( highlight != 0.0f )
-				ctx->r2d->DrawRect( rect.expanded( -0.5f ), Colors::make_gray( highlight * 0.5f, highlight ), 1.0f );
+				ctx->r2d->DrawRect( rect.expanded( -0.5f ), colors::gray( highlight * 0.5f, highlight ), 1.0f );
 
 			//if( typing )
-			//	tl = ctx->r2d->DrawString( temp_value_str.c_str(), rect.topLeft() + v2f32( g_DebugStyle.LeftTextBoxPadding, 0.0f ), Colors::make_gray( 0.8f ) );
+			//	tl = ctx->r2d->DrawString( temp_value_str.c_str(), rect.topLeft() + v2f32( g_DebugStyle.LeftTextBoxPadding, 0.0f ), colors::gray( 0.8f ) );
 			//else
 			//{
 			//	char text[100];
 			//	sprintf( text, fmt, internal_value );
-			//	tl = ctx->r2d->DrawString( text, rect.topLeft() + v2f32( g_DebugStyle.LeftTextBoxPadding, 0.0f ), Colors::make_gray( 0.8f ) );
+			//	tl = ctx->r2d->DrawString( text, rect.topLeft() + v2f32( g_DebugStyle.LeftTextBoxPadding, 0.0f ), colors::gray( 0.8f ) );
 			//}
 
 			//if( typing )
 			//{
 			//	ctx->r2d->DrawRect( rect, color( 0.8f, 0.9f, 1.0f, 0.2f ), 2.0f );
-			//	ctx->r2d->FillRect( { rect.left() + tl.width + 2.0f, rect.left() + tl.width + 3.0f, rect.top() + 2.0f, rect.bottom() - 2.0f }, Colors::White );
+			//	ctx->r2d->FillRect( { rect.left() + tl.width + 2.0f, rect.left() + tl.width + 3.0f, rect.top() + 2.0f, rect.bottom() - 2.0f }, colors::White );
 			//}
 
 			/////////////////////////////////////////////////////////
@@ -567,7 +567,7 @@ namespace Fission
 				mesh.push_index( 2 ); mesh.push_index( 3 ); mesh.push_index( 5 );
 				mesh.push_index( 2 ); mesh.push_index( 5 ); mesh.push_index( 4 );
 
-				mesh.push_color( Colors::White );
+				mesh.push_color( colors::White );
 
 				return mesh;
 			}( );

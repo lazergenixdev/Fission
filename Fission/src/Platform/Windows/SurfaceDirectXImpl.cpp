@@ -35,7 +35,7 @@ namespace Fission {
 		this->m_pxCount = (uint32_t)( m_Width * m_Height );
 		this->m_cbSize = (uint32_t)image->slicePitch;
 
-		m_pData = std::make_unique<rgba_color8[]>( m_pxCount );
+		m_pData = std::make_unique<rgba8[]>( m_pxCount );
 		memcpy( m_pData.get(), image->pixels, m_cbSize );
 
 		return true;
@@ -51,7 +51,7 @@ namespace Fission {
 		image.format = DXGI_FORMAT_R8G8B8A8_UNORM;
 		image.width = (size_t)m_Width;
 		image.height = (size_t)m_Height;
-		image.rowPitch = (size_t)m_Width * sizeof( rgba_color8 );
+		image.rowPitch = (size_t)m_Width * sizeof( rgba8 );
 		image.slicePitch = (size_t)m_cbSize;
 		image.pixels = (uint8_t*)m_pData.get();
 

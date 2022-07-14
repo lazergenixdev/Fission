@@ -63,7 +63,7 @@ namespace Fission {
 
 		RegisterCommand( "help",
 			[]( const string & s ) {
-				Console::WriteLine( "There shall be NO help! >:)" / Colors::White );
+				Console::WriteLine( "There shall be NO help! >:)" / colors::White );
 			}
 		);
 
@@ -75,7 +75,7 @@ namespace Fission {
 
 		RegisterCommand( "msg",
 			[]( const string& s ) {
-				Console::WriteLine( s / Colors::White );
+				Console::WriteLine( s / colors::White );
 			}
 		);
 	}
@@ -133,7 +133,7 @@ namespace Fission {
 		auto itt = m_CommandMap.find( name );
 		if( itt == m_CommandMap.end() )
 		{
-			WriteLine( string("Unknown command: '" + name + "'") / Colors::PaleVioletRed );
+			WriteLine( string("Unknown command: '" + name + "'") / colors::PaleVioletRed );
 			return;
 		}
 

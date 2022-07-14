@@ -87,7 +87,7 @@ namespace Fission
 
 		virtual void FillTriangleGrad( v2f32 p0, v2f32 p1, v2f32 p2, color c0, color c1, color c2 ) = 0;
 
-		virtual void FillTriangleUV( v2f32 p0, v2f32 p1, v2f32 p2, v2f32 uv0, v2f32 uv1, v2f32 uv2, Resource::IFTexture2D * pTexture, color tint = Colors::White ) = 0;
+		virtual void FillTriangleUV( v2f32 p0, v2f32 p1, v2f32 p2, v2f32 uv0, v2f32 uv1, v2f32 uv2, Resource::IFTexture2D * pTexture, color tint = colors::White ) = 0;
 
 		virtual void FillRectGrad( rf32 rect, color color_topleft, color color_topright, color color_bottomleft, color color_bottomright ) = 0;
 
@@ -105,9 +105,9 @@ namespace Fission
 
 		virtual void FillArrow( v2f32 start, v2f32 end, float width, color color ) = 0;
 
-		virtual void DrawImage( Resource::IFTexture2D * pTexture, rf32 rect, rf32 uv, color tint = Colors::White ) = 0;
+		virtual void DrawImage( Resource::IFTexture2D * pTexture, rf32 rect, rf32 uv, color tint = colors::White ) = 0;
 
-		virtual void DrawImage( Resource::IFTexture2D * pTexture, rf32 rect, color tint = Colors::White ) = 0;
+		virtual void DrawImage( Resource::IFTexture2D * pTexture, rf32 rect, color tint = colors::White ) = 0;
 
 		virtual void DrawMesh( const Mesh * m ) = 0;
 

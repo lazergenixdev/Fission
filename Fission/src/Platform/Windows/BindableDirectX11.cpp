@@ -347,7 +347,7 @@ namespace Fission::Platform {
 			m_Height = bd.Height = info.pSurface->height();
 			D3D11_SUBRESOURCE_DATA srd = {};
 			srd.pSysMem = info.pSurface->data();
-			srd.SysMemPitch = info.pSurface->width() * sizeof rgba_color8;
+			srd.SysMemPitch = info.pSurface->width() * sizeof rgba8;
 			srd.SysMemSlicePitch = (UINT)info.pSurface->byte_size();
 			pDevice->CreateTexture2D( &bd, &srd, &m_pTexture );
 		}

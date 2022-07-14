@@ -34,9 +34,9 @@ namespace Fission {
 			extend += ( 200.0f - extend ) * dt * extend_rate;
 
 			// Draw Background
-			m_pRenderer2D->FillRectGrad( rf32( 0.0f, m_width, 0.0f, extend ), Colors::Black, Colors::Black, color( 0.7f ), color( 0.7f ) );
-			m_pRenderer2D->FillRect( rf32( 0.0f, m_width, extend - m_FontSize - m_BottomPadding * 3.0f, extend ), Colors::make_gray( 0.11f, 0.5f ) );
-			m_pRenderer2D->FillRect( rf32( 0.0f, m_width, extend - 1.0f, extend + 1.0f ), Colors::White );
+			m_pRenderer2D->FillRectGrad( rf32( 0.0f, m_width, 0.0f, extend ), colors::Black, colors::Black, color( {}, 0.7f ), color( {}, 0.7f ) );
+			m_pRenderer2D->FillRect( rf32( 0.0f, m_width, extend - m_FontSize - m_BottomPadding * 3.0f, extend ), colors::gray( 0.11f, 0.5f ) );
+			m_pRenderer2D->FillRect( rf32( 0.0f, m_width, extend - 1.0f, extend + 1.0f ), colors::White );
 
 			// Draw Console Buffer
 			float top = extend - m_FontSize * 2.0f - m_BottomPadding;
@@ -45,7 +45,7 @@ namespace Fission {
 			int maxIndex = Console::GetLineCount() - 1;
 			lineOffset = std::min( lineOffset, (uint32_t)maxIndex );
 
-		//	m_pRenderer2D->FillRect( base::rectf( 0.0f, m_width, top, top + 1.0f ), Colors::White ); //debug
+		//	m_pRenderer2D->FillRect( base::rectf( 0.0f, m_width, top, top + 1.0f ), colors::White ); //debug
 
 			int numLinesVisible = 0;
 			float start = top;
@@ -100,7 +100,7 @@ namespace Fission {
 
 				for( int i = 0; i < 20; i++ )
 				{
-					m_pRenderer2D->DrawString( "^", v2f32( offset, extend - m_FontSize * 2.0f - m_BottomPadding ), Colors::White );
+					m_pRenderer2D->DrawString( "^", v2f32( offset, extend - m_FontSize * 2.0f - m_BottomPadding ), colors::White );
 					offset += space;
 				}
 			}
@@ -108,10 +108,10 @@ namespace Fission {
 
 			constexpr const char * s_DefText = "Enter a command . . .";
 
-			auto tl = m_pRenderer2D->DrawString( "$ ", v2f32(m_LeftPadding, extend - m_FontSize - m_BottomPadding - 1.0f), Colors::White );
+			auto tl = m_pRenderer2D->DrawString( "$ ", v2f32(m_LeftPadding, extend - m_FontSize - m_BottomPadding - 1.0f), colors::White );
 
 			if( m_CommandText.empty() ) {
-				m_pRenderer2D->DrawString( s_DefText, v2f32( 8.0f + tl.width, extend - m_FontSize - m_BottomPadding - 1.0f ), Colors::Gray );
+				m_pRenderer2D->DrawString( s_DefText, v2f32( 8.0f + tl.width, extend - m_FontSize - m_BottomPadding - 1.0f ), colors::Gray );
 			} else {
 				m_BlinkPosition += 1.5f * dt;
 				if( m_BlinkPosition >= 2.0f )
@@ -121,10 +121,10 @@ namespace Fission {
 				{
 					auto cmd_tl = m_pRenderer2D->CreateTextLayout( m_CommandText.c_str(), m_CursorPosition );
 					auto left = 9.0f + tl.width + cmd_tl.width;
-					m_pRenderer2D->FillRect( rf32( left, 1.0f + left, extend - m_FontSize - m_BottomPadding - 1.0f, extend - m_BottomPadding - 1.0f ), Colors::White );
+					m_pRenderer2D->FillRect( rf32( left, 1.0f + left, extend - m_FontSize - m_BottomPadding - 1.0f, extend - m_BottomPadding - 1.0f ), colors::White );
 				}
 
-				m_pRenderer2D->DrawString( m_CommandText.c_str(), v2f32( 8.0f + tl.width, extend - m_FontSize - m_BottomPadding - 1.0f ), Colors::White );
+				m_pRenderer2D->DrawString( m_CommandText.c_str(), v2f32( 8.0f + tl.width, extend - m_FontSize - m_BottomPadding - 1.0f ), colors::White );
 			}
 
 			m_pRenderer2D->Render();

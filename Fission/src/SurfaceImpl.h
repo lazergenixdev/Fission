@@ -31,14 +31,14 @@ namespace Fission
 		virtual int width() const override;
 		virtual int height() const override;
 		virtual size2 size() const override;
-		virtual base::size_t byte_size() const override;
-		virtual base::size_t pixel_count() const override;
+		virtual u64 byte_size() const override;
+		virtual u64 pixel_count() const override;
 		virtual bool empty() const override;
 
 	private:
 		uint32_t m_Width = 0,   m_Height = 0, 
 		         m_pxCount = 0, m_cbSize = 0;
-		std::unique_ptr<rgba_color8[]> m_pData;
+		std::unique_ptr<rgba8[]> m_pData;
 	};
 
 }

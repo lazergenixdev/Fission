@@ -861,7 +861,7 @@ bool surface_map::build( BuildFlags flags )
 
 	{
 		Surface::CreateInfo info;
-		info.fillColor = color{0.0f};
+		info.fillColor = color{};
 		info.size = m_MaxSize;
 		m_Surface = Surface::Create( info );
 	}

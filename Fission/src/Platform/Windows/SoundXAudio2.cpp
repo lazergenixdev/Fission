@@ -44,7 +44,7 @@ SoundEngineXAudio2::SoundEngineXAudio2( const CreateInfo & info )
 	if( FAILED(hr = m_pXAudio2Engine->StartEngine() ) )
 		FISSION_THROW( "XAudio2 Exception", .append( "Failed to start audio processing thread." ) );
 
-//	Console::WriteLine( Colors::Blanchedalmond, "Using XAudio2" );
+//	Console::WriteLine( colors::Blanchedalmond, "Using XAudio2" );
 }
 
 ref<Fission::ISound> SoundEngineXAudio2::CreateSound( const std::filesystem::path & filepath )
@@ -257,7 +257,7 @@ LoadSoundResult LoadSoundDataFromFile( const std::filesystem::path & filepath, S
 	Console::WriteLine(
 		"Reading Sound File: %s"_format(
 			filepath.string().c_str()
-		) / Colors::LightSeaGreen
+		) / colors::LightSeaGreen
 	);
 
 	hr = MFCreateSourceReaderFromURL( filepath.c_str(), NULL, &pReader );
@@ -314,7 +314,7 @@ LoadSoundResult LoadSoundDataFromFile( const std::filesystem::path & filepath, S
 			pWav->nChannels,
 			pWav->wBitsPerSample,
 			pWav->nSamplesPerSec
-		)/Colors::LightSeaGreen
+		)/colors::LightSeaGreen
 	);
 
 	DWORD cbBuffer = 0;

@@ -26,8 +26,8 @@ namespace Fission
 		CreateWindowManager(&m_pWindowManager);
 		m_pWindowManager->Initialize();
 
-		Console::WriteLine( string{GetVersionString()} / Colors::LightSteelBlue );
-		Console::WriteLine( "cmdline: " / Colors::White + string{GetCommandLineA()} / Colors::DimGray );
+		Console::WriteLine( string{GetVersionString()} / colors::LightSteelBlue );
+		Console::WriteLine( "cmdline: " / colors::White + string{GetCommandLineA()} / colors::DimGray );
 	}
 
 	version FissionEngine::GetVersion()
@@ -165,7 +165,7 @@ namespace Fission
 
 		Console::RegisterCommand( "exit", [=]( const string & ) { m_pWindow->Close(); } );
 
-		Console::RegisterCommand("ver", [=](const string&) { Console::WriteLine(FISSION_VERSION_STRV / Colors::White); });
+		Console::RegisterCommand("ver", [=](const string&) { Console::WriteLine(FISSION_VERSION_STRV / colors::White); });
 
 		Console::RegisterCommand( "vsync", 
 			[&] ( string in ) {
@@ -187,7 +187,7 @@ namespace Fission
 		);
 
 		// sus
-		Console::RegisterCommand( "sus", [=]( const string & ) { Console::WriteLine(string("amogus ded")/Colors::MedAquamarine); });
+		Console::RegisterCommand( "sus", [=]( const string & ) { Console::WriteLine(string("amogus ded")/colors::MediumAquamarine); });
 
 		// Now everything should be initialized, we call OnCreate
 		//  for our application and all of its dependencies:

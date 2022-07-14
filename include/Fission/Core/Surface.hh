@@ -33,7 +33,7 @@
 #include <Fission/Core/Serializable.hh>
 #include <Fission/Core/Object.hh>
 #include <Fission/Base/util/SmartPointer.hpp>
-#include <Fission/Base/Color.h>
+#include <Fission/Base/Color.hpp>
 #include <Fission/Base/Rect.hpp>
 #include <functional>
 
@@ -82,7 +82,7 @@ namespace Fission
 		virtual void insert( int _X, int _Y, const Surface * _Source, std::optional<ri32> _Source_Rect = {} ) = 0;
 
 		// shrink the surface if there is any 'clear_color' on any side
-		virtual void shrink_to_fit( color _Clear_Color = color{0.0f} ) = 0;
+		virtual void shrink_to_fit( color _Clear_Color = {} ) = 0;
 
 		virtual Texture::Format format() const = 0;
 
@@ -94,8 +94,8 @@ namespace Fission
 
 		virtual size2 size() const = 0;
 
-		virtual base::size_t byte_size() const = 0;
-		virtual base::size_t pixel_count() const = 0;
+		virtual u64 byte_size() const = 0;
+		virtual u64 pixel_count() const = 0;
 
 		virtual bool empty() const = 0;
 

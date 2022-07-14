@@ -56,15 +56,15 @@ public:
 		auto rect = Fission::rf32{ pos.x, pos.x + size.x, pos.y, pos.y + size.y };
 
 		if( parent->GetHover() == this )
-		g_r2d->FillRoundRect( rect, 10.0f, Fission::Colors::CadetBlue );
+		g_r2d->FillRoundRect( rect, 10.0f, Fission::colors::CadetBlue );
 		else
-		g_r2d->FillRoundRect( rect, 10.0f, Fission::color(Fission::Colors::CadetBlue,0.5f) );
+		g_r2d->FillRoundRect( rect, 10.0f, Fission::color(Fission::colors::CadetBlue,0.5f) );
 
-		g_r2d->DrawRoundRect( rect, 10.0f, Fission::color(Fission::Colors::White,0.5f), 1.0f );
+		g_r2d->DrawRoundRect( rect, 10.0f, Fission::color(Fission::colors::White,0.5f), 1.0f );
 
 		auto tl = g_r2d->CreateTextLayout( label.c_str() );
 		auto start = Fission::v2f32{ ( rect.x.distance() - tl.width ) * 0.5f,( rect.y.distance() - tl.height ) * 0.5f } + pos;
-		g_r2d->DrawString( label.c_str(), start, Fission::Colors::White );
+		g_r2d->DrawString( label.c_str(), start, Fission::colors::White );
 	}
 
 };
@@ -93,9 +93,9 @@ struct Meter
 
 	void draw( Fission::IFRenderer2D *r2d )
 	{
-		r2d->FillRect( rf32{ x, x+10.0f, 300.0f, 600.0f }, Fission::Colors::make_gray(0.04f) );
-		r2d->FillRect( rf32{ x, x+10.0f, 600.0f - val, 600.0f }, Fission::Colors::White );
-		r2d->FillRect( rf32{ x, x+10.0f, 594.0f - bar, 597.0f - bar }, Fission::Colors::White );
+		r2d->FillRect( rf32{ x, x+10.0f, 300.0f, 600.0f }, Fission::colors::gray(0.04f) );
+		r2d->FillRect( rf32{ x, x+10.0f, 600.0f - val, 600.0f }, Fission::colors::White );
+		r2d->FillRect( rf32{ x, x+10.0f, 594.0f - bar, 597.0f - bar }, Fission::colors::White );
 	}
 
 	float bar_damping = 0.3f;
@@ -141,7 +141,7 @@ public:
 
 		if( show )
 		{
-			m_pRenderer2D->DrawString( "Showing = True", { 100.0f, 200.0f }, Fission::Colors::White );
+			m_pRenderer2D->DrawString( "Showing = True", { 100.0f, 200.0f }, Fission::colors::White );
 		}
 		m_pRenderer2D->Render();
 	}

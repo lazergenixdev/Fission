@@ -32,7 +32,7 @@ namespace ui
 
 		void OnUpdate(float) override
 		{
-			using namespace Fission::Colors;
+			using namespace Fission::colors;
 			using Fission::StrokeStyle;
 
 			auto frect = Fission::rf32(rect);
