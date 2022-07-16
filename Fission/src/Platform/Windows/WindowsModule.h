@@ -35,14 +35,14 @@ namespace Fission
 		}
 
 		template <class _FnPtr>
-		inline constexpr bool LoadFunction( _FnPtr * _Out_Ptr_Function_Pointer, const char * _Function_Name ) noexcept
+		inline constexpr bool LoadFunction( _FnPtr * _Out_Ptr_Function_Pointer, const char * _Function_Name ) FISSION_NDEBUG_NOEXCEPT
 		{
 			return LoadFunction( reinterpret_cast<void**>( _Out_Ptr_Function_Pointer ), _Function_Name );
 		}
 
-		bool LoadFunction( void ** _Out_Ptr_Function_Pointer, const char * _Function_Name ) noexcept
+		bool LoadFunction( void ** _Out_Ptr_Function_Pointer, const char * _Function_Name ) FISSION_NDEBUG_NOEXCEPT
 		{
-			FISSION_ASSERT( hModule != NULL );
+			FISSION_ASSERT( hModule != NULL, "No module is loaded" );
 			return bool( *_Out_Ptr_Function_Pointer = GetProcAddress( hModule, _Function_Name ) );
 		}
 

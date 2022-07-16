@@ -1,6 +1,6 @@
 #include "SurfaceImpl.h"
-#include <Fission/Base/Exception.hpp>
 #include <Fission/Base/Math/Vector.hpp>
+#include <Fission/Base/Assert.hpp>
 
 namespace Fission {
 
@@ -15,8 +15,8 @@ namespace Fission {
 
 	SurfaceRGBA8_UNormImpl::SurfaceRGBA8_UNormImpl( const Surface::CreateInfo & info )
 	{
-		FISSION_ASSERT( info.size.w < 16384, "Texture Width too big!" );
-		FISSION_ASSERT( info.size.h < 16384, "Texture Height too big!" );
+		FISSION_ASSERT( info.size.w < 16384, "Texture width too big!" );
+		FISSION_ASSERT( info.size.h < 16384, "Texture height too big!" );
 
 		if( info.size.w > 0u && info.size.h > 0u )
 		{
@@ -47,8 +47,8 @@ namespace Fission {
 
 	void SurfaceRGBA8_UNormImpl::insert( int _X, int _Y, PixelCallback _Source, size2 _Source_Size )
 	{
-		FISSION_ASSERT( _X + _Source_Size.w <= static_cast<signed int>(m_Width) );
-		FISSION_ASSERT( _Y + _Source_Size.h <= static_cast<signed int>(m_Height) );
+		FISSION_ASSERT( _X + _Source_Size.w <= static_cast<signed int>(m_Width), "Source texture width too big!" );
+		FISSION_ASSERT( _Y + _Source_Size.h <= static_cast<signed int>(m_Height), "Source texture height too big!" );
 
 		for( int py = 0; py < _Source_Size.h; py++ )
 		{
@@ -74,8 +74,8 @@ namespace Fission {
 		else
 			size = _Source->size();
 
-		FISSION_ASSERT( _X + size.w <= static_cast<signed int>( m_Width ) );
-		FISSION_ASSERT( _Y + size.h <= static_cast<signed int>( m_Height ) );
+		FISSION_ASSERT( _X + size.w <= static_cast<signed int>(m_Width), "Source texture width too big!" );
+		FISSION_ASSERT( _Y + size.h <= static_cast<signed int>(m_Height), "Source texture height too big!" );
 
 		for( int py = start.y; py < size.h; py++ )
 		{

@@ -59,7 +59,7 @@ namespace Fission::Platform {
 
 	void VertexBufferDX11::SetData( const void * pVertexData, uint32_t vtxCount )
 	{
-		FISSION_ASSERT( m_Type == Type::Dynamic );
+		FISSION_ASSERT( m_Type == Type::Dynamic, "Cannot override static buffer." );
 
 		if( vtxCount == 0 ) return;
 
@@ -137,7 +137,7 @@ namespace Fission::Platform {
 
 	void IndexBufferDX11::SetData( const void * pIndexData, uint32_t idxCount )
 	{
-		FISSION_ASSERT( m_Type == Type::Dynamic );
+		FISSION_ASSERT( m_Type == Type::Dynamic, "Cannot override static buffer." );
 
 		if( idxCount == 0 ) return;
 

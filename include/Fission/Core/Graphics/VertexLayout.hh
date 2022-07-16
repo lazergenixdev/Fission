@@ -30,6 +30,7 @@
 
 #pragma once
 #include <Fission/Base/Buffer.hpp>
+#include <Fission/Base/Assert.hpp>
 
 namespace Fission::Resource {
 
@@ -101,7 +102,7 @@ namespace Fission::Resource {
 
 		uint32_t GetStride() { return m_Stride; }
 		const char * GetName( int i ) {
-			FISSION_ASSERT( i < (int)GetCount() );
+			FISSION_ASSERT( i < (int)GetCount(), "Invalid Index" );
 			size_t pos = 0;
 
 			// search for position of name

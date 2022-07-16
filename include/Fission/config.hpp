@@ -67,9 +67,6 @@
 #	define FISSION_BUILD_STRING ""          /* Distribution build of the engine. */
 #endif
 
-/*! @brief Functions that should be thread safe */
-#define FISSION_THREAD_SAFE
-
 #if _MSC_VER
 #	define FISSION_COMPILER_MSVC 1
 #else
@@ -83,12 +80,21 @@
 #	define FISSION_FORCE_INLINE
 #endif
 
+/* FISSION_NDEBUG_NOEXCEPT */
+#if FISSION_DEBUG
+#	define FISSION_NDEBUG_NOEXCEPT
+#else
+#	define FISSION_NDEBUG_NOEXCEPT noexcept
+#endif
+
 //\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\
 
-/**
-* convert: Bool TO String
-*/
-#define FISSION_BTOS(B) (B?("True"):("False"))
+
+/*! convert Bool to True/False */
+#define FISSION_BTF(B) (B?("True"):("False"))
+
+/*! convert Bool to Yes/No */
+#define FISSION_BYN(B) (B?("Yes"):("No"))
 
 /**
 * Important Web Address
@@ -100,14 +106,3 @@
 
 /*! @brief Functions that should be thread safe */
 #define FISSION_THREAD_SAFE
-
-/**
- * Assertions // TODO: Don't throw an exception.
- */
-#if FISSION_DEBUG && false
-#define FISSION_ASSERT( EXPRESSION, ... ) if(!(EXPRESSION)) \
-throw ::Fission::base::generic_error("Assertion Failed", \
-::Fission::base::error_message(FISSION_THROW_LOCATION()).append("expression",#EXPRESSION).append(__VA_ARGS__) )
-#else
-#define FISSION_ASSERT( EXPRESSION, ... ) ((void)0)
-#endif // FISSION_DEBUG

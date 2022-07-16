@@ -43,7 +43,7 @@ namespace Fission
 
 			rect.x.low += 70.0f;
 			rect.y.high = rect.y.low + 20.0f;
-			r2d->FillRect( rect, (rgb_colorf)colors::gray<rgb_color8>( 19 ) );
+			r2d->FillRect( rect, colors::make<0x131313> );
 
 			r2d->DrawString( "Debug", { 12.0f, 3.0f }, colors::gray( 0.9f ) );
 

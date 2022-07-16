@@ -281,7 +281,7 @@ namespace Fission {
 	{
 #ifdef FISSION_DEBUG
 		if( _Line + 1 > m_Lines.size() )
-			FISSION_THROW("Out of Bounds Exception", .append("Line number greater than the Console line count."))
+			FISSION_THROW( "Out of Bounds Exception", .append( "Line number greater than the Console line count." ) );
 #endif
 		return m_Lines[_Line];
 	}

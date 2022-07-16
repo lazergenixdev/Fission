@@ -24,7 +24,7 @@ namespace Fission {
 		int geometry_persision = 11;
 
 		// restrict the amount of persision to a reasonable range
-		FISSION_ASSERT( geometry_persision >= 1 && geometry_persision < 100 );
+		FISSION_ASSERT( geometry_persision >= 1 && geometry_persision < 100, "" );
 
 		out.reserve( geometry_persision );
 		static constexpr float quarter_rotation = ( std::numbers::pi_v<float> / 2.0f );

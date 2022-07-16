@@ -192,7 +192,7 @@ namespace Fission::Platform
 			const CREATESTRUCTW * const pCreate = reinterpret_cast<CREATESTRUCTW *>( lParam );
 			WindowsWindow * const pWnd = reinterpret_cast<WindowsWindow *>( pCreate->lpCreateParams );
 			// sanity check
-			FISSION_ASSERT( pWnd != nullptr );
+			FISSION_ASSERT( pWnd != nullptr, "lpCreateParams cannot be null" );
 			// set WinAPI-managed user data to store ptr to window class
 			SetWindowLongPtrW( hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>( pWnd ) );
 			// set message proc to normal (non-setup) handler now that setup is finished
