@@ -31,13 +31,29 @@ using Fission::v2f32, Fission::rf32;
 
 static Fission::IFRenderer2D * g_r2d;
 
+
+namespace Fission {
+	template <typename T>
+	struct SetValue {
+		T* value;
+		string operator()( string const& in ) {
+			try { *value = std::stof( in.str() ); }
+			catch( ... ) {}
+			Fission::Console::WriteLine( cat( "Set Value to: ", std::to_string( *value ) ) );
+			return {};
+		}
+	};
+}
+
 class Button : public neutron::Button
 {
 public:
 	v2f32 pos, size;
 	std::string label;
 
-	Button(const char * label, v2f32 pos, v2f32 size): pos(pos),size(size),label(label) {}
+	Button(const char * label, v2f32 pos, v2f32 size): pos(pos),size(size),label(label) {
+		Fission::Console::RegisterCommand( "set:x", Fission::SetValue{&this->pos.x} );
+	}
 
 	virtual bool isInside( neutron::point pos ) override
 	{
@@ -127,7 +143,7 @@ public:
 			wm.Initialize( x, y );
 		}
 
-		wm.addWindow( new Button( "Fake Button", { 100.0f,100.0f }, { 120.0f, 24.0f } ) );
+		wm.addWindow( new Button( "Fake Button", { 300.0f,400.0f }, { 120.0f, 24.0f } ) );
 	}
 
 	virtual void OnUpdate( Fission::timestep dt ) override
