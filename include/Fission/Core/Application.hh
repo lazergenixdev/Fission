@@ -46,13 +46,13 @@ namespace Fission
 		};
 
 	public:
+		utf8_string  f_Name;
+		utf8_string  f_VersionInfo;
+		version      f_Version;
+
 		IFEngine   * f_pEngine        = nullptr;
 		IFWindow   * f_pMainWindow    = nullptr;
 		IFGraphics * f_pGraphics      = nullptr;
-
-		utf8_string  f_Name;
-		version      f_Version;
-		utf8_string  f_VersionInfo;
 
 	public:
 

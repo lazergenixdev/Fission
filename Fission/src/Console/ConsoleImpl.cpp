@@ -43,6 +43,20 @@ namespace Fission {
 		}
 	}
 
+	void list_impl_( string const& s ) {
+		auto& con = ConsoleImpl::Get();
+
+		int i = 0;
+		for( auto&& [key,fn]: con.m_CommandMap ) {
+			con.Write( "%-10s "_format(key.data()) );
+			i++;
+			if( i >= 5 ) {
+				con.Write( string("\n") );
+				i = 0;
+			}
+		}
+	}
+
 	ConsoleImpl::ConsoleImpl()
 	{
 #ifdef FISSION_CREATE_CONSOLE_WINDOW
@@ -78,6 +92,8 @@ namespace Fission {
 				Console::WriteLine( s / colors::White );
 			}
 		);
+
+		RegisterCommand( "list", list_impl_ );
 	}
 
 	ConsoleImpl::~ConsoleImpl()

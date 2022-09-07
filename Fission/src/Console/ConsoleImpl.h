@@ -68,8 +68,8 @@ private:
 private:
 	static constexpr uint32_t m_BufferCapacity_HardMax = 1000000u;
 
+public:std::unordered_map<std::string, CommandCallback> m_CommandMap;
 private:
-	std::unordered_map<std::string, CommandCallback> m_CommandMap;
 
 	char * m_CharacterBuffer = nullptr;
 	uint32_t m_BufferCount = 0u;

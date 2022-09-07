@@ -77,6 +77,11 @@
 	//!	       thus we just want to inline the code
 	#define FISSION_MAIN_EXPORT(RET) __forceinline RET
 
+	namespace Fission
+	{
+		using platform_char = wchar_t;
+	}
+
 	namespace Fission::Platform
 	{
 		using ExitCode = int;

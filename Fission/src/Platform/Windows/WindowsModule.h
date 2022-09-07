@@ -29,9 +29,9 @@ namespace Fission
 			}
 		}
 
-		bool LoadLibrary( const char * _Library_Name ) noexcept
+		bool LoadLibrary( const char * _Library_Name, DWORD flags = 0 ) noexcept
 		{
-			return bool( hModule = LoadLibraryA(_Library_Name) );
+			return bool( hModule = LoadLibraryExA(_Library_Name, NULL, flags) );
 		}
 
 		template <class _FnPtr>

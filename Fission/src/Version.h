@@ -51,10 +51,10 @@ __FISSION_MK_VERSION(FISSION_VERSION_MAJ, FISSION_VERSION_MIN, FISSION_VERSION_P
 // VERSION
 //////////////////////////////////////////////////////////////////////////////
 
-// Complete Version String: Fission 1.0.0 alpha
+// Complete Version String: Fission 1.0.0-alpha.4
 #define FISSION_VERSION_STR   FISSION_ENGINE " " FISSION_VERSION_NUMBER_PRE
 
-// Complete Version String: Fission v1.0.0 alpha
+// Complete Version String: Fission v1.0.0-alpha.4
 #define FISSION_VERSION_STRV FISSION_ENGINE " v" FISSION_VERSION_NUMBER_PRE
 
 //////////////////////////////////////////////////////////////////////////////

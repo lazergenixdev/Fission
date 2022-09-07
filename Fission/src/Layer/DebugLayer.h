@@ -32,7 +32,7 @@ namespace Fission {
 		};
 		std::map<std::string, DrawCallbackData> m_DrawCallbacks;
 
-		string m_AppVersionString = "<APP VERSION> (nice version you got there)";
+		string m_AppVersionString;
 		std::vector<std::string> m_UserInfo;
 
 		bool m_bShow = false;

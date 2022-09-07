@@ -1,6 +1,7 @@
 #pragma once
 #include "../GraphicsLoader.h"
 #include "GraphicsDirectX11.h"
+#include "GraphicsOpenGL.h"
 
 namespace Fission
 {

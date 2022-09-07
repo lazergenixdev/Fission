@@ -9,6 +9,8 @@ namespace Fission::Platform
 
 	void WindowsWindowManager::Initialize()
 	{
+		CoInitializeEx( nullptr, COINIT_SPEED_OVER_MEMORY );
+
 		m_Info.hInstance = GetModuleHandleW(nullptr);
 
 		WNDCLASSEXW wClassDesc = {};

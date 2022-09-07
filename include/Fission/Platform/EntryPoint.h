@@ -63,6 +63,8 @@ FISSION_MAIN_EXPORT(Fission::Platform::ExitCode) _fission_main( void * );
 
 #if defined(FISSION_PLATFORM_WINDOWS)
 
+// TODO: Try `__try` and `__except` https://docs.microsoft.com/en-us/cpp/cpp/try-except-statement?view=msvc-170
+
 int WINAPI wWinMain( _In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPWSTR, _In_ int ) {
 	// Instance data is not needed on Windows, as there are
 	// WinAPI functions to get all the information needed; so
@@ -93,6 +95,7 @@ int WINAPI wWinMain( _In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPWSTR, _In_ int )
 FISSION_MAIN_EXPORT(Fission::Platform::ExitCode) _fission_main( void * instance )
 {
 	using namespace Fission;
+	using sv = string_view;
 
 	Platform::ExitCode		nExitCode = FISSION_EXIT_UNKNOWN;
 	fsn_ptr<IFEngine>		fsnEngine;
@@ -103,7 +106,7 @@ FISSION_MAIN_EXPORT(Fission::Platform::ExitCode) _fission_main( void * instance 
 		/* Initialize Fission Engine. */
 		Fission::CreateEngine( instance, &fsnEngine );
 
-		/* Initialize the Application. */
+		/* Initialize the Application. (User code) */
 		app = CreateApplication();
 
 		/* Attach the Application to Fission Engine. */
@@ -115,39 +118,41 @@ FISSION_MAIN_EXPORT(Fission::Platform::ExitCode) _fission_main( void * instance 
 			fsnEngine->Run( &nExitCode );
 		}
 
-		catch( base::runtime_error & e )
-		{
-			System::ShowSimpleMessageBox( string( e.name() ), string{ e.what() }, System::Error, app->f_pMainWindow );
+		catch( base::runtime_error & e ) {
+			System::ShowSimpleMessageBox( sv{ e.name() }, sv{ e.what() }, System::Error, app->f_pMainWindow );
 			nExitCode = FISSION_EXIT_FAILURE;
 		}
 
-		catch( std::exception & e )
-		{
-			System::ShowSimpleMessageBox( "C++ exception caught", string{ e.what() }, System::Error, app->f_pMainWindow );
+		catch( std::exception & e ) {
+			System::ShowSimpleMessageBox( u8"C++ exception caught", sv{ e.what() }, System::Error, app->f_pMainWindow );
 			nExitCode = FISSION_EXIT_FAILURE;
 		}
 
-		catch( ... ) 
-		{
-			System::ShowSimpleMessageBox( "Unknown Error", "No information provided, lol", System::Error, app->f_pMainWindow );
+		catch( ... ) {
+			System::ShowNativeMessageBox(
+				FISSION_PLATFORM_STRING("Unknown Error"),
+				FISSION_PLATFORM_STRING("No information provided, lol"),
+				System::Error, app->f_pMainWindow
+			);
 		}
 	}
 
-	catch( base::runtime_error & e )
-	{
-		System::ShowSimpleMessageBox( string( e.name() ), string{ e.what() }, System::Error );
+	catch( base::runtime_error & e ) {
+		System::ShowSimpleMessageBox( sv{ e.name() }, sv{ e.what() }, System::Error );
 		nExitCode = FISSION_EXIT_FAILURE;
 	}
 
-	catch( std::exception & e )
-	{
-		System::ShowSimpleMessageBox( "C++ exception caught", string{ e.what() }, System::Error );
+	catch( std::exception & e ) {
+		System::ShowSimpleMessageBox( u8"C++ exception caught", sv{ e.what() }, System::Error );
 		nExitCode = FISSION_EXIT_FAILURE;
 	}
 
-	catch( ... )
-	{
-		System::ShowSimpleMessageBox( "Unknown Error", "No information provided, lol", System::Error );
+	catch( ... ) {
+		System::ShowNativeMessageBox(
+			FISSION_PLATFORM_STRING( "Unknown Error" ),
+			FISSION_PLATFORM_STRING( "No information provided, lol" ),
+			System::Error
+		);
 	}
 
 	return nExitCode;

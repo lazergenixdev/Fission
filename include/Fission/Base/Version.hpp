@@ -1,13 +1,12 @@
 /**
- * @file Version.hpp
- * @author lazergenixdev@gmail.com
+ *	______________              _____
+ *	___  ____/__(_)________________(_)____________
+ *	__  /_   __  /__  ___/_  ___/_  /_  __ \_  __ \
+ *	_  __/   _  / _(__  )_(__  )_  / / /_/ /  / / /
+ *	/_/      /_/  /____/ /____/ /_/  \____//_/ /_/
  *
- *	 _______   _   _____   _____   _   _____   __    _
- *	|  _____| | | |  ___| |  ___| | | |  _  | |  \  | |
- *	| |___    | |  \ \     \ \    | | | | | | |   \ | |
- *	|  ___|   | |   \ \     \ \   | | | | | | | |\ \| |
- *	| |       | |  __\ \   __\ \  | | | |_| | | | \   |
- *	|_|       |_| |_____| |_____| |_| |_____| |_|  \__|
+ * 
+ * @author lazergenixdev@gmail.com
  *
  *	MIT License
  *
@@ -55,10 +54,6 @@ struct normal_version
 		Major( static_cast<type>(major) ),
 		Minor( static_cast<type>(minor) ),
 		Patch( static_cast<type>(patch) )
-	{}
-
-	constexpr normal_version( u16 major, u16 minor, u16 patch ) noexcept
-		: Major(major), Minor(minor), Patch(patch)
 	{}
 
 	constexpr auto operator<=>(normal_version const&) const noexcept = default;

@@ -214,6 +214,7 @@ public:
 	virtual void OnStartUp( CreateInfo * info ) override
 	{
 		info->window.title = u8"🔥 Sandbox 🔥  👌👌👌👌👌";
+		info->graphics.api = Fission::IFGraphics::API::DirectX11;
 		//strcpy_s( info->name_utf8, "sandbox" );
 		//strcpy_s( info->version_utf8, "2.2.0" );
 	}

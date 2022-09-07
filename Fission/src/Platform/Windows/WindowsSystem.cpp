@@ -13,7 +13,7 @@
 
 namespace Fission {
 
-	namespace detail
+	namespace impl
 	{
 		class WindowsVersion
 		{
@@ -72,8 +72,8 @@ namespace Fission {
 	}
 
 	void System::ShowSimpleMessageBox(
-		const string & _Title,
-		const string & _Text,
+		string_view const& _Title,
+		string_view const& _Text,
 		const MessageBoxFlag_t & _Flags,
 		IFWindow * _Parent_Window
 	)
@@ -107,6 +107,35 @@ namespace Fission {
 		_msg_thread.join();
 	}
 
+	void System::ShowNativeMessageBox(
+		const platform_char* _Title,
+		const platform_char* _Text,
+		const MessageBoxFlag_t& _Flags,
+		IFWindow* _Parent_Window
+	)
+	{
+		HWND hwnd = NULL;
+		if( _Parent_Window )
+			hwnd = _Parent_Window->native_handle();
+
+		UINT flags = MB_OK | MB_SYSTEMMODAL;
+		switch( _Flags & 0x7 )
+		{
+		case MessageBoxFlags::Error:   flags |= MB_ICONERROR;       break;
+		case MessageBoxFlags::Warning: flags |= MB_ICONWARNING;     break;
+		case MessageBoxFlags::Info:    flags |= MB_ICONINFORMATION; break;
+		default:break;
+		}
+
+		auto _show_message = [&]() {
+			MessageBoxW( hwnd, _Text, _Title, flags );
+		};
+
+		// This is needed because of quirks with the rules of what thread message boxes 
+		//   can be shown on, so we just bypass by making our own thread
+		auto _msg_thread = std::jthread( _show_message );
+	}
+
 	bool System::OpenURL( const std::filesystem::path & _URL )
 	{
 		return (bool)ShellExecuteW( NULL, L"open", _URL.c_str(), nullptr, nullptr, SW_SHOWDEFAULT );
@@ -119,7 +148,7 @@ namespace Fission {
 
 	const char * System::GetVersionString()
 	{
-		return detail::WindowsVersion::Get();
+		return impl::WindowsVersion::Get();
 	}
 }
 

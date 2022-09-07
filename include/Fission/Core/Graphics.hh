@@ -55,10 +55,11 @@ public:
 		DirectX11, /*!< DirectX 11 */
 		DirectX12, /*!< DirectX 12 */
 		Vulkan,    /*!< Vulkan */
-		OpenGL,	   /*!< OpenGL */
+		OpenGL,	   /*!< OpenGL 4 */
 
 		__count__, /*!< Number of Graphics APIs available */
-		Default    /*!< @Graphics will decide which api is best to use */
+		Default,   /*!< @Graphics will decide which api is best to use */
+		Noop       /*!< No Graphics API is used, used for debugging only. */
 	};
 
 public:

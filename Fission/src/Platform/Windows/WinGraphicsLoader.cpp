@@ -1,5 +1,6 @@
 #include "WinGraphicsLoader.h"
 #include "Fission/Base/Exception.hpp"
+#include "../NoopGraphics.h"
 
 namespace Fission::Platform
 {
@@ -10,6 +11,10 @@ namespace Fission::Platform
 			Cache.DirectX11Support = m_DirectX11Module.IsSupported();
 			m_DirectX11Module.UnLoad();
 		}
+		Cache.OpenGLSupport = true; // It's always true, lets be honest.
+
+		auto vkdll = Module( LoadLibraryExA( "vulkan-1.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32 ) );
+		Cache.VulkanSupport = (bool)vkdll; // TODO: Fix when add native vulkan support.
 	}
 
 	bool WindowsGraphicsLoader::CheckSupport( IFGraphics::API api )
@@ -20,6 +25,7 @@ namespace Fission::Platform
 		case Fission::IFGraphics::API::DirectX12:return  Cache.DirectX12Support;
 		case Fission::IFGraphics::API::Vulkan:return     Cache.VulkanSupport;
 		case Fission::IFGraphics::API::OpenGL:return     Cache.OpenGLSupport;
+		case Fission::IFGraphics::API::Noop:return       true; // Noop is always supported for debugging.
 		default:return false; // API::Default is NOT a Graphics API, only a helper for creating graphics.
 		}
 	}
@@ -44,9 +50,13 @@ namespace Fission::Platform
 		}
 		break;
 		
-		//case IFGraphics::API::OpenGL:
-		//	*ppGraphics = new GraphicsOpenGL( &m_OpenGLModule );
-		//break;
+		case IFGraphics::API::Noop:
+			*ppGraphics = new Noop::Graphics();
+		break;
+		
+		case IFGraphics::API::OpenGL:
+			*ppGraphics = new GraphicsOpenGL();
+		break;
 
 		default:break;
 		}

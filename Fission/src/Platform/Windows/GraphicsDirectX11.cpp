@@ -7,7 +7,7 @@ namespace Fission::Platform {
 
 	bool DirectX11Module::Load()
 	{
-		if( LoadLibrary( "d3d11" ) )
+		if( LoadLibrary( "d3d11.dll", LOAD_LIBRARY_SEARCH_SYSTEM32 ) )
 		{
 			bool bSuccess = true;
 

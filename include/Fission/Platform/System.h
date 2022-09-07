@@ -46,8 +46,15 @@ namespace Fission
 
 
 		FISSION_API static void ShowSimpleMessageBox( 
-			const string& _Title, 
-			const string& _Text, 
+			string_view const& _Title, 
+			string_view const& _Text, 
+			const MessageBoxFlag_t& _Flags = MessageBoxFlags::None,
+			IFWindow * _Parent_Window = nullptr
+		);
+
+		FISSION_API static void ShowNativeMessageBox( 
+			const platform_char* _Title, 
+			const platform_char* _Text, 
 			const MessageBoxFlag_t& _Flags = MessageBoxFlags::None,
 			IFWindow * _Parent_Window = nullptr
 		);

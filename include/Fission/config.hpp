@@ -89,6 +89,7 @@
 
 //\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\
 
+#define FISSION_PLATFORM_STRING(X) L##X
 
 /*! convert Bool to True/False */
 #define FISSION_BTF(B) (B?("True"):("False"))

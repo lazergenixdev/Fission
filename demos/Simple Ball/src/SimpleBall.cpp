@@ -18,6 +18,7 @@ public:
 	}
 	virtual void OnUpdate(Fission::timestep dt) override
 	{
+		using Fission::rgb, Fission::hsv;
 		// Update ball position
 		pos += velocity * dt;
 
@@ -27,21 +28,21 @@ public:
 		if( pos.y + radius >= 720.0f )
 			pos.y = 720.0f - radius,
 			velocity.y =- velocity.y,
-			color = static_cast<Fission::rgb>( Fission::hsv( dist(rng), 1.0f, 1.0f ) );
+			color = rgb( hsv( dist(rng), 1.0f, 1.0f ) );
 		else if( pos.y - radius <= 0.0f )
 			pos.y = radius,
 			velocity.y =- velocity.y,
-			color = static_cast<Fission::rgb>( Fission::hsv( dist(rng), 1.0f, 1.0f ) );
+			color = rgb( hsv( dist(rng), 1.0f, 1.0f ) );
 
 		// Collide with the left and right
 		if( pos.x + radius >= 1280.0f )
 			pos.x = 1280.0f - radius,
 			velocity.x =- velocity.x,
-			color = static_cast<Fission::rgb>( Fission::hsv( dist(rng), 1.0f, 1.0f ) );
+			color = rgb( hsv( dist(rng), 1.0f, 1.0f ) );
 		else if( pos.x - radius <= 0.0f )
 			pos.x = radius,
 			velocity.x =- velocity.x,
-			color = static_cast<Fission::rgb>( Fission::hsv( dist(rng), 1.0f, 1.0f ) );
+			color = rgb( hsv( dist(rng), 1.0f, 1.0f ) );
 
 		// Draw the circle to the screen
 		renderer2d->DrawCircle( pos, radius, {}, Fission::color( color, 0.5f ), 20.0f, Fission::StrokeStyle::Inside ); // inner glow
@@ -69,6 +70,7 @@ public:
 		info->window.title = std::format("Ball Demo [{}]", f_pEngine->GetVersionString());
 		info->window.size = { 1280,720 };
 		this->f_Name = "Balls";
+		info->graphics.api = Fission::IFGraphics::API::DirectX11;
 	}
 	virtual Fission::IFScene * OnCreateScene( const Fission::SceneKey & key ) override
 	{
