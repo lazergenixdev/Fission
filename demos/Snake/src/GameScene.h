@@ -5,13 +5,6 @@
 #include <Fission/Simple2DLayer.h>
 #include "DefaultDelete.h"
 
-#if defined(DIST)
-#define FISSION_ENABLE_DEBUG_UI 0
-#else
-#define FISSION_ENABLE_DEBUG_UI 1
-#endif
-#include <Fission/Core/UI/Debug.hh>
-
 using v2f = Fission::v2f32;
 using v2i = Fission::v2i32;
 using rectf = Fission::rf32;
@@ -172,16 +165,12 @@ public:
 		if( snek.GrowIf( food_pos ) )
 			food_pos = { rand() % field.cell_count.x,rand() % field.cell_count.y };
 
-		Fission::UI::Debug::SliderFloat( "Padding", &padding, 0.0f, 10.0f );
 		g_engine->GetDebug()->Text( "position: (%i, %i)", snek.GetPosition().x, snek.GetPosition().y );
-
-		static bool drawtiles = true;
-		Fission::UI::Debug::CheckBox( "Draw All Tiles", &drawtiles );
 
 		field.DrawTile( m_pRenderer2D, food_pos, Fission::colors::Red );
 
 		snek.Draw( m_pRenderer2D, &field );
-		field.Draw( m_pRenderer2D, drawtiles );
+		field.Draw( m_pRenderer2D, true );
 		m_pRenderer2D->Render();
 	}
 

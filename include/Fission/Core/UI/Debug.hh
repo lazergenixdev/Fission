@@ -35,7 +35,7 @@
 	#ifdef FISSION_DIST
 		#define FISSION_ENABLE_DEBUG_UI 0
 	#else
-		#define FISSION_ENABLE_DEBUG_UI 1
+		#define FISSION_ENABLE_DEBUG_UI 0
 	#endif
 #endif
 

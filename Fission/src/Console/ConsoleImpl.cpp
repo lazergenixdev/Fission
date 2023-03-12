@@ -51,10 +51,11 @@ namespace Fission {
 			con.Write( "%-10s "_format(key.data()) );
 			i++;
 			if( i >= 5 ) {
-				con.Write( string("\n") );
+				con.WriteLine( {} );
 				i = 0;
 			}
 		}
+		con.WriteLine( {} );
 	}
 
 	ConsoleImpl::ConsoleImpl()

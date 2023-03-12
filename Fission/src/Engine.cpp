@@ -1,8 +1,6 @@
 #include "Engine.h"
 #include "Version.h"
 
-#include "UI/Debug.h"
-
 #define FISSION_ENGINE_ONCE(MSG) \
 static bool __bCalled = false; \
 if( __bCalled ) FISSION_THROW( "FEngine Error", .append(MSG) ); \
@@ -94,8 +92,6 @@ namespace Fission
 			m_DebugLayer.OnUpdate( _dt );
 
 			SwapChain->Present( m_vsync );
-
-			RenderDebug(_dt);
 
 			_dt = frameTimer.gets();
 			
@@ -197,7 +193,7 @@ namespace Fission
 		m_ConsoleLayer.OnCreate(app);
 		m_pCurrentScene->OnCreate(app);
 
-		size2 wViewportSize = m_pWindow->GetSwapChain()->GetSize();
+		size2 wViewportSize = m_pWindow->GetSize();
 		for( auto && [name, context] : m_Renderers )
 		{
 			if( !context.bCreated )
@@ -206,8 +202,6 @@ namespace Fission
 				context.bCreated = true;
 			}
 		}
-
-		CreateDebug( m_pWindowManager.get(), app );
 	}
 
 
@@ -273,7 +267,6 @@ namespace Fission
 
 	void FissionEngine::Destroy() 
 	{ 
-		DestroyDebug();
 		delete this;
 	}
 

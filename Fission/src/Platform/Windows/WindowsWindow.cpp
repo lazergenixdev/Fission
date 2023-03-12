@@ -675,6 +675,7 @@ namespace Fission::Platform
 
             // TODO: CreateSwapChain() is able to throw an exception, handle the exception.
             Resource::IFSwapChain::CreateInfo scInfo = { this };
+        //    scInfo.size = { 4000,4000 }; // resolution scaling
             m_pSwapChain = m_pGlobalInfo->pGraphics->CreateSwapChain( scInfo );
 
 
