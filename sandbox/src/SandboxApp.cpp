@@ -3,207 +3,260 @@
 #include <Fission/Base/Time.hpp>
 #include <Fission/Simple2DLayer.h>
 
-#if defined(DIST)
-#define FISSION_ENABLE_DEBUG_UI 0
-#else
-#define FISSION_ENABLE_DEBUG_UI 1
-#endif
-#include <Fission/Core/UI/Debug.hh>
-#include <Fission/Core/Console.hh>
-
-#define _neutron_key_primary_mouse   Fission::Keys::Mouse_Left
-#define _neutron_key_secondary_mouse Fission::Keys::Mouse_Right
-
-#define _neutron_char_type    char32_t
-#define _neutron_key_type     Fission::Keys::Key
-#define _neutron_cursor_type  Fission::Cursor*
-
-#define _neutron_point_type   Fission::v2i32
-#define _neutron_rect_type    Fission::ri32
-#define _neutron_vector_type  std::vector
-#include <Fission/neutron.hpp>
+#include "../Fission/vendor/json/single_include/nlohmann/json.hpp"
 
 template <typename T>
 struct DefaultDelete : public T { virtual void Destroy() override { delete this; } };
 
 using namespace Fission::base;
-using Fission::v2f32, Fission::rf32;
-
 static Fission::IFRenderer2D * g_r2d;
 
+// Testing SDF-based text rendering, will probably settle on using two text renderers:
+//   1. Simple FAST text renderer that uses a simple single channel texture (For console and debug interfaces)
+//	 2. Scalable text renderer that uses SDF or MSDF
+struct TextRenderer : public Fission::IFRenderer {
+	virtual void OnCreate( Fission::IFGraphics* gfx, Fission::size2 _Viewport_Size ) {
+		vertex_data = (vertex*)_aligned_malloc( vertex_max_count * sizeof vertex, 32 );
+		index_data = (uint32_t*)_aligned_malloc( index_max_count * sizeof uint32_t, 32 );
+		_viewport_size = _Viewport_Size;
+		OnRecreate( gfx );
+	}
+	virtual void OnRecreate( Fission::IFGraphics* gfx ) {
+		m_pGraphics = gfx;
+		using namespace Fission;
+		using namespace Fission::Resource;
+		using namespace Fission::Resource::VertexLayoutTypes;
 
-namespace Fission {
-	template <typename T>
-	struct SetValue {
-		T* value;
-		string operator()( string const& in ) {
-			try { *value = std::stof( in.str() ); }
-			catch( ... ) {}
-			Fission::Console::WriteLine( cat( "Set Value to: ", std::to_string( *value ) ) );
-			return {};
+		auto vl = VertexLayout{};
+		vl.Append( Float2, "Position" );
+		vl.Append( Float2, "TexCoord" );
+
+		{ // Create Vertex Buffer
+			IFVertexBuffer::CreateInfo info;
+			info.vtxCount = vertex_max_count;
+			info.pVertexLayout = &vl;
+			info.type = IFVertexBuffer::Type::Dynamic;
+			m_pVertexBuffer = gfx->CreateVertexBuffer( info );
 		}
-	};
+		{ // Create Index Buffer
+			IFIndexBuffer::CreateInfo info;
+			info.idxCount = index_max_count;
+			info.size = IFIndexBuffer::Size::UInt32;
+			info.type = IFIndexBuffer::Type::Dynamic;
+			m_pIndexBuffer = gfx->CreateIndexBuffer( info );
+		}
+		{ // Create Index Buffer
+			IFConstantBuffer::CreateInfo info;
+			info.type = IFConstantBuffer::Type::Dynamic;
+			info.max_size = 128;
+			m_pTransformBuffer = gfx->CreateConstantBuffer( info );
+
+			const auto res = v2f32{ (float)_viewport_size.w, (float)_viewport_size.h };
+
+			const auto screen = m44(
+				2.0f / res.x, 0.0f, -1.0f, 0.0f,
+				0.0f, -2.0f / res.y, 1.0f, 0.0f,
+				0.0f, 0.0f, 1.0f, 0.0f,
+				0.0f, 0.0f, 0.0f, 1.0f
+			).transpose();
+
+			m_pTransformBuffer->SetData( &screen, sizeof( screen ) );
+		}
+		{ // Create Shaders
+			IFShader::CreateInfo info;
+			info.pVertexLayout = &vl;
+			info.sourceCode = R"(
+cbuffer Transform : register(b0)
+{
+	matrix screen;
 }
 
-class Button : public neutron::Button
-{
-public:
-	v2f32 pos, size;
-	std::string label;
+struct VS_OUT { 
+	float2 tc : TexCoord; 
+	float4 pos : SV_Position; 
+};
+VS_OUT vs_main( float2 pos : Position, float2 tc : TexCoord ) { 
+	VS_OUT vso; 
+	vso.pos = mul( float4( pos, 1.0, 1.0 ), screen ); 
+	vso.tc = tc;
+	return vso; 
+}
 
-	Button(const char * label, v2f32 pos, v2f32 size): pos(pos),size(size),label(label) {
-		Fission::Console::RegisterCommand( "set:x", Fission::SetValue{&this->pos.x} );
+Texture2D tex;
+SamplerState ss;
+
+float median(float a, float b, float c) {
+    return max(min(a,b), min(max(a,b), c));
+}
+
+float4 ps_main( float2 tc : TexCoord ) : SV_Target { 
+    float3 dist = tex.Sample( ss, tc ).rgb;
+    
+    float d = median(dist.r, dist.g, dist.b) - 0.5;
+
+    float w = clamp(d/fwidth(d) + 0.5, 0.0, 1.0);
+    
+    float4 outside = float4(0, 0, 0, 0);
+    float4 inside = float4(1, 1, 1, 1);
+    float4 color = lerp(outside, inside, w);
+    
+    return color;
+}
+			)";
+			m_pShader = gfx->CreateShader( info );
+		}
+		{
+			IFBlender::CreateInfo info;
+			info.blend = IFBlender::Blend::Normal;
+			m_pBlender = gfx->CreateBlender( info );
+		}
+		{
+			IFSampler::CreateInfo info;
+			info.filter = IFSampler::Linear;
+			m_pSampler = gfx->CreateSampler( info );
+		}
+		{
+			auto surface = Fission::Surface::Create();
+			surface->Load( "roboto.png" );
+			IFTexture2D::CreateInfo info = {};
+			info.pSurface = surface.get();
+			m_pTexture = gfx->CreateTexture2D( info );
+		}
 	}
 
-	virtual bool isInside( neutron::point pos ) override
+	virtual void OnResize( Fission::IFGraphics* _Ptr_Graphics, Fission::size2 size ) {
+		const auto screen = Fission::m44(
+			2.0f / (float)size.w, 0.0f,                -1.0f, 0.0f,
+			0.0f,                -2.0f / (float)size.h, 1.0f, 0.0f,
+			0.0f,                 0.0f,                 1.0f, 0.0f,
+			0.0f,                 0.0f,                 0.0f, 1.0f
+		).transpose();
+
+		m_pTransformBuffer->SetData( &screen, sizeof( screen ) );
+	}
+
+	void Destroy()
 	{
-		rf32 rc = rf32::from_topleft( this->pos, size );
-		return rc[(v2f32)pos];
+		_aligned_free( vertex_data );
+		_aligned_free( index_data );
+		delete this;
 	}
 
-	virtual neutron::Result OnSetCursor( neutron::SetCursorEventArgs & args ) override
-	{
-		args.cursor = Fission::Cursor::Get( Fission::Cursor::Default_Hand );
-		return neutron::Handled;
+	void Render(float s) {
+		index_data[icount++] = 0;
+		index_data[icount++] = 1;
+		index_data[icount++] = 3;
+		index_data[icount++] = 0;
+		index_data[icount++] = 2;
+		index_data[icount++] = 3;
+
+		float tcl =            290.5f / 820.0f;
+		float tcb = ( 820.0f - 375.5f) / 820.0f;
+		float tcr =            307.5f / 820.0f;
+		float tct = ( 820.0f - 401.5f ) / 820.0f;
+
+		float pl = 0.0063911593993426913f, pb = -0.049594541139240556f, pr= 0.53608930935065724f, pt= 0.76053204113924044f;
+
+		float x = 100.0f, y = 700.0f;
+
+		float x0 = x + pl * s;
+		float y0 = y - pt * s;
+		float x1 = x + pr * s;
+		float y1 = y - pb * s;
+
+		vertex_data[vcount++] = {{x0, y0}, {tcl, tct}};
+		vertex_data[vcount++] = {{x1, y0}, {tcr, tct}};
+		vertex_data[vcount++] = {{x0, y1}, {tcl, tcb}};
+		vertex_data[vcount++] = {{x1, y1}, {tcr, tcb}};
+		
+		m_pVertexBuffer->SetData( vertex_data, vcount );
+		m_pIndexBuffer->SetData( index_data, icount );
+
+		m_pVertexBuffer->Bind();
+		m_pIndexBuffer->Bind();
+		m_pTransformBuffer->Bind( Fission::Resource::IFConstantBuffer::Target::Vertex, 0 );
+		m_pShader->Bind();
+		m_pBlender->Bind();
+		m_pTexture->Bind(0);
+		m_pSampler->Bind(Fission::Resource::IFSampler::Pixel, 0);
+
+		m_pGraphics->DrawIndexed( icount );
+		icount = vcount = 0;
 	}
 
-	virtual void OnUpdate(float) override
-	{
-		auto rect = Fission::rf32{ pos.x, pos.x + size.x, pos.y, pos.y + size.y };
+	struct vertex {
+		Fission::v2f32 pos;
+		Fission::v2f32 tc;
+	};
 
-		if( parent->GetHover() == this )
-		g_r2d->FillRoundRect( rect, 10.0f, Fission::colors::CadetBlue );
-		else
-		g_r2d->FillRoundRect( rect, 10.0f, Fission::color(Fission::colors::CadetBlue,0.5f) );
+	Fission::IFGraphics* m_pGraphics = nullptr;
 
-		g_r2d->DrawRoundRect( rect, 10.0f, Fission::color(Fission::colors::White,0.5f), 1.0f );
+	Fission::fsn_ptr<Fission::Resource::IFVertexBuffer>   m_pVertexBuffer;
+	Fission::fsn_ptr<Fission::Resource::IFIndexBuffer>    m_pIndexBuffer;
+	Fission::fsn_ptr<Fission::Resource::IFConstantBuffer> m_pTransformBuffer;
+	Fission::fsn_ptr<Fission::Resource::IFShader>		  m_pShader;
+	Fission::fsn_ptr<Fission::Resource::IFSampler>		  m_pSampler;
+	Fission::fsn_ptr<Fission::Resource::IFBlender>		  m_pBlender;
+	Fission::fsn_ptr<Fission::Resource::IFTexture2D>	  m_pTexture;
 
-		auto tl = g_r2d->CreateTextLayout( label.c_str() );
-		auto start = Fission::v2f32{ ( rect.x.distance() - tl.width ) * 0.5f,( rect.y.distance() - tl.height ) * 0.5f } + pos;
-		g_r2d->DrawString( label.c_str(), start, Fission::colors::White );
-	}
+	vertex * vertex_data = nullptr;
+	uint32_t* index_data = nullptr;
 
+	Fission::u32 vcount = 0;
+	Fission::u32 icount = 0;
+
+	static constexpr int vertex_max_count = 1000;
+	static constexpr int index_max_count  = 2000;
+
+	Fission::size2 _viewport_size;
 };
 
-struct Meter
+using namespace Fission;
+struct SettingsScene : public DefaultDelete<Fission::IFScene>
 {
-	Meter(float damping, float maxv): bar_damping(damping), maxv(maxv)
-	{
-		x = startx;
-		startx += 15.0f;
+	virtual void OnCreate(FApplication* app) override {
+		r2d = app->f_pEngine->GetRenderer<IFRenderer2D>( "$internal2D" );
+		tr  = app->f_pEngine->GetRenderer<TextRenderer>( "test" );
 	}
+	virtual void OnUpdate(Fission::timestep dt) override {
 
-	Meter& update( float dt )
-	{
-		if( val < ((float)rand()/(float)RAND_MAX)*100.0f )
-			v = maxv;
-
-		val += v * dt;
-		v += ( -250.0f - v ) * bar_damping;
-
-		bar += ( val - bar ) * 0.01f;
-		bar = std::max( val, bar );
-
-		return *this;
-	}
-
-	void draw( Fission::IFRenderer2D *r2d )
-	{
-		r2d->FillRect( rf32{ x, x+10.0f, 300.0f, 600.0f }, Fission::colors::gray(0.04f) );
-		r2d->FillRect( rf32{ x, x+10.0f, 600.0f - val, 600.0f }, Fission::colors::White );
-		r2d->FillRect( rf32{ x, x+10.0f, 594.0f - bar, 597.0f - bar }, Fission::colors::White );
-	}
-
-	float bar_damping = 0.3f;
-	float maxv = 8000.0f;
-
-	float val = 10.0f;
-	float bar = 10.0f;
-	float v = 0.0f;
-	float x;
-
-private:
-	static float startx;
-};
-
-float Meter::startx = 100.0f;
-
-class MenuLayer : public DefaultDelete<Fission::Simple2DLayer>
-{
-public:
-	virtual void OnCreate( Fission::FApplication * app ) override
-	{
-		Simple2DLayer::OnCreate(app);
-		wnd = app->f_pMainWindow;
-		font = Fission::FontManager::GetFont("$console");
-		g_r2d = m_pRenderer2D;
-
-		{
-			auto[x,y] = wnd->GetSize();
-			wm.Initialize( x, y );
+		if( hitbox[mouse] ) {
+			hitbox.x.low  -= 20.0f * dt * ( hitbox.x.low  - (def_size.x.low  - 30.0f) );
+			hitbox.x.high -= 20.0f * dt * ( hitbox.x.high - (def_size.x.high + 30.0f) );
+			col -= 20.0f * dt * (col - colors::White);
+			h -= 20.0f * dt * ( h - 32.0f );
+		}
+		else {
+			hitbox.x.low  -= 20.0f * dt * ( hitbox.x.low  - def_size.x.low  );
+			hitbox.x.high -= 20.0f * dt * ( hitbox.x.high - def_size.x.high );
+			col -= 20.0f * dt * (col - rest_col);
+			h -= 20.0f * dt * ( h - 28.0f );
 		}
 
-		wm.addWindow( new Button( "Fake Button", { 300.0f,400.0f }, { 120.0f, 24.0f } ) );
+		r2d->SelectFont( FontManager::GetFont("$debug") );
+	//	r2d->DrawRect( hitbox, colors::AliceBlue, 1.0f );
+		r2d->FillRect( rf32{ hitbox.left(), hitbox.right(), hitbox.y.average() - 1.0f, hitbox.y.average() + 1.0f}, col);
+		auto tl = r2d->CreateTextLayout( "Performance" );
+		r2d->DrawString( "Performance", { 0.5f * (hitbox.width() - tl.width) + hitbox.left(), hitbox.y.average() - h}, col);
+		r2d->Render();
+
+		tr->Render(mouse.x / 3.0f);
 	}
-
-	virtual void OnUpdate( Fission::timestep dt ) override
-	{
-		m_pRenderer2D->SelectFont( font );
-		wm.OnUpdate( 0.0f );
-		g_r2d->Render();
-
-		for( auto &meter : meters )
-			meter.update(dt).draw(m_pRenderer2D);
-
-		if( show )
-		{
-			m_pRenderer2D->DrawString( "Showing = True", { 100.0f, 200.0f }, Fission::colors::White );
-		}
-		m_pRenderer2D->Render();
+	virtual Fission::EventResult OnMouseMove(Fission::MouseMoveEventArgs& args) override {
+		mouse = (v2f32)args.position;
+		return EventResult::Handled;
 	}
-
-	virtual Fission::EventResult OnKeyDown( Fission::KeyDownEventArgs & args ) override
-	{
-		if( !args.repeat && args.key == Fission::Keys::Escape )
-			show =! show; // flip `show`
-		return Fission::EventResult::Handled;
-	}
-	virtual Fission::EventResult OnKeyUp( Fission::KeyUpEventArgs & args ) override
-	{
-		return Fission::EventResult::Handled;
-	}
-	virtual Fission::EventResult OnMouseMove( Fission::MouseMoveEventArgs & args ) override
-	{
-		neutron::MouseMoveEventArgs nargs = { args.position };
-		return (Fission::EventResult)wm.OnMouseMove( nargs );
-	}
-	virtual Fission::EventResult OnSetCursor( Fission::SetCursorEventArgs & args ) override
-	{
-		neutron::SetCursorEventArgs nargs = { args.cursor };
-		auto r = (Fission::EventResult)wm.OnSetCursor( nargs );
-		if( nargs.cursor != args.cursor )
-		{
-			args.cursor = nargs.cursor;
-			args.bUseCursor = true;
-		}
-		return r;
-	}
-private:
-	Fission::IFWindow * wnd;
-	Fission::Font * font;
-
-	bool show = false;
-
-	neutron::WindowManager wm;
-	Meter meters[4] = { {0.3f,8'000.0f}, {0.4f, 10'000.0f}, {0.25f, 7'500.0f}, {0.5f, 12'000.0f} };
-};
-
-class MainScene : public DefaultDelete<Fission::FMultiLayerScene>
-{
-public:
-	MainScene() { PushLayer( new MenuLayer ); }
-
 	virtual Fission::SceneKey GetKey() override { return {}; }
+
+	v2f32 mouse = {};
+	IFRenderer2D* r2d;
+	TextRenderer* tr;
+
+	static constexpr rf32 def_size = { 300.0f, 440.0f, 300.0f, 350.0f };
+	rf32 hitbox = { 300.0f, 440.0f, 300.0f, 350.0f };
+	static constexpr color rest_col = colors::DimGray;
+	color col = rest_col;
+	float h = 30.0f;
 };
 
 class MyApp : public Fission::FApplication
@@ -214,24 +267,14 @@ public:
 	virtual void OnStartUp( CreateInfo * info ) override
 	{
 		info->window.title = u8"🔥 Sandbox 🔥  👌👌👌👌👌";
-		info->graphics.api = Fission::IFGraphics::API::DirectX11;
-		//strcpy_s( info->name_utf8, "sandbox" );
-		//strcpy_s( info->version_utf8, "2.2.0" );
+		f_pEngine->RegisterRenderer( "test", new TextRenderer );
 	}
 	virtual Fission::IFScene * OnCreateScene( const Fission::SceneKey& key ) override
 	{
-		//if( auto user = key["user"] )
-		//{
-		//	Fission::string username = user.value();
-		//}
-
 		// ignore scene key and just create the main scene
-		return new MainScene;
+		return new SettingsScene;
 	}
-	virtual void Destroy() override
-	{
-		delete this;
-	}
+	virtual void Destroy() override { delete this; }
 };
 
 Fission::FApplication * CreateApplication() {

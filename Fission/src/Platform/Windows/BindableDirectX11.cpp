@@ -10,6 +10,7 @@ namespace Fission::Platform {
 	void ConstantBufferDX11::Destroy() { delete this; }
 	void Texture2DDX11::Destroy() { delete this; }
 	void ShaderDX11::Destroy() { delete this; }
+	void SamplerDX11::Destroy() { delete this; }
 	void BlenderDX11::Destroy() { delete this; }
 	void SwapChainDX11::Destroy() { delete this; }
 
@@ -304,9 +305,7 @@ namespace Fission::Platform {
 		pDevice->CreateBuffer( &bd, nullptr, &m_pBuffer );
 	}
 
-	void ConstantBufferDX11::Bind()
-	{
-	}
+	void ConstantBufferDX11::Bind() {}
 
 	void ConstantBufferDX11::Bind( Target target, int slot )
 	{
@@ -329,6 +328,36 @@ namespace Fission::Platform {
 		hr = m_pContext->Map( m_pBuffer.Get(), 0u, D3D11_MAP_WRITE_DISCARD, 0u, &msr );
 		memcpy( msr.pData, pData, size );
 		m_pContext->Unmap( m_pBuffer.Get(), 0u );
+	}
+
+	SamplerDX11::SamplerDX11( ID3D11Device* pDevice, ID3D11DeviceContext* pContext, const CreateInfo& info )
+		: m_pContext(pContext)
+	{
+
+		D3D11_SAMPLER_DESC sdesc = CD3D11_SAMPLER_DESC{};
+		switch( info.filter )
+		{
+		case Filter::Linear: sdesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR; break;
+		case Filter::Point:  sdesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;  break;
+		default:break;
+		}
+		pDevice->CreateSamplerState( &sdesc, &m_pSamplerState );
+	}
+
+	void SamplerDX11::Bind() {}
+
+	void SamplerDX11::Bind( Target target, int slot )
+	{
+		switch( target )
+		{
+		case Target::Vertex:
+			m_pContext->VSSetSamplers( slot, 1, m_pSamplerState.GetAddressOf() );
+			break;
+		case Target::Pixel:
+			m_pContext->PSSetSamplers( slot, 1, m_pSamplerState.GetAddressOf() );
+			break;
+		default:throw std::logic_error( "this don't make no fucking sense." );
+		}
 	}
 
 	Texture2DDX11::Texture2DDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info )

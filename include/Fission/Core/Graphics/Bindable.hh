@@ -218,9 +218,16 @@ namespace Fission::Resource
 			Point, Linear
 		};
 
-		struct CreateInfo {
-			Filter type = Filter::Linear;
+		enum Target {
+			Vertex, Pixel
 		};
+
+		struct CreateInfo {
+			Filter filter = Filter::Linear;
+			Target target = Target::Pixel;
+		};
+
+		virtual void Bind( Target target, int slot ) = 0;
 	};
 
 	struct IFBlender : public IFBindable

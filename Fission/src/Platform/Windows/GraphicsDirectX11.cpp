@@ -106,15 +106,6 @@ namespace Fission::Platform {
 		desc.BackFace = desc.FrontFace;
 		m_pDevice->CreateDepthStencilState( &desc, &pDepthStencil );
 		m_pImmediateContext->OMSetDepthStencilState( pDepthStencil.Get(), 0 );
-		// Set Sampler
-		D3D11_SAMPLER_DESC sdesc = CD3D11_SAMPLER_DESC{};
-		sdesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
-		sdesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
-		sdesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-		sdesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-		sdesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-		m_pDevice->CreateSamplerState( &sdesc, &pSamplerState );
-		m_pImmediateContext->PSSetSamplers( 0u, 1u, pSamplerState.GetAddressOf() );
 		// Set Rasterizer
 		D3D11_RASTERIZER_DESC rdesc = CD3D11_RASTERIZER_DESC{};
 		rdesc.FillMode = D3D11_FILL_SOLID;
@@ -158,6 +149,10 @@ namespace Fission::Platform {
 
 	Resource::IFConstantBuffer* GraphicsDirectX11::CreateConstantBuffer( const ConstantBuffer::CreateInfo & info ) {
 		return new ConstantBufferDX11( m_pDevice.Get(), m_pImmediateContext.Get(), info );
+	}
+
+	Resource::IFSampler* GraphicsDirectX11::CreateSampler( const Sampler::CreateInfo & info ) {
+		return new SamplerDX11( m_pDevice.Get(), m_pImmediateContext.Get(), info );
 	}
 
 	Resource::IFShader* GraphicsDirectX11::CreateShader( const Shader::CreateInfo & info ) {

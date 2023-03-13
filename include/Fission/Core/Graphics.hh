@@ -44,6 +44,7 @@ public:
 	using VertexBuffer   = Resource::IFVertexBuffer;
 	using IndexBuffer    = Resource::IFIndexBuffer;
 	using ConstantBuffer = Resource::IFConstantBuffer;
+	using Sampler        = Resource::IFSampler;
 	using Texture2D      = Resource::IFTexture2D;
 	using Shader         = Resource::IFShader;
 	using Blender        = Resource::IFBlender;
@@ -80,6 +81,7 @@ public:
 	virtual FrameBuffer*    CreateFrameBuffer   ( const FrameBuffer::CreateInfo & info ) = 0;
 	virtual VertexBuffer*   CreateVertexBuffer  ( const VertexBuffer::CreateInfo & info ) = 0;
 	virtual ConstantBuffer* CreateConstantBuffer( const ConstantBuffer::CreateInfo & info ) = 0;
+	virtual Sampler*        CreateSampler       ( const Sampler::CreateInfo & info ) = 0;
 	virtual IndexBuffer*    CreateIndexBuffer   ( const IndexBuffer::CreateInfo & info ) = 0;
 	virtual Shader*         CreateShader        ( const Shader::CreateInfo & info ) = 0;
 	virtual Texture2D*      CreateTexture2D     ( const Texture2D::CreateInfo & info ) = 0;

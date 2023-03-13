@@ -69,6 +69,23 @@ namespace Fission::Platform {
 		com_ptr<ID3D11Buffer> m_pBuffer;
 	};
 
+	class SamplerDX11 : public Resource::IFSampler
+	{
+	public:
+		SamplerDX11( ID3D11Device* pDevice, ID3D11DeviceContext* pContext, const CreateInfo& info );
+
+		virtual void Bind() override;
+		virtual void Unbind() override {};
+
+		virtual void Bind( Target target, int slot ) override;
+
+		virtual void Destroy() override;
+
+	private:
+		ID3D11DeviceContext* m_pContext;
+		com_ptr<ID3D11SamplerState> m_pSamplerState;
+	};
+
 	class ShaderDX11 : public Resource::IFShader
 	{
 	public:

@@ -34,6 +34,10 @@ struct IndexBuffer		: public Noop<Fission::Resource::IFIndexBuffer> {
 
 struct Shader			: public Noop<Fission::Resource::IFShader> {};
 
+struct Sampler			: public Noop<Fission::Resource::IFSampler> {
+	virtual void Bind( Target target, int slot ) override {}
+};
+
 struct Texture2D		: public Noop<Fission::Resource::IFTexture2D> {
 	virtual uint32_t GetWidth() override { return 0; }
 	virtual uint32_t GetHeight() override { return 0; }
@@ -57,6 +61,7 @@ Graphics::VertexBuffer*   Graphics::CreateVertexBuffer   ( const Graphics::Verte
 Graphics::ConstantBuffer* Graphics::CreateConstantBuffer ( const Graphics::ConstantBuffer::CreateInfo & info ) {return new ::ConstantBuffer;}
 Graphics::IndexBuffer*    Graphics::CreateIndexBuffer    ( const Graphics::IndexBuffer::CreateInfo & info    ) {return new ::IndexBuffer;}
 Graphics::Shader*         Graphics::CreateShader         ( const Graphics::Shader::CreateInfo & info         ) {return new ::Shader;}
+Graphics::Sampler*         Graphics::CreateSampler       ( const Graphics::Sampler::CreateInfo & info        ) {return new ::Sampler;}
 Graphics::Texture2D*      Graphics::CreateTexture2D      ( const Graphics::Texture2D::CreateInfo & info      ) {return new ::Texture2D;}
 Graphics::Blender*        Graphics::CreateBlender        ( const Graphics::Blender::CreateInfo & info        ) {return new ::Blender;}
 Graphics::SwapChain*      Graphics::CreateSwapChain      ( const Graphics::SwapChain::CreateInfo & info      ) {return new ::SwapChain;}

@@ -152,6 +152,11 @@ Fission::IFGraphics::IndexBuffer* Fission::GraphicsOpenGL::CreateIndexBuffer( co
 	return nullptr;
 }
 
+Fission::IFGraphics::Sampler* Fission::GraphicsOpenGL::CreateSampler( const Sampler::CreateInfo& info )
+{
+	return nullptr;
+}
+
 Fission::IFGraphics::Shader* Fission::GraphicsOpenGL::CreateShader( const Shader::CreateInfo& info )
 {
 	return nullptr;
