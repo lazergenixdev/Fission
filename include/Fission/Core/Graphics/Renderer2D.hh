@@ -54,27 +54,6 @@ namespace Fission
 		__count__
 	};
 
-	class Mesh 
-	{
-	public:
-		FISSION_API Mesh( int vertex_count, int index_count, int color_count = 1 );
-		FISSION_API Mesh( const Mesh & );
-		FISSION_API ~Mesh();
-
-		FISSION_API void push_color( color col );
-		FISSION_API void push_vertex( v2f32 position, int color_index );
-		FISSION_API void push_index( uint32_t index );
-
-		FISSION_API void set_color( uint32_t index, color new_color );
-
-		FISSION_API uint32_t vertex_count() const;
-		FISSION_API uint32_t index_count() const;
-		FISSION_API uint32_t color_count() const;
-
-	public:
-		struct MeshData * m_Data;
-	};
-
 	struct IFRenderer2D : public IFRenderer
 	{
 	public:
@@ -108,8 +87,6 @@ namespace Fission
 		virtual void DrawImage( Resource::IFTexture2D * pTexture, rf32 rect, rf32 uv, color tint = colors::White ) = 0;
 
 		virtual void DrawImage( Resource::IFTexture2D * pTexture, rf32 rect, color tint = colors::White ) = 0;
-
-		virtual void DrawMesh( const Mesh * m ) = 0;
 
 		virtual void SelectFont( const Font * pFont ) = 0;
 

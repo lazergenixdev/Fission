@@ -1,5 +1,4 @@
 ﻿#include "Renderer2DImpl.h"
-#include "Mesh.h"
 #include <numbers>
 #include <Fission/Base/Exception.hpp>
 
@@ -286,11 +285,6 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 	{
 		SetTexture( pTexture );
 		m_DrawBuffer.back().AddRectFilledUV( rect, { 0.0f, 1.0f, 0.0f, 1.0f }, tint );
-	}
-
-	void Renderer2DImpl::DrawMesh( const Mesh * m )
-	{
-		m_DrawBuffer.back().AddMesh( m );
 	}
 
 	void Renderer2DImpl::SelectFont( const Font * pFont )
@@ -696,17 +690,6 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		_push_vertex( inner_right, bottom - stroke_width, c );
 
 #undef _push_vertex
-	}
-
-	void Renderer2DImpl::DrawData::AddMesh( const Mesh * m )
-	{
-		const auto * colors = m->m_Data->color_buffer.data();
-
-		for( auto && i : m->m_Data->index_buffer )
-			pIdxData[idxCount++] = i + vtxCount;
-
-		for( auto && v : m->m_Data->vertex_buffer )
-			pVtxData[vtxCount++] = vertex( *mat * v.pos, colors[v.color_index] );
 	}
 
 	void Renderer2DImpl::DrawData::AddCircleFilled( v2f32 center, float rad, color c )

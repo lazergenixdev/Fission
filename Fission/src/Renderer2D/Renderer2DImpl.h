@@ -52,8 +52,6 @@ namespace Fission {
 
 		virtual void DrawImage( Resource::IFTexture2D * pTexture, rf32 rect, color tint ) override;
 
-		virtual void DrawMesh( const Mesh * m ) override;
-
 		virtual void SelectFont( const Font * pFont ) override;
 
 		virtual TextLayout DrawString( const char * str, v2f32 pos, color color ) override;
@@ -114,7 +112,6 @@ namespace Fission {
 			void AddRoundRectFilled( rf32 rect, float rad, color c );
 			void AddRoundRect( rf32 rect, float rad, color color, float stroke_width, StrokeStyle stroke );
 
-			void AddMesh( const Mesh * mesh );
 			void AddCircleFilled( v2f32 center, float rad, color c );
 			void AddCircle( v2f32 center, float rad, color inc, color outc, float stroke_width, StrokeStyle stroke );
 			void AddTriangle( v2f32 p0, v2f32 p1, v2f32 p2, color c0, color c1, color c2 );
