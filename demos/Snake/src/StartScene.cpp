@@ -38,7 +38,7 @@ Fission::EventResult StartMenuLayer::OnSetCursor(Fission::SetCursorEventArgs& ar
 
 void StartMenuLayer::OnUpdate( Fission::timestep dt )
 {
-	m_pRenderer2D->SelectFont( Fission::FontManager::GetFont( "$debug" ) );
+//	m_pRenderer2D->SelectFont( Fission::FontManager::GetFont( "$debug" ) );
 
 	wm.OnUpdate(0.0f);
 

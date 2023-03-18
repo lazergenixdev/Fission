@@ -12,6 +12,8 @@ __bCalled = true
 
 namespace Fission
 {
+	inline IFEngine* global_engine_pointer = nullptr;
+
 	using AppCreateInfo = FApplication::CreateInfo;
 
 	FissionEngine::FissionEngine()
@@ -258,10 +260,24 @@ namespace Fission
 		return m_Renderers[name].renderer.get();
 	}
 
+	void FissionEngine::RegisterFont( const char* name, Font* f )
+	{
+		m_Fonts.emplace( name, f );
+	}
+
+	Font* FissionEngine::GetFont( const char* name )
+	{
+		return m_Fonts[name].get();
+	}
 
 	IFDebugLayer * FissionEngine::GetDebug()
 	{
 		return &m_DebugLayer;
+	}
+
+	IFGraphics* FissionEngine::GetGraphics()
+	{
+		return m_pGraphics.get();
 	}
 
 
@@ -275,6 +291,12 @@ namespace Fission
 	void CreateEngine( void * instance, IFEngine ** ppEngine )
 	{
 		*ppEngine = new FissionEngine;
+		global_engine_pointer = *ppEngine;
+	}
+
+	IFEngine* GetEngine()
+	{
+		return global_engine_pointer;
 	}
 
 

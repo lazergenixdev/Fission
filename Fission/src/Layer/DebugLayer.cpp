@@ -51,14 +51,15 @@ static std::string memory_str;
 static std::string gpu_name;
 #include <intrin.h>
 
-void DebugLayerImpl::Destroy() { FontManager::DelFont( "$debug" ); delete this; }
+void DebugLayerImpl::Destroy() { delete this; }
 
 void DebugLayerImpl::OnCreate(class FApplication * app) {
 	pRenderer2D = (IFRenderer2D*)app->f_pEngine->GetRenderer("$internal2D");
 
 	m_width = (float)app->f_pMainWindow->GetSwapChain()->GetSize().w;
 
-	FontManager::SetFont( "$debug", IBMPlexMono_MediumTTF::data, IBMPlexMono_MediumTTF::size, 18.0f, app->f_pGraphics );
+	auto font = Font::Create( { IBMPlexMono_MediumTTF::data, IBMPlexMono_MediumTTF::size, 18.0f } );
+	app->f_pEngine->RegisterFont( "$debug", font );
 
 	int CPUInfo[4] = { -1 };
 	unsigned   nExIds, i = 0;
@@ -122,8 +123,7 @@ void DebugLayerImpl::OnUpdate(timestep dt) {
 		memset( sFPS, 0, sizeof sFPS );
 		sprintf_s( sFPS, "%.1f FPS (%.2fms)", 1000.0f / msAvgFrameTime, msAvgFrameTime );
 
-		auto pFont = FontManager::GetFont( "$debug" );
-		pRenderer2D->SelectFont( pFont );
+		pRenderer2D->SelectFont( GetEngine()->GetFont("$debug"));
 
 		float offsety = 0.0f;
 

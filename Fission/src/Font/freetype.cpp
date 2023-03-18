@@ -8,11 +8,14 @@
 
 namespace freetype {
 
-	Face::Face( FT_Library lib, const std::filesystem::path & path )
+	FT_Library	Face::s_library   = NULL;
+	int			Face::s_ref_count = 0;
+
+	Face::Face( const std::filesystem::path & path )
 	{
 		FT_Error err;
 		_FREETYPE_THROW_FAILED_EX(
-			FT_New_Face( lib, path.string().c_str(), 0, &m_Face ),
+			FT_New_Face( get_lib(), path.string().c_str(), 0, &m_Face ),
 			"Loading Face from file",
 			"Failed to load \"" + path.string() + "\" as a font face."
 		);
@@ -24,11 +27,11 @@ namespace freetype {
 		return buffer;
 	}
 
-	Face::Face( FT_Library lib, const void * data, size_t size )
+	Face::Face( const void * data, size_t size )
 	{
 		FT_Error err;
 		_FREETYPE_THROW_FAILED_EX(
-			FT_New_Memory_Face( lib, (FT_Byte *)data, (FT_Long)size, 0, &m_Face ),
+			FT_New_Memory_Face( get_lib(), (FT_Byte *)data, (FT_Long)size, 0, &m_Face ),
 			"Loading Face from file",
 			"Failed to load memory at " + ptr_to_str( data ) + " as a font face."
 		);
@@ -37,63 +40,22 @@ namespace freetype {
 	Face::~Face()
 	{
 		FT_Done_Face( m_Face );
-	}
-
-	Library::Library() {
-		_FREETYPE_THROW_FAILED( FT_Init_FreeType( &m_Library ), "Library Initialization" );
-
-		int maj, min, pat;
-
-		FT_Library_Version( m_Library, &maj, &min, &pat );
-
-		static char buf[48] = {};
-		sprintf_s( buf, "FreeType Library Version %i.%i.%i", maj, min, pat );
-
-	//	Fission::Console::WriteLine( buf );
-	}
-
-	Library::~Library() {
-		m_Faces.clear();
-		if( m_Library )
-			FT_Done_FreeType( m_Library );
-	}
-
-	Face * Library::LoadFaceFromFile( const std::filesystem::path & path )
-	{
-		std::string location = path.string();
-		auto & s = Get(); // static instance
-
-		auto key = s.m_Faces.find( location );
-		if( key != s.m_Faces.end() ) {
-			return key->second.get();
+		--s_ref_count;
+		
+		// No more Font Faces exist to justify keeping the FT_Library around
+		if( s_ref_count <= 0 ) {
+			FT_Done_FreeType( s_library );
 		}
-
-		s.m_Faces.emplace( location, std::make_unique<Face>( Get().m_Library, path ) );
-
-		return s.m_Faces[location].get();
 	}
 
-	Face * Library::LoadFaceFromMemory( const void * pData, const size_t size )
+	FT_Library Face::get_lib()
 	{
-		char buf[16];
-		sprintf( buf, "%I64x", (uint64_t)pData );
-		std::string location = buf;
-		auto & s = Get(); // static instance
-
-		auto key = s.m_Faces.find( location );
-		if( key != s.m_Faces.end() ) {
-			return key->second.get();
+		// Library does not exist yet
+		if( s_ref_count == 0 ) {
+			_FREETYPE_THROW_FAILED( FT_Init_FreeType( &s_library ), "Library Initialization" );
 		}
-
-		s.m_Faces.emplace( location, std::make_unique<Face>( Get().m_Library, pData, size ) );
-
-		return s.m_Faces[location].get();
-	}
-
-	Library & Library::Get()
-	{
-		static Library s_ftLib;
-		return s_ftLib;
+		++s_ref_count;
+		return s_library;
 	}
 
 }

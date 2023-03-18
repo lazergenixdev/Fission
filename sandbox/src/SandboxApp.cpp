@@ -2,24 +2,60 @@
 #include <Fission/Core/Monitor.hh>
 #include <Fission/Base/Time.hpp>
 #include <Fission/Simple2DLayer.h>
+#include <Fission/Core/Graphics/Font.hh>
 
-#include "../Fission/vendor/json/single_include/nlohmann/json.hpp"
+namespace NotoSans_RegularTTF {
+#include "Static Fonts/NotoSans-Regular.inl"
+}
 
 template <typename T>
 struct DefaultDelete : public T { virtual void Destroy() override { delete this; } };
 
+using namespace Fission;
 using namespace Fission::base;
 static Fission::IFRenderer2D * g_r2d;
+
+static void* twemojifile = nullptr;
+static float rendertime = 0.0f;
 
 // Testing SDF-based text rendering, will probably settle on using two text renderers:
 //   1. Simple FAST text renderer that uses a simple single channel texture (For console and debug interfaces)
 //	 2. Scalable text renderer that uses SDF or MSDF
 struct TextRenderer : public Fission::IFRenderer {
+
+	struct vertex {
+		Fission::v2f32 pos;
+		Fission::v2f32 tc;
+	};
+
+	struct DrawData {
+		vertex* vertex_data = nullptr;
+		uint32_t* index_data = nullptr;
+
+		Fission::u32 vcount = 0;
+		Fission::u32 icount = 0;
+	};
+
+	enum State {
+		Kill       = 0x1,
+		WantResize = 0x2,
+		Complete   = 0x4,
+	};
+
 	virtual void OnCreate( Fission::IFGraphics* gfx, Fission::size2 _Viewport_Size ) {
-		vertex_data = (vertex*)_aligned_malloc( vertex_max_count * sizeof vertex, 32 );
-		index_data = (uint32_t*)_aligned_malloc( index_max_count * sizeof uint32_t, 32 );
+		master_vertex_data = (vertex*)_aligned_malloc( vertex_max_count * sizeof vertex, 32 );
+		master_index_data = (uint32_t*)_aligned_malloc( index_max_count * sizeof uint32_t, 32 );
 		_viewport_size = _Viewport_Size;
+
+		fntDraw.vertex_data = master_vertex_data;
+		fntDraw.index_data  = master_index_data;
+
+		emoDraw.vertex_data = master_vertex_data + vertex_max_count / 2;
+		emoDraw.index_data  = master_index_data  + index_max_count / 2;
+
 		OnRecreate( gfx );
+
+		worker = std::thread( ThreadDriver, this );
 	}
 	virtual void OnRecreate( Fission::IFGraphics* gfx ) {
 		m_pGraphics = gfx;
@@ -83,24 +119,10 @@ VS_OUT vs_main( float2 pos : Position, float2 tc : TexCoord ) {
 }
 
 Texture2D tex;
-SamplerState ss;
-
-float median(float a, float b, float c) {
-    return max(min(a,b), min(max(a,b), c));
-}
+SamplerState ss : register(s0);
 
 float4 ps_main( float2 tc : TexCoord ) : SV_Target { 
-    float3 dist = tex.Sample( ss, tc ).rgb;
-    
-    float d = median(dist.r, dist.g, dist.b) - 0.5;
-
-    float w = clamp(d/fwidth(d) + 0.5, 0.0, 1.0);
-    
-    float4 outside = float4(0, 0, 0, 0);
-    float4 inside = float4(1, 1, 1, 1);
-    float4 color = lerp(outside, inside, w);
-    
-    return color;
+    return tex.Sample( ss, tc );
 }
 			)";
 			m_pShader = gfx->CreateShader( info );
@@ -114,13 +136,6 @@ float4 ps_main( float2 tc : TexCoord ) : SV_Target {
 			IFSampler::CreateInfo info;
 			info.filter = IFSampler::Linear;
 			m_pSampler = gfx->CreateSampler( info );
-		}
-		{
-			auto surface = Fission::Surface::Create();
-			surface->Load( "roboto.png" );
-			IFTexture2D::CreateInfo info = {};
-			info.pSurface = surface.get();
-			m_pTexture = gfx->CreateTexture2D( info );
 		}
 	}
 
@@ -137,57 +152,135 @@ float4 ps_main( float2 tc : TexCoord ) : SV_Target {
 
 	void Destroy()
 	{
-		_aligned_free( vertex_data );
-		_aligned_free( index_data );
+		state |= Kill; // rip
+		cv.notify_one();
+		_aligned_free( master_vertex_data );
+		_aligned_free( master_index_data );
+		worker.join();
 		delete this;
 	}
 
-	void Render(float s) {
-		index_data[icount++] = 0;
-		index_data[icount++] = 1;
-		index_data[icount++] = 3;
-		index_data[icount++] = 0;
-		index_data[icount++] = 2;
-		index_data[icount++] = 3;
-
-		float tcl =            290.5f / 820.0f;
-		float tcb = ( 820.0f - 375.5f) / 820.0f;
-		float tcr =            307.5f / 820.0f;
-		float tct = ( 820.0f - 401.5f ) / 820.0f;
-
-		float pl = 0.0063911593993426913f, pb = -0.049594541139240556f, pr= 0.53608930935065724f, pt= 0.76053204113924044f;
-
-		float x = 100.0f, y = 700.0f;
-
-		float x0 = x + pl * s;
-		float y0 = y - pt * s;
-		float x1 = x + pr * s;
-		float y1 = y - pb * s;
-
-		vertex_data[vcount++] = {{x0, y0}, {tcl, tct}};
-		vertex_data[vcount++] = {{x1, y0}, {tcr, tct}};
-		vertex_data[vcount++] = {{x0, y1}, {tcl, tcb}};
-		vertex_data[vcount++] = {{x1, y1}, {tcr, tcb}};
-		
-		m_pVertexBuffer->SetData( vertex_data, vcount );
-		m_pIndexBuffer->SetData( index_data, icount );
-
+	void Render() {
 		m_pVertexBuffer->Bind();
 		m_pIndexBuffer->Bind();
 		m_pTransformBuffer->Bind( Fission::Resource::IFConstantBuffer::Target::Vertex, 0 );
-		m_pShader->Bind();
 		m_pBlender->Bind();
-		m_pTexture->Bind(0);
-		m_pSampler->Bind(Fission::Resource::IFSampler::Pixel, 0);
+		m_pShader->Bind();
 
-		m_pGraphics->DrawIndexed( icount );
-		icount = vcount = 0;
+		font->get_atlas()->Bind(0);
+		m_pSampler->Bind(Fission::Resource::IFSampler::Pixel, 0);
+		Draw( fntDraw );
+
+		font->get_emoji_atlas()->Bind(0);
+		Draw( emoDraw );
+
+		if( state & Complete ) {
+			state = state & (~Complete);
+			font.swap(resizefont);
+		}
+
+		if( font->size() != m_TargetSize ) {
+			state |= WantResize;
+			cv.notify_one();
+		}
 	}
 
-	struct vertex {
-		Fission::v2f32 pos;
-		Fission::v2f32 tc;
-	};
+	void Draw(DrawData& d) {
+		m_pVertexBuffer->SetData( d.vertex_data, d.vcount );
+		m_pIndexBuffer->SetData( d.index_data, d.icount );
+		m_pGraphics->DrawIndexed( d.icount );
+		d.icount = d.vcount = 0;
+	}
+
+	void SetFont( UIFont* fnt ) {
+		font = fnt;
+		m_pFontTexture  = font->get_atlas();
+		m_pEmojiTexture = font->get_emoji_atlas();
+		m_TargetSize = font->size();
+
+		font_info.emojifile    = twemojifile;
+		font_info.fontfile     = NotoSans_RegularTTF::data;
+		font_info.fontfilesize = NotoSans_RegularTTF::size;
+	}
+
+	void _add_glyph( const v2f32& origin, const float& scale, DrawData& d, const Font::Glyph* g ) {
+		const auto rect = rf32::from_topleft(
+			origin.x + scale * g->offset.x,
+			origin.y + scale * g->offset.y,
+			g->size.x * scale,
+			g->size.y * scale
+		);
+
+		d.index_data[d.icount++] = d.vcount;
+		d.index_data[d.icount++] = d.vcount + 1u;
+		d.index_data[d.icount++] = d.vcount + 2u;
+		d.index_data[d.icount++] = d.vcount + 3u;
+		d.index_data[d.icount++] = d.vcount;
+		d.index_data[d.icount++] = d.vcount + 2u;
+
+		d.vertex_data[d.vcount++] = vertex( v2f32( rect.x.low,  rect.y.high ), v2f32( g->rc.x.low,  g->rc.y.high ) );
+		d.vertex_data[d.vcount++] = vertex( v2f32( rect.x.low,  rect.y.low  ), v2f32( g->rc.x.low,  g->rc.y.low  ) );
+		d.vertex_data[d.vcount++] = vertex( v2f32( rect.x.high, rect.y.low  ), v2f32( g->rc.x.high, g->rc.y.low  ) );
+		d.vertex_data[d.vcount++] = vertex( v2f32( rect.x.high, rect.y.high ), v2f32( g->rc.x.high, g->rc.y.high ) );
+	}
+
+	void AddText( utf32_string_view sv, v2f32 pos ) {
+		const Font::Glyph* glyph;
+		float scale = m_TargetSize / font->size();
+
+		GetEngine()->GetDebug()->Text( "height = %.2f", font->height() );
+		GetEngine()->GetDebug()->Text( "rendertime %.1f ms", rendertime );
+
+		for( int i = 0; i < sv.size(); ++i ) {
+			const chr& cp = sv.data()[i];
+		//	if( cp == '\r' || cp == '\n' ) { pos.y += font->height(); start = 0.0f; continue; }
+			glyph = font->lookup( cp );
+
+			if( glyph == font->fallback() ) {
+				int char_advance;
+				auto g = font->lookup_emoji( &cp, char_advance );
+				if( g ) {
+					auto& gg = g.value();
+					_add_glyph( pos, scale, emoDraw, gg );
+					pos.x += gg->advance * scale;
+					i += char_advance - 1;
+					continue;
+				}
+			}
+
+			if( cp != U' ' ) {
+				_add_glyph( pos, scale, fntDraw, glyph );
+			}
+
+			pos.x += glyph->advance * scale;
+		}
+	}
+
+	static void __cdecl ThreadDriver(TextRenderer* pthis) {
+		pthis->ThreadMain();
+	}
+
+	void ThreadMain() {
+		Fission::simple_timer t;
+		while( (state & Kill) == 0 ) {
+			std::unique_lock lock{worker_mutex};
+			cv.wait( lock );
+
+			t.reset();
+			if( state & WantResize ) {
+				font_info.size = m_TargetSize;
+				resizefont = UIFont::Create( font_info );
+				state |= Complete;
+				state = state & (~WantResize);
+			}
+
+			rendertime = t.getms();
+		}
+	}
+
+	void resize( float ns ) {
+		m_TargetSize = std::clamp(ns, 6.0f, 64.0f);
+	}
 
 	Fission::IFGraphics* m_pGraphics = nullptr;
 
@@ -197,60 +290,94 @@ float4 ps_main( float2 tc : TexCoord ) : SV_Target {
 	Fission::fsn_ptr<Fission::Resource::IFShader>		  m_pShader;
 	Fission::fsn_ptr<Fission::Resource::IFSampler>		  m_pSampler;
 	Fission::fsn_ptr<Fission::Resource::IFBlender>		  m_pBlender;
-	Fission::fsn_ptr<Fission::Resource::IFTexture2D>	  m_pTexture;
 
-	vertex * vertex_data = nullptr;
-	uint32_t* index_data = nullptr;
+	Fission::Resource::IFTexture2D*	  m_pFontTexture;
+	Fission::Resource::IFTexture2D*	  m_pEmojiTexture;
 
-	Fission::u32 vcount = 0;
-	Fission::u32 icount = 0;
+	DrawData fntDraw;
+	DrawData emoDraw;
 
-	static constexpr int vertex_max_count = 1000;
-	static constexpr int index_max_count  = 2000;
+	float m_TargetSize;
+	UIFont::CreateInfo font_info;
+
+	fsn_ptr<UIFont> font;
+	fsn_ptr<UIFont> resizefont;
+
+	std::thread	worker;
+	std::mutex  worker_mutex;
+	std::condition_variable cv;
+	int state = 0;
+
+	vertex*   master_vertex_data = nullptr;
+	uint32_t* master_index_data = nullptr;
+
+	static constexpr int vertex_max_count = 4000;
+	static constexpr int index_max_count  = 6000;
 
 	Fission::size2 _viewport_size;
 };
 
-using namespace Fission;
 struct SettingsScene : public DefaultDelete<Fission::IFScene>
 {
 	virtual void OnCreate(FApplication* app) override {
 		r2d = app->f_pEngine->GetRenderer<IFRenderer2D>( "$internal2D" );
 		tr  = app->f_pEngine->GetRenderer<TextRenderer>( "test" );
+		
+		{
+			FILE* f = fopen( "twemoji.bin", "rb" );
+			fseek( f, 0, SEEK_END );
+			long fsize = ftell( f );
+			fseek( f, 0, SEEK_SET );  /* same as rewind(f); */
+			twemojifile = malloc( fsize );
+			fread( twemojifile, fsize, 1, f );
+			fclose( f );
+		}
+
+		UIFont::CreateInfo font_info;
+		font_info.size         = 8.0f;
+		font_info.emojifile    = twemojifile;
+		font_info.fontfile     = NotoSans_RegularTTF::data;
+		font_info.fontfilesize = NotoSans_RegularTTF::size;
+		tr->SetFont( UIFont::Create( font_info ) );
 	}
 	virtual void OnUpdate(Fission::timestep dt) override {
 
-		if( hitbox[mouse] ) {
-			hitbox.x.low  -= 20.0f * dt * ( hitbox.x.low  - (def_size.x.low  - 30.0f) );
-			hitbox.x.high -= 20.0f * dt * ( hitbox.x.high - (def_size.x.high + 30.0f) );
-			col -= 20.0f * dt * (col - colors::White);
-			h -= 20.0f * dt * ( h - 32.0f );
-		}
-		else {
-			hitbox.x.low  -= 20.0f * dt * ( hitbox.x.low  - def_size.x.low  );
-			hitbox.x.high -= 20.0f * dt * ( hitbox.x.high - def_size.x.high );
-			col -= 20.0f * dt * (col - rest_col);
-			h -= 20.0f * dt * ( h - 28.0f );
-		}
+	//	if( hitbox[mouse] ) {
+	//		hitbox.x.low  -= 20.0f * dt * ( hitbox.x.low  - (def_size.x.low  - 30.0f) );
+	//		hitbox.x.high -= 20.0f * dt * ( hitbox.x.high - (def_size.x.high + 30.0f) );
+	//		col -= 20.0f * dt * (col - colors::White);
+	//		h -= 20.0f * dt * ( h - 32.0f );
+	//	}
+	//	else {
+	//		hitbox.x.low  -= 20.0f * dt * ( hitbox.x.low  - def_size.x.low  );
+	//		hitbox.x.high -= 20.0f * dt * ( hitbox.x.high - def_size.x.high );
+	//		col -= 20.0f * dt * (col - rest_col);
+	//		h -= 20.0f * dt * ( h - 28.0f );
+	//	}
 
-		r2d->SelectFont( FontManager::GetFont("$debug") );
-	//	r2d->DrawRect( hitbox, colors::AliceBlue, 1.0f );
-		r2d->FillRect( rf32{ hitbox.left(), hitbox.right(), hitbox.y.average() - 1.0f, hitbox.y.average() + 1.0f}, col);
-		auto tl = r2d->CreateTextLayout( "Performance" );
-		r2d->DrawString( "Performance", { 0.5f * (hitbox.width() - tl.width) + hitbox.left(), hitbox.y.average() - h}, col);
-		r2d->Render();
+	//	r2d->SelectFont( GetEngine()->GetFont("$debug") );
+	////	r2d->DrawRect( hitbox, colors::AliceBlue, 1.0f );
+	//	r2d->FillRect( rf32{ hitbox.left(), hitbox.right(), hitbox.y.average() - 1.0f, hitbox.y.average() + 1.0f}, col);
+	//	auto tl = r2d->CreateTextLayout( "Performance|M" );
+	//	auto pos = v2f32{ 0.5f * ( hitbox.width() - tl.width ) + hitbox.left(), hitbox.y.average() - h };
+	//	r2d->DrawRect( rf32::from_topleft( pos, tl.width, tl.height ), colors::White, 1.0f, StrokeStyle::Outside );
+	//	r2d->DrawString( "Performance|M", pos, col);
+	//	r2d->Render();
 
-		tr->Render(mouse.x / 3.0f);
+		tr->AddText( U"The😵five❤👨🏽‍✈️👩🏿‍❤️‍💋‍👩🏻👩🏻‍🚒🤏🏾🤞🏿boxing🙀wizards🍖jump👇quickly⛲", { 100.0f, 100.0f } );
+	//	tr->AddText( U"🀄❤❤⛲❤🦷🥽🥤❤⛲", { 100.0f, 100.0f } );
+		tr->Render();
 	}
 	virtual Fission::EventResult OnMouseMove(Fission::MouseMoveEventArgs& args) override {
 		mouse = (v2f32)args.position;
+		if(tr) tr->resize( std::floor(mouse.x / 10.0f) );
 		return EventResult::Handled;
 	}
 	virtual Fission::SceneKey GetKey() override { return {}; }
 
 	v2f32 mouse = {};
 	IFRenderer2D* r2d;
-	TextRenderer* tr;
+	TextRenderer* tr = nullptr;
 
 	static constexpr rf32 def_size = { 300.0f, 440.0f, 300.0f, 350.0f };
 	rf32 hitbox = { 300.0f, 440.0f, 300.0f, 350.0f };
@@ -266,7 +393,7 @@ public:
 
 	virtual void OnStartUp( CreateInfo * info ) override
 	{
-		info->window.title = u8"🔥 Sandbox 🔥  👌👌👌👌👌";
+		info->window.title = u8"emoji modifiers are a nightmare to code, just fucking kill me, like who TF thought of this??!!??";
 		f_pEngine->RegisterRenderer( "test", new TextRenderer );
 	}
 	virtual Fission::IFScene * OnCreateScene( const Fission::SceneKey& key ) override

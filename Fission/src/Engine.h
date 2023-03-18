@@ -34,6 +34,8 @@ namespace Fission
 
 		std::unordered_map<std::string, RendererContext>
 		                            m_Renderers;
+		std::unordered_map<std::string, fsn_ptr<Font>>
+		                            m_Fonts;
 
 		DebugLayerImpl				m_DebugLayer;
 		ConsoleLayerImpl			m_ConsoleLayer;
@@ -53,7 +55,7 @@ namespace Fission
 		FApplication *              m_Application = nullptr;
 		int                         m_ExitCode = 0;
 
-		size2                  m_NewSize;
+		size2                       m_NewSize;
 		///////////////////////////////////////////////////////
 
 	public:
@@ -75,10 +77,14 @@ namespace Fission
 		virtual void ClearSceneHistory() override;
 
 		virtual void RegisterRenderer( const char * name, IFRenderer * r ) override;
-
 		virtual IFRenderer * GetRenderer( const char * name ) override;
 
+		virtual void RegisterFont( const char * name, Font * r ) override;
+		virtual Font * GetFont( const char * name ) override;
+
 		virtual IFDebugLayer * GetDebug() override;
+
+		virtual IFGraphics* GetGraphics() override;
 
 		virtual EventResult OnKeyDown( KeyDownEventArgs & )        override;
 		virtual EventResult OnKeyUp( KeyUpEventArgs & )            override;

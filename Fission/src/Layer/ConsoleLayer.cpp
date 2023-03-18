@@ -12,10 +12,9 @@ namespace Fission {
 	{
 		m_CommandText.reserve( s_MaxCommandSize );
 		m_pRenderer2D = (IFRenderer2D*)app->f_pEngine->GetRenderer("$internal2D");
-		FontManager::SetFont( "$console", JetBrainsMonoTTF::data, JetBrainsMonoTTF::size, 14.0f, app->f_pGraphics );
-		m_pFont = FontManager::GetFont( "$console" );
-		m_FontSize = m_pFont->GetSize();
-
+		m_pFont = Font::Create( { JetBrainsMonoTTF::data, JetBrainsMonoTTF::size, 14.0f } );
+		app->f_pEngine->RegisterFont( "$console", m_pFont );
+		m_FontSize = m_pFont->height();
 		m_width = (float)app->f_pMainWindow->GetSwapChain()->GetSize().w;
 	}
 

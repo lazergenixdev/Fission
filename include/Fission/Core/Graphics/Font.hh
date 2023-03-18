@@ -1,4 +1,4 @@
-/**
+﻿/**
 *
 * @file: Font.h
 * @author: lazergenixdev@gmail.com
@@ -28,68 +28,76 @@
 *
 */
 
-// todo: complete redesign of font manager; works great now, but has many
-//	many issues when it comes to trying to reuse font faces and memory usage
-
 #pragma once
 #include "Fission/Base/Rect.hpp"
+#include "Fission/Base/String.hpp"
 #include "Fission/Core/Graphics/Bindable.hh"
+
+//! @TODO: Cache Font Faces that are already loaded.
+//! @TODO: System for picking language codepoints (用éäК)
 
 namespace Fission {
 
-	struct Font
+	enum FontType {
+		Basic,
+		SDF,
+		UI
+	};
+
+	//! Basic Font Type
+	struct Font : public IFObject
 	{
 	public:
 		struct Glyph {
-			rf32 rc;
+			rf32 rc; // Location in font atlas
 			v2f32 offset, size;
 			float advance;
 		};
 
+		struct CreateInfo {
+			const void* fontfile;
+			u64 fontfilesize;
+			float size;
+		};
 	public:
-		struct CreateOptions {
-			int unused = 0;
+
+		//! @note This function must be called AFTER graphics is initialized,
+		//!			font atlas is saved to the GPU, not to system memory
+		FISSION_API static Font* Create( const CreateInfo& _Info );
+
+		virtual Resource::IFTexture2D * get_atlas() const = 0;
+
+		virtual const Glyph * lookup( chr _Codepoint ) const = 0;
+
+		virtual float height() const = 0;
+
+		virtual void resize(float _New_Size) = 0;
+	};
+
+	//! UI Font Type
+	struct UIFont : public Font
+	{
+	public:
+		struct CreateInfo {
+			const void* fontfile;
+			u64 fontfilesize;
+			const void* emojifile;
+			u64 emojifilesize;
+			float size;
 		};
 
-		virtual Resource::IFTexture2D * GetTexture2D() const = 0;
-
-		virtual const Glyph * GetGylph( wchar_t ch ) const = 0;
-
-		virtual const Glyph * GetGylphOutline( wchar_t ch ) const = 0;
-
-		virtual float GetSize() const = 0;
-
-	//	virtual void SetSize(float) const = 0;
-
-		virtual ~Font() = default;
-	};
-
-	struct FontFace
-	{
-		virtual std::unique_ptr<Font> CreateFont( float size, const Font::CreateOptions & options = {} );
-
-		virtual ~FontFace() = default;
-
-		FISSION_API static std::unique_ptr<FontFace> FontFaceFromFile( const wchar_t * file_path );
-
-		FISSION_API static std::unique_ptr<FontFace> FontFaceFromMemory( const void * pdata, size_t size );
-	};
-
-	class FontManager
-	{
 	public:
-	
-		FISSION_API static Font * GetFont( const char * key );
+		//! @note This function must be called AFTER graphics is initialized
+		//!			font atlas is saved to the GPU, not to system memory
+		FISSION_API static UIFont* Create( const CreateInfo& _Info );
 
-		// "$debug" ----- used by the debug layer
-		// "$console" --- used by the console layer
-		// "$ui" -------- used by the ui layer
-		FISSION_API static void SetFont( const char * key, const std::filesystem::path & filepath, float pxsize, struct IFGraphics * gfx );
+		virtual float size() const = 0;
 
-		FISSION_API static void SetFont( const char * key, const void * pdata, size_t size, float pxsize, struct IFGraphics * gfx );
+		virtual const Glyph* fallback() const = 0;
 
-		FISSION_API static void DelFont( const char * key );
+		virtual std::optional<const Glyph*> lookup_emoji(const chr * codepoints, int& advance) const = 0;
 
-	}; // class Fission::FontManager
+		virtual Resource::IFTexture2D * get_emoji_atlas() const = 0;
+	};
 
 } // namespace Fission

@@ -2,6 +2,7 @@ IncludeDir = {}
 IncludeDir["yaml"] 		= "vendor/yaml-cpp/include"
 IncludeDir["json"] 		= "vendor/json/single_include"
 IncludeDir["freetype"] 	= 'vendor/freetype/include'
+IncludeDir["lunasvg"] 	= 'vendor/lunasvg/include'
 
 if _FISSION_EXTERNAL then
 	include 'Fission'

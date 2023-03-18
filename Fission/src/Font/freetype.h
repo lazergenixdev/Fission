@@ -7,35 +7,22 @@ namespace freetype
 {
 	class Face
 	{
-		friend class Library;
 	public:
-		Face() = default;
+		FT_Face m_Face;
 
+		Face() = default;
 		~Face();
 
-		FT_Face m_Face;
-		Face( FT_Library lib, const std::filesystem::path & path );
-		Face( FT_Library lib, const void * data, size_t size );
-	};
-
-	class Library
-	{
-	public:
-
-		static Face * LoadFaceFromFile( const std::filesystem::path & path );
-		static Face * LoadFaceFromMemory( const void * pData, const size_t size );
+		Face( const std::filesystem::path & path );
+		Face( const void * data, size_t size );
 
 	private:
+		FT_Library get_lib();
 
-		static Library & Get();
-
-		Library();
-		~Library();
-
-		std::map<std::string, std::unique_ptr<Face>> m_Faces;
-
-		FT_Library m_Library = NULL;
+	private:
+		static FT_Library	s_library;
+		static int			s_ref_count;
 	};
-
 }
+
 

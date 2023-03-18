@@ -1,142 +1,93 @@
-#include <Fission/Core/Application.hh>
-#include <Fission/Base/util/SmartPointer.hpp>
-#include <Fission/Core/Graphics/Font.hh>
-#include <Fission/Core/Surface.hh>
-#include "freetype.h"
+#include "Font.h"
+#include <Fission/Base/Exception.hpp>
+#include <MaxRectsBinPack.hpp>
+#include <lunasvg.h>
+
+#define _REPEAT_5 X(0) X(1) X(2) X(3) X(4)
 
 namespace Fission {
 
-	static std::map<std::string, std::unique_ptr<Font>> s_Fonts;
-
-	struct Node
-	{
-		using texID = Surface *;
-
-		Node() = default;
-		bool is_leaf() const { return ( A == nullptr ); }
-		Node * insert( int width, int height )
-		{
-			if( is_leaf() )
-			{
-				auto sz = rc.size();
-
-				//( if there's already a lightmap here, return )
-				if( isFilled ) return NULL;
-
-				//( if we're too small, return )
-				if( height > sz.h || width > sz.w )
-					return NULL;
-
-				//( if we're just right, accept )
-				if( sz == size2{ width, height } )
-				{
-					isFilled = true;
-					return this;
-				}
-
-				//( otherwise, gotta split this node and create some kids )
-				A = new Node;
-				B = new Node;
-
-				//( decide which way to split )
-				auto dw = sz.w - width;
-				auto dh = sz.h - height;
-
-				if( dw > dh )
-				{
-					A->rc = ri32( rc.left(), rc.left() + width, rc.top(), rc.bottom() );
-					B->rc = ri32( rc.left() + width, rc.right(), rc.top(), rc.bottom() );
-				}
-				else
-				{
-					A->rc = ri32( rc.left(), rc.right(), rc.top(), rc.top() + height );
-					B->rc = ri32( rc.left(), rc.right(), rc.top() + height, rc.bottom() );
-				}
-
-				//( insert into first child we created )
-				return A->insert( width, height );
-			}
-			else
-			{
-				//( try inserting into first child )
-				auto newNode = A->insert( width, height );
-				if( newNode != NULL ) return newNode;
-				//( no room, insert into second )
-				return B->insert( width, height );
-			}
-		}
-
-		Node * A = nullptr, * B = nullptr;
-		bool isFilled = false;
-		ri32 rc;
-	};
-
-	// Bitmap Font
-	class _bm_Font : public Font
-	{
-	public:
-
-		virtual Resource::IFTexture2D * GetTexture2D() const override { return const_cast<Resource::IFTexture2D*>( m_pTexture ); }
-		virtual float GetSize() const override { return height; }
-
-		virtual const Glyph * GetGylph( wchar_t ch ) const override
-		{
-			if( ch >= m_GlyphLookup.size() )
-				return pFallbackGlyph;
-
-			auto i = m_GlyphLookup[ch];
-			return &m_Glyphs[i];
-		}
-		virtual const Glyph * GetGylphOutline( wchar_t ch ) const override { return nullptr; }
-
-		std::vector<int> m_GlyphLookup;
-		std::vector<Glyph> m_Glyphs;
-		Glyph * pFallbackGlyph;
-		Resource::IFTexture2D * m_pTexture; // This is a memory leak, LOL
-		float size, height;
-	};
-
-	Font * FontManager::GetFont( const char * key )
-	{
-		auto it = s_Fonts.find( key );
-
-		if( it != s_Fonts.end() )
-			return it->second.get();
-
-		return nullptr;
+	Font* Font::Create(const CreateInfo& info) {
+		return new FontImpl(info);
 	}
 
-	void add_font( const char * key, freetype::Face * pFace, float size, IFGraphics * gfx )
+	UIFont* UIFont::Create(const CreateInfo& info) {
+		return new UIFontImpl(info);
+	}
+
+}
+
+namespace Fission {
+
+	int CodepointCombinationCollection::match( const chr* codepoints ) const {
+		// We only matched one, and that's ok :)
+		if( second == NULL ) {
+			return 1;
+		}
+
+		// you suck
+		if( *codepoints++ != second )
+			return 0;
+
+		int n = 2;
+		for( const auto& cp : extra ) {
+			// is null, cannot possibly be equal to this codepoint
+			if( *codepoints == NULL || *codepoints++ != cp )
+				return 0;
+
+			++n;
+		}
+
+		return n;
+	}
+
+	void EmojiDictionary::insert( const chr* codepoints, const Font::Glyph& glyph )
 	{
+		CodepointCombinationCollection codepoint_combination_collection;
+		codepoint_combination_collection.glyph = glyph;
+		codepoint_combination_collection.second = codepoints[1];
+
+		if( codepoints[1] != 0 ) {
+			for( int i = 2; codepoints[i] != 0; ++i ) {
+				codepoint_combination_collection.extra.emplace_back( codepoints[i] );
+			}
+		}
+
+		auto it = Map.find( *codepoints );
+		if( it != Map.end() ) {
+			it->second.emplace_back( std::move(codepoint_combination_collection) );
+		} else {
+			auto& entry = Map[*codepoints];
+			entry.emplace_back( std::move( codepoint_combination_collection ) );
+		}
+	}
+
+	inline void generate_font_atlas(
+		FT_Face   face,
+		u32       height,
+
+		float&                                 outHeight,
+		std::unordered_map<chr, Font::Glyph>&  outMap,
+		fsn_ptr<Resource::IFTexture2D>&        outTexture,
+		Font::Glyph&                           outFallback
+	) {
+		auto gfx = GetEngine()->GetGraphics();
 		FT_Error error = FT_Err_Ok;
-		_bm_Font font;
 
-		FT_Face & face = pFace->m_Face;
-
-		int dpi = 64;
-
-		//if( error = FT_Set_Char_Size(
-		//	face,					/* handle to face object           */
-		//	0,						/* char_width in 1/64th of points  */
-		//	(FT_F26Dot6)size * 64,	/* char_height in 1/64th of points */
-		//	dpi,					/* horizontal device resolution    */
-		//	dpi ) )					/* vertical device resolution      */
-		//	return;
-		if( error = FT_Set_Pixel_Sizes( face, 0, (FT_UInt)size ) ) // is this better?
+		if( error = FT_Set_Pixel_Sizes( face, 0, height ) )
 			throw std::logic_error( "failed to set char size" );
 
 		float yMax = float( face->size->metrics.ascender >> 6 );
-		font.height = float( face->size->metrics.height >> 6 );
+		outHeight = float( face->size->metrics.height >> 6 );
 
 		Surface::CreateInfo surf_info;
-		surf_info.size = { 1024, 256 };
-		surf_info.fillColor = color{};
+		surf_info.size = { 8 * (int)outHeight, 8 * (int)outHeight };
+		//	surf_info.fillColor = color{};
 		auto pSurface = Surface::Create( surf_info );
 
-		Node root;
-		root.rc = ri32( 0, pSurface->width(), 0, pSurface->height() );
+		auto pack = rbp::MaxRectsBinPack( surf_info.size.w, surf_info.size.h, false );
 
-		auto save_glyph = [&] ( wchar_t ch ) {
+		auto generate_glyph = [&]() -> Font::Glyph {
 			Font::Glyph g;
 
 			g.offset.x = (float)( face->glyph->bitmap_left );
@@ -147,84 +98,230 @@ namespace Fission {
 
 			auto bitmap = face->glyph->bitmap;
 
-			auto node = root.insert( bitmap.width, bitmap.rows );
-			if( !node ) throw std::logic_error( "font atlas too small" );
+			auto rect = pack.Insert( bitmap.width + 1, bitmap.rows + 1, rbp::MaxRectsBinPack::RectBestAreaFit );
+			//if( !node ) throw std::logic_error( "font atlas too small" );
 
 			/* now, draw to our target surface */
 			pSurface->insert(
-				node->rc.left(), node->rc.top(),
-				[&] ( int x, int y ) -> color {
+				rect.x, rect.y,
+				[&]( int x, int y ) -> color {
 					return rgba8( 255, 255, 255, bitmap.buffer[y * bitmap.width + x] );
 				},
 				size2{ (int)bitmap.width, (int)bitmap.rows }
-			);
+				);
 
 			g.rc = {
-				(float)node->rc.left() / (float)pSurface->width(),
-				(float)node->rc.right() / (float)pSurface->width(),
-				(float)node->rc.top() / (float)pSurface->height(),
-				(float)node->rc.bottom() / (float)pSurface->height()
+				(float)rect.x / (float)pSurface->width(),
+				(float)( rect.x + bitmap.width ) / (float)pSurface->width(),
+				(float)rect.y / (float)pSurface->height(),
+				(float)( rect.y + bitmap.rows ) / (float)pSurface->height()
 			};
 
-			font.m_GlyphLookup[ch] = (int)font.m_Glyphs.size();
-			font.m_Glyphs.emplace_back( g );
+			return g;
 		};
 
 		if( error = FT_Load_Glyph( face, 0, FT_LOAD_RENDER ) )
 			throw 0x45;
 
-		font.m_GlyphLookup.resize( 0xFF );
+		// Set Fallback glyph
+		outFallback = generate_glyph();
 
-		save_glyph( L'\0' );
-
-		// Glyph ranges for most english and latin, Todo: better font control (languages, storing fonts)
-		for( auto ch = 0x20; ch < 0x7F; ch++ )
+		// Glyph ranges for most english and latin, Todo: better font control (languages)
+		for( chr ch = 0x20; ch < 0x7F; ch++ )
 		{
 			if( error = FT_Load_Char( face, ch, FT_LOAD_RENDER ) )
 				continue;
 
-			if( face->glyph->glyph_index == 0 )
+			if( face->glyph->glyph_index == 0 ) // <-- why?
 				continue;
 
-			save_glyph( ch );
-		}
-		for( auto ch = 0xA0; ch < 0xFF; ch++ )
-		{
-			if( error = FT_Load_Char( face, ch, FT_LOAD_RENDER ) )
-				continue;
-
-			if( face->glyph->glyph_index == 0 )
-				continue;
-
-			save_glyph( ch );
+			outMap.insert( std::make_pair( ch, generate_glyph() ) );
 		}
 
 		Resource::IFTexture2D::CreateInfo tex_info;
 		tex_info.pSurface = pSurface.get();
-		font.m_pTexture = gfx->CreateTexture2D( tex_info );
-
-		auto & pfont = s_Fonts[key];
-		pfont = std::make_unique<_bm_Font>( std::move( font ) );
-		((_bm_Font*)pfont.get())->pFallbackGlyph = &( (_bm_Font *)pfont.get() )->m_Glyphs.front();
+		outTexture = gfx->CreateTexture2D( tex_info );
 	}
 
-	void FontManager::SetFont( const char * key, const std::filesystem::path & filepath, float pxsize, IFGraphics * gfx )
+	inline void generate_emoji_atlas(
+		const void* data,
+		u32         height,
+
+		EmojiDictionary& outDict,
+		fsn_ptr<Resource::IFTexture2D>& outTexture
+	) {
+		height = height & 0b11111111111111111110;
+		auto gfx = GetEngine()->GetGraphics();
+
+		struct EmojiData {
+			chr codepoints[11];
+			uint32_t offset;
+		};
+
+		u32 n = ((const u32*)data)[0];
+		EmojiData* emoji_meta = (EmojiData*)( (const u32*)data + 1 );
+		const char* svg_data = (const char*)data;
+
+		outDict.Map.reserve(777); // jackpot
+
+		Surface::CreateInfo surf_info;
+		surf_info.size = { 61 * ((int)height+1), 61 * ((int)height+1) };
+		auto pSurface = Surface::Create( surf_info );
+
+		auto pack = rbp::MaxRectsBinPack( surf_info.size.w, surf_info.size.h, false );
+
+		Font::Glyph g;
+		g.offset.x = 0.0f;
+		g.offset.y = 0.0f;
+		g.size.x  = (float)height;
+		g.size.y  = (float)height;
+		g.advance = (float)height;
+
+		auto bm = lunasvg::Bitmap( height, height );
+		auto matrix = lunasvg::Matrix((float)height / 36.0f, 0, 0, (float)height / 36.0f, 0, 0);
+
+		for( i64 i : rangei64(n) ) {
+			u32 offset = emoji_meta[i].offset;
+			chr cp     = emoji_meta[i].codepoints[0];
+
+			// This is a private use codepoint, sorry Japan :,(
+			if( cp == U'\uE50A' ) [[unlikely]] continue;
+
+			auto w = height, h = height;
+			auto rect = pack.Insert( w + 1, h + 1, rbp::MaxRectsBinPack::RectBottomLeftRule );
+
+			auto doc = lunasvg::Document::loadFromData( svg_data + offset );
+			memset( bm.data(), 0, height* height * sizeof rgba8 );
+			doc->render( bm, matrix );
+			const rgba8* data = (const rgba8*)bm.data();
+
+			/* now, draw to our target surface */
+			pSurface->insert(
+				rect.x, rect.y,
+				[&]( int x, int y ) -> color {
+					auto& c = data[y * w + x];
+					return rgba8( c.b, c.g, c.r, c.a );
+				},
+				size2{ (int)w, (int)h }
+			);
+
+			g.rc = {
+				(float) rect.x            / (float)pSurface->width(),
+				(float)(rect.x + height ) / (float)pSurface->width(),
+				(float) rect.y            / (float)pSurface->height(),
+				(float)(rect.y + height ) / (float)pSurface->height()
+			};
+
+			outDict.insert( emoji_meta[i].codepoints, g );
+		}
+
+		Resource::IFTexture2D::CreateInfo tex_info;
+		tex_info.pSurface = pSurface.get();
+		outTexture = gfx->CreateTexture2D( tex_info );
+	}
+
+
+	FontImpl::FontImpl( const CreateInfo& info )
+		: m_Face(info.fontfile, info.fontfilesize), m_Height(info.size)
 	{
-		auto pFace = freetype::Library::LoadFaceFromFile( filepath );
-
-		add_font( key, pFace, pxsize, gfx );
+		generate_font_atlas( m_Face.m_Face, (u32)info.size, m_Height, m_Map, m_pAtlasTexture, m_FallbackGlyph );
 	}
 
-	void FontManager::SetFont( const char * key, const void * data, size_t size, float pxsize, IFGraphics * gfx )
+	Resource::IFTexture2D* FontImpl::get_atlas() const {
+		return m_pAtlasTexture.get();
+	}
+
+	const Font::Glyph* FontImpl::lookup( chr _Codepoint ) const {
+		auto it = m_Map.find(_Codepoint);
+
+		if( it != m_Map.end() )
+			return &it->second;
+
+		return &m_FallbackGlyph;
+	}
+
+	float FontImpl::height() const {
+		return m_Height;
+	}
+
+	void FontImpl::resize( float _New_Size ) {
+		FISSION_THROW_NOT_IMPLEMENTED();
+	}
+
+	void FontImpl::Destroy()
 	{
-		auto pFace = freetype::Library::LoadFaceFromMemory( data, size );
-
-		add_font( key, pFace, pxsize, gfx );
+		delete this;
 	}
 
-	void FontManager::DelFont( const char * key )
+
+	UIFontImpl::UIFontImpl( const CreateInfo& info ):
+		m_Face( info.fontfile, info.fontfilesize ),
+		m_Size( info.size )
 	{
-		s_Fonts.clear();
+		generate_font_atlas( m_Face.m_Face, (u32)info.size, m_Height, m_Map, m_pAtlasTexture, m_FallbackGlyph );
+		generate_emoji_atlas( info.emojifile, (u32)m_Height, m_EmojiMap, m_pEmojiTexture );
 	}
 
+	Resource::IFTexture2D* UIFontImpl::get_atlas() const {
+		return m_pAtlasTexture.get();
+	}
+
+	const Font::Glyph* UIFontImpl::lookup( chr _Codepoint ) const {
+		auto it = m_Map.find( _Codepoint );
+
+		if( it != m_Map.end() )
+			return &it->second;
+
+		return &m_FallbackGlyph;
+	}
+
+	float UIFontImpl::height() const {
+		return m_Height;
+	}
+
+	void UIFontImpl::resize( float _New_Size ) {
+	}
+
+	void UIFontImpl::Destroy()
+	{
+		delete this;
+	}
+
+	float UIFontImpl::size() const {
+		return m_Size;
+	}
+
+	const Font::Glyph* UIFontImpl::fallback() const {
+		return &m_FallbackGlyph;
+	}
+
+	std::optional<const Font::Glyph*> UIFontImpl::lookup_emoji( const chr* codepoints, int& advance ) const
+	{
+		auto it = m_EmojiMap.Map.find( *codepoints++ );
+
+		if( it != m_EmojiMap.Map.end() ) {
+			const auto& codepoint_combination_collection_collection = it->second;
+
+			const Glyph* winner = nullptr;
+			int max = 0;
+
+			for( const auto& a : codepoint_combination_collection_collection ) {
+				int n = a.match(codepoints);
+				if( n > max ) {
+					max = n;
+					winner = &a.glyph;
+				}
+			}
+
+			advance = max;
+			return winner != nullptr ? winner : (std::optional<const Font::Glyph*>());
+		}
+
+		return {};
+	}
+
+	Resource::IFTexture2D* UIFontImpl::get_emoji_atlas() const
+	{
+		return m_pEmojiTexture.get();
+	}
 }

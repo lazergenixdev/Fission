@@ -11,11 +11,12 @@ project 'Fission'
     -- public headers
     files '../include/**'
 
-    links { "yaml", "freetype" }
+    links { "yaml", "freetype", "lunasvg" }
 
     libdirs
     {
-        '%{prj.location}/vendor/freetype/' .. OutputDir
+        '%{prj.location}/vendor/freetype/' .. OutputDir,
+        '%{prj.location}/vendor/lunasvg/' .. OutputDir
     }
 
 	includedirs
@@ -24,7 +25,9 @@ project 'Fission'
         "%{IncludeDir.yaml}",
         "%{IncludeDir.json}",
         '%{IncludeDir.freetype}',
-        '../resources'
+        '%{IncludeDir.lunasvg}',
+        '../resources',
+        "vendor",
 	}
     
     staticruntime "On"

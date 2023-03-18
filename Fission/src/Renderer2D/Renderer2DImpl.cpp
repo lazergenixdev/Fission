@@ -296,15 +296,15 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 	{
 		FISSION_ASSERT( m_pSelectedFont, "you're not supposed to do that." );
 
-		SetTexture( m_pSelectedFont->GetTexture2D() );
+		SetTexture( m_pSelectedFont->get_atlas() );
 
 		float start = 0.0f;
 		const Font::Glyph * glyph;
 
 		while( str[0] != '\0' )
 		{
-			if( *str == '\r' || *str == '\n' ) { str++; pos.y += m_pSelectedFont->GetSize(); start = 0.0f; continue; }
-			glyph = m_pSelectedFont->GetGylph( (wchar_t)*str );
+			if( *str == '\r' || *str == '\n' ) { str++; pos.y += m_pSelectedFont->height(); start = 0.0f; continue; }
+			glyph = m_pSelectedFont->lookup( (chr)*str );
 
 #if __SNAP_TEXT
 			const auto left = _ROUND( pos.x + glyph->offset.x + start );
@@ -326,14 +326,14 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			str++;
 		}
 
-		return TextLayout{ start, (float)m_pSelectedFont->GetSize() };
+		return TextLayout{ start, (float)m_pSelectedFont->height() };
 	}
 
 	TextLayout Renderer2DImpl::DrawString( string_view sv, v2f32 pos, color color )
 	{
 		FISSION_ASSERT( m_pSelectedFont, "you're not supposed to do that." );
 
-		SetTexture( m_pSelectedFont->GetTexture2D() );
+		SetTexture( m_pSelectedFont->get_atlas() );
 
 		float start = 0.0f;
 		const Font::Glyph* glyph;
@@ -343,8 +343,8 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		while( p < sv.size() )
 		{
 			const auto& ch = sv.c_str()[p];
-			if( ch == L'\r' || ch == L'\n' ) { ++p, pos.y += m_pSelectedFont->GetSize(); start = 0.0f; continue; }
-			glyph = m_pSelectedFont->GetGylph( ch );
+			if( ch == L'\r' || ch == L'\n' ) { ++p, pos.y += m_pSelectedFont->height(); start = 0.0f; continue; }
+			glyph = m_pSelectedFont->lookup( ch );
 
 #if __SNAP_TEXT
 			const auto left = _ROUND( pos.x + glyph->offset.x + start );
@@ -365,18 +365,18 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			++p;
 		}
 
-		return TextLayout{ start, (float)m_pSelectedFont->GetSize() };
+		return TextLayout{ start, (float)m_pSelectedFont->height() };
 	}
 
 	TextLayout Renderer2DImpl::CreateTextLayout( const char * str )
 	{
 		FISSION_ASSERT( m_pSelectedFont, "you're not supposed to do that." );
 
-		TextLayout out{ 0.0f,(float)m_pSelectedFont->GetSize() };
+		TextLayout out{ 0.0f,(float)m_pSelectedFont->height() };
 
 		while( str[0] != '\0' )
 		{
-			const Font::Glyph * g = m_pSelectedFont->GetGylph( (wchar_t)*str );
+			const Font::Glyph * g = m_pSelectedFont->lookup( (wchar_t)*str );
 			out.width += g->advance;
 			str++;
 		}
@@ -388,12 +388,12 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 	{
 		FISSION_ASSERT( m_pSelectedFont, "you're not supposed to do that." );
 
-		TextLayout out{ 0.0f,(float)m_pSelectedFont->GetSize() };
+		TextLayout out{ 0.0f,(float)m_pSelectedFont->height() };
 
 		uint32_t pos = 0;
 		while( pos < length )
 		{
-			const Font::Glyph * g = m_pSelectedFont->GetGylph( (wchar_t)str[pos] );
+			const Font::Glyph * g = m_pSelectedFont->lookup( (wchar_t)str[pos] );
 			out.width += g->advance;
 			pos++;
 		}

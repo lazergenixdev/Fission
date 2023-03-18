@@ -81,8 +81,27 @@ namespace Fission
 		}
 
 
+		/**
+		* @brief Register a font to be managed by the engine.
+		*        (can be retrieved using @GetFont)
+		*/
+		virtual void RegisterFont( const char* _Name, Font* _Font ) = 0;
+
+
+		/**
+		 * @brief  Get a font from it's name.
+		 *
+		 * @param  _Name: Name of the font you wish to retrieve;
+		 *                "$debug"   | type: Font | used in Debug Layer
+		 *                "$console" | type: Font | used in Console Layer
+		 */
+		virtual Font* GetFont( const char* _Name ) = 0;
+
+
 
 		virtual IFDebugLayer * GetDebug() = 0;
+
+		virtual IFGraphics * GetGraphics() = 0;
 
 
 		// create a new scene and set switch to that scene.
@@ -107,5 +126,8 @@ namespace Fission
 	}; // struct Fission::IFEngine
 
 	FISSION_API void CreateEngine( void * instance, IFEngine ** ppEngine );
+
+	//! @brief Get the global engine pointer
+	FISSION_API IFEngine* GetEngine();
 
 } // namespace Fission

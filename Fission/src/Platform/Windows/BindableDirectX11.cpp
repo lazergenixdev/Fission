@@ -273,22 +273,12 @@ namespace Fission::Platform {
 		return DXGI_FORMAT_UNKNOWN;
 	}
 
-	//ConstantBufferDX11::ConstantBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, uint32_t slot, uint32_t size )
-	//	: m_pContext( pContext ), m_ByteSize(size), m_BindSlot(slot), m_pData(std::make_unique<char[]>( size ))
-	//{
-	//	D3D11_BUFFER_DESC bd = CD3D11_BUFFER_DESC{};
-	//	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	//	bd.Usage = D3D11_USAGE_DYNAMIC;
-	//	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	//	bd.ByteWidth = std::max( size, 64u );
-
-	//	pDevice->CreateBuffer( &bd, nullptr, &m_pBuffer );
-	//}
-
 	ConstantBufferDX11::ConstantBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info )
 		: m_pContext(pContext)
 	{
-		D3D11_BUFFER_DESC bd = CD3D11_BUFFER_DESC{};
+		D3D11_BUFFER_DESC bd;
+		bd.MiscFlags           = NULL;
+		bd.StructureByteStride = NULL;
 		bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 		if( info.type == Type::Static )
 		{
@@ -302,6 +292,7 @@ namespace Fission::Platform {
 		}
 		bd.ByteWidth = std::max( info.max_size, 64u );
 
+		//! @TODO: Add initial data variable to create info
 		pDevice->CreateBuffer( &bd, nullptr, &m_pBuffer );
 	}
 
@@ -333,8 +324,7 @@ namespace Fission::Platform {
 	SamplerDX11::SamplerDX11( ID3D11Device* pDevice, ID3D11DeviceContext* pContext, const CreateInfo& info )
 		: m_pContext(pContext)
 	{
-
-		D3D11_SAMPLER_DESC sdesc = CD3D11_SAMPLER_DESC{};
+		D3D11_SAMPLER_DESC sdesc = CD3D11_SAMPLER_DESC{D3D11_DEFAULT};
 		switch( info.filter )
 		{
 		case Filter::Linear: sdesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR; break;
