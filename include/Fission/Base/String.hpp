@@ -116,8 +116,9 @@ namespace impl
 
 		constexpr void construct( _ConstPtr src ) {
 			if( size < storage_count ) {
-				memcpy( data.storage, src, storage_count );
+				memcpy( data.storage, src, storage_size );
 				capacity = storage_count - 1;
+				data.storage[size] = util::null_character<_ValueTy>;
 				return;
 			}
 
@@ -146,10 +147,10 @@ namespace impl
 		// Constructors:
 	public:
 		constexpr string_data() noexcept( std::is_nothrow_default_constructible_v<base> ):
-			base(), size( 0 ), capacity( 0 ) { data.storage[0] = util::null_character<_ValueTy>; }
+			base(), size( 0 ), capacity( storage_count - 1 ) { data.storage[0] = util::null_character<_ValueTy>; }
 
 		constexpr string_data( base const& a ):
-			base(a), size( 0 ) { data.storage[0] = util::null_character<_ValueTy>; }
+			base(a), size( 0 ), capacity( storage_count - 1 ) { data.storage[0] = util::null_character<_ValueTy>; }
 
 		constexpr string_data( _ConstPtr p, _SizeTy const s ) noexcept( std::is_nothrow_default_constructible_v<base> ):
 			base(), size( s ) { construct( p ); }
@@ -453,8 +454,9 @@ namespace base
 		constexpr auto str() const noexcept { return std::basic_string<cstr_type>( c_str(), m.size ); }
 		constexpr auto view() const noexcept { return std::basic_string_view<cstr_type>( c_str(), m.size ); }
 
-		constexpr size_type   size() const noexcept { return m.size; }
-		constexpr size_type length() const noexcept { return m.size; }
+		constexpr size_type   size()   const noexcept { return m.size; }
+		constexpr size_type length()   const noexcept { return m.size; }
+		constexpr size_type capacity() const noexcept { return m.capacity; }
 
 	public:
 		constexpr       iterator  begin()       noexcept { _FISSION_GUARD_STRING_ITERATORS return m.get(); }
@@ -480,7 +482,7 @@ namespace base
 				m.size = _New_Size;
 				m.get()[m.size] = util::null_character<value_type>;
 			} else {
-				pointer temp = m.allocate( _New_Size + 1 );
+				pointer temp = m.allocate( m._pick_capacity(_New_Size) );
 
 				if( m._has_memory() )
 				{
@@ -511,10 +513,10 @@ namespace base
 
 			if( m._has_memory() )
 			{
-				memcpy( temp, m.data.ptr, m.size );
-				m.deallocate( m.data.ptr, m.capacity + 1 );
+				memmove( temp, m.data.ptr, m.size* sizeof(value_type)  );
+				m.deallocate( m.data.ptr, (m.capacity + 1) * sizeof(value_type) );
 			}
-			else memcpy( temp, m.data.storage, m.size );
+			else memmove( temp, m.data.storage, m.size * sizeof(value_type) );
 
 			m.capacity = _New_Capacity;
 			m.data.ptr = temp;
@@ -895,6 +897,42 @@ namespace impl
 
 		out.fast_resize( dst - out.data() );
 
+		return out;
+	}
+	template <>
+	static inline base::encoded_string<utf32> convert( base::encoded_string_view<utf16> const& _Msg )
+	{
+		base::encoded_string<utf32> out;
+		out.reserve( _Msg.size() * 2u);
+		char32_t* dst = out.data();
+
+		const char16_t* src = _Msg.data();
+		const char16_t* const end = _Msg.data() + _Msg.size();
+
+		uint32_t _ax;
+
+		// ghetto switch statement.
+		while( src != end )
+		{
+			if( *src > 0xD7FF )
+			{
+				if( end - src < 2 ) { ++src; continue; }
+
+				// 4 bytes
+
+				// Store the codepoint in `_ax`
+				_ax = ( ( *src++ - 0xD800 ) * 0x400 );
+				_ax = ( ( *src++ - 0xDC00 ) + _ax + 0x10000 );
+
+				*dst++ = char32_t( _ax );
+
+				continue;
+			}
+			/* Default: */
+			*dst++ = char32_t( *src++ );
+		}
+
+		out.fast_resize( dst - out.data() );
 		return out;
 	}
 	

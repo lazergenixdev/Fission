@@ -9,6 +9,21 @@ namespace Fission::Platform
 		DWORD Style, ExStyle;
 	};
 
+	class CharacterBuilder
+	{
+	public:
+		CharacterBuilder();
+
+		// @return `True` if codepoint is now complete, `False` otherwise
+		bool AppendChar16( char16_t value );
+
+		char32_t GetCodepoint();
+
+	private:
+		char32_t temp;
+		int bytes_occupied = 0;
+	};
+
 	extern LRESULT CALLBACK WindowsProcSetup( _In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wParam, _In_ LPARAM lParam );
 	extern LRESULT CALLBACK WindowsProcMain( _In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wParam, _In_ LPARAM lParam );
 
@@ -21,7 +36,7 @@ namespace Fission::Platform
 	//	virtual void SetEventHandler( IEventHandler * handler ) override;
 
 
-		virtual void _Call( const std::function<void()> & func ) override;
+		virtual void _debug_set_position( v2i32 ) override;
 
 		virtual void SetTitle( const string & title ) override;
 
@@ -87,6 +102,7 @@ namespace Fission::Platform
 		WindowHandle m_Handle = NULL;
 
 		MouseTrackEvents m_MouseTracker;
+		CharacterBuilder m_CharBuilder;
 
 		Monitor * m_pMonitor;
 
@@ -98,6 +114,8 @@ namespace Fission::Platform
 
 		GlobalWindowInfo * m_pGlobalInfo;
 		bool m_bResetMonitor = false;
+		
+		v2i32 _test_position = {};
 	};
 
 }

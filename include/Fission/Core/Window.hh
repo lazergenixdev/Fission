@@ -101,7 +101,8 @@ namespace Fission
 
 	//	virtual void SetEventHandler( IEventHandler * _Event_Handler ) = 0;
 
-		virtual void _Call( const std::function<void()>& func ) = 0;
+		// debug
+		virtual void _debug_set_position( v2i32 p ) = 0;
 
 		virtual void SetTitle( const string & _Title ) = 0;
 

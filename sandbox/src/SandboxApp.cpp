@@ -282,6 +282,8 @@ float4 ps_main( float2 tc : TexCoord ) : SV_Target {
 		m_TargetSize = std::clamp(ns, 6.0f, 64.0f);
 	}
 
+	int heikjdfsgh() { return font->height(); }
+
 	Fission::IFGraphics* m_pGraphics = nullptr;
 
 	Fission::fsn_ptr<Fission::Resource::IFVertexBuffer>   m_pVertexBuffer;
@@ -339,6 +341,8 @@ struct SettingsScene : public DefaultDelete<Fission::IFScene>
 		font_info.fontfile     = NotoSans_RegularTTF::data;
 		font_info.fontfilesize = NotoSans_RegularTTF::size;
 		tr->SetFont( UIFont::Create( font_info ) );
+
+		wnd = app->f_pMainWindow;
 	}
 	virtual void OnUpdate(Fission::timestep dt) override {
 
@@ -364,13 +368,40 @@ struct SettingsScene : public DefaultDelete<Fission::IFScene>
 	//	r2d->DrawString( "Performance|M", pos, col);
 	//	r2d->Render();
 
-		tr->AddText( U"The😵five❤👨🏽‍✈️👩🏿‍❤️‍💋‍👩🏻👩🏻‍🚒🤏🏾🤞🏿boxing🙀wizards🍖jump👇quickly⛲", { 100.0f, 100.0f } );
+	//	tr->AddText( U"The😵five❤👨🏽‍✈️👩🏿‍❤️‍💋‍👩🏻👩🏻‍🚒🤏🏾🤞🏿boxing🙀wizards🍖jump👇quickly⛲", { 100.0f, 100.0f } );
 	//	tr->AddText( U"🀄❤❤⛲❤🦷🥽🥤❤⛲", { 100.0f, 100.0f } );
+		tr->AddText( utf32_string_view{text, (unsigned)size}, { 50.0f, 200.0f } );
 		tr->Render();
+
+		wnd->_debug_set_position( { 50,200 + tr->heikjdfsgh() } );
+
+		if( size ) {
+			std::stringstream ss;
+			ss << std::hex << (unsigned int)text[size - 1];
+			r2d->SelectFont( GetEngine()->GetFont("$debug") );
+			r2d->DrawString( ss.str().c_str(), {100.0f, 500.0f}, col);
+			r2d->Render();
+		}
 	}
 	virtual Fission::EventResult OnMouseMove(Fission::MouseMoveEventArgs& args) override {
 		mouse = (v2f32)args.position;
 		if(tr) tr->resize( std::floor(mouse.x / 10.0f) );
+		return EventResult::Handled;
+	}
+	virtual Fission::EventResult OnTextInput(Fission::TextInputEventArgs& args) override {
+
+	//	if( args.codepoint > 0x1feee )
+	//		__debugbreak();
+
+		switch( args.codepoint )
+		{
+		case U'\b': { size = std::max( size - 1, 0 ); break; }
+		default: {
+			text[size++] = args.codepoint;
+			text[size] = {};
+			break;
+		}
+		}
 		return EventResult::Handled;
 	}
 	virtual Fission::SceneKey GetKey() override { return {}; }
@@ -378,6 +409,10 @@ struct SettingsScene : public DefaultDelete<Fission::IFScene>
 	v2f32 mouse = {};
 	IFRenderer2D* r2d;
 	TextRenderer* tr = nullptr;
+	IFWindow* wnd = nullptr;
+
+	chr text[32] = U"🧜🏻‍♀️";
+	int size = 5;
 
 	static constexpr rf32 def_size = { 300.0f, 440.0f, 300.0f, 350.0f };
 	rf32 hitbox = { 300.0f, 440.0f, 300.0f, 350.0f };

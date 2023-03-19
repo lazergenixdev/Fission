@@ -1,4 +1,4 @@
-#include "WindowsWindow.h"
+﻿#include "WindowsWindow.h"
 #include <Fission/Base/Exception.hpp>
 #include <Fission/Core/Console.hh>
 #include <Fission/Core/Configuration.hh>
@@ -23,8 +23,47 @@
 
 #include <uxtheme.h>
 
+#pragma comment(lib, "Imm32.lib")
+
 namespace Fission::Platform
 {
+    CharacterBuilder::CharacterBuilder(): temp( 0 ), bytes_occupied( 0 ) {}
+
+    bool CharacterBuilder::AppendChar16( char16_t value )
+    {
+        bytes_occupied += 2;
+
+        if( value < 0xD800 )
+        {
+            temp = value;
+            return bool( bytes_occupied = 4 );
+        }
+
+        switch( bytes_occupied )
+        {
+        case 2:
+            // store first half of codepoint.
+            temp = ( value - 0xD800 ) * 0x400;
+            break;
+        case 4:
+            // store the second half of codepoint.
+            temp = ( ( value - 0xDC00 ) + temp + 0x10000 );
+            break;
+        default:
+            break;
+        }
+        return bytes_occupied >= 4;
+    }
+
+    char32_t CharacterBuilder::GetCodepoint()
+    {
+#if FISSION_DEBUG
+        if( bytes_occupied != 4 )
+            throw std::logic_error( "Could not create codepoint." );
+#endif
+        bytes_occupied = 0;
+        return temp;
+    }
 
     enum IMMERSIVE_HC_CACHE_MODE
     {
@@ -218,9 +257,9 @@ namespace Fission::Platform
         m_AccessCV.wait( lock );
     }
 
-    void WindowsWindow::_Call( const std::function<void()> & func )
+    void WindowsWindow::_debug_set_position( v2i32 p )
     {
-        SendMessageW( m_Handle, FISSION_WM_CALLEXTERNAL, (WPARAM)&func, 0 );
+        _test_position = p;
     }
 
     void WindowsWindow::SetTitle( const string & title )
@@ -245,11 +284,6 @@ namespace Fission::Platform
         return m_Properties.style;
     }
 
-	//void WindowsWindow::Call( std::function<void()> function )
-	//{
-	//	SendMessageW( m_Handle, FISSION_WM_CALLEXTERNAL, (WPARAM)&function, 0 );
-	//}
-//
     size2 WindowsWindow::GetSize()
     {
         RECT cr;
@@ -438,11 +472,68 @@ namespace Fission::Platform
 
         case WM_CHAR:
         {
-            TextInputEventArgs ev{ e };
-            ev.codepoint = (char32_t)wParam&0xFFFF; // TODO: this is not always a codepoint, pls fix
-            pEventHandler->OnTextInput( ev );
+            if( m_CharBuilder.AppendChar16( wParam & 0xFFFF ) )
+            {
+                TextInputEventArgs ev{ e };
+                ev.codepoint = m_CharBuilder.GetCodepoint();
+                pEventHandler->OnTextInput( ev );
+            }
         }
         break;
+
+        case WM_IME_CHAR:
+        {
+            //TextInputEventArgs ev{ e };
+            //ev.codepoint = (char32_t)wParam; // TODO: this is not always a codepoint, pls fix
+            //pEventHandler->OnTextInput( ev );
+            return TRUE; // pretend we do something here "because Windows"
+        }
+        break;
+        case WM_IME_SETCONTEXT:
+        {
+            util::remove_flag( lParam, ISC_SHOWUICOMPOSITIONWINDOW );
+            break;
+        }
+        case WM_IME_REQUEST:
+        {
+            if( wParam == IMR_QUERYCHARPOSITION )
+            {
+                auto lpPos = reinterpret_cast<IMECHARPOSITION*>( lParam );
+                lpPos->dwSize = sizeof(IMECHARPOSITION);
+                lpPos->pt = { m_Properties.position.x + _test_position.x, m_Properties.position.y + _test_position.y };
+                lpPos->cLineHeight = 1;
+            //    lpPos->rcDocument = { .left = lpPos->pt.x, .top = lpPos->pt.y, .right = lpPos->pt.x + 500, .bottom = lpPos->pt.y + 500 };
+                lpPos->rcDocument = {};
+            }
+            return TRUE;
+        }
+        case WM_IME_STARTCOMPOSITION:
+                static int n; n = 0;
+            break;
+        case WM_IME_COMPOSITION: {
+            if( lParam & GCS_COMPSTR )
+            {
+
+                HIMC hImc = ImmGetContext( hWnd );
+                int len = ImmGetCompositionStringW( hImc, GCS_COMPSTR, NULL, 0 );
+
+                auto ch = (char16_t*)malloc( len );
+                ImmGetCompositionString( hImc, GCS_COMPSTR, ch, len );
+
+                ImmReleaseContext( hWnd, hImc );
+
+                utf32_string str = utf16_string( ch, len / sizeof(char16_t) ).as<utf32>();
+
+                TextInputEventArgs ev{ e };
+                for( int i = n; i < str.size(); ++i ) {
+                    ev.codepoint = str.data()[i];
+                    pEventHandler->OnTextInput( ev );
+                }
+                n = str.size();
+                return TRUE;
+            }
+            break;
+        }
 
         case WM_MOUSEWHEEL:
         {

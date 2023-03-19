@@ -136,7 +136,6 @@ namespace Fission {
 		{
 			switch( args.key )
 			{
-			case Keys::Accent: return FISSION_EVENT_HANDLED;
 			case Keys::Mouse_WheelUp:
 			{
 				if( m_bShow )
@@ -200,6 +199,17 @@ namespace Fission {
 			}
 			return FISSION_EVENT_HANDLED;
 		}
+		if ( args.key == Keys::F1 ) {
+			if( Console::IsEnabled() ) {
+				m_CommandText.clear();
+				extend = 0.0f;
+				lineOffset = 0;
+				m_CursorPosition = 0;
+				m_LastHistoryIndex = 0;
+				m_bShow = true;
+				return FISSION_EVENT_HANDLED;
+			}
+		}
 		return FISSION_EVENT_PASS;
 	}
 
@@ -242,16 +252,6 @@ namespace Fission {
 				}
 				break;
 			}
-			return FISSION_EVENT_HANDLED;
-		}
-		else if( args.codepoint == U'`' && Console::IsEnabled() )
-		{
-			m_CommandText.clear();
-			extend = 0.0f;
-			lineOffset = 0;
-			m_CursorPosition = 0;
-			m_LastHistoryIndex = 0;
-			m_bShow = true;
 			return FISSION_EVENT_HANDLED;
 		}
 		return FISSION_EVENT_PASS;
