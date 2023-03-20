@@ -2,7 +2,7 @@
 
 using namespace Fission;
 
-IFEventHandler * IFEventHandler::Default() {
-	static IFEventHandler _DefEventHandler;
+EventHandler * EventHandler::Default() {
+	static EventHandler _DefEventHandler;
 	return &_DefEventHandler;
 }

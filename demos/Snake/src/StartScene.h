@@ -6,7 +6,7 @@
 
 class StartMenuLayer : public DefaultDelete<Fission::Simple2DLayer>
 {
-	void OnCreate( Fission::FApplication * app );
+	void OnCreate( Fission::Application * app );
 
 	void OnUpdate( Fission::timestep dt );
 
@@ -15,11 +15,11 @@ class StartMenuLayer : public DefaultDelete<Fission::Simple2DLayer>
 	virtual Fission::EventResult OnMouseMove( Fission::MouseMoveEventArgs & ) override;
 	virtual Fission::EventResult OnSetCursor( Fission::SetCursorEventArgs & ) override;
 
-	Fission::FApplication * m_App;
+	Fission::Application * m_App;
 	neutron::WindowManager wm;
 };
 
-class StartScene : public DefaultDelete<Fission::FMultiLayerScene>
+class StartScene : public DefaultDelete<Fission::MultiLayerScene>
 {
 public:
 	StartScene();

@@ -1,6 +1,7 @@
 #pragma once
 #include "Fission/Platform/System.h"
 #include "Fission/Base/Exception.hpp"
+#include "Fission/Core/Window.hh"
 #include "WindowsMonitor.h"
 
 #ifdef FISSION_PLATFORM_WINDOWS
@@ -75,7 +76,7 @@ namespace Fission {
 		string_view const& _Title,
 		string_view const& _Text,
 		const MessageBoxFlag_t & _Flags,
-		IFWindow * _Parent_Window
+		Window * _Parent_Window
 	)
 	{
 		// Convert strings from UTF-8 to UTF-16
@@ -111,7 +112,7 @@ namespace Fission {
 		const platform_char* _Title,
 		const platform_char* _Text,
 		const MessageBoxFlag_t& _Flags,
-		IFWindow* _Parent_Window
+		Window* _Parent_Window
 	)
 	{
 		HWND hwnd = NULL;

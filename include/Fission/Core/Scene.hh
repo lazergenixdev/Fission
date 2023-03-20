@@ -1,33 +1,15 @@
 /**
-*
-* @file: Scene.h
-* @author: lazergenixdev@gmail.com
-*
-*
-* This file is provided under the MIT License:
-*
-* Copyright (c) 2021 Lazergenix Software
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-*
-*/
-
+ *	______________              _____
+ *	___  ____/__(_)________________(_)____________
+ *	__  /_   __  /__  ___/_  ___/_  /_  __ \_  __ \
+ *	_  __/   _  / _(__  )_(__  )_  / / /_/ /  / / /
+ *	/_/      /_/  /____/ /____/ /_/  \____//_/ /_/
+ *
+ *
+ * @Author:       lazergenixdev@gmail.com
+ * @Development:  (https://github.com/lazergenixdev/Fission)
+ * @License:      MIT (see end of file)
+ */
 #pragma once
 #include <Fission/Core/Layer.hh>
 #include <Fission/Core/Graphics/Renderer2D.hh>
@@ -63,21 +45,20 @@ namespace Fission
 		//}
 	};
 
-	struct IFScene : public IFLayer
+	struct Scene : public Layer
 	{
-		virtual void OnCreate( class FApplication * app ) override {}
+		virtual void OnCreate( class Application * app ) override {}
 
 		virtual void OnUpdate( timestep dt ) override {}
 
 		virtual SceneKey GetKey() = 0;
-
 	};
 
-	struct FMultiLayerScene : public IFScene
+	struct MultiLayerScene : public Scene
 	{
 	public:
 		// This should be called after all layers have been pushed onto the layer stack.
-		virtual void OnCreate( class FApplication * app ) override
+		virtual void OnCreate( class Application * app ) override
 		{
 			for( auto && l : m_vLayerStack )
 				l->OnCreate( app );
@@ -89,7 +70,7 @@ namespace Fission
 				l->OnUpdate( dt );
 		}
 
-		inline void PushLayer( IFLayer * layer )
+		inline void PushLayer( Layer * layer )
 		{
 			m_vLayerStack.emplace_back( layer );
 		}
@@ -167,7 +148,7 @@ namespace Fission
 			return EventResult::Handled;
 		}
 
-		virtual ~FMultiLayerScene() 
+		virtual ~MultiLayerScene() 
 		{
 			for( auto && l : m_vLayerStack )
 				l->Destroy();
@@ -177,10 +158,34 @@ namespace Fission
 
 		friend class SceneStack;
 
-		std::vector<IFLayer *> m_vLayerStack;
+		std::vector<Layer *> m_vLayerStack;
 
 		class FApplication * mApp = nullptr;
 
-	}; // class Fission::FScene
+	}; // class Fission::Scene
 
 } // nanespace Fission
+
+/**
+ *	MIT License
+ *
+ *	Copyright (c) 2021-2023 lazergenixdev
+ *
+ *	Permission is hereby granted, free of charge, to any person obtaining a copy
+ *	of this software and associated documentation files (the "Software"), to deal
+ *	in the Software without restriction, including without limitation the rights
+ *	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *	copies of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
+ *
+ *	The above copyright notice and this permission notice shall be included in all
+ *	copies or substantial portions of the Software.
+ *
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
+ */

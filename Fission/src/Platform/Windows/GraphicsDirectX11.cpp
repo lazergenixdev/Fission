@@ -116,7 +116,7 @@ namespace Fission::Platform {
 		m_pImmediateContext->RSSetState( pRasterizerState.Get() );
 	}
 
-	IFGraphics::API GraphicsDirectX11::GetAPI() { return API::DirectX11; }
+	Graphics::API GraphicsDirectX11::GetAPI() { return API::DirectX11; }
 
 	void GraphicsDirectX11::Draw( uint32_t vertexCount, uint32_t vertexOffset )
 	{
@@ -134,44 +134,44 @@ namespace Fission::Platform {
 		m_pImmediateContext->RSSetScissorRects( 1, &clip_rect );
 	}
 
-	Resource::IFFrameBuffer* GraphicsDirectX11::CreateFrameBuffer( const FrameBuffer::CreateInfo & info ) {
+	gfx::FrameBuffer* GraphicsDirectX11::CreateFrameBuffer( const gfx::FrameBuffer::CreateInfo & info ) {
 		FISSION_THROW_NOT_IMPLEMENTED();
 		return nullptr;
 	}
 
-	Resource::IFVertexBuffer* GraphicsDirectX11::CreateVertexBuffer( const VertexBuffer::CreateInfo & info ) {
+	gfx::VertexBuffer* GraphicsDirectX11::CreateVertexBuffer( const gfx::VertexBuffer::CreateInfo & info ) {
 		return new VertexBufferDX11( m_pDevice.Get(), m_pImmediateContext.Get(), info );
 	}
 
-	Resource::IFIndexBuffer* GraphicsDirectX11::CreateIndexBuffer( const IndexBuffer::CreateInfo & info ) {
+	gfx::IndexBuffer* GraphicsDirectX11::CreateIndexBuffer( const gfx::IndexBuffer::CreateInfo & info ) {
 		return new IndexBufferDX11( m_pDevice.Get(), m_pImmediateContext.Get(), info );
 	}
 
-	Resource::IFConstantBuffer* GraphicsDirectX11::CreateConstantBuffer( const ConstantBuffer::CreateInfo & info ) {
+	gfx::ConstantBuffer* GraphicsDirectX11::CreateConstantBuffer( const gfx::ConstantBuffer::CreateInfo & info ) {
 		return new ConstantBufferDX11( m_pDevice.Get(), m_pImmediateContext.Get(), info );
 	}
 
-	Resource::IFSampler* GraphicsDirectX11::CreateSampler( const Sampler::CreateInfo & info ) {
+	gfx::Sampler* GraphicsDirectX11::CreateSampler( const gfx::Sampler::CreateInfo & info ) {
 		return new SamplerDX11( m_pDevice.Get(), m_pImmediateContext.Get(), info );
 	}
 
-	Resource::IFShader* GraphicsDirectX11::CreateShader( const Shader::CreateInfo & info ) {
+	gfx::Shader* GraphicsDirectX11::CreateShader( const gfx::Shader::CreateInfo & info ) {
 		return new ShaderDX11( m_pDevice.Get(), m_pImmediateContext.Get(), info );
 	}
 
-	Resource::IFTexture2D* GraphicsDirectX11::CreateTexture2D( const Texture2D::CreateInfo & info ) {
+	gfx::Texture2D* GraphicsDirectX11::CreateTexture2D( const gfx::Texture2D::CreateInfo & info ) {
 		return new Texture2DDX11( m_pDevice.Get(), m_pImmediateContext.Get(), info );
 	}
 
-	Resource::IFBlender* GraphicsDirectX11::CreateBlender( const Blender::CreateInfo & info ) {
+	gfx::Blender* GraphicsDirectX11::CreateBlender( const gfx::Blender::CreateInfo & info ) {
 		return new BlenderDX11( m_pDevice.Get(), m_pImmediateContext.Get(), info );
 	}
 
-	Resource::IFSwapChain* GraphicsDirectX11::CreateSwapChain( const SwapChain::CreateInfo & info ) {
+	gfx::SwapChain* GraphicsDirectX11::CreateSwapChain( const gfx::SwapChain::CreateInfo & info ) {
 		return new SwapChainDX11( m_pDevice.Get(), m_pImmediateContext.Get(), info );
 	}
 
-	IFGraphics::native_handle_type GraphicsDirectX11::native_handle()
+	Graphics::native_handle_type GraphicsDirectX11::native_handle()
 	{
 		return &m_NativeHandle;
 	}

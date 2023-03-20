@@ -1,33 +1,15 @@
 /**
-*
-* @file: Window.h
-* @author: lazergenixdev@gmail.com
-*
-*
-* This file is provided under the MIT License:
-*
-* Copyright (c) 2021 Lazergenix Software
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-*
-*/
-
+ *	______________              _____
+ *	___  ____/__(_)________________(_)____________
+ *	__  /_   __  /__  ___/_  ___/_  /_  __ \_  __ \
+ *	_  __/   _  / _(__  )_(__  )_  / / /_/ /  / / /
+ *	/_/      /_/  /____/ /____/ /_/  \____//_/ /_/
+ *
+ *
+ * @Author:       lazergenixdev@gmail.com
+ * @Development:  (https://github.com/lazergenixdev/Fission)
+ * @License:      MIT (see end of file)
+ */
 #pragma once
 #include <Fission/Core/Graphics.hh>
 #include <Fission/Core/Monitor.hh>
@@ -42,17 +24,8 @@
 
 namespace Fission
 {
-
-	struct IFWindow : public IFObject
+	namespace wnd
 	{
-		/*! @brief Native window handle type */
-		using native_handle_type = Platform::WindowHandle;
-
-		using SaveID = int;
-
-		static constexpr SaveID NoSaveID = -1; /*!< Window properties will not be saved. */
-
-
 		enum class Style
 		{
 			Borderless,     /*!< Window has no border or title bar */
@@ -76,23 +49,28 @@ namespace Fission
 		};
 		using Flag_t = util::bit_flag_t<Flags>;
 
-
 		//! @brief struct defining the properties of a given Window
 		struct Properties
 		{
-			string         title       = "Window Title";       /*!< Title of the window that will show in the title bar. */
-			size2     size        = { 1280, 720 };        /*!< Client size of the window. */
-			v2i32 position    = {};                   /*!< Position of the window's Top-Left coordinate. */
-			Style          style       = Style::Default;       /*!< Style of the window, can be one of @IFWindow::Style. */
-			Flag_t         flags       = Flags::Default;       /*!< Flags of the window, can be any combination of @IFWindow::Flags. */
-			int            monitor_idx = MonitorIdx_Automatic; /*!< Monitor to use for fullscreen mode. (0 is always the primary) */
-			SaveID         save        = NoSaveID;             /*!< Save ID for this window, used for saving window properties for next startup. */
+			string  title       = "Window Title";       /*!< Title of the window that will show in the title bar. */
+			size2   size        = { 1280, 720 };        /*!< Client size of the window. */
+			v2i32   position    = {};                   /*!< Position of the window's Top-Left coordinate. */
+			Style   style       = Style::Default;       /*!< Style of the window, can be one of @IFWindow::Style. */
+			Flag_t  flags       = Flags::Default;       /*!< Flags of the window, can be any combination of @IFWindow::Flags. */
+			int     monitor_idx = MonitorIdx_Automatic; /*!< Monitor to use for fullscreen mode. (0 is always the primary) */
 		};
+
+	} // namespace wnd
+
+	struct Window : public ManagedObject
+	{
+		/*! @brief Native window handle type */
+		using native_handle_type = Platform::WindowHandle;
 
 		struct CreateInfo
 		{
-			Properties        wProperties;
-			IFEventHandler *  pEventHandler;
+			wnd::Properties  properties;
+			EventHandler *   pEventHandler;
 		};
 
 	public:
@@ -108,15 +86,15 @@ namespace Fission
 
 		virtual string GetTitle() = 0;
 
-		virtual void SetStyle( Style _Style ) = 0;
+		virtual void SetStyle( wnd::Style _Style ) = 0;
 
-		virtual Style GetStyle() = 0;
+		virtual wnd::Style GetStyle() = 0;
 
 		virtual void SetSize( const size2 & _Size ) = 0;
 
 		virtual size2 GetSize() = 0;
 
-		virtual Resource::IFSwapChain * GetSwapChain() = 0;
+		virtual gfx::SwapChain * GetSwapChain() = 0;
 
 		//! @brief Destroy the platform window and exit it's event loop.
 		//! @note This function evokes the `IEventHandler::OnClose` function
@@ -132,13 +110,30 @@ namespace Fission
 		//! @brief Get a Handle to the native window
 		virtual native_handle_type native_handle() = 0;
 
-	}; // struct Fission::IFWindow
-
-	//! @brief Settings for the Main Window.
-	//! @warning Used by Fission's internal API, do not use for save id.
-	static constexpr IFWindow::SaveID MainWindowID = 0; 
-
-	//! @brief Start of valid Window ID's
-	static constexpr IFWindow::SaveID WindowSaveID_Begin = 1; 
+	}; // struct Fission::Window
 
 } // namespace Fission
+
+/**
+ *	MIT License
+ *
+ *	Copyright (c) 2021-2023 lazergenixdev
+ *
+ *	Permission is hereby granted, free of charge, to any person obtaining a copy
+ *	of this software and associated documentation files (the "Software"), to deal
+ *	in the Software without restriction, including without limitation the rights
+ *	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *	copies of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
+ *
+ *	The above copyright notice and this permission notice shall be included in all
+ *	copies or substantial portions of the Software.
+ *
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
+ */

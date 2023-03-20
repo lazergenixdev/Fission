@@ -246,7 +246,7 @@ namespace Fission::Platform
 	}
 
     WindowsWindow::WindowsWindow( const CreateInfo * info, GlobalWindowInfo * gInfo )
-        : m_Properties( info->wProperties ), pEventHandler( info->pEventHandler ), m_pGlobalInfo( gInfo )
+        : m_Properties( info->properties ), pEventHandler( info->pEventHandler ), m_pGlobalInfo( gInfo )
     {
         std::unique_lock lock( m_AccessMutex );
 
@@ -274,12 +274,12 @@ namespace Fission::Platform
         return m_Properties.title;
     }
 
-    void WindowsWindow::SetStyle( Style style )
+    void WindowsWindow::SetStyle( wnd::Style style )
     {
         SendMessageW( m_Handle, FISSION_WM_SETSTYLE, (WPARAM)&style, 0 );
 	}
 
-    IFWindow::Style WindowsWindow::GetStyle()
+    wnd::Style WindowsWindow::GetStyle()
     {
         return m_Properties.style;
     }
@@ -297,12 +297,12 @@ namespace Fission::Platform
         SendMessageW( m_Handle, FISSION_WM_SETSIZE, (WPARAM)size.w, (LPARAM)size.h );
     }
 
-    IFWindow::native_handle_type WindowsWindow::native_handle()
+    Window::native_handle_type WindowsWindow::native_handle()
     {
         return m_Handle;
     }
 
-    Resource::IFSwapChain * WindowsWindow::GetSwapChain()
+    gfx::SwapChain * WindowsWindow::GetSwapChain()
     {
         return m_pSwapChain.get();
     }
@@ -529,7 +529,7 @@ namespace Fission::Platform
                     ev.codepoint = str.data()[i];
                     pEventHandler->OnTextInput( ev );
                 }
-                n = str.size();
+                n = (int)str.size();
                 return TRUE;
             }
             break;
@@ -605,13 +605,13 @@ namespace Fission::Platform
 
         case FISSION_WM_SETSTYLE:
         {
-            auto pStyle = reinterpret_cast<Style *>( wParam );
+            auto pStyle = reinterpret_cast<wnd::Style *>( wParam );
             auto prevStyle = m_Properties.style;
             if( *pStyle == prevStyle ) return 0;
 
             m_Properties.style = *pStyle;
 
-            if( prevStyle == Style::Fullscreen )
+            if( prevStyle == wnd::Style::Fullscreen )
             {
                 auto wstyle = GetWindowsStyle();
                 SetWindowLongW( hWnd, GWL_STYLE, wstyle );
@@ -632,7 +632,7 @@ namespace Fission::Platform
 
             switch( *pStyle )
             {
-            case Style::Fullscreen:
+            case wnd::Style::Fullscreen:
             {
                 SetWindowLongPtrW( hWnd, GWL_EXSTYLE, WS_EX_APPWINDOW | WS_EX_TOPMOST );
                 SetWindowLongPtrW( hWnd, GWL_STYLE, WS_POPUP | WS_VISIBLE );
@@ -666,7 +666,7 @@ namespace Fission::Platform
             m_Properties.size = new_size;
             auto size = GetWindowsSize();
 
-            if( m_Properties.style == Style::Fullscreen )
+            if( m_Properties.style == wnd::Style::Fullscreen )
             {
                 DisplayMode mode = *m_pMonitor->GetCurrentDisplayMode();
                 mode.resolution = new_size;
@@ -730,7 +730,7 @@ namespace Fission::Platform
             pos.x = std::max( pos.x, 0 );
             pos.y = std::max( pos.y, 0 );
 
-            if( m_Properties.flags & Flags::CenterWindow )
+            if( m_Properties.flags & wnd::Flags::CenterWindow )
             {
                 auto mode = m_pMonitor->GetCurrentDisplayMode();
                 auto hMonitor = m_pMonitor->native_handle();
@@ -765,7 +765,7 @@ namespace Fission::Platform
             }
 
             // TODO: CreateSwapChain() is able to throw an exception, handle the exception.
-            Resource::IFSwapChain::CreateInfo scInfo = { this };
+            gfx::SwapChain::CreateInfo scInfo = { this };
         //    scInfo.size = { 4000,4000 }; // resolution scaling
             m_pSwapChain = m_pGlobalInfo->pGraphics->CreateSwapChain( scInfo );
 
@@ -775,10 +775,10 @@ namespace Fission::Platform
             auto sStyle = "<style>";
             switch( m_Properties.style )
             {
-            case Style::Border:         sStyle = "Border"; break;
-            case Style::Borderless:     sStyle = "Borderless"; break;
-            case Style::BorderSizeable: sStyle = "BorderSizeable"; break;
-            case Style::Fullscreen:     sStyle = "Fullscreen"; break;
+            case wnd::Style::Border:         sStyle = "Border"; break;
+            case wnd::Style::Borderless:     sStyle = "Borderless"; break;
+            case wnd::Style::BorderSizeable: sStyle = "BorderSizeable"; break;
+            case wnd::Style::Fullscreen:     sStyle = "Fullscreen"; break;
             default:break;
             }
 
@@ -846,11 +846,11 @@ namespace Fission::Platform
     {
         switch( m_Properties.style )
         {
-        case IFWindow::Style::Borderless:
+        case wnd::Style::Borderless:
             return WS_POPUP | WS_VISIBLE;
-        case IFWindow::Style::Border:
+        case wnd::Style::Border:
             return WS_MINIMIZEBOX | WS_SYSMENU | WS_CAPTION | WS_VISIBLE;
-        case IFWindow::Style::BorderSizeable:
+        case wnd::Style::BorderSizeable:
             return WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE;
 
         default:return 0;
@@ -861,8 +861,8 @@ namespace Fission::Platform
     {
         switch( m_Properties.style )
         {
-        case Style::Borderless:
-        case Style::Fullscreen:
+        case wnd::Style::Borderless:
+        case wnd::Style::Fullscreen:
             return m_Properties.size;
         default:break;
         }

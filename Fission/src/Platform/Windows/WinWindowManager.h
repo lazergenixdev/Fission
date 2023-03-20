@@ -7,7 +7,7 @@ namespace Fission::Platform
 	{
 		const wchar_t *  WindowClassName;
 		HINSTANCE        hInstance;
-		IFGraphics *     pGraphics;
+		Graphics *       pGraphics;
 	};
 
 	class WindowsWindowManager : public WindowManager
@@ -17,9 +17,9 @@ namespace Fission::Platform
 
 		virtual void Initialize() override;
 
-		virtual void SetGraphics( IFGraphics * pGraphics ) override;
+		virtual void SetGraphics( Graphics * pGraphics ) override;
 
-		virtual void CreateWindow( const IFWindow::CreateInfo * pInfo, IFWindow ** ppWindow ) override;
+		virtual void CreateWindow( const Window::CreateInfo * pInfo, Window ** ppWindow ) override;
 
 		virtual void Destroy() override;
 

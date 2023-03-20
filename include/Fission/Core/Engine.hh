@@ -1,40 +1,30 @@
 /**
-* 
-* @file: Engine.h
-* @author: lazergenixdev@gmail.com
-* 
-* 
-* This file is provided under the MIT License:
-* 
-* Copyright (c) 2021 Lazergenix Software
-* 
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-* 
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-* 
-*/
+ *	______________              _____
+ *	___  ____/__(_)________________(_)____________
+ *	__  /_   __  /__  ___/_  ___/_  /_  __ \_  __ \
+ *	_  __/   _  / _(__  )_(__  )_  / / /_/ /  / / /
+ *	/_/      /_/  /____/ /____/ /_/  \____//_/ /_/
+ *
+ *
+ * @Author:       lazergenixdev@gmail.com
+ * @Development:  (https://github.com/lazergenixdev/Fission)
+ * @License:      MIT (see end of file)
+ */
 #pragma once
-#include <Fission/Core/Graphics/Renderer.hh>
+#include <Fission/Core/Object.hh>
 #include <Fission/Core/Scene.hh>
 #include <Fission/Base/Version.hpp>
 
 namespace Fission
 {
-	struct IFEngine : public IFObject
+	struct Engine;
+
+	FISSION_API void CreateEngine( void* instance, Engine** ppEngine );
+
+	//! @brief Get the global engine pointer
+	FISSION_API Engine* GetEngine();
+
+	struct Engine : public ManagedObject
 	{
 
 		//! @brief Function that contains the main game loop, the
@@ -54,7 +44,7 @@ namespace Fission
 		 * @note This function can only be called once after the engine is created,
 		 *			subsequent calls will trigger an exception and will have no effect.
 		 */
-		virtual void LoadApplication( class FApplication * app ) = 0;
+		virtual void LoadApplication( class Application * app ) = 0;
 
 
 		/**
@@ -63,16 +53,16 @@ namespace Fission
 		* 
 		* @note Renderers are managed by the engine using the IFRenderer interface.
 		*/
-		virtual void RegisterRenderer( const char * _Name, IFRenderer * _Renderer ) = 0;
+		virtual void RegisterRenderer( const char * _Name, struct Renderer * _Renderer ) = 0;
 
 
 		/**
 		 * @brief  Get a renderer from it's name.
 		 *
 		 * @param  _Name: Name of the renderer you wish to retrieve;
-		 *                "$internal2D" | type: IFRenderer2D | Engine's internal 2D renderer.
+		 *                "$internal2D" | type: Renderer2D | Engine's internal 2D renderer.
 		 */
-		virtual IFRenderer * GetRenderer( const char * _Name ) = 0;
+		virtual struct Renderer * GetRenderer( const char * _Name ) = 0;
 
 		template <class RendererType>
 		inline RendererType * GetRenderer( const char * _Name )
@@ -85,7 +75,7 @@ namespace Fission
 		* @brief Register a font to be managed by the engine.
 		*        (can be retrieved using @GetFont)
 		*/
-		virtual void RegisterFont( const char* _Name, Font* _Font ) = 0;
+		virtual void RegisterFont( const char* _Name, struct Font* _Font ) = 0;
 
 
 		/**
@@ -95,13 +85,13 @@ namespace Fission
 		 *                "$debug"   | type: Font | used in Debug Layer
 		 *                "$console" | type: Font | used in Console Layer
 		 */
-		virtual Font* GetFont( const char* _Name ) = 0;
+		virtual struct Font* GetFont( const char* _Name ) = 0;
 
 
 
-		virtual IFDebugLayer * GetDebug() = 0;
+		virtual class DebugLayer * GetDebug() = 0;
 
-		virtual IFGraphics * GetGraphics() = 0;
+		virtual struct Graphics * GetGraphics() = 0;
 
 
 		// create a new scene and set switch to that scene.
@@ -123,11 +113,30 @@ namespace Fission
 		virtual const char * GetVersionString() = 0;
 
 
-	}; // struct Fission::IFEngine
-
-	FISSION_API void CreateEngine( void * instance, IFEngine ** ppEngine );
-
-	//! @brief Get the global engine pointer
-	FISSION_API IFEngine* GetEngine();
+	}; // struct Fission::Engine
 
 } // namespace Fission
+
+/**
+ *	MIT License
+ *
+ *	Copyright (c) 2021-2023 lazergenixdev
+ *
+ *	Permission is hereby granted, free of charge, to any person obtaining a copy
+ *	of this software and associated documentation files (the "Software"), to deal
+ *	in the Software without restriction, including without limitation the rights
+ *	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *	copies of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
+ *
+ *	The above copyright notice and this permission notice shall be included in all
+ *	copies or substantial portions of the Software.
+ *
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
+ */

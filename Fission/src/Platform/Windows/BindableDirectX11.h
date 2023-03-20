@@ -5,7 +5,7 @@
 
 namespace Fission::Platform {
 
-	class VertexBufferDX11 : public Resource::IFVertexBuffer
+	class VertexBufferDX11 : public gfx::VertexBuffer
 	{
 	public:
 		VertexBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info );
@@ -28,7 +28,7 @@ namespace Fission::Platform {
 		uint32_t m_Count;
 	};
 
-	class IndexBufferDX11 : public Resource::IFIndexBuffer
+	class IndexBufferDX11 : public gfx::IndexBuffer
 	{
 	public:
 		IndexBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info );
@@ -51,7 +51,7 @@ namespace Fission::Platform {
 		uint32_t m_Count;
 	};
 
-	class ConstantBufferDX11 : public Resource::IFConstantBuffer
+	class ConstantBufferDX11 : public gfx::ConstantBuffer
 	{
 	public:
 		ConstantBufferDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info );
@@ -69,7 +69,7 @@ namespace Fission::Platform {
 		com_ptr<ID3D11Buffer> m_pBuffer;
 	};
 
-	class SamplerDX11 : public Resource::IFSampler
+	class SamplerDX11 : public gfx::Sampler
 	{
 	public:
 		SamplerDX11( ID3D11Device* pDevice, ID3D11DeviceContext* pContext, const CreateInfo& info );
@@ -86,7 +86,7 @@ namespace Fission::Platform {
 		com_ptr<ID3D11SamplerState> m_pSamplerState;
 	};
 
-	class ShaderDX11 : public Resource::IFShader
+	class ShaderDX11 : public gfx::Shader
 	{
 	public:
 		ShaderDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info );
@@ -97,7 +97,7 @@ namespace Fission::Platform {
 		virtual void Destroy() override;
 	private:
 
-		static DXGI_FORMAT get_format( Resource::VertexLayoutTypes::Type type );
+		static DXGI_FORMAT get_format( gfx::VertexLayoutTypes::Type type );
 	private:
 
 		ID3D11DeviceContext * m_pContext;
@@ -108,7 +108,7 @@ namespace Fission::Platform {
 	};
 
 
-	class Texture2DDX11 : public Resource::IFTexture2D
+	class Texture2DDX11 : public gfx::Texture2D
 	{
 	public:
 		Texture2DDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info );
@@ -129,7 +129,7 @@ namespace Fission::Platform {
 		uint32_t m_Width, m_Height;
 	};
 
-	class BlenderDX11 : public Resource::IFBlender
+	class BlenderDX11 : public gfx::Blender
 	{
 	public:
 		BlenderDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info );
@@ -143,7 +143,7 @@ namespace Fission::Platform {
 		com_ptr<ID3D11BlendState> m_pBlendState;
 	};
 
-	class SwapChainDX11 : public Resource::IFSwapChain
+	class SwapChainDX11 : public gfx::SwapChain
 	{
 	public:
 		SwapChainDX11( ID3D11Device * pDevice, ID3D11DeviceContext * pContext, const CreateInfo & info );

@@ -8,7 +8,6 @@
  *
  * @Author:       lazergenixdev@gmail.com
  * @Development:  (https://github.com/lazergenixdev/Fission)
- *
  */
 #pragma once
 #include <Fission/config.hpp>

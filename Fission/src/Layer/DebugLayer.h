@@ -5,7 +5,7 @@
 
 namespace Fission {
 
-	class DebugLayerImpl : public IFDebugLayer
+	class DebugLayerImpl : public DebugLayer
 	{
 	public:
 		DebugLayerImpl();
@@ -16,7 +16,7 @@ namespace Fission {
 
 		void Text( const char * what );
 
-		virtual void OnCreate(class FApplication *) override;
+		virtual void OnCreate(class Application *) override;
 		virtual void OnUpdate(timestep dt) override;
 
 		virtual EventResult OnKeyDown( KeyDownEventArgs & args ) override;
@@ -24,7 +24,7 @@ namespace Fission {
 
 		virtual void Destroy() override;
 	private:
-		IFRenderer2D * pRenderer2D = nullptr;
+		Renderer2D * pRenderer2D = nullptr;
 
 		struct DrawCallbackData {
 			DrawCallback callback;

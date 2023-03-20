@@ -1,33 +1,15 @@
 /**
-*
-* @file: Event.h
-* @author: lazergenixdev@gmail.com
-*
-*
-* This file is provided under the MIT License:
-*
-* Copyright (c) 2021 Lazergenix Software
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-*
-*/
-
+ *	______________              _____
+ *	___  ____/__(_)________________(_)____________
+ *	__  /_   __  /__  ___/_  ___/_  /_  __ \_  __ \
+ *	_  __/   _  / _(__  )_(__  )_  / / /_/ /  / / /
+ *	/_/      /_/  /____/ /____/ /_/  \____//_/ /_/
+ *
+ *
+ * @Author:       lazergenixdev@gmail.com
+ * @Development:  (https://github.com/lazergenixdev/Fission)
+ * @License:      MIT (see end of file)
+ */
 #pragma once
 #include <Fission/Core/Input/Keys.hh>
 #include <Fission/Core/Input/Cursor.hh>
@@ -50,7 +32,7 @@ namespace Fission {
 	enum class EventResult
 	{
 		Handled = 0,
-		Pass = 1,
+		Pass    = 1,
 	};
 
 
@@ -98,7 +80,7 @@ namespace Fission {
 /* -------------------------------------- Event Handler --------------------------------------------- */
 /* ================================================================================================== */
 	
-	struct IFEventHandler
+	struct EventHandler
 	{
 
 		/*!
@@ -109,50 +91,64 @@ namespace Fission {
 		*   Allows for the ability to always call the event handler with no nullptr errors.
 		*   Use `IEventHandler::Default()` instead of `nullptr`.
 		*/
-		FISSION_API static IFEventHandler * Default();
+		FISSION_API static EventHandler * Default();
 
 
 
 		FISSION_THREAD_SAFE 
-		virtual EventResult OnKeyDown( KeyDownEventArgs & )
-		FISSION_EVENT_DEFAULT
+		virtual EventResult OnKeyDown( KeyDownEventArgs & )	FISSION_EVENT_DEFAULT
 
 		FISSION_THREAD_SAFE 
-		virtual EventResult OnKeyUp( KeyUpEventArgs & )
-		FISSION_EVENT_DEFAULT
+		virtual EventResult OnKeyUp( KeyUpEventArgs & ) FISSION_EVENT_DEFAULT
 
 		FISSION_THREAD_SAFE 
-		virtual EventResult OnTextInput( TextInputEventArgs & )
-		FISSION_EVENT_DEFAULT
+		virtual EventResult OnTextInput( TextInputEventArgs & ) FISSION_EVENT_DEFAULT
 
 		FISSION_THREAD_SAFE
-		virtual EventResult OnMouseMove( MouseMoveEventArgs & )
-		FISSION_EVENT_DEFAULT
+		virtual EventResult OnMouseMove( MouseMoveEventArgs & ) FISSION_EVENT_DEFAULT
 
 		FISSION_THREAD_SAFE
-		virtual EventResult OnMouseLeave( MouseLeaveEventArgs & )
-		FISSION_EVENT_DEFAULT
+		virtual EventResult OnMouseLeave( MouseLeaveEventArgs & ) FISSION_EVENT_DEFAULT
 
 		FISSION_THREAD_SAFE
-		virtual EventResult OnSetCursor( SetCursorEventArgs & )
-		FISSION_EVENT_DEFAULT
+		virtual EventResult OnSetCursor( SetCursorEventArgs & ) FISSION_EVENT_DEFAULT
 
 		FISSION_THREAD_SAFE
-		virtual EventResult OnHide()
-		FISSION_EVENT_DEFAULT
+		virtual EventResult OnHide() FISSION_EVENT_DEFAULT
 
 		FISSION_THREAD_SAFE 
-		virtual EventResult OnShow()
-		FISSION_EVENT_DEFAULT
+		virtual EventResult OnShow() FISSION_EVENT_DEFAULT
 
 		FISSION_THREAD_SAFE
-		virtual EventResult OnClose( CloseEventArgs & )
-		FISSION_EVENT_DEFAULT
+		virtual EventResult OnClose( CloseEventArgs & ) FISSION_EVENT_DEFAULT
 
 		FISSION_THREAD_SAFE
-		virtual EventResult OnResize( ResizeEventArgs & )
-		FISSION_EVENT_DEFAULT
+		virtual EventResult OnResize( ResizeEventArgs & ) FISSION_EVENT_DEFAULT
 
 	}; // struct Fission::IFEventHandler
 
 } // namespace Fission
+
+/**
+ *	MIT License
+ *
+ *	Copyright (c) 2021-2023 lazergenixdev
+ *
+ *	Permission is hereby granted, free of charge, to any person obtaining a copy
+ *	of this software and associated documentation files (the "Software"), to deal
+ *	in the Software without restriction, including without limitation the rights
+ *	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *	copies of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
+ *
+ *	The above copyright notice and this permission notice shall be included in all
+ *	copies or substantial portions of the Software.
+ *
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
+ */

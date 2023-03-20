@@ -19,7 +19,7 @@ namespace ui
 	using Fission::string;
 	using Fission::ri32;
 
-	static Fission::IFRenderer2D* g_r2d = nullptr;
+	static Fission::Renderer2D* g_r2d = nullptr;
 
 	class Button : public ::neutron::Button
 	{

@@ -1,8 +1,10 @@
 #include "DebugLayer.h"
 #include <Fission/Core/Application.hh>
 #include <Fission/Core/Console.hh>
+#include <Fission/Core/Graphics/Font.hh>
 #include <Fission/Platform/System.h>
 #include <Fission/Base/Rect.hpp>
+#include <Fission/Core/Engine.hh>
 #include "../Version.h"
 
 #include <dxgi.h>
@@ -53,8 +55,8 @@ static std::string gpu_name;
 
 void DebugLayerImpl::Destroy() { delete this; }
 
-void DebugLayerImpl::OnCreate(class FApplication * app) {
-	pRenderer2D = (IFRenderer2D*)app->f_pEngine->GetRenderer("$internal2D");
+void DebugLayerImpl::OnCreate(Application * app) {
+	pRenderer2D = (Renderer2D*)app->f_pEngine->GetRenderer("$internal2D");
 
 	m_width = (float)app->f_pMainWindow->GetSwapChain()->GetSize().w;
 

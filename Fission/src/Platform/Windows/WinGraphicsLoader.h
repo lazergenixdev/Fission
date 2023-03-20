@@ -14,9 +14,9 @@ namespace Fission
 
 			virtual void Initialize() override;
 
-			virtual void CreateGraphics( GraphicsState * pState, IFGraphics** ppGraphics ) override;
+			virtual void CreateGraphics( GraphicsState * pState, Graphics** ppGraphics ) override;
 
-			virtual bool CheckSupport( IFGraphics::API api ) override;
+			virtual bool CheckSupport( Graphics::API api ) override;
 
 			virtual void Destroy() override;
 

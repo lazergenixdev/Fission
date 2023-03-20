@@ -115,7 +115,7 @@ Fission::GraphicsOpenGL::GraphicsOpenGL(): m_NativeHandle()
 	m_NativeHandle.hContext = rc;
 }
 
-Fission::IFGraphics::API Fission::GraphicsOpenGL::GetAPI()
+Fission::Graphics::API Fission::GraphicsOpenGL::GetAPI()
 {
 	return API::OpenGL;
 }
@@ -132,52 +132,52 @@ void Fission::GraphicsOpenGL::SetClipRect( rf32 rect )
 {
 }
 
-Fission::IFGraphics::FrameBuffer* Fission::GraphicsOpenGL::CreateFrameBuffer( const FrameBuffer::CreateInfo& info )
+Fission::gfx::FrameBuffer* Fission::GraphicsOpenGL::CreateFrameBuffer( const gfx::FrameBuffer::CreateInfo& info )
 {
 	return nullptr;
 }
 
-Fission::IFGraphics::VertexBuffer* Fission::GraphicsOpenGL::CreateVertexBuffer( const VertexBuffer::CreateInfo& info )
+Fission::gfx::VertexBuffer* Fission::GraphicsOpenGL::CreateVertexBuffer( const gfx::VertexBuffer::CreateInfo& info )
 {
 	return nullptr;
 }
 
-Fission::IFGraphics::ConstantBuffer* Fission::GraphicsOpenGL::CreateConstantBuffer( const ConstantBuffer::CreateInfo& info )
+Fission::gfx::ConstantBuffer* Fission::GraphicsOpenGL::CreateConstantBuffer( const gfx::ConstantBuffer::CreateInfo& info )
 {
 	return nullptr;
 }
 
-Fission::IFGraphics::IndexBuffer* Fission::GraphicsOpenGL::CreateIndexBuffer( const IndexBuffer::CreateInfo& info )
+Fission::gfx::IndexBuffer* Fission::GraphicsOpenGL::CreateIndexBuffer( const gfx::IndexBuffer::CreateInfo& info )
 {
 	return nullptr;
 }
 
-Fission::IFGraphics::Sampler* Fission::GraphicsOpenGL::CreateSampler( const Sampler::CreateInfo& info )
+Fission::gfx::Sampler* Fission::GraphicsOpenGL::CreateSampler( const gfx::Sampler::CreateInfo& info )
 {
 	return nullptr;
 }
 
-Fission::IFGraphics::Shader* Fission::GraphicsOpenGL::CreateShader( const Shader::CreateInfo& info )
+Fission::gfx::Shader* Fission::GraphicsOpenGL::CreateShader( const gfx::Shader::CreateInfo& info )
 {
 	return nullptr;
 }
 
-Fission::IFGraphics::Texture2D* Fission::GraphicsOpenGL::CreateTexture2D( const Texture2D::CreateInfo& info )
+Fission::gfx::Texture2D* Fission::GraphicsOpenGL::CreateTexture2D( const gfx::Texture2D::CreateInfo& info )
 {
 	return nullptr;
 }
 
-Fission::IFGraphics::Blender* Fission::GraphicsOpenGL::CreateBlender( const Blender::CreateInfo& info )
+Fission::gfx::Blender* Fission::GraphicsOpenGL::CreateBlender( const gfx::Blender::CreateInfo& info )
 {
 	return nullptr;
 }
 
-Fission::IFGraphics::SwapChain* Fission::GraphicsOpenGL::CreateSwapChain( const SwapChain::CreateInfo& info )
+Fission::gfx::SwapChain* Fission::GraphicsOpenGL::CreateSwapChain( const gfx::SwapChain::CreateInfo& info )
 {
 	return nullptr;
 }
 
-Fission::IFGraphics::native_handle_type Fission::GraphicsOpenGL::native_handle()
+Fission::Graphics::native_handle_type Fission::GraphicsOpenGL::native_handle()
 {
 	return nullptr;
 }

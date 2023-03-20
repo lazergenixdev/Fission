@@ -1,37 +1,19 @@
 /**
-*
-* USAGE:
-*   include header where you create your application,
-*   this file contains the main function.
-*
-*
-* @file: EntryPoint.h
-* @author: lazergenixdev@gmail.com
-*
-*
-* This file is provided under the MIT License:
-*
-* Copyright (c) 2021 Lazergenix Software
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-*
-*/
+ *	______________              _____
+ *	___  ____/__(_)________________(_)____________
+ *	__  /_   __  /__  ___/_  ___/_  /_  __ \_  __ \
+ *	_  __/   _  / _(__  )_(__  )_  / / /_/ /  / / /
+ *	/_/      /_/  /____/ /____/ /_/  \____//_/ /_/
+ *
+ *
+ * @Author:       lazergenixdev@gmail.com
+ * @Development:  (https://github.com/lazergenixdev/Fission)
+ * @License:      MIT (see end of file)
+ *
+ * USAGE:
+ *   include header where you create your application,
+ *   this file contains the main function.
+ */
 #pragma once
 #include <Fission/Base/Exception.hpp>
 #include <Fission/Base/util/SmartPointer.hpp>
@@ -50,7 +32,7 @@
 
 //! @brief Creates User Application.
 //! @return Pointer to a Fission::FApplication.
-extern Fission::FApplication * CreateApplication( void );
+extern Fission::Application * CreateApplication( void );
 
 //! @brief Runs main application loop.
 //! @return ExitCode from the status of how the application exited.
@@ -97,9 +79,9 @@ FISSION_MAIN_EXPORT(Fission::Platform::ExitCode) _fission_main( void * instance 
 	using namespace Fission;
 	using sv = string_view;
 
-	Platform::ExitCode		nExitCode = FISSION_EXIT_UNKNOWN;
-	fsn_ptr<IFEngine>		fsnEngine;
-	fsn_ptr<FApplication>	app;
+	Platform::ExitCode    nExitCode = FISSION_EXIT_UNKNOWN;
+	fsn_ptr<Engine>		  fsnEngine;
+	fsn_ptr<Application>  app;
 
 	try
 	{
@@ -157,3 +139,27 @@ FISSION_MAIN_EXPORT(Fission::Platform::ExitCode) _fission_main( void * instance 
 
 	return nExitCode;
 }
+
+/**
+ *	MIT License
+ *
+ *	Copyright (c) 2021-2023 lazergenixdev
+ *
+ *	Permission is hereby granted, free of charge, to any person obtaining a copy
+ *	of this software and associated documentation files (the "Software"), to deal
+ *	in the Software without restriction, including without limitation the rights
+ *	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *	copies of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
+ *
+ *	The above copyright notice and this permission notice shall be included in all
+ *	copies or substantial portions of the Software.
+ *
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
+ */

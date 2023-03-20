@@ -1,56 +1,23 @@
 /**
-*
-* @file: Graphics.h
-* @author: lazergenixdev@gmail.com
-*
-*
-* This file is provided under the MIT License:
-*
-* Copyright (c) 2021 Lazergenix Software
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-*
-*/
-
-// todo: add documentation
-
+ *	______________              _____
+ *	___  ____/__(_)________________(_)____________
+ *	__  /_   __  /__  ___/_  ___/_  /_  __ \_  __ \
+ *	_  __/   _  / _(__  )_(__  )_  / / /_/ /  / / /
+ *	/_/      /_/  /____/ /____/ /_/  \____//_/ /_/
+ *
+ *
+ * @Author:       lazergenixdev@gmail.com
+ * @Development:  (https://github.com/lazergenixdev/Fission)
+ * @License:      MIT (see end of file)
+ */
 #pragma once
 #include <Fission/Core/Graphics/Bindable.hh>
-#include <Fission/Core/Graphics/Renderer.hh>
 
 namespace Fission
 {
 
-struct IFGraphics : public IFObject
+struct Graphics : public ManagedObject
 {
-public:
-
-	using VertexBuffer   = Resource::IFVertexBuffer;
-	using IndexBuffer    = Resource::IFIndexBuffer;
-	using ConstantBuffer = Resource::IFConstantBuffer;
-	using Sampler        = Resource::IFSampler;
-	using Texture2D      = Resource::IFTexture2D;
-	using Shader         = Resource::IFShader;
-	using Blender        = Resource::IFBlender;
-	using FrameBuffer    = Resource::IFFrameBuffer;
-	using SwapChain      = Resource::IFSwapChain;
-
 public:
 	enum class API {
 		DirectX11, /*!< DirectX 11 */
@@ -78,15 +45,15 @@ public:
 	virtual void SetClipRect( rf32 rect ) = 0;
 
 
-	virtual FrameBuffer*    CreateFrameBuffer   ( const FrameBuffer::CreateInfo & info ) = 0;
-	virtual VertexBuffer*   CreateVertexBuffer  ( const VertexBuffer::CreateInfo & info ) = 0;
-	virtual ConstantBuffer* CreateConstantBuffer( const ConstantBuffer::CreateInfo & info ) = 0;
-	virtual Sampler*        CreateSampler       ( const Sampler::CreateInfo & info ) = 0;
-	virtual IndexBuffer*    CreateIndexBuffer   ( const IndexBuffer::CreateInfo & info ) = 0;
-	virtual Shader*         CreateShader        ( const Shader::CreateInfo & info ) = 0;
-	virtual Texture2D*      CreateTexture2D     ( const Texture2D::CreateInfo & info ) = 0;
-	virtual Blender*        CreateBlender       ( const Blender::CreateInfo & info ) = 0;
-	virtual SwapChain*      CreateSwapChain     ( const SwapChain::CreateInfo & info ) = 0;
+	virtual gfx::FrameBuffer*    CreateFrameBuffer   ( const gfx::FrameBuffer   ::CreateInfo & info ) = 0;
+	virtual gfx::VertexBuffer*   CreateVertexBuffer  ( const gfx::VertexBuffer  ::CreateInfo & info ) = 0;
+	virtual gfx::ConstantBuffer* CreateConstantBuffer( const gfx::ConstantBuffer::CreateInfo & info ) = 0;
+	virtual gfx::Sampler*        CreateSampler       ( const gfx::Sampler       ::CreateInfo & info ) = 0;
+	virtual gfx::IndexBuffer*    CreateIndexBuffer   ( const gfx::IndexBuffer   ::CreateInfo & info ) = 0;
+	virtual gfx::Shader*         CreateShader        ( const gfx::Shader        ::CreateInfo & info ) = 0;
+	virtual gfx::Texture2D*      CreateTexture2D     ( const gfx::Texture2D     ::CreateInfo & info ) = 0;
+	virtual gfx::Blender*        CreateBlender       ( const gfx::Blender       ::CreateInfo & info ) = 0;
+	virtual gfx::SwapChain*      CreateSwapChain     ( const gfx::SwapChain     ::CreateInfo & info ) = 0;
 
 public:
 
@@ -113,7 +80,7 @@ public:
 
 struct GraphicsState
 {
-	IFGraphics::API api       = IFGraphics::API::Default;
+	Graphics::API api         = Graphics::API::Default;
 	vsync_          vsync     = vsync_On;
 	int	            framerate = 0; /*!< framerate only applies when vsync is off, 0 == unlimited framerate */
 	int             msaa      = 1;
@@ -121,3 +88,27 @@ struct GraphicsState
 }; // class Fission::GraphicsState
 
 } // namespace Fission
+
+/**
+ *	MIT License
+ *
+ *	Copyright (c) 2021-2023 lazergenixdev
+ *
+ *	Permission is hereby granted, free of charge, to any person obtaining a copy
+ *	of this software and associated documentation files (the "Software"), to deal
+ *	in the Software without restriction, including without limitation the rights
+ *	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *	copies of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
+ *
+ *	The above copyright notice and this permission notice shall be included in all
+ *	copies or substantial portions of the Software.
+ *
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
+ */

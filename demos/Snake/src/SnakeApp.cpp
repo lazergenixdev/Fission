@@ -4,7 +4,7 @@
 #include "GameScene.h"
 #include "StartScene.h"
 
-#include <Fission/Core/Sound.hh>
+//#include <Fission/Core/Sound.hh>
 
 void SnakeApp::OnStartUp( CreateInfo * info )
 {
@@ -15,12 +15,11 @@ void SnakeApp::OnStartUp( CreateInfo * info )
 
 	using namespace Fission;
 	
-	static auto eng = Fission::SoundEngine::Create();
-	static auto sound = eng->CreateSound("sphere.mp3");
+//	static auto eng = Fission::SoundEngine::Create();
+//	static auto sound = eng->CreateSound("sphere.mp3");
+//	static auto source = eng->Play(sound.get(), 0u, true);
 
-	static auto source = eng->Play(sound.get(), 0u, true);
-
-	eng->SetMasterVolume(0.25f);
+//	eng->SetMasterVolume(0.25f);
 	
 	Console::RegisterCommand("sped",
 		[&](const string& in) -> string {
@@ -31,7 +30,7 @@ void SnakeApp::OnStartUp( CreateInfo * info )
 				return "Could not determine value.";
 			}
 
-			source->SetPlaybackSpeed(value);
+		//	source->SetPlaybackSpeed(value);
 
 			return cat("Playback speed set to: ", std::to_string(value));
 		}
@@ -45,7 +44,7 @@ void SnakeApp::OnStartUp( CreateInfo * info )
 				return "Could not determine value.";
 			}
 
-			source->SetPosition(uint32_t(value*1000.0f));
+		//	source->SetPosition(uint32_t(value*1000.0f));
 			
 			return cat("Playback speed set to: ", std::to_string(value));
 		}
@@ -63,7 +62,7 @@ void SnakeApp::OnStartUp( CreateInfo * info )
 	);
 }
 
-Fission::IFScene* SnakeApp::OnCreateScene(const Fission::SceneKey& key)
+Fission::Scene* SnakeApp::OnCreateScene(const Fission::SceneKey& key)
 {
 	if( key.id == 0 )
 		return new StartScene();
@@ -71,6 +70,6 @@ Fission::IFScene* SnakeApp::OnCreateScene(const Fission::SceneKey& key)
 		return new GameScene(f_pEngine);
 }
 
-Fission::FApplication * CreateApplication() {
+Fission::Application * CreateApplication() {
 	return new SnakeApp;
 }

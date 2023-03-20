@@ -12,9 +12,9 @@ __bCalled = true
 
 namespace Fission
 {
-	inline IFEngine* global_engine_pointer = nullptr;
+	inline Engine* global_engine_pointer = nullptr;
 
-	using AppCreateInfo = FApplication::CreateInfo;
+	using AppCreateInfo = Application::CreateInfo;
 
 	FissionEngine::FissionEngine()
 	{
@@ -107,7 +107,7 @@ namespace Fission
 	}
 
 
-	void FissionEngine::LoadApplication( FApplication * app )
+	void FissionEngine::LoadApplication( Application * app )
 	{
 		FISSION_ENGINE_ONCE( "Attempted to call `LoadApplication` more than once." );
 
@@ -123,15 +123,16 @@ namespace Fission
 
 			// Use the app name and version
 			{
+			auto app_version = app->f_Version.uncompress();
 			char appVersionString[144]; AppCreateInfo * info = &appCreateInfo;
 			sprintf_s( appVersionString, "%s " FISSION_VERSION_FORMAT " (" FISSION_VERSION_FORMAT "/%s)",
 				app->f_Name.c_str(),
-				app->f_Version.Major,
-				app->f_Version.Minor,
-				app->f_Version.Patch,
-				app->f_Version.Major,
-				app->f_Version.Minor,
-				app->f_Version.Patch,
+				app_version.Major,
+				app_version.Minor,
+				app_version.Patch,
+				app_version.Major,
+				app_version.Minor,
+				app_version.Patch,
 				app->f_VersionInfo.c_str()
 			);
 			m_DebugLayer.SetAppVersionString(appVersionString);
@@ -146,9 +147,9 @@ namespace Fission
 			m_pGraphicsLoader->CreateGraphics( &appCreateInfo.graphics, &m_pGraphics );
 			m_pWindowManager->SetGraphics( m_pGraphics.get() );
 
-			IFWindow::CreateInfo winCreateInfo;
+			Window::CreateInfo winCreateInfo;
 			winCreateInfo.pEventHandler = this;
-			winCreateInfo.wProperties = appCreateInfo.window;
+			winCreateInfo.properties = appCreateInfo.window;
 			m_pWindowManager->CreateWindow( &winCreateInfo, &m_pWindow );
 		}
 
@@ -156,7 +157,7 @@ namespace Fission
 		app->f_pGraphics = m_pGraphics.get();
 
 		{
-			Fission::IFRenderer2D * renderer;
+			Fission::Renderer2D * renderer;
 			Fission::CreateRenderer2D( &renderer );
 			RegisterRenderer( "$internal2D", renderer );
 		}
@@ -250,12 +251,12 @@ namespace Fission
 		m_SceneKeyHistory.clear();
 	}
 
-	void FissionEngine::RegisterRenderer( const char * name, IFRenderer * r )
+	void FissionEngine::RegisterRenderer( const char * name, Renderer * r )
 	{
 		m_Renderers.emplace( name, RendererContext{ r } );
 	}
 
-	IFRenderer * FissionEngine::GetRenderer( const char * name )
+	Renderer * FissionEngine::GetRenderer( const char * name )
 	{
 		return m_Renderers[name].renderer.get();
 	}
@@ -270,12 +271,12 @@ namespace Fission
 		return m_Fonts[name].get();
 	}
 
-	IFDebugLayer * FissionEngine::GetDebug()
+	DebugLayer * FissionEngine::GetDebug()
 	{
 		return &m_DebugLayer;
 	}
 
-	IFGraphics* FissionEngine::GetGraphics()
+	Graphics* FissionEngine::GetGraphics()
 	{
 		return m_pGraphics.get();
 	}
@@ -288,13 +289,13 @@ namespace Fission
 
 
 
-	void CreateEngine( void * instance, IFEngine ** ppEngine )
+	void CreateEngine( void * instance, Engine ** ppEngine )
 	{
 		*ppEngine = new FissionEngine;
 		global_engine_pointer = *ppEngine;
 	}
 
-	IFEngine* GetEngine()
+	Engine* GetEngine()
 	{
 		return global_engine_pointer;
 	}

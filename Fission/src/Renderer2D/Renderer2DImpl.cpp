@@ -1,6 +1,8 @@
 ﻿#include "Renderer2DImpl.h"
 #include <numbers>
 #include <Fission/Base/Exception.hpp>
+#include <Fission/Core/Graphics.hh>
+#include <Fission/Core/Graphics/Font.hh>
 
 // might look into text snapping in more detail,
 //    but for now it looks better than not and there
@@ -10,7 +12,7 @@
 
 namespace Fission {
 
-	void CreateRenderer2D( IFRenderer2D ** ppRenderer2D )
+	void CreateRenderer2D( Renderer2D ** ppRenderer2D )
 	{
 		*ppRenderer2D = new Renderer2DImpl;
 	}
@@ -38,7 +40,7 @@ namespace Fission {
 		return out;
 	}();
 
-	void Renderer2DImpl::OnCreate( IFGraphics * gfx, size2 _Viewport_Size )
+	void Renderer2DImpl::OnCreate( Graphics * gfx, size2 _Viewport_Size )
 	{
 		// Allocate aligned memory for faster access
 		vertex_data = (vertex *)_aligned_malloc( vertex_max_count * sizeof vertex, 32 );
@@ -49,11 +51,11 @@ namespace Fission {
 		OnRecreate( gfx );
 	}
 
-	void Renderer2DImpl::OnRecreate( IFGraphics * gfx )
+	void Renderer2DImpl::OnRecreate( Graphics * gfx )
 	{
 		m_pGraphics = gfx;
-		using namespace Resource;
-		using namespace Resource::VertexLayoutTypes;
+		using namespace gfx;
+		using namespace gfx::VertexLayoutTypes;
 
 		auto vl = VertexLayout{};
 		vl.Append( Float2, "Position" );
@@ -61,22 +63,22 @@ namespace Fission {
 		vl.Append( Float4, "Color" );
 
 		{ // Create Vertex Buffer
-			IFVertexBuffer::CreateInfo info;
+			VertexBuffer::CreateInfo info;
 			info.vtxCount = vertex_max_count;
 			info.pVertexLayout = &vl;
-			info.type = IFVertexBuffer::Type::Dynamic;
+			info.type = VertexBuffer::Type::Dynamic;
 			m_pVertexBuffer = gfx->CreateVertexBuffer( info );
 		}
 		{ // Create Index Buffer
-			IFIndexBuffer::CreateInfo info;
+			IndexBuffer::CreateInfo info;
 			info.idxCount = index_max_count;
-			info.size = IFIndexBuffer::Size::UInt32;
-			info.type = IFIndexBuffer::Type::Dynamic;
+			info.size = IndexBuffer::Size::UInt32;
+			info.type = IndexBuffer::Type::Dynamic;
 			m_pIndexBuffer = gfx->CreateIndexBuffer( info );
 		}
 		{ // Create Index Buffer
-			IFConstantBuffer::CreateInfo info;
-			info.type = IFConstantBuffer::Type::Dynamic;
+			ConstantBuffer::CreateInfo info;
+			info.type = ConstantBuffer::Type::Dynamic;
 			info.max_size = 128;
 			m_pTransformBuffer = gfx->CreateConstantBuffer( info );
 
@@ -92,7 +94,7 @@ namespace Fission {
 			m_pTransformBuffer->SetData( &screen, sizeof(screen) );
 		}
 		{ // Create Shaders
-			IFShader::CreateInfo info;
+			Shader::CreateInfo info;
 			info.pVertexLayout = &vl;
 			info.sourceCode = R"(
 cbuffer Transform : register(b0)
@@ -122,12 +124,12 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			m_pShader = gfx->CreateShader( info );
 		}
 		{ // todo: more blenders
-			IFBlender::CreateInfo info;
+			Blender::CreateInfo info;
 
-			info.blend = IFBlender::Blend::Normal;
+			info.blend = Blender::Blend::Normal;
 			m_pBlenders[(int)BlendMode::Normal] = gfx->CreateBlender( info );
 
-			info.blend = IFBlender::Blend::Add;
+			info.blend = Blender::Blend::Add;
 			m_pBlenders[(int)BlendMode::Add] = gfx->CreateBlender( info );
 
 			m_pUseBlender = m_pBlenders[(int)BlendMode::Normal].get();
@@ -144,7 +146,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		delete this;
 	}
 
-	void Renderer2DImpl::OnResize( IFGraphics * , size2 size )
+	void Renderer2DImpl::OnResize( Graphics * , size2 size )
 	{
 		const auto screen = m44(
 			2.0f / (float)size.w, 0.0f,                -1.0f, 0.0f,
@@ -167,7 +169,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		m_pVertexBuffer->Bind();
 		m_pIndexBuffer->SetData( index_data, end.idxCount + end.idxStart );
 		m_pIndexBuffer->Bind();
-		m_pTransformBuffer->Bind(Resource::IFConstantBuffer::Target::Vertex,0);
+		m_pTransformBuffer->Bind(gfx::ConstantBuffer::Target::Vertex,0);
 		m_pUseBlender->Bind();
 
 		for( auto && cmd : m_DrawBuffer )
@@ -191,7 +193,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 		m_DrawBuffer.back().AddTriangle( p0, p1, p2, c0, c1, c2 );
 	}
 
-	void Renderer2DImpl::FillTriangleUV( v2f32 p0, v2f32 p1, v2f32 p2, v2f32 uv0, v2f32 uv1, v2f32 uv2, Resource::IFTexture2D * pTexture, color tint )
+	void Renderer2DImpl::FillTriangleUV( v2f32 p0, v2f32 p1, v2f32 p2, v2f32 uv0, v2f32 uv1, v2f32 uv2, gfx::Texture2D * pTexture, color tint )
 	{
 		SetTexture( pTexture );
 		m_DrawBuffer.back().AddTriangleUV( p0, p1, p2, uv0, uv1, uv2, tint );
@@ -275,13 +277,13 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 
 	}
 
-	void Renderer2DImpl::DrawImage( Resource::IFTexture2D * pTexture, rf32 rect, rf32 uv, color tint )
+	void Renderer2DImpl::DrawImage( gfx::Texture2D * pTexture, rf32 rect, rf32 uv, color tint )
 	{
 		SetTexture( pTexture );
 		m_DrawBuffer.back().AddRectFilledUV( rect, uv, tint );
 	}
 
-	void Renderer2DImpl::DrawImage( Resource::IFTexture2D * pTexture, rf32 rect, color tint )
+	void Renderer2DImpl::DrawImage( gfx::Texture2D * pTexture, rf32 rect, color tint )
 	{
 		SetTexture( pTexture );
 		m_DrawBuffer.back().AddRectFilledUV( rect, { 0.0f, 1.0f, 0.0f, 1.0f }, tint );
@@ -432,7 +434,7 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			m_accTransform = m_TransformStack[i] * m_accTransform;
 	}
 
-	void Renderer2DImpl::SetTexture( Resource::IFTexture2D * tex )
+	void Renderer2DImpl::SetTexture( gfx::Texture2D * tex )
 	{
 		FISSION_ASSERT( tex, "Cannot bind a null texture. (Use non-UV functions to not use a texture)" );
 

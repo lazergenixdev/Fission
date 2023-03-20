@@ -9,12 +9,12 @@ static std::uniform_real_distribution<float> dist{ 0.0f, 1.0f };
 template <typename T>
 struct DefaultDelete : public T { virtual void Destroy() override { delete this; } };
 
-class BallScene : public DefaultDelete<Fission::IFScene>
+class BallScene : public DefaultDelete<Fission::Scene>
 {
 public:
-	virtual void OnCreate(Fission::FApplication * app) override
+	virtual void OnCreate(Fission::Application * app) override
 	{
-		renderer2d = app->f_pEngine->GetRenderer<Fission::IFRenderer2D>("$internal2D");
+		renderer2d = app->f_pEngine->GetRenderer<Fission::Renderer2D>("$internal2D");
 	}
 	virtual void OnUpdate(Fission::timestep dt) override
 	{
@@ -59,10 +59,10 @@ private:
 	float          radius   = 50.0f;
 	Fission::rgb   color    = Fission::colors::Red;
 	float          count    = 0.0f;
-	Fission::IFRenderer2D * renderer2d;
+	Fission::Renderer2D * renderer2d;
 };
 
-class BallApp : public DefaultDelete<Fission::FApplication>
+class BallApp : public DefaultDelete<Fission::Application>
 {
 public:
 	void OnStartUp( CreateInfo * info )
@@ -70,14 +70,14 @@ public:
 		info->window.title = std::format("Ball Demo [{}]", f_pEngine->GetVersionString());
 		info->window.size = { 1280,720 };
 		this->f_Name = "Balls";
-		info->graphics.api = Fission::IFGraphics::API::DirectX11;
+		info->graphics.api = Fission::Graphics::API::DirectX11;
 	}
-	virtual Fission::IFScene * OnCreateScene( const Fission::SceneKey & key ) override
+	virtual Fission::Scene * OnCreateScene( const Fission::SceneKey & key ) override
 	{
 		return new BallScene;
 	}
 };
 
-Fission::FApplication * CreateApplication() {
+Fission::Application * CreateApplication() {
 	return new BallApp;
 }

@@ -1,5 +1,6 @@
 #include "Font.h"
 #include <Fission/Base/Exception.hpp>
+#include <Fission/Core/Engine.hh>
 #include <MaxRectsBinPack.hpp>
 #include <lunasvg.h>
 
@@ -68,7 +69,7 @@ namespace Fission {
 
 		float&                                 outHeight,
 		std::unordered_map<chr, Font::Glyph>&  outMap,
-		fsn_ptr<Resource::IFTexture2D>&        outTexture,
+		fsn_ptr<gfx::Texture2D>&        outTexture,
 		Font::Glyph&                           outFallback
 	) {
 		auto gfx = GetEngine()->GetGraphics();
@@ -138,7 +139,7 @@ namespace Fission {
 			outMap.insert( std::make_pair( ch, generate_glyph() ) );
 		}
 
-		Resource::IFTexture2D::CreateInfo tex_info;
+		gfx::Texture2D::CreateInfo tex_info;
 		tex_info.pSurface = pSurface.get();
 		outTexture = gfx->CreateTexture2D( tex_info );
 	}
@@ -148,7 +149,7 @@ namespace Fission {
 		u32         height,
 
 		EmojiDictionary& outDict,
-		fsn_ptr<Resource::IFTexture2D>& outTexture
+		fsn_ptr<gfx::Texture2D>& outTexture
 	) {
 		height = height & 0b11111111111111111110;
 		auto gfx = GetEngine()->GetGraphics();
@@ -215,7 +216,7 @@ namespace Fission {
 			outDict.insert( emoji_meta[i].codepoints, g );
 		}
 
-		Resource::IFTexture2D::CreateInfo tex_info;
+		gfx::Texture2D::CreateInfo tex_info;
 		tex_info.pSurface = pSurface.get();
 		outTexture = gfx->CreateTexture2D( tex_info );
 	}
@@ -227,7 +228,7 @@ namespace Fission {
 		generate_font_atlas( m_Face.m_Face, (u32)info.size, m_Height, m_Map, m_pAtlasTexture, m_FallbackGlyph );
 	}
 
-	Resource::IFTexture2D* FontImpl::get_atlas() const {
+	gfx::Texture2D* FontImpl::get_atlas() const {
 		return m_pAtlasTexture.get();
 	}
 
@@ -262,7 +263,7 @@ namespace Fission {
 		generate_emoji_atlas( info.emojifile, (u32)m_Height, m_EmojiMap, m_pEmojiTexture );
 	}
 
-	Resource::IFTexture2D* UIFontImpl::get_atlas() const {
+	gfx::Texture2D* UIFontImpl::get_atlas() const {
 		return m_pAtlasTexture.get();
 	}
 
@@ -320,7 +321,7 @@ namespace Fission {
 		return {};
 	}
 
-	Resource::IFTexture2D* UIFontImpl::get_emoji_atlas() const
+	gfx::Texture2D* UIFontImpl::get_emoji_atlas() const
 	{
 		return m_pEmojiTexture.get();
 	}

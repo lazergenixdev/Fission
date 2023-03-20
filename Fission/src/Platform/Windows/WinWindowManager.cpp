@@ -33,12 +33,12 @@ namespace Fission::Platform
 		EnumMonitors();
 	}
 
-	void WindowsWindowManager::SetGraphics( IFGraphics * pGraphics )
+	void WindowsWindowManager::SetGraphics( Graphics * pGraphics )
 	{
 		m_Info.pGraphics = pGraphics;
 	}
 
-	void WindowsWindowManager::CreateWindow( const IFWindow::CreateInfo * pInfo, IFWindow ** ppWindow )
+	void WindowsWindowManager::CreateWindow( const Window::CreateInfo * pInfo, Window ** ppWindow )
 	{
 		*ppWindow = new WindowsWindow( pInfo, &m_Info );
 	}

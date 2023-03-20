@@ -1,7 +1,8 @@
 #include "StartScene.h"
 #include "SnakeApp.h"
+#include <Fission/Core/Engine.hh>
 
-void StartMenuLayer::OnCreate( Fission::FApplication * app )
+void StartMenuLayer::OnCreate( Fission::Application * app )
 {
 	Fission::Simple2DLayer::OnCreate(app);
 

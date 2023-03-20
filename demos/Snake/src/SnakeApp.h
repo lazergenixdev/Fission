@@ -3,7 +3,7 @@
 #include <Fission/Base/Time.hpp>
 #include "DefaultDelete.h"
 
-class SnakeApp : public DefaultDelete<Fission::FApplication>
+class SnakeApp : public DefaultDelete<Fission::Application>
 {
 public:
 	SnakeApp() : DefaultDelete( "Snek", Fission::version{ 1,0,0 } )
@@ -11,7 +11,7 @@ public:
 
 	void OnStartUp( CreateInfo * info ) override;
 
-	Fission::IFScene* OnCreateScene( const Fission::SceneKey & key ) override;
+	Fission::Scene* OnCreateScene( const Fission::SceneKey & key ) override;
 
 	// comment for sake of having comment
 private:

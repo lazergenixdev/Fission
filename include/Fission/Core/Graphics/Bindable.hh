@@ -1,33 +1,15 @@
 /**
-*
-* @file: Bindable.h
-* @author: lazergenixdev@gmail.com
-*
-*
-* This file is provided under the MIT License:
-*
-* Copyright (c) 2021 Lazergenix Software
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-*
-*/
-
+ *	______________              _____
+ *	___  ____/__(_)________________(_)____________
+ *	__  /_   __  /__  ___/_  ___/_  /_  __ \_  __ \
+ *	_  __/   _  / _(__  )_(__  )_  / / /_/ /  / / /
+ *	/_/      /_/  /____/ /____/ /_/  \____//_/ /_/
+ *
+ *
+ * @Author:       lazergenixdev@gmail.com
+ * @Development:  (https://github.com/lazergenixdev/Fission)
+ * @License:      MIT (see end of file)
+ */
 #pragma once
 #include <Fission/Base/String.hpp>
 #include <Fission/Base/Math/Matrix.hpp>
@@ -38,7 +20,7 @@
 
 namespace Fission 
 { 
-	struct IFWindow; 
+	struct Window; 
 
 	enum vsync_ {
 		vsync_Off = 0,
@@ -49,9 +31,9 @@ namespace Fission
 	};
 }
 
-namespace Fission::Resource
+namespace Fission::gfx
 {
-	struct IFBindable : public IFObject
+	struct Bindable : public ManagedObject
 	{
 		//! @brief Bind this current Object to the Graphics Pipeline.
 		virtual void Bind() = 0;
@@ -61,7 +43,7 @@ namespace Fission::Resource
 	};
 
 	//! @brief Texture Object.
-	struct IFTexture2D : public IFBindable
+	struct Texture2D : public Bindable
 	{
 		enum class Type {
 			Static, Dynamic,
@@ -84,7 +66,7 @@ namespace Fission::Resource
 		virtual Surface * GetSurface() { return nullptr; }
 	};
 
-	struct IFFrameBuffer : public IFBindable
+	struct FrameBuffer : public Bindable
 	{
 
 		struct CreateInfo {
@@ -98,15 +80,15 @@ namespace Fission::Resource
 
 		virtual void Clear( color clear_color ) = 0;
 
-		virtual IFTexture2D * GetTexture2D() = 0;
+		virtual Texture2D * GetTexture2D() = 0;
 	};
 
 	//! @note SwapChains are created internally when a new window is created;
 	//!			SwapChains may not exist independent of a window.
-	struct IFSwapChain : public IFBindable
+	struct SwapChain : public Bindable
 	{
 		struct CreateInfo {
-			IFWindow * pWindow;
+			Window * pWindow;
 			size2 size = {};
 			Texture::Format format = Texture::Format_RGBA8_UNORM;
 		};
@@ -124,7 +106,7 @@ namespace Fission::Resource
 		virtual void Present( vsync_ vsync ) = 0;
 	};
 
-	struct IFVertexBuffer : public IFBindable
+	struct VertexBuffer : public Bindable
 	{
 		enum class Type {
 			Static, Dynamic,
@@ -143,7 +125,7 @@ namespace Fission::Resource
 
 	};
 
-	struct IFIndexBuffer : public IFBindable
+	struct IndexBuffer : public Bindable
 	{
 		enum class Type {
 			Static, Dynamic,
@@ -166,7 +148,7 @@ namespace Fission::Resource
 
 	};
 
-	struct IFConstantBuffer : public IFBindable
+	struct ConstantBuffer : public Bindable
 	{
 		enum class Target {
 			Vertex, Pixel,
@@ -187,7 +169,7 @@ namespace Fission::Resource
 		virtual void Bind( Target target, int slot ) = 0;
 	};
 
-	struct IFShader : public IFBindable
+	struct Shader : public Bindable
 	{
 		struct CreateInfo {
 			string sourceCode;
@@ -196,7 +178,7 @@ namespace Fission::Resource
 
 	};
 
-	struct IFTopology : public IFBindable
+	struct Topology : public Bindable
 	{
 		enum Type {
 			LineList,     LineStrip, 
@@ -212,7 +194,7 @@ namespace Fission::Resource
 	};
 
 	//!
-	struct IFSampler : public IFBindable
+	struct Sampler : public Bindable
 	{
 		enum Filter {
 			Point, Linear
@@ -230,7 +212,7 @@ namespace Fission::Resource
 		virtual void Bind( Target target, int slot ) = 0;
 	};
 
-	struct IFBlender : public IFBindable
+	struct Blender : public Bindable
 	{
 		enum Blend {
 			Normal, 
@@ -248,3 +230,26 @@ namespace Fission::Resource
 	};
 }
 
+/**
+ *	MIT License
+ *
+ *	Copyright (c) 2021-2023 lazergenixdev
+ *
+ *	Permission is hereby granted, free of charge, to any person obtaining a copy
+ *	of this software and associated documentation files (the "Software"), to deal
+ *	in the Software without restriction, including without limitation the rights
+ *	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *	copies of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
+ *
+ *	The above copyright notice and this permission notice shall be included in all
+ *	copies or substantial portions of the Software.
+ *
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
+ */

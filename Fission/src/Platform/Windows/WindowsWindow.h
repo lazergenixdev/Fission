@@ -27,7 +27,7 @@ namespace Fission::Platform
 	extern LRESULT CALLBACK WindowsProcSetup( _In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wParam, _In_ LPARAM lParam );
 	extern LRESULT CALLBACK WindowsProcMain( _In_ HWND hWnd, _In_ UINT Msg, _In_ WPARAM wParam, _In_ LPARAM lParam );
 
-	class WindowsWindow : public IFWindow
+	class WindowsWindow : public Window
 	{
 	public:
 
@@ -42,9 +42,9 @@ namespace Fission::Platform
 
 		virtual string GetTitle() override;
 
-		virtual void SetStyle( Style style ) override;
+		virtual void SetStyle( wnd::Style style ) override;
 
-		virtual Style GetStyle() override;
+		virtual wnd::Style GetStyle() override;
 
 		virtual void SetSize( const size2 & size ) override;
 
@@ -54,7 +54,7 @@ namespace Fission::Platform
 
 		virtual native_handle_type native_handle() override;
 
-		virtual Resource::IFSwapChain * GetSwapChain() override;
+		virtual gfx::SwapChain * GetSwapChain() override;
 
 		virtual MonitorPtr GetMonitor() override;
 
@@ -88,14 +88,14 @@ namespace Fission::Platform
 		size2 GetWindowsSize();
 
 	private:
-		fsn_ptr<Resource::IFSwapChain> m_pSwapChain;
-		IFEventHandler * pEventHandler = IFEventHandler::Default();
+		fsn_ptr<gfx::SwapChain> m_pSwapChain;
+		EventHandler * pEventHandler = EventHandler::Default();
 
 		short m_MouseWheelDelta = 0;
 
 		Cursor * m_Cursor = Cursor::Get( Cursor::Default_Arrow );
 
-		Properties m_Properties;
+		wnd::Properties m_Properties;
 		bool m_bRestrictAR = false;
 		bool m_bFullscreenMode = false;
 

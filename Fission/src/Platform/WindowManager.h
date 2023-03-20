@@ -3,13 +3,13 @@
 
 namespace Fission
 {
-	struct WindowManager : public IFObject
+	struct WindowManager : public ManagedObject
 	{
 		virtual void Initialize() = 0;
 
-		virtual void SetGraphics( IFGraphics * pGraphics ) = 0;
+		virtual void SetGraphics( Graphics * pGraphics ) = 0;
 
-		virtual void CreateWindow( const IFWindow::CreateInfo * pInfo, IFWindow ** ppWindow ) = 0;
+		virtual void CreateWindow( const Window::CreateInfo * pInfo, Window ** ppWindow ) = 0;
 	};
 
 	extern void CreateWindowManager( WindowManager ** ppWindowManager ) noexcept;

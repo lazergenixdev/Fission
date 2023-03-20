@@ -5,19 +5,19 @@
 namespace Fission {
 
 
-	class Renderer2DImpl : public IFRenderer2D
+	class Renderer2DImpl : public Renderer2D
 	{
 	public:
 
 		Renderer2DImpl() = default;
 
-		virtual void OnCreate( IFGraphics * gfx, size2 _Viewport_Size ) override;
+		virtual void OnCreate( Graphics * gfx, size2 _Viewport_Size ) override;
 
-		virtual void OnRecreate( IFGraphics * gfx ) override;
+		virtual void OnRecreate( Graphics * gfx ) override;
 
 		virtual void Destroy() override;
 
-		virtual void OnResize( IFGraphics * gfx, size2 size ) override;
+		virtual void OnResize( Graphics * gfx, size2 size ) override;
 
 		// Inherited via Renderer2D
 		virtual void Render() override;
@@ -26,7 +26,7 @@ namespace Fission {
 
 		virtual void FillTriangleGrad( v2f32 p0, v2f32 p1, v2f32 p2, color c0, color c1, color c2 ) override;
 
-		virtual void FillTriangleUV( v2f32 p0, v2f32 p1, v2f32 p2, v2f32 uv0, v2f32 uv1, v2f32 uv2, Resource::IFTexture2D * pTexture, color tint ) override;
+		virtual void FillTriangleUV( v2f32 p0, v2f32 p1, v2f32 p2, v2f32 uv0, v2f32 uv1, v2f32 uv2, gfx::Texture2D * pTexture, color tint ) override;
 
 		virtual void FillRect( rf32 rect, color color ) override;
 
@@ -48,9 +48,9 @@ namespace Fission {
 
 		virtual void FillArrow( v2f32 start, v2f32 end, float width, color color ) override;
 
-		virtual void DrawImage( Resource::IFTexture2D * pTexture, rf32 rect, rf32 uv, color tint ) override;
+		virtual void DrawImage( gfx::Texture2D * pTexture, rf32 rect, rf32 uv, color tint ) override;
 
-		virtual void DrawImage( Resource::IFTexture2D * pTexture, rf32 rect, color tint ) override;
+		virtual void DrawImage( gfx::Texture2D * pTexture, rf32 rect, color tint ) override;
 
 		virtual void SelectFont( const Font * pFont ) override;
 
@@ -76,16 +76,16 @@ namespace Fission {
 		dynamic_buffer<m23> m_TransformStack;
 
 	private:
-		IFGraphics * m_pGraphics = nullptr;
+		Graphics * m_pGraphics = nullptr;
 
-		fsn_ptr<Resource::IFVertexBuffer>   m_pVertexBuffer;
-		fsn_ptr<Resource::IFIndexBuffer>    m_pIndexBuffer;
-		fsn_ptr<Resource::IFConstantBuffer> m_pTransformBuffer;
-		fsn_ptr<Resource::IFShader>			m_pShader;
-		fsn_ptr<Resource::IFBlender>		m_pBlenders[(size_t)BlendMode::__count__];
-		Resource::IFBlender *				m_pUseBlender = nullptr;
+		fsn_ptr<gfx::VertexBuffer>   m_pVertexBuffer;
+		fsn_ptr<gfx::IndexBuffer>    m_pIndexBuffer;
+		fsn_ptr<gfx::ConstantBuffer> m_pTransformBuffer;
+		fsn_ptr<gfx::Shader>	     m_pShader;
+		fsn_ptr<gfx::Blender>		 m_pBlenders[(size_t)BlendMode::__count__];
+		gfx::Blender *				 m_pUseBlender = nullptr;
 
-		const Font *						m_pSelectedFont = nullptr;
+		const struct Font *		     m_pSelectedFont = nullptr;
 
 	private:
 		struct vertex {
@@ -97,7 +97,7 @@ namespace Fission {
 			color color;
 		};
 
-		void SetTexture( Resource::IFTexture2D * tex );
+		void SetTexture( gfx::Texture2D * tex );
 
 		struct DrawData 
 		{
@@ -122,7 +122,7 @@ namespace Fission {
 			uint32_t vtxCount = 0, vtxStart;
 			uint32_t idxCount = 0, idxStart;
 
-			Resource::IFTexture2D * Texture = nullptr;
+			gfx::Texture2D * Texture = nullptr;
 
 			vertex *	pVtxData = nullptr;
 			uint32_t *	pIdxData = nullptr;

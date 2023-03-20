@@ -7,67 +7,78 @@
  *
  * 
  * @Author:       lazergenixdev@gmail.com
- * @Development:  (https://github.com/lazergenixdev/Fission) 
+ * @Development:  (https://github.com/lazergenixdev/Fission)
+ * @License:      MIT (see end of file)
  *
  * How to do version numbers:
  *   https://semver.org/
  * 
  */
+#pragma once
 #include <Fission/Base/Types.hpp>
 #include <format>
 
 __FISSION_BEGIN__
 
 /*! @brief Normal Version Number */
-struct normal_version
+struct version
 {
-	using type = i32;
+	using type = u32;
 
 	// Version: Major.Minor.Patch
 	// e.g. 2.2.0
 	type Major,Minor,Patch;
 
 
-	constexpr normal_version() noexcept : Major(0), Minor(0), Patch(0) {}
+	constexpr version() noexcept : Major(0), Minor(0), Patch(0) {}
 
 	template <std::integral T>
-	constexpr normal_version( T major, T minor, T patch ) noexcept:
+	constexpr version( T major, T minor, T patch ) noexcept:
 		Major( static_cast<type>(major) ),
 		Minor( static_cast<type>(minor) ),
 		Patch( static_cast<type>(patch) )
 	{}
 
-	constexpr auto operator<=>(normal_version const&) const noexcept = default;
-	constexpr bool operator ==(normal_version const&) const noexcept = default;
+	constexpr auto operator<=>(version const&) const noexcept = default;
+	constexpr bool operator ==(version const&) const noexcept = default;
 
 	std::string string() const { return std::format( "{}.{}.{}", Major, Minor, Patch ); }
 
-}; // Fission::normal_version
+}; // Fission::version
 
-using version = normal_version;
+/*! @brief Compact Version Number */
+struct compressed_version
+{
+	// Format:  Major  | Minor         | Patch
+	//          010101   0101010101010   0101010101010
+	// Max:     63       8,191           8,191         => 63.8191.8191
+	// 
+	//          6 bits + 13 bits       + 13 bits       = 32 bit
+	//          High Bits <--          --> Low Bits
+	u32 _version;
 
-// vvv This is cancer vvv
+	static constexpr u32 _Mask_Major = 0xFC00'0000;
+	static constexpr u32 _Mask_Minor = 0x03FF'E000;
+	static constexpr u32 _Mask_Patch = 0x0000'1FFF;
 
-//struct version
-//{
-//public:
-//	struct identifier
-//	{
-//		union {
-//			char str[8];
-//			struct {
-//				u32 _;
-//				u32 number;
-//			};
-//		};
-//	};
-//
-//public:
-//	normal_version ver;
-//	identifier ids[2];
-//
-//
-//};
+	constexpr compressed_version() noexcept: _version(0) {}
+
+	// assume all numbers are within limits
+	constexpr compressed_version( int major, int minor, int patch ) noexcept:
+		_version( (major << 26) | (minor << 13) | patch )
+	{}
+
+	// assume all numbers are within limits
+	constexpr compressed_version( const version& v ) noexcept:
+		_version( (v.Major << 26) | (v.Minor << 13) | v.Patch )
+	{}
+
+	constexpr version uncompress() const {
+		return version( (_version) >> 26, (_version & _Mask_Minor) >> 13, _version & _Mask_Patch );
+	}
+
+}; // Fission::compressed_version
+
 
 __FISSION_END__
 
@@ -93,5 +104,4 @@ __FISSION_END__
  *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *	SOFTWARE.
- * 
  */

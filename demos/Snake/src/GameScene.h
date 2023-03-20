@@ -10,7 +10,7 @@ using v2i = Fission::v2i32;
 using rectf = Fission::rf32;
 
 static float padding = 0.6f;
-static Fission::IFEngine* g_engine = nullptr;
+static Fission::Engine* g_engine = nullptr;
 
 class Field
 {
@@ -21,7 +21,7 @@ public:
 		rect( rectf::from_topleft(left,top,width,height) )
 	{}
 
-	void Draw( Fission::IFRenderer2D * r2d, bool drawAllTiles )
+	void Draw( Fission::Renderer2D * r2d, bool drawAllTiles )
 	{
 		if( drawAllTiles )
 			for( int x = 0; x < (int)cell_count.x; ++x )
@@ -36,7 +36,7 @@ public:
 		r2d->DrawRect( rect, Fission::colors::White, 2.0f, Fission::StrokeStyle::Inside );
 	}
 
-	void DrawTile( Fission::IFRenderer2D * r2d, v2i location, Fission::color col )
+	void DrawTile( Fission::Renderer2D * r2d, v2i location, Fission::color col )
 	{
 		r2d->FillRect( rectf::from_topleft( (v2f)location * cell_size + offset, cell_size ).expanded(-padding) , col );
 	}
@@ -69,7 +69,7 @@ public:
 		body.emplace_back( start );
 	}
 
-	void Draw( Fission::IFRenderer2D * r2d, Field* field )
+	void Draw( Fission::Renderer2D * r2d, Field* field )
 	{
 		static constexpr Fission::color dead_color = Fission::colors::Green;
 		static constexpr auto color = Fission::hsva( Fission::rgb(Fission::colors::LimeGreen) );
@@ -199,10 +199,10 @@ private:
 	v2i food_pos;
 };
 
-class GameScene : public DefaultDelete<Fission::FMultiLayerScene>
+class GameScene : public DefaultDelete<Fission::MultiLayerScene>
 {
 public:
-	GameScene(Fission::IFEngine * engine);
+	GameScene(Fission::Engine * engine);
 
 	virtual Fission::SceneKey GetKey() override { return {1}; }
 };

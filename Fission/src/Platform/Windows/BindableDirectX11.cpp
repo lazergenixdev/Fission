@@ -180,7 +180,7 @@ namespace Fission::Platform {
 					D3D11_INPUT_PER_VERTEX_DATA,
 					0
 				};
-				offset += Resource::VertexLayoutTypes::GetStride( type );
+				offset += gfx::VertexLayoutTypes::GetStride( type );
 			}
 
 			hr = pDevice->CreateInputLayout( pInputElements, numElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &m_pInputLayout );
@@ -250,23 +250,23 @@ namespace Fission::Platform {
 	{
 	}
 
-	DXGI_FORMAT ShaderDX11::get_format( Resource::VertexLayoutTypes::Type type )
+	DXGI_FORMAT ShaderDX11::get_format( gfx::VertexLayoutTypes::Type type )
 	{
 		switch( type )
 		{
-		case Resource::VertexLayoutTypes::Float:
+		case gfx::VertexLayoutTypes::Float:
 			return DXGI_FORMAT_R32_FLOAT;
-		case Resource::VertexLayoutTypes::Float2:
+		case gfx::VertexLayoutTypes::Float2:
 			return DXGI_FORMAT_R32G32_FLOAT;
-		case Resource::VertexLayoutTypes::Float3:
+		case gfx::VertexLayoutTypes::Float3:
 			return DXGI_FORMAT_R32G32B32_FLOAT;
-		case Resource::VertexLayoutTypes::Float4:
+		case gfx::VertexLayoutTypes::Float4:
 			return DXGI_FORMAT_R32G32B32A32_FLOAT;
-		case Resource::VertexLayoutTypes::Int:
+		case gfx::VertexLayoutTypes::Int:
 			return DXGI_FORMAT_R32_SINT;
-		case Resource::VertexLayoutTypes::Int2:
-		case Resource::VertexLayoutTypes::Int3:
-		case Resource::VertexLayoutTypes::Int4:
+		case gfx::VertexLayoutTypes::Int2:
+		case gfx::VertexLayoutTypes::Int3:
+		case gfx::VertexLayoutTypes::Int4:
 		default:
 			throw 0x45;
 		}
@@ -302,10 +302,10 @@ namespace Fission::Platform {
 	{
 		switch( target )
 		{
-		case Fission::Resource::IFConstantBuffer::Target::Vertex:
+		case Fission::gfx::ConstantBuffer::Target::Vertex:
 			m_pContext->VSSetConstantBuffers( slot, 1, m_pBuffer.GetAddressOf() );
 		break;
-		case Fission::Resource::IFConstantBuffer::Target::Pixel:
+		case Fission::gfx::ConstantBuffer::Target::Pixel:
 			m_pContext->PSSetConstantBuffers( slot, 1, m_pBuffer.GetAddressOf() );
 		break;
 		default:throw std::logic_error("this don't make no fucking sense.");

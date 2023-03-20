@@ -25,7 +25,7 @@ namespace Fission {
 
 	struct FontImpl : public Font
 	{
-		fsn_ptr<Resource::IFTexture2D>	m_pAtlasTexture;
+		fsn_ptr<gfx::Texture2D>	m_pAtlasTexture;
 		std::unordered_map<chr, Glyph>	m_Map;
 		Glyph							m_FallbackGlyph;
 		float							m_Height;
@@ -34,7 +34,7 @@ namespace Fission {
 
 		FontImpl( const CreateInfo& info );
 
-		virtual Resource::IFTexture2D* get_atlas() const override;
+		virtual gfx::Texture2D* get_atlas() const override;
 		virtual const Glyph* lookup( chr _Codepoint ) const override;
 		virtual float height() const override;
 		virtual void resize( float _New_Size ) override;
@@ -49,16 +49,16 @@ namespace Fission {
 		float  m_Height;
 		Glyph  m_FallbackGlyph;
 
-		fsn_ptr<Resource::IFTexture2D>	m_pAtlasTexture;
+		fsn_ptr<gfx::Texture2D>	m_pAtlasTexture;
 		std::unordered_map<chr, Glyph>	m_Map;
 
 		EmojiDictionary					m_EmojiMap;
-		fsn_ptr<Resource::IFTexture2D>	m_pEmojiTexture;
+		fsn_ptr<gfx::Texture2D>	m_pEmojiTexture;
 
 
 		UIFontImpl( const CreateInfo& info );
 		
-		virtual Resource::IFTexture2D* get_atlas() const override;
+		virtual gfx::Texture2D* get_atlas() const override;
 		virtual const Glyph* lookup( chr _Codepoint ) const override;
 		virtual float height() const override;
 		virtual void resize( float _New_Size ) override;
@@ -68,7 +68,7 @@ namespace Fission {
 		virtual const Glyph* fallback() const override;
 
 		virtual std::optional<const Glyph*> lookup_emoji( const chr* codepoints, int& advance ) const override;
-		virtual Resource::IFTexture2D* get_emoji_atlas() const override;
+		virtual gfx::Texture2D* get_emoji_atlas() const override;
 	};
 
 }

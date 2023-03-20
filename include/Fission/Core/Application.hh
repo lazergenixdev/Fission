@@ -1,58 +1,41 @@
 /**
-*
-* @file: Application.h
-* @author: lazergenixdev@gmail.com
-*
-*
-* This file is provided under the MIT License:
-*
-* Copyright (c) 2021 Lazergenix Software
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-*
-*/
-
+ *	______________              _____
+ *	___  ____/__(_)________________(_)____________
+ *	__  /_   __  /__  ___/_  ___/_  /_  __ \_  __ \
+ *	_  __/   _  / _(__  )_(__  )_  / / /_/ /  / / /
+ *	/_/      /_/  /____/ /____/ /_/  \____//_/ /_/
+ *
+ *
+ * @Author:       lazergenixdev@gmail.com
+ * @Development:  (https://github.com/lazergenixdev/Fission)
+ * @License:      MIT (see end of file)
+ */
 #pragma once
-#include <Fission/Core/Engine.hh>
-#include <Fission/Core/Graphics.hh>
+#include <Fission/Base/Version.hpp>
 #include <Fission/Core/Window.hh>
+#include <Fission/Core/Graphics.hh>
+#include <Fission/Core/Scene.hh>
 
 namespace Fission
 {
-	class FApplication : public IFObject
+	class Application : public ManagedObject
 	{
 	public:
 
 		struct CreateInfo
 		{
-			IFWindow::Properties window   = {};
-			GraphicsState        graphics = {};
+			wnd::Properties window   = {};
+			GraphicsState   graphics = {};
 		};
 
 	public:
-		utf8_string  f_Name;
-		utf8_string  f_VersionInfo;
-		version      f_Version;
+		utf8_string        f_Name;
+		utf8_string        f_VersionInfo;
+		compressed_version f_Version;
 
-		IFEngine   * f_pEngine        = nullptr;
-		IFWindow   * f_pMainWindow    = nullptr;
-		IFGraphics * f_pGraphics      = nullptr;
+		struct Engine   * f_pEngine      = nullptr;
+		struct Window   * f_pMainWindow  = nullptr;
+		struct Graphics * f_pGraphics    = nullptr;
 
 	public:
 
@@ -70,21 +53,45 @@ namespace Fission
 		* @param key key
 		* @return Pointer to the newly created scene, or nullptr to signal an invalid scene key.
 		*/
-		virtual IFScene * OnCreateScene( const SceneKey& key ) = 0;
+		virtual struct Scene * OnCreateScene( const SceneKey& key ) = 0;
 
 	public:
-		FApplication() noexcept
+		Application() noexcept
 		:	f_Name("<app name>"), f_Version(0,1,0), f_VersionInfo("vanilla/dev")
 		{}
 
-		FApplication( const utf8_string & name, const version & ver ) noexcept
+		Application( const utf8_string & name, const version & ver ) noexcept
 		:	f_Name(name), f_Version(ver), f_VersionInfo("vanilla")
 		{}
 
-		FApplication( const FApplication & ) = delete; /*!< Copying Applications is not allowed. */
+		Application( const Application & ) = delete; /*!< Copying Applications is not allowed. */
 
-		virtual ~FApplication() noexcept = default;
+		virtual ~Application() noexcept = default;
 
 	}; // class Fission::FApplication
 
 } // namespace Fission
+
+/**
+ *	MIT License
+ *
+ *	Copyright (c) 2021-2023 lazergenixdev
+ *
+ *	Permission is hereby granted, free of charge, to any person obtaining a copy
+ *	of this software and associated documentation files (the "Software"), to deal
+ *	in the Software without restriction, including without limitation the rights
+ *	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *	copies of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
+ *
+ *	The above copyright notice and this permission notice shall be included in all
+ *	copies or substantial portions of the Software.
+ *
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
+ */

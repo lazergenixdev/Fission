@@ -3,6 +3,9 @@
 #include <Fission/Base/Time.hpp>
 #include <Fission/Simple2DLayer.h>
 #include <Fission/Core/Graphics/Font.hh>
+#include <Fission/Core/Graphics/Renderer2D.hh>
+#include <Fission/Core/Graphics.hh>
+#include <Fission/Core/Scene.hh>
 
 namespace NotoSans_RegularTTF {
 #include "Static Fonts/NotoSans-Regular.inl"
@@ -13,7 +16,7 @@ struct DefaultDelete : public T { virtual void Destroy() override { delete this;
 
 using namespace Fission;
 using namespace Fission::base;
-static Fission::IFRenderer2D * g_r2d;
+static Fission::Renderer2D * g_r2d;
 
 static void* twemojifile = nullptr;
 static float rendertime = 0.0f;
@@ -21,7 +24,7 @@ static float rendertime = 0.0f;
 // Testing SDF-based text rendering, will probably settle on using two text renderers:
 //   1. Simple FAST text renderer that uses a simple single channel texture (For console and debug interfaces)
 //	 2. Scalable text renderer that uses SDF or MSDF
-struct TextRenderer : public Fission::IFRenderer {
+struct TextRenderer : public Fission::Renderer {
 
 	struct vertex {
 		Fission::v2f32 pos;
@@ -42,7 +45,7 @@ struct TextRenderer : public Fission::IFRenderer {
 		Complete   = 0x4,
 	};
 
-	virtual void OnCreate( Fission::IFGraphics* gfx, Fission::size2 _Viewport_Size ) {
+	virtual void OnCreate( Fission::Graphics* gfx, Fission::size2 _Viewport_Size ) {
 		master_vertex_data = (vertex*)_aligned_malloc( vertex_max_count * sizeof vertex, 32 );
 		master_index_data = (uint32_t*)_aligned_malloc( index_max_count * sizeof uint32_t, 32 );
 		_viewport_size = _Viewport_Size;
@@ -57,33 +60,33 @@ struct TextRenderer : public Fission::IFRenderer {
 
 		worker = std::thread( ThreadDriver, this );
 	}
-	virtual void OnRecreate( Fission::IFGraphics* gfx ) {
+	virtual void OnRecreate( Fission::Graphics* gfx ) override {
 		m_pGraphics = gfx;
 		using namespace Fission;
-		using namespace Fission::Resource;
-		using namespace Fission::Resource::VertexLayoutTypes;
+		using namespace Fission::gfx;
+		using namespace Fission::gfx::VertexLayoutTypes;
 
 		auto vl = VertexLayout{};
 		vl.Append( Float2, "Position" );
 		vl.Append( Float2, "TexCoord" );
 
 		{ // Create Vertex Buffer
-			IFVertexBuffer::CreateInfo info;
+			VertexBuffer::CreateInfo info;
 			info.vtxCount = vertex_max_count;
 			info.pVertexLayout = &vl;
-			info.type = IFVertexBuffer::Type::Dynamic;
+			info.type = VertexBuffer::Type::Dynamic;
 			m_pVertexBuffer = gfx->CreateVertexBuffer( info );
 		}
 		{ // Create Index Buffer
-			IFIndexBuffer::CreateInfo info;
+			IndexBuffer::CreateInfo info;
 			info.idxCount = index_max_count;
-			info.size = IFIndexBuffer::Size::UInt32;
-			info.type = IFIndexBuffer::Type::Dynamic;
+			info.size = IndexBuffer::Size::UInt32;
+			info.type = IndexBuffer::Type::Dynamic;
 			m_pIndexBuffer = gfx->CreateIndexBuffer( info );
 		}
 		{ // Create Index Buffer
-			IFConstantBuffer::CreateInfo info;
-			info.type = IFConstantBuffer::Type::Dynamic;
+			ConstantBuffer::CreateInfo info;
+			info.type = ConstantBuffer::Type::Dynamic;
 			info.max_size = 128;
 			m_pTransformBuffer = gfx->CreateConstantBuffer( info );
 
@@ -99,7 +102,7 @@ struct TextRenderer : public Fission::IFRenderer {
 			m_pTransformBuffer->SetData( &screen, sizeof( screen ) );
 		}
 		{ // Create Shaders
-			IFShader::CreateInfo info;
+			Shader::CreateInfo info;
 			info.pVertexLayout = &vl;
 			info.sourceCode = R"(
 cbuffer Transform : register(b0)
@@ -128,18 +131,18 @@ float4 ps_main( float2 tc : TexCoord ) : SV_Target {
 			m_pShader = gfx->CreateShader( info );
 		}
 		{
-			IFBlender::CreateInfo info;
-			info.blend = IFBlender::Blend::Normal;
+			Blender::CreateInfo info;
+			info.blend = Blender::Blend::Normal;
 			m_pBlender = gfx->CreateBlender( info );
 		}
 		{
-			IFSampler::CreateInfo info;
-			info.filter = IFSampler::Linear;
+			Sampler::CreateInfo info;
+			info.filter = Sampler::Linear;
 			m_pSampler = gfx->CreateSampler( info );
 		}
 	}
 
-	virtual void OnResize( Fission::IFGraphics* _Ptr_Graphics, Fission::size2 size ) {
+	virtual void OnResize( Fission::Graphics* _Ptr_Graphics, Fission::size2 size ) {
 		const auto screen = Fission::m44(
 			2.0f / (float)size.w, 0.0f,                -1.0f, 0.0f,
 			0.0f,                -2.0f / (float)size.h, 1.0f, 0.0f,
@@ -163,12 +166,12 @@ float4 ps_main( float2 tc : TexCoord ) : SV_Target {
 	void Render() {
 		m_pVertexBuffer->Bind();
 		m_pIndexBuffer->Bind();
-		m_pTransformBuffer->Bind( Fission::Resource::IFConstantBuffer::Target::Vertex, 0 );
+		m_pTransformBuffer->Bind( Fission::gfx::ConstantBuffer::Target::Vertex, 0 );
 		m_pBlender->Bind();
 		m_pShader->Bind();
 
 		font->get_atlas()->Bind(0);
-		m_pSampler->Bind(Fission::Resource::IFSampler::Pixel, 0);
+		m_pSampler->Bind(Fission::gfx::Sampler::Pixel, 0);
 		Draw( fntDraw );
 
 		font->get_emoji_atlas()->Bind(0);
@@ -284,17 +287,17 @@ float4 ps_main( float2 tc : TexCoord ) : SV_Target {
 
 	int heikjdfsgh() { return font->height(); }
 
-	Fission::IFGraphics* m_pGraphics = nullptr;
+	Fission::Graphics* m_pGraphics = nullptr;
 
-	Fission::fsn_ptr<Fission::Resource::IFVertexBuffer>   m_pVertexBuffer;
-	Fission::fsn_ptr<Fission::Resource::IFIndexBuffer>    m_pIndexBuffer;
-	Fission::fsn_ptr<Fission::Resource::IFConstantBuffer> m_pTransformBuffer;
-	Fission::fsn_ptr<Fission::Resource::IFShader>		  m_pShader;
-	Fission::fsn_ptr<Fission::Resource::IFSampler>		  m_pSampler;
-	Fission::fsn_ptr<Fission::Resource::IFBlender>		  m_pBlender;
+	Fission::fsn_ptr<Fission::gfx::VertexBuffer>   m_pVertexBuffer;
+	Fission::fsn_ptr<Fission::gfx::IndexBuffer>    m_pIndexBuffer;
+	Fission::fsn_ptr<Fission::gfx::ConstantBuffer> m_pTransformBuffer;
+	Fission::fsn_ptr<Fission::gfx::Shader>		 m_pShader;
+	Fission::fsn_ptr<Fission::gfx::Sampler>		 m_pSampler;
+	Fission::fsn_ptr<Fission::gfx::Blender>		 m_pBlender;
 
-	Fission::Resource::IFTexture2D*	  m_pFontTexture;
-	Fission::Resource::IFTexture2D*	  m_pEmojiTexture;
+	Fission::gfx::Texture2D*	  m_pFontTexture;
+	Fission::gfx::Texture2D*	  m_pEmojiTexture;
 
 	DrawData fntDraw;
 	DrawData emoDraw;
@@ -319,10 +322,10 @@ float4 ps_main( float2 tc : TexCoord ) : SV_Target {
 	Fission::size2 _viewport_size;
 };
 
-struct SettingsScene : public DefaultDelete<Fission::IFScene>
+struct SettingsScene : public DefaultDelete<Fission::Scene>
 {
-	virtual void OnCreate(FApplication* app) override {
-		r2d = app->f_pEngine->GetRenderer<IFRenderer2D>( "$internal2D" );
+	virtual void OnCreate(Application* app) override {
+		r2d = app->f_pEngine->GetRenderer<Renderer2D>( "$internal2D" );
 		tr  = app->f_pEngine->GetRenderer<TextRenderer>( "test" );
 		
 		{
@@ -407,9 +410,9 @@ struct SettingsScene : public DefaultDelete<Fission::IFScene>
 	virtual Fission::SceneKey GetKey() override { return {}; }
 
 	v2f32 mouse = {};
-	IFRenderer2D* r2d;
+	Renderer2D* r2d;
 	TextRenderer* tr = nullptr;
-	IFWindow* wnd = nullptr;
+	Window* wnd = nullptr;
 
 	chr text[32] = U"🧜🏻‍♀️";
 	int size = 5;
@@ -421,17 +424,20 @@ struct SettingsScene : public DefaultDelete<Fission::IFScene>
 	float h = 30.0f;
 };
 
-class MyApp : public Fission::FApplication
+class MyApp : public Fission::Application
 {
 public:
-	MyApp() : FApplication( "Sandbox", {2,2,8} ) {}
+	MyApp() : Application( "Sandbox", {2,2,8} ) {}
 
 	virtual void OnStartUp( CreateInfo * info ) override
 	{
 		info->window.title = u8"emoji modifiers are a nightmare to code, just fucking kill me, like who TF thought of this??!!??";
 		f_pEngine->RegisterRenderer( "test", new TextRenderer );
+
+		constexpr auto v = Fission::compressed_version( 0, 13, 0 );
+		constexpr auto n = v.uncompress();
 	}
-	virtual Fission::IFScene * OnCreateScene( const Fission::SceneKey& key ) override
+	virtual Fission::Scene * OnCreateScene( const Fission::SceneKey& key ) override
 	{
 		// ignore scene key and just create the main scene
 		return new SettingsScene;
@@ -439,6 +445,6 @@ public:
 	virtual void Destroy() override { delete this; }
 };
 
-Fission::FApplication * CreateApplication() {
+Fission::Application * CreateApplication() {
 	return new MyApp;
 }

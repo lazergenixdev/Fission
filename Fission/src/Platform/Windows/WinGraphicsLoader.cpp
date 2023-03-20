@@ -17,26 +17,26 @@ namespace Fission::Platform
 		Cache.VulkanSupport = (bool)vkdll; // TODO: Fix when add native vulkan support.
 	}
 
-	bool WindowsGraphicsLoader::CheckSupport( IFGraphics::API api )
+	bool WindowsGraphicsLoader::CheckSupport( Graphics::API api )
 	{
 		switch( api )
 		{
-		case Fission::IFGraphics::API::DirectX11:return  Cache.DirectX11Support;
-		case Fission::IFGraphics::API::DirectX12:return  Cache.DirectX12Support;
-		case Fission::IFGraphics::API::Vulkan:return     Cache.VulkanSupport;
-		case Fission::IFGraphics::API::OpenGL:return     Cache.OpenGLSupport;
-		case Fission::IFGraphics::API::Noop:return       true; // Noop is always supported for debugging.
+		case Fission::Graphics::API::DirectX11:return  Cache.DirectX11Support;
+		case Fission::Graphics::API::DirectX12:return  Cache.DirectX12Support;
+		case Fission::Graphics::API::Vulkan:return     Cache.VulkanSupport;
+		case Fission::Graphics::API::OpenGL:return     Cache.OpenGLSupport;
+		case Fission::Graphics::API::Noop:return       true; // Noop is always supported for debugging.
 		default:return false; // API::Default is NOT a Graphics API, only a helper for creating graphics.
 		}
 	}
 
-	void WindowsGraphicsLoader::CreateGraphics( GraphicsState * pState, IFGraphics ** ppGraphics )
+	void WindowsGraphicsLoader::CreateGraphics( GraphicsState * pState, Graphics ** ppGraphics )
 	{
 		*ppGraphics = NULL;
 		switch( pState->api )
 		{
-		case IFGraphics::API::Default:
-		case IFGraphics::API::DirectX11:
+		case Graphics::API::Default:
+		case Graphics::API::DirectX11:
 		{
 			if( pLoadedModule != &m_DirectX11Module )
 			{
@@ -50,11 +50,11 @@ namespace Fission::Platform
 		}
 		break;
 		
-		case IFGraphics::API::Noop:
+		case Graphics::API::Noop:
 			*ppGraphics = new Noop::Graphics();
 		break;
 		
-		case IFGraphics::API::OpenGL:
+		case Graphics::API::OpenGL:
 			*ppGraphics = new GraphicsOpenGL();
 		break;
 

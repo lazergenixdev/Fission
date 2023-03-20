@@ -1,39 +1,18 @@
 /**
-*
-* @file: Renderer2D.h
-* @author: lazergenixdev@gmail.com
-*
-*
-* This file is provided under the MIT License:
-*
-* Copyright (c) 2021 Lazergenix Software
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-*
-*/
-
-// todo: MESHES SUCK! improve interface
-
+ *	______________              _____
+ *	___  ____/__(_)________________(_)____________
+ *	__  /_   __  /__  ___/_  ___/_  /_  __ \_  __ \
+ *	_  __/   _  / _(__  )_(__  )_  / / /_/ /  / / /
+ *	/_/      /_/  /____/ /____/ /_/  \____//_/ /_/
+ *
+ *
+ * @Author:       lazergenixdev@gmail.com
+ * @Development:  (https://github.com/lazergenixdev/Fission)
+ * @License:      MIT (see end of file)
+ */
 #pragma once
-#include "Fission/Core/Graphics.hh"
+#include "Fission/Core/Graphics/Bindable.hh"
 #include "Fission/Core/Graphics/Renderer.hh"
-#include "Fission/Core/Graphics/Font.hh"
 #include "Fission/Base/Math/Matrix.hpp"
 #include "Fission/Base/Rect.hpp"
 
@@ -54,7 +33,7 @@ namespace Fission
 		__count__
 	};
 
-	struct IFRenderer2D : public IFRenderer
+	struct Renderer2D : public Renderer
 	{
 	public:
 
@@ -66,7 +45,7 @@ namespace Fission
 
 		virtual void FillTriangleGrad( v2f32 p0, v2f32 p1, v2f32 p2, color c0, color c1, color c2 ) = 0;
 
-		virtual void FillTriangleUV( v2f32 p0, v2f32 p1, v2f32 p2, v2f32 uv0, v2f32 uv1, v2f32 uv2, Resource::IFTexture2D * pTexture, color tint = colors::White ) = 0;
+		virtual void FillTriangleUV( v2f32 p0, v2f32 p1, v2f32 p2, v2f32 uv0, v2f32 uv1, v2f32 uv2, gfx::Texture2D * pTexture, color tint = colors::White ) = 0;
 
 		virtual void FillRectGrad( rf32 rect, color color_topleft, color color_topright, color color_bottomleft, color color_bottomright ) = 0;
 
@@ -84,11 +63,11 @@ namespace Fission
 
 		virtual void FillArrow( v2f32 start, v2f32 end, float width, color color ) = 0;
 
-		virtual void DrawImage( Resource::IFTexture2D * pTexture, rf32 rect, rf32 uv, color tint = colors::White ) = 0;
+		virtual void DrawImage( gfx::Texture2D * pTexture, rf32 rect, rf32 uv, color tint = colors::White ) = 0;
 
-		virtual void DrawImage( Resource::IFTexture2D * pTexture, rf32 rect, color tint = colors::White ) = 0;
+		virtual void DrawImage( gfx::Texture2D * pTexture, rf32 rect, color tint = colors::White ) = 0;
 
-		virtual void SelectFont( const Font * pFont ) = 0;
+		virtual void SelectFont( const struct Font * pFont ) = 0;
 
 		virtual TextLayout DrawString( const char * str, v2f32 pos, color color ) = 0;
 
@@ -108,6 +87,30 @@ namespace Fission
 
 	}; // class Fission::Renderer2D
 
-	FISSION_API void CreateRenderer2D( IFRenderer2D ** ppRenderer2D );
+	FISSION_API void CreateRenderer2D( Renderer2D ** ppRenderer2D );
 
 } // namespace Fission
+
+/**
+ *	MIT License
+ *
+ *	Copyright (c) 2021-2023 lazergenixdev
+ *
+ *	Permission is hereby granted, free of charge, to any person obtaining a copy
+ *	of this software and associated documentation files (the "Software"), to deal
+ *	in the Software without restriction, including without limitation the rights
+ *	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *	copies of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
+ *
+ *	The above copyright notice and this permission notice shall be included in all
+ *	copies or substantial portions of the Software.
+ *
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
+ */

@@ -5,10 +5,10 @@
 
 namespace Fission {
 
-class ConsoleLayerImpl : public IFConsoleLayer
+class ConsoleLayerImpl : public ConsoleLayer
 {
 public:
-	virtual void OnCreate(class FApplication * app) override;
+	virtual void OnCreate(class Application * app) override;
 	virtual void OnUpdate(timestep dt) override;
 
 	virtual EventResult OnKeyDown( KeyDownEventArgs & args ) override;
@@ -20,7 +20,7 @@ private:
 	void _hide();
 
 private:
-	IFRenderer2D* m_pRenderer2D;
+	Renderer2D* m_pRenderer2D;
 
 	string m_CommandText;
 

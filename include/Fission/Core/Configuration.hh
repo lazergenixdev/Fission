@@ -46,30 +46,31 @@
  * 
  */
 
-#pragma once
-#include <Fission/Core/Window.hh>
-#include <filesystem>
+//! TODO: merge this interface into FEngine (maybe not this exact interface)
 
-//! TODO: merge this interface into FEngine
-
-namespace Fission {
-
-    class Config
-    {
-    public:
-        static constexpr const char * DefaultSaveFile = "appconfig";
-
-        //! @brief Load configuration data from a file to the application context
-        //! @note It is not sufficient to just load in new settings for them to be applied,
-        //!         for graphics settings the application will need to call `Recreate()` for
-        //!         them to take effect.
-        //!       Also, window configuration data only apply for newly created windows after `Load()` was called.
-        //! @return 
-        FISSION_API static bool Load( std::filesystem::path _Save_Location = DefaultSaveFile ) noexcept;
-
-        //! @brief Saves all settings in the application context.
-        FISSION_API static bool Save( std::filesystem::path _Save_Location = DefaultSaveFile ) noexcept;
-
-    };
-
-}
+//#pragma once
+//#include <Fission/Core/Window.hh>
+//#include <filesystem>
+//
+//
+//namespace Fission {
+//
+//    class Config
+//    {
+//    public:
+//        static constexpr const char * DefaultSaveFile = "appconfig";
+//
+//        //! @brief Load configuration data from a file to the application context
+//        //! @note It is not sufficient to just load in new settings for them to be applied,
+//        //!         for graphics settings the application will need to call `Recreate()` for
+//        //!         them to take effect.
+//        //!       Also, window configuration data only apply for newly created windows after `Load()` was called.
+//        //! @return 
+//        FISSION_API static bool Load( std::filesystem::path _Save_Location = DefaultSaveFile ) noexcept;
+//
+//        //! @brief Saves all settings in the application context.
+//        FISSION_API static bool Save( std::filesystem::path _Save_Location = DefaultSaveFile ) noexcept;
+//
+//    };
+//
+//}
