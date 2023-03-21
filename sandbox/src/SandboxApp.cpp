@@ -4,6 +4,7 @@
 #include <Fission/Simple2DLayer.h>
 #include <Fission/Core/Graphics/Font.hh>
 #include <Fission/Core/Graphics/Renderer2D.hh>
+#include <Fission/Core/Graphics/TextRenderer.hh>
 #include <Fission/Core/Graphics.hh>
 #include <Fission/Core/Scene.hh>
 
@@ -24,7 +25,7 @@ static float rendertime = 0.0f;
 // Testing SDF-based text rendering, will probably settle on using two text renderers:
 //   1. Simple FAST text renderer that uses a simple single channel texture (For console and debug interfaces)
 //	 2. Scalable text renderer that uses SDF or MSDF
-struct TextRenderer : public Fission::Renderer {
+struct _TextRenderer : public Fission::Renderer {
 
 	struct vertex {
 		Fission::v2f32 pos;
@@ -207,12 +208,12 @@ float4 ps_main( float2 tc : TexCoord ) : SV_Target {
 	}
 
 	void _add_glyph( const v2f32& origin, const float& scale, DrawData& d, const Font::Glyph* g ) {
-		const auto rect = rf32::from_topleft(
-			origin.x + scale * g->offset.x,
-			origin.y + scale * g->offset.y,
-			g->size.x * scale,
-			g->size.y * scale
-		);
+		const auto rect = rf32{
+			origin.x + scale * g->rc.x.low,
+			origin.x + scale * g->rc.x.high,
+			origin.y + scale * g->rc.y.low,
+			origin.y + scale * g->rc.y.high,
+		};
 
 		d.index_data[d.icount++] = d.vcount;
 		d.index_data[d.icount++] = d.vcount + 1u;
@@ -221,13 +222,14 @@ float4 ps_main( float2 tc : TexCoord ) : SV_Target {
 		d.index_data[d.icount++] = d.vcount;
 		d.index_data[d.icount++] = d.vcount + 2u;
 
-		d.vertex_data[d.vcount++] = vertex( v2f32( rect.x.low,  rect.y.high ), v2f32( g->rc.x.low,  g->rc.y.high ) );
-		d.vertex_data[d.vcount++] = vertex( v2f32( rect.x.low,  rect.y.low  ), v2f32( g->rc.x.low,  g->rc.y.low  ) );
-		d.vertex_data[d.vcount++] = vertex( v2f32( rect.x.high, rect.y.low  ), v2f32( g->rc.x.high, g->rc.y.low  ) );
-		d.vertex_data[d.vcount++] = vertex( v2f32( rect.x.high, rect.y.high ), v2f32( g->rc.x.high, g->rc.y.high ) );
+		d.vertex_data[d.vcount++] = vertex( v2f32( rect.x.low,  rect.y.high ), v2f32( g->uv.x.low,  g->uv.y.high ) );
+		d.vertex_data[d.vcount++] = vertex( v2f32( rect.x.low,  rect.y.low  ), v2f32( g->uv.x.low,  g->uv.y.low  ) );
+		d.vertex_data[d.vcount++] = vertex( v2f32( rect.x.high, rect.y.low  ), v2f32( g->uv.x.high, g->uv.y.low  ) );
+		d.vertex_data[d.vcount++] = vertex( v2f32( rect.x.high, rect.y.high ), v2f32( g->uv.x.high, g->uv.y.high ) );
 	}
 
 	void AddText( utf32_string_view sv, v2f32 pos ) {
+		const float start = pos.x;
 		const Font::Glyph* glyph;
 		float scale = m_TargetSize / font->size();
 
@@ -236,16 +238,15 @@ float4 ps_main( float2 tc : TexCoord ) : SV_Target {
 
 		for( int i = 0; i < sv.size(); ++i ) {
 			const chr& cp = sv.data()[i];
-		//	if( cp == '\r' || cp == '\n' ) { pos.y += font->height(); start = 0.0f; continue; }
+			if( cp == U'\r' || cp == U'\n' ) { pos.y += font->height() * scale; pos.x = start; continue; }
 			glyph = font->lookup( cp );
 
 			if( glyph == font->fallback() ) {
 				int char_advance;
-				auto g = font->lookup_emoji( &cp, char_advance );
-				if( g ) {
-					auto& gg = g.value();
-					_add_glyph( pos, scale, emoDraw, gg );
-					pos.x += gg->advance * scale;
+				if( auto g = font->lookup_emoji( &cp, char_advance ) )
+				{
+					_add_glyph( pos, scale, emoDraw, g );
+					pos.x += g->advance * scale;
 					i += char_advance - 1;
 					continue;
 				}
@@ -259,7 +260,7 @@ float4 ps_main( float2 tc : TexCoord ) : SV_Target {
 		}
 	}
 
-	static void __cdecl ThreadDriver(TextRenderer* pthis) {
+	static void __cdecl ThreadDriver(_TextRenderer* pthis) {
 		pthis->ThreadMain();
 	}
 
@@ -285,7 +286,7 @@ float4 ps_main( float2 tc : TexCoord ) : SV_Target {
 		m_TargetSize = std::clamp(ns, 6.0f, 64.0f);
 	}
 
-	int heikjdfsgh() { return font->height(); }
+	int heikjdfsgh() { return (int)font->height(); }
 
 	Fission::Graphics* m_pGraphics = nullptr;
 
@@ -326,10 +327,26 @@ struct SettingsScene : public DefaultDelete<Fission::Scene>
 {
 	virtual void OnCreate(Application* app) override {
 		r2d = app->f_pEngine->GetRenderer<Renderer2D>( "$internal2D" );
-		tr  = app->f_pEngine->GetRenderer<TextRenderer>( "test" );
+		tr  = app->f_pEngine->GetRenderer<_TextRenderer>( "test" );
+		other= app->f_pEngine->GetRenderer<TextRenderer>( "$Text" );
+
+#define FILE_ "../resources/Fonts/Noto Sans/atlas"
+
+		const void* csv = nullptr;
+		auto path = std::filesystem::absolute( FILE_ ".csv" ).make_preferred();
+		{
+			FILE* f = fopen( path.string().c_str(), "r");
+			fseek( f, 0, SEEK_END );
+			long fsize = ftell( f );
+			fseek( f, 0, SEEK_SET );  /* same as rewind(f); */
+			csv = malloc( fsize );
+			fread( (char*)csv, fsize, 1, f );
+			fclose( f );
+		}
+		fnt = SDFFont::Create({ csv, 0, path.replace_extension("png").string().c_str()});
 		
 		{
-			FILE* f = fopen( "twemoji.bin", "rb" );
+			FILE* f = fopen( std::filesystem::absolute("../resources/twemoji.bin").make_preferred().string().c_str(), "rb" );
 			fseek( f, 0, SEEK_END );
 			long fsize = ftell( f );
 			fseek( f, 0, SEEK_SET );  /* same as rewind(f); */
@@ -349,32 +366,20 @@ struct SettingsScene : public DefaultDelete<Fission::Scene>
 	}
 	virtual void OnUpdate(Fission::timestep dt) override {
 
-	//	if( hitbox[mouse] ) {
-	//		hitbox.x.low  -= 20.0f * dt * ( hitbox.x.low  - (def_size.x.low  - 30.0f) );
-	//		hitbox.x.high -= 20.0f * dt * ( hitbox.x.high - (def_size.x.high + 30.0f) );
-	//		col -= 20.0f * dt * (col - colors::White);
-	//		h -= 20.0f * dt * ( h - 32.0f );
-	//	}
-	//	else {
-	//		hitbox.x.low  -= 20.0f * dt * ( hitbox.x.low  - def_size.x.low  );
-	//		hitbox.x.high -= 20.0f * dt * ( hitbox.x.high - def_size.x.high );
-	//		col -= 20.0f * dt * (col - rest_col);
-	//		h -= 20.0f * dt * ( h - 28.0f );
-	//	}
 
-	//	r2d->SelectFont( GetEngine()->GetFont("$debug") );
-	////	r2d->DrawRect( hitbox, colors::AliceBlue, 1.0f );
-	//	r2d->FillRect( rf32{ hitbox.left(), hitbox.right(), hitbox.y.average() - 1.0f, hitbox.y.average() + 1.0f}, col);
-	//	auto tl = r2d->CreateTextLayout( "Performance|M" );
-	//	auto pos = v2f32{ 0.5f * ( hitbox.width() - tl.width ) + hitbox.left(), hitbox.y.average() - h };
-	//	r2d->DrawRect( rf32::from_topleft( pos, tl.width, tl.height ), colors::White, 1.0f, StrokeStyle::Outside );
-	//	r2d->DrawString( "Performance|M", pos, col);
-	//	r2d->Render();
-
-	//	tr->AddText( U"The😵five❤👨🏽‍✈️👩🏿‍❤️‍💋‍👩🏻👩🏻‍🚒🤏🏾🤞🏿boxing🙀wizards🍖jump👇quickly⛲", { 100.0f, 100.0f } );
+		tr->AddText( U"The😵five❤👨🏽‍✈️👩🏿‍❤️‍💋‍👩🏻👩🏻‍🚒🤏🏾🤞🏿boxing🙀wizards🍖jump👇quickly⛲", { 100.0f, 100.0f } );
 	//	tr->AddText( U"🀄❤❤⛲❤🦷🥽🥤❤⛲", { 100.0f, 100.0f } );
-		tr->AddText( utf32_string_view{text, (unsigned)size}, { 50.0f, 200.0f } );
-		tr->Render();
+	//	tr->AddText( utf32_string_view{text, (unsigned)size}, { 50.0f, 200.0f } );
+
+		other->add_text_sdf( fnt.get(), "aBcDeFgHiJkLmNoPqRsTuVwXyZ", { 0.0f, 300.0f }, mouse.x*0.3f );
+		other->render();
+
+		r2d->DrawRect( {0.0f, 300.0f, 300.0f, 300.0f+mouse.x*0.3f}, Fission::colors::Green, 2.0f );
+
+		srand( 2314 );
+		for( int i = 0; i < 1000; ++i ) {
+			r2d->FillRect( rf32::from_center(float(rand() % 1280), float(rand() % 720), 100.0f, 100.0f), color{colors::LightGreen, 0.1f});
+		}
 
 		wnd->_debug_set_position( { 50,200 + tr->heikjdfsgh() } );
 
@@ -383,8 +388,9 @@ struct SettingsScene : public DefaultDelete<Fission::Scene>
 			ss << std::hex << (unsigned int)text[size - 1];
 			r2d->SelectFont( GetEngine()->GetFont("$debug") );
 			r2d->DrawString( ss.str().c_str(), {100.0f, 500.0f}, col);
-			r2d->Render();
 		}
+		r2d->Render();
+		tr->Render();
 	}
 	virtual Fission::EventResult OnMouseMove(Fission::MouseMoveEventArgs& args) override {
 		mouse = (v2f32)args.position;
@@ -392,10 +398,6 @@ struct SettingsScene : public DefaultDelete<Fission::Scene>
 		return EventResult::Handled;
 	}
 	virtual Fission::EventResult OnTextInput(Fission::TextInputEventArgs& args) override {
-
-	//	if( args.codepoint > 0x1feee )
-	//		__debugbreak();
-
 		switch( args.codepoint )
 		{
 		case U'\b': { size = std::max( size - 1, 0 ); break; }
@@ -411,7 +413,9 @@ struct SettingsScene : public DefaultDelete<Fission::Scene>
 
 	v2f32 mouse = {};
 	Renderer2D* r2d;
-	TextRenderer* tr = nullptr;
+	_TextRenderer* tr = nullptr;
+	TextRenderer* other = nullptr;
+	fsn_ptr<SDFFont> fnt = nullptr;
 	Window* wnd = nullptr;
 
 	chr text[32] = U"🧜🏻‍♀️";
@@ -432,10 +436,10 @@ public:
 	virtual void OnStartUp( CreateInfo * info ) override
 	{
 		info->window.title = u8"emoji modifiers are a nightmare to code, just fucking kill me, like who TF thought of this??!!??";
-		f_pEngine->RegisterRenderer( "test", new TextRenderer );
-
-		constexpr auto v = Fission::compressed_version( 0, 13, 0 );
-		constexpr auto n = v.uncompress();
+		f_pEngine->RegisterRenderer( "test", new _TextRenderer );
+		Fission::TextRenderer* tr;
+		Fission::CreateTextRenderer( &tr );
+		f_pEngine->RegisterRenderer( "$Text", tr );
 	}
 	virtual Fission::Scene * OnCreateScene( const Fission::SceneKey& key ) override
 	{

@@ -16,6 +16,10 @@ namespace Fission {
 		return new UIFontImpl(info);
 	}
 
+	SDFFont* SDFFont::Create(const CreateInfo& info) {
+		return new SDFFontImpl(info);
+	}
+
 }
 
 namespace Fission {
@@ -91,10 +95,11 @@ namespace Fission {
 		auto generate_glyph = [&]() -> Font::Glyph {
 			Font::Glyph g;
 
-			g.offset.x = (float)( face->glyph->bitmap_left );
-			g.offset.y = (float)( -face->glyph->bitmap_top ) + yMax;
-			g.size.x = (float)( face->glyph->metrics.width >> 6 );
-			g.size.y = (float)( face->glyph->metrics.height >> 6 );
+			auto offsetx = (float)( face->glyph->bitmap_left );
+			auto offsety = (float)( -face->glyph->bitmap_top ) + yMax;
+			auto sizex = (float)( face->glyph->metrics.width >> 6 );
+			auto sizey = (float)( face->glyph->metrics.height >> 6 );
+			g.rc = rf32::from_topleft(offsetx, offsety, sizex, sizey);
 			g.advance = (float)( face->glyph->metrics.horiAdvance >> 6 );
 
 			auto bitmap = face->glyph->bitmap;
@@ -111,7 +116,7 @@ namespace Fission {
 				size2{ (int)bitmap.width, (int)bitmap.rows }
 				);
 
-			g.rc = {
+			g.uv = {
 				(float)rect.x / (float)pSurface->width(),
 				(float)( rect.x + bitmap.width ) / (float)pSurface->width(),
 				(float)rect.y / (float)pSurface->height(),
@@ -163,7 +168,7 @@ namespace Fission {
 		EmojiData* emoji_meta = (EmojiData*)( (const u32*)data + 1 );
 		const char* svg_data = (const char*)data;
 
-		outDict.Map.reserve(777); // jackpot
+		outDict.Map.reserve(1367);
 
 		Surface::CreateInfo surf_info;
 		surf_info.size = { 61 * ((int)height+1), 61 * ((int)height+1) };
@@ -172,10 +177,7 @@ namespace Fission {
 		auto pack = rbp::MaxRectsBinPack( surf_info.size.w, surf_info.size.h, false );
 
 		Font::Glyph g;
-		g.offset.x = 0.0f;
-		g.offset.y = 0.0f;
-		g.size.x  = (float)height;
-		g.size.y  = (float)height;
+		g.rc = { 0.0f, (float)height, 0.0f, (float)height };
 		g.advance = (float)height;
 
 		auto bm = lunasvg::Bitmap( height, height );
@@ -206,7 +208,7 @@ namespace Fission {
 				size2{ (int)w, (int)h }
 			);
 
-			g.rc = {
+			g.uv = {
 				(float) rect.x            / (float)pSurface->width(),
 				(float)(rect.x + height ) / (float)pSurface->width(),
 				(float) rect.y            / (float)pSurface->height(),
@@ -296,7 +298,7 @@ namespace Fission {
 		return &m_FallbackGlyph;
 	}
 
-	std::optional<const Font::Glyph*> UIFontImpl::lookup_emoji( const chr* codepoints, int& advance ) const
+	const Font::Glyph* UIFontImpl::lookup_emoji( const chr* codepoints, int& advance ) const
 	{
 		auto it = m_EmojiMap.Map.find( *codepoints++ );
 
@@ -315,14 +317,72 @@ namespace Fission {
 			}
 
 			advance = max;
-			return winner != nullptr ? winner : (std::optional<const Font::Glyph*>());
+			return winner;
 		}
 
-		return {};
+		return nullptr;
 	}
 
 	gfx::Texture2D* UIFontImpl::get_emoji_atlas() const
 	{
 		return m_pEmojiTexture.get();
 	}
+
+	
+	SDFFontImpl::SDFFontImpl( const CreateInfo& info )
+	{
+		auto pSurface = Surface::Create();
+		pSurface->Load( info.atlas_filename );
+		auto size = (size2f32)pSurface->size();
+
+		m_Map.resize(95);
+
+		const char* data = (const char*)info.glyph_data;
+		char* end;
+
+		//! @TODO: better font format for SDF fonts, so this hard-coded trick is not needed
+		float acenderY = 0.76f;
+
+		unsigned long codepoint = 0;
+		while(codepoint != 126) {
+			codepoint = ::strtoul(data, &end, 10);
+			data = end+1;
+
+			float advance = ::strtof(data, &end); data = end+1;
+
+			float left   = ::strtof(data, &end); data = end+1;
+			float bottom = acenderY -::strtof(data, &end); data = end+1;
+			float right  = ::strtof(data, &end); data = end+1;
+			float top    = acenderY -::strtof(data, &end); data = end+1;
+
+			float aleft   = ::strtof(data, &end) / size.w; data = end+1;
+			float abottom = 1.0f - (::strtof(data, &end) / size.h); data = end + 1;
+			float aright  = ::strtof(data, &end) / size.w; data = end+1;
+			float atop    = 1.0f - (::strtof(data, &end) / size.h); data = end + 1;
+
+			Glyph g = {
+				.uv      = {aleft, aright, atop, abottom},
+				.rc      = {left, right, top, bottom},
+				.advance = advance
+			};
+
+			m_Map[codepoint-' '] = g;
+		}
+
+		gfx::Texture2D::CreateInfo tex_info;
+		tex_info.pSurface = pSurface.get();
+		m_pAtlasTexture = GetEngine()->GetGraphics()->CreateTexture2D(tex_info);
+	}
+
+	gfx::Texture2D* SDFFontImpl::get_atlas() const { return m_pAtlasTexture.get(); }
+
+	const Font::Glyph* SDFFontImpl::lookup( chr _Codepoint ) const {
+		auto index = _Codepoint - ' ';
+		if( index >= 0 && index <= 126 )
+			return &m_Map[_Codepoint-' '];
+		return &m_Map['?'-' '];
+	}
+	float SDFFontImpl::height() const { return 1.0f; }
+	void SDFFontImpl::resize( float _New_Size ) {}
+	void SDFFontImpl::Destroy() { delete this; }
 }

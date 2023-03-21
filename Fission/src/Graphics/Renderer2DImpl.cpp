@@ -8,7 +8,11 @@
 //    but for now it looks better than not and there
 //    are no texture artifacts when snapping.
 #define __SNAP_TEXT 1
+#if __SNAP_TEXT
 #define _ROUND(_VAL) ((float)(int)((_VAL) + 0.5f))
+#else
+#define _ROUND(_VAL) (_VAL)
+#endif
 
 namespace Fission {
 
@@ -308,20 +312,13 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			if( *str == '\r' || *str == '\n' ) { str++; pos.y += m_pSelectedFont->height(); start = 0.0f; continue; }
 			glyph = m_pSelectedFont->lookup( (chr)*str );
 
-#if __SNAP_TEXT
-			const auto left = _ROUND( pos.x + glyph->offset.x + start );
-			const auto right = _ROUND( left + glyph->size.x );
-			const auto top = _ROUND( pos.y + glyph->offset.y );
-			const auto bottom = _ROUND( top + glyph->size.y );
-#else
-			const auto left = pos.x + glyph->offset.x + start;
-			const auto right = left + glyph->size.x;
-			const auto top = pos.y + glyph->offset.y;
-			const auto bottom = top + glyph->size.y;
-#endif
+			const auto left   = _ROUND( pos.x + glyph->rc.x.low  + start );
+			const auto right  = _ROUND( pos.x + glyph->rc.x.high + start );
+			const auto top    = _ROUND( pos.y + glyph->rc.y.low  );
+			const auto bottom = _ROUND( pos.y + glyph->rc.y.high );
 
 			if( *str != L' ' )
-			m_DrawBuffer.back().AddRectFilledUV( { left, right, top, bottom }, glyph->rc, c );
+			m_DrawBuffer.back().AddRectFilledUV( { left, right, top, bottom }, glyph->uv, c );
 
 			start += glyph->advance;
 
@@ -347,20 +344,14 @@ float4 ps_main( float2 tc : TexCoord, float4 color : Color ) : SV_Target {
 			const auto& ch = sv.c_str()[p];
 			if( ch == L'\r' || ch == L'\n' ) { ++p, pos.y += m_pSelectedFont->height(); start = 0.0f; continue; }
 			glyph = m_pSelectedFont->lookup( ch );
+			
+			const auto left   = _ROUND( pos.x + glyph->rc.x.low  + start );
+			const auto right  = _ROUND( pos.x + glyph->rc.x.high + start );
+			const auto top    = _ROUND( pos.y + glyph->rc.y.low  );
+			const auto bottom = _ROUND( pos.y + glyph->rc.y.high );
 
-#if __SNAP_TEXT
-			const auto left = _ROUND( pos.x + glyph->offset.x + start );
-			const auto right = _ROUND( left + glyph->size.x );
-			const auto top = _ROUND( pos.y + glyph->offset.y );
-			const auto bottom = _ROUND( top + glyph->size.y );
-#else
-			const auto left = pos.x + glyph->offset.x + start;
-			const auto right = left + glyph->size.x;
-			const auto top = pos.y + glyph->offset.y;
-			const auto bottom = top + glyph->size.y;
-#endif
 			if( ch != L' ' )
-				m_DrawBuffer.back().AddRectFilledUV( { left, right, top, bottom }, glyph->rc, color );
+				m_DrawBuffer.back().AddRectFilledUV( { left, right, top, bottom }, glyph->uv, color );
 
 			start += glyph->advance;
 

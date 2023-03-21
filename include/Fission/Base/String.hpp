@@ -583,7 +583,7 @@ namespace base
 		using value_type = typename _Encoding::value_type;
 		using cstr_type = typename _Encoding::cstr_type;
 	public:
-		constexpr encoded_string_view() : m_Data(""), m_Size(0) {}
+		constexpr encoded_string_view() : m_Data((value_type const*)""), m_Size(0) {}
 		template <util::allocator _Allocator>
 		constexpr encoded_string_view(encoded_string<_Encoding, _Allocator> const& _Str) : m_Data(_Str.data()), m_Size(_Str.size()) {}
 

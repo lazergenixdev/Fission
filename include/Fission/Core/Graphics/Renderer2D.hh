@@ -11,13 +11,16 @@
  * @License:      MIT (see end of file)
  */
 #pragma once
-#include "Fission/Core/Graphics/Bindable.hh"
 #include "Fission/Core/Graphics/Renderer.hh"
 #include "Fission/Base/Math/Matrix.hpp"
 #include "Fission/Base/Rect.hpp"
+#include "Fission/Base/Color.hpp"
+#include "Fission/Base/String.hpp"
 
 namespace Fission
 {
+	namespace gfx { struct Texture2D; }
+
 	enum class StrokeStyle {
 		Center, Inside, Outside,
 		Default = Center,

@@ -22,6 +22,9 @@ namespace Fission
 		bool			   bCreated = false;
 	};
 
+	template <typename T>
+	using HashTable = std::unordered_map<std::string, T>;
+
 	struct FissionEngine : public Engine, public EventHandler
 	{
 		///////////////////////////////////////////////////////
@@ -33,10 +36,8 @@ namespace Fission
 		fsn_ptr<Graphics>           m_pGraphics;
 		fsn_ptr<Window>             m_pWindow;
 
-		std::unordered_map<std::string, RendererContext>
-		                            m_Renderers;
-		std::unordered_map<std::string, fsn_ptr<Font>>
-		                            m_Fonts;
+		HashTable<RendererContext>  m_Renderers;
+		HashTable<fsn_ptr<Font>>    m_Fonts;
 
 		DebugLayerImpl				m_DebugLayer;
 		ConsoleLayerImpl			m_ConsoleLayer;

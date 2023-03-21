@@ -172,7 +172,7 @@ namespace Fission::gfx
 	struct Shader : public Bindable
 	{
 		struct CreateInfo {
-			string sourceCode;
+			string_view sourceCode;
 			VertexLayout * pVertexLayout;
 		};
 

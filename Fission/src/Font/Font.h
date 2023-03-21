@@ -43,17 +43,17 @@ namespace Fission {
 
 	struct UIFontImpl : public UIFont
 	{
-		freetype::Face					m_Face;
+		freetype::Face m_Face;
 
 		float  m_Size;
 		float  m_Height;
 		Glyph  m_FallbackGlyph;
 
-		fsn_ptr<gfx::Texture2D>	m_pAtlasTexture;
-		std::unordered_map<chr, Glyph>	m_Map;
+		fsn_ptr<gfx::Texture2D>	       m_pAtlasTexture;
+		std::unordered_map<chr, Glyph> m_Map;
 
-		EmojiDictionary					m_EmojiMap;
-		fsn_ptr<gfx::Texture2D>	m_pEmojiTexture;
+		EmojiDictionary				   m_EmojiMap;
+		fsn_ptr<gfx::Texture2D>	       m_pEmojiTexture;
 
 
 		UIFontImpl( const CreateInfo& info );
@@ -67,8 +67,24 @@ namespace Fission {
 		virtual float size() const override;
 		virtual const Glyph* fallback() const override;
 
-		virtual std::optional<const Glyph*> lookup_emoji( const chr* codepoints, int& advance ) const override;
+		virtual const Glyph* lookup_emoji( const chr* codepoints, int& advance ) const override;
 		virtual gfx::Texture2D* get_emoji_atlas() const override;
+	};
+
+	struct SDFFontImpl : public SDFFont
+	{
+		fsn_ptr<gfx::Texture2D>	 m_pAtlasTexture;
+		std::vector<Glyph>	     m_Map;
+		Glyph*					 m_FallbackGlyph;
+		float					 m_Height;
+
+		SDFFontImpl( const CreateInfo& info );
+
+		virtual gfx::Texture2D* get_atlas() const override;
+		virtual const Glyph* lookup( chr _Codepoint ) const override;
+		virtual float height() const override;
+		virtual void resize( float _New_Size ) override;
+		virtual void Destroy() override;
 	};
 
 }

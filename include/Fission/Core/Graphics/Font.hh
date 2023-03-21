@@ -21,9 +21,9 @@
 namespace Fission {
 
 	enum FontType {
-		Basic,
-		SDF,
-		UI
+		Basic, // Basic Font Atlas implementation
+		SDF,   // Scalable fonts using signed-distance fields
+		UI     // Font that supports most of Unicode (hopefully in the future)
 	};
 
 	//! Basic Font Type
@@ -31,8 +31,8 @@ namespace Fission {
 	{
 	public:
 		struct Glyph {
-			rf32 rc; // Location in font atlas
-			v2f32 offset, size;
+			rf32 uv; // Location in font atlas
+			rf32 rc; // Location in pixels
 			float advance;
 		};
 
@@ -77,9 +77,25 @@ namespace Fission {
 
 		virtual const Glyph* fallback() const = 0;
 
-		virtual std::optional<const Glyph*> lookup_emoji(const chr * codepoints, int& advance) const = 0;
+		virtual const Glyph* lookup_emoji(const chr * codepoints, int& advance) const = 0;
 
 		virtual gfx::Texture2D * get_emoji_atlas() const = 0;
+	};
+
+	//! SDF Font Type
+	struct SDFFont : public Font
+	{
+	public:
+		struct CreateInfo {
+			const void* glyph_data;
+			u64         glyph_data_size;
+			const char* atlas_filename;
+		};
+
+	public:
+		//! @note This function must be called AFTER graphics is initialized
+		//!			font atlas is saved to the GPU, not to system memory
+		FISSION_API static SDFFont* Create( const CreateInfo& _Info );
 	};
 
 } // namespace Fission
