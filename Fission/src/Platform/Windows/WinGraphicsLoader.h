@@ -1,7 +1,6 @@
 #pragma once
 #include "../GraphicsLoader.h"
 #include "GraphicsDirectX11.h"
-#include "GraphicsOpenGL.h"
 
 namespace Fission
 {
@@ -30,7 +29,6 @@ namespace Fission
 				bool DirectX11Support   = false;
 				bool DirectX12Support   = false;
 				bool VulkanSupport      = false;
-				bool OpenGLSupport      = false;
 			} Cache;
 		};
 	}

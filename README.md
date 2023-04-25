@@ -16,12 +16,23 @@
 
 ### Planned Features ⛅
 - SPIR-V for shader reflection
-- OpenGL + Vulkan support
+- Vulkan support
 - Better Input System (binding actions to key strokes)
 - ~~External and Docking windows for UI~~
 
 # Development 🛠
-Only focusing on the Windows build for now, I am hoping to have ~~Andriod~~ Linux as the next platform supported.
+| System      | Graphics API | Support
+| ----------- | ----------- | ------ |
+| Windows | DirectX, Vulkan | Yes, No
+| Android   | Vulkan | maybe soon?
+| Linux   | Vulkan | nope
+| MacOS/IOS   | Metal | not anytime soon
+
+| Console      | Graphics API |
+| ----------- | ----------- |
+| xbox (Microsoft) | DirectX |
+| playstation (Sony)   | ? |
+| switch (Nintendo)   | ? |
 
 # Getting Started 🚀
 ```sh

@@ -341,7 +341,7 @@ namespace Fission {
 		char* end;
 
 		//! @TODO: better font format for SDF fonts, so this hard-coded trick is not needed
-		float acenderY = 0.76f;
+		float acenderY = 0.85f;
 
 		unsigned long codepoint = 0;
 		while(codepoint != 126) {

@@ -11,7 +11,6 @@ namespace Fission::Platform
 			Cache.DirectX11Support = m_DirectX11Module.IsSupported();
 			m_DirectX11Module.UnLoad();
 		}
-		Cache.OpenGLSupport = true; // It's always true, lets be honest.
 
 		auto vkdll = Module( LoadLibraryExA( "vulkan-1.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32 ) );
 		Cache.VulkanSupport = (bool)vkdll; // TODO: Fix when add native vulkan support.
@@ -24,7 +23,6 @@ namespace Fission::Platform
 		case Fission::Graphics::API::DirectX11:return  Cache.DirectX11Support;
 		case Fission::Graphics::API::DirectX12:return  Cache.DirectX12Support;
 		case Fission::Graphics::API::Vulkan:return     Cache.VulkanSupport;
-		case Fission::Graphics::API::OpenGL:return     Cache.OpenGLSupport;
 		case Fission::Graphics::API::Noop:return       true; // Noop is always supported for debugging.
 		default:return false; // API::Default is NOT a Graphics API, only a helper for creating graphics.
 		}
@@ -52,10 +50,6 @@ namespace Fission::Platform
 		
 		case Graphics::API::Noop:
 			*ppGraphics = new Noop::Graphics();
-		break;
-		
-		case Graphics::API::OpenGL:
-			*ppGraphics = new GraphicsOpenGL();
 		break;
 
 		default:break;

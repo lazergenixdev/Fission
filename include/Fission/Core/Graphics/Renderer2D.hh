@@ -41,49 +41,39 @@ namespace Fission
 	public:
 
 		virtual void FillRect( rf32 rect, color color ) = 0;
-
 		virtual void DrawRect( rf32 rect, color color, float stroke_width, StrokeStyle stroke = StrokeStyle::Default ) = 0;
 
 		virtual void FillTriangle( v2f32 p0, v2f32 p1, v2f32 p2, color color ) = 0;
-
 		virtual void FillTriangleGrad( v2f32 p0, v2f32 p1, v2f32 p2, color c0, color c1, color c2 ) = 0;
-
 		virtual void FillTriangleUV( v2f32 p0, v2f32 p1, v2f32 p2, v2f32 uv0, v2f32 uv1, v2f32 uv2, gfx::Texture2D * pTexture, color tint = colors::White ) = 0;
 
 		virtual void FillRectGrad( rf32 rect, color color_topleft, color color_topright, color color_bottomleft, color color_bottomright ) = 0;
 
 		virtual void FillRoundRect( rf32 rect, float rad, color color ) = 0;
-
 		virtual void DrawRoundRect( rf32 rect, float rad, color color, float stroke_width, StrokeStyle stroke = StrokeStyle::Default ) = 0;
 
 		virtual void DrawLine( v2f32 start, v2f32 end, color color, float stroke_width = 1.0f, StrokeStyle stroke = StrokeStyle::Default ) = 0;
 
 		virtual void FillCircle( v2f32 point, float radius, color color ) = 0;
-
 		virtual void DrawCircle( v2f32 point, float radius, color color, float stroke_width, StrokeStyle stroke = StrokeStyle::Default ) = 0;
-
 		virtual void DrawCircle( v2f32 point, float radius, color inner_color, color outer_color, float stroke_width, StrokeStyle stroke = StrokeStyle::Default ) = 0;
 
 		virtual void FillArrow( v2f32 start, v2f32 end, float width, color color ) = 0;
 
 		virtual void DrawImage( gfx::Texture2D * pTexture, rf32 rect, rf32 uv, color tint = colors::White ) = 0;
-
 		virtual void DrawImage( gfx::Texture2D * pTexture, rf32 rect, color tint = colors::White ) = 0;
 
 		virtual void SelectFont( const struct Font * pFont ) = 0;
 
 		virtual TextLayout DrawString( const char * str, v2f32 pos, color color ) = 0;
-
 		virtual TextLayout DrawString( string_view sv, v2f32 pos, color color ) = 0;
 
 		virtual TextLayout CreateTextLayout( const char * str ) = 0;
-
 		virtual TextLayout CreateTextLayout( const char * str, uint32_t length ) = 0;
 
 		virtual void SetBlendMode( BlendMode mode ) = 0;
 
 		virtual void PushTransform( m23 const& transform ) = 0;
-
 		virtual void PopTransform() = 0;
 
 		virtual void Render() = 0;

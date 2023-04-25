@@ -188,7 +188,7 @@ namespace Fission {
 				m_CursorPosition = std::min( m_CursorPosition + 1, (int)m_CommandText.length() );
 				break;
 			}
-			case Keys::Escape:
+			case Keys::F1:
 			{
 				if( m_bShow ) {
 					_hide();

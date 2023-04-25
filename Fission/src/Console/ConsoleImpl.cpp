@@ -82,7 +82,7 @@ namespace Fission {
 			}
 		);
 
-		RegisterCommand( "cls",
+		RegisterCommand( "clear",
 			[]( const string& ) {
 				Console::Clear();
 			}

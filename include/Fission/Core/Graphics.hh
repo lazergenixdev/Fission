@@ -23,7 +23,7 @@ public:
 		DirectX11, /*!< DirectX 11 */
 		DirectX12, /*!< DirectX 12 */
 		Vulkan,    /*!< Vulkan */
-		OpenGL,	   /*!< OpenGL 4 */
+		Metal,     /*!< Metal */
 
 		__count__, /*!< Number of Graphics APIs available */
 		Default,   /*!< @Graphics will decide which api is best to use */
@@ -64,13 +64,6 @@ public:
 	{
 		void * pDevice;			/*!< d3d11device */
 		void * pDeviceContext;	/*!< d3d11devicecontext */
-	};
-
-	/*!< @brief Only returned by `native_handle()` when `GetAPI() == OpenGL` */
-	struct native_type_opengl
-	{
-		//! @brief: HGLRC for windows
-		void * hContext;
 	};
 
 	virtual native_handle_type native_handle() = 0;

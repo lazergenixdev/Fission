@@ -167,7 +167,33 @@ namespace Fission
 
 	v2f32 TextRendererImpl::text_bounds( struct Font* font, const char* text ) { return {}; }
 	v2f32 TextRendererImpl::text_bounds_ui( struct UIFont* font, const chr* text ) { return {}; }
-	v2f32 TextRendererImpl::text_bounds_sdf( struct SDFFont* font, const char* text, float size ) { return {}; }
+	v2f32 TextRendererImpl::text_bounds_sdf( struct SDFFont* font, const char* text, float size )
+	{
+		float width = 0.0f;
+		v2f32 pos = {};
+		for( char c = *text; c != '\0'; c = *++text )
+		{
+			// newline
+			if( c == '\r' || c == '\n' ) {
+				auto w = pos.x;
+				if( w > width )
+					width = w;
+
+				pos.y += size;
+				pos.x = 0.0f;
+				continue;
+			}
+
+			auto glyph = font->lookup( c );
+			pos.x += glyph->advance * size;
+		}
+
+		if( width == 0.0f )
+			width = pos.x;
+
+		return { width, pos.y + size };
+	}
+
 	v2f32 TextRendererImpl::add_text( struct Font* font, const char* text, v2f32 pos, color color ) { return {}; }
 
 	v2f32 TextRendererImpl::add_text_ui( struct UIFont* font, const chr* text, v2f32 pos, float size, color color )
