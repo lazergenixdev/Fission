@@ -101,6 +101,7 @@ namespace Fission
 
 		}
 
+		m_pCurrentScene->Destroy();
 		m_Application->OnShutdown();
 		m_Renderers.clear();
 		*e = m_ExitCode;
@@ -216,7 +217,7 @@ namespace Fission
 
 			auto nextScene = m_Application->OnCreateScene( key );
 
-			Console::WriteLine( "Entering New Scene [id=%i] => [id=%i]"_format(m_SceneKeyHistory.back().id, key.id) );
+		//	Console::WriteLine( "Entering New Scene [id=%i] => [id=%i]"_format(m_SceneKeyHistory.back().id, key.id) );
 
 			if( nextScene == nullptr )
 			{
@@ -239,7 +240,7 @@ namespace Fission
 
 			auto nextScene = m_Application->OnCreateScene( key );
 
-			Console::WriteLine( "Exiting Scene [id=%i] => [id=%i] "_format(m_pCurrentScene->GetKey().id, key.id) );
+		//	Console::WriteLine( "Exiting Scene [id=%i] => [id=%i] "_format(m_pCurrentScene->GetKey().id, key.id) );
 
 			nextScene->OnCreate( m_Application );
 
@@ -283,7 +284,7 @@ namespace Fission
 
 
 	void FissionEngine::Destroy() 
-	{ 
+	{
 		delete this;
 	}
 
