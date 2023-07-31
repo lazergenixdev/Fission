@@ -34,6 +34,7 @@
 #pragma once
 #include <Fission/Base/Types.hpp>
 #include <Fission/Base/util/Operators.hpp>
+#include <compare>
 
 __FISSION_BEGIN__
 

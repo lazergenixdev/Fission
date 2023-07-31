@@ -32,15 +32,12 @@
  *	SOFTWARE.
  */
 #pragma once
-#include <Fission/Base/Exception.hpp>
 
-/**
+/** TODO: implement this pls progmr thx
  * Assertions
  */
 #if FISSION_DEBUG
-#define FISSION_ASSERT( EXPRESSION, ... ) if(!(EXPRESSION)) \
-throw ::Fission::base::generic_error("Assertion Failed", \
-::Fission::base::error_message(FISSION_THROW_LOCATION()).append("expression",#EXPRESSION).append(__VA_ARGS__) )
+#define FISSION_ASSERT( EXPRESSION, ... ) ((void)0)
 #else
 #define FISSION_ASSERT( EXPRESSION, ... ) ((void)0)
 #endif // FISSION_DEBUG

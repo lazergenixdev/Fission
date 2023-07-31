@@ -1,24 +1,25 @@
-﻿#include <Fission/Platform/EntryPoint.h>
-#include <Fission/Simple2DLayer.h>
+﻿#include <Fission/Core/Engine.hh>
 #include <random>
+#include <format>
 
 static std::mt19937 rng{ (unsigned int)time(nullptr) }; /* Use current time as seed for rng. */
 static std::uniform_real_distribution<float> dist{ 0.0f, 1.0f };
 
-// This will set the Destroy() function to just use "delete" function.
-template <typename T>
-struct DefaultDelete : public T { virtual void Destroy() override { delete this; } };
+extern fs::Engine engine;
 
-class BallScene : public DefaultDelete<Fission::Scene>
+class Ball_Scene : public fs::Scene
 {
 public:
-	virtual void OnCreate(Fission::Application * app) override
-	{
-		renderer2d = app->f_pEngine->GetRenderer<Fission::Renderer2D>("$internal2D");
+	Ball_Scene() {
+		rp.create(VK_SAMPLE_COUNT_1_BIT, true);
 	}
-	virtual void OnUpdate(Fission::timestep dt) override
+	virtual ~Ball_Scene() override {
+		rp.destroy();
+	}
+	virtual void on_update(double _dt, std::vector<fs::Event> const&, fs::Render_Context* ctx) override
 	{
-		using Fission::rgb, Fission::hsv;
+		float dt = (float)_dt;
+		using namespace fs;
 		// Update ball position
 		pos += velocity * dt;
 
@@ -45,39 +46,38 @@ public:
 			color = rgb( hsv( dist(rng), 1.0f, 1.0f ) );
 
 		// Draw the circle to the screen
-		renderer2d->DrawCircle( pos, radius, {}, Fission::color( color, 0.5f ), 20.0f, Fission::StrokeStyle::Inside ); // inner glow
-		renderer2d->DrawCircle( pos, radius, Fission::color( color, 0.5f ), {}, 20.0f, Fission::StrokeStyle::Outside ); // outer glow
-		renderer2d->DrawCircle( pos, radius, color, 5.0f, Fission::StrokeStyle::Center ); // circle
-		renderer2d->SetBlendMode( Fission::BlendMode::Add );
-		renderer2d->Render();
-		renderer2d->SetBlendMode( Fission::BlendMode::Normal );
+	//	renderer2d->DrawCircle( pos, radius, {}, color( color, 0.5f ), 20.0f, StrokeStyle::Inside ); // inner glow
+	//	renderer2d->DrawCircle( pos, radius, color( color, 0.5f ), {}, 20.0f, StrokeStyle::Outside ); // outer glow
+	//	renderer2d->DrawCircle( pos, radius, color, 5.0f, StrokeStyle::Center ); // circle
+	//	renderer2d->SetBlendMode( Fission::BlendMode::Add );
+	//	renderer2d->Render();
+	//	renderer2d->SetBlendMode( Fission::BlendMode::Normal );
+		rp.begin(ctx, fs::colors::Black);
+		engine.renderer_2d.add_rect(rf32::from_center(pos, radius*2, radius*2), color);
+		engine.renderer_2d.draw(*ctx);
+		rp.end(ctx);
 	}
-	virtual Fission::SceneKey GetKey() override { return {}; }
 private:
-	Fission::v2f32 velocity = { 150.0f, 300.0f };
-	Fission::v2f32 pos      = { 100.0f, 100.0f };
-	float          radius   = 50.0f;
-	Fission::rgb   color    = Fission::colors::Red;
-	float          count    = 0.0f;
-	Fission::Renderer2D * renderer2d;
+	fs::v2f32 velocity = { 150.0f, 300.0f };
+	fs::v2f32 pos      = { 100.0f, 100.0f };
+	float     radius   = 50.0f;
+	fs::rgb   color    = fs::colors::Red;
+	float     count    = 0.0f;
+	fs::Render_Pass rp; // default render pass
 };
 
-class BallApp : public DefaultDelete<Fission::Application>
-{
-public:
-	void OnStartUp( CreateInfo * info )
-	{
-		info->window.title = std::format("Ball Demo [{}]", f_pEngine->GetVersionString());
-		info->window.size = { 1280,720 };
-		this->f_Name = "Balls";
-		info->graphics.api = Fission::Graphics::API::DirectX11;
-	}
-	virtual Fission::Scene * OnCreateScene( const Fission::SceneKey & key ) override
-	{
-		return new BallScene;
-	}
-};
+fs::Scene* on_create_scene(fs::Scene_Key const& key) {
+	return new Ball_Scene;
+}
 
-Fission::Application * CreateApplication() {
-	return new BallApp;
+std::string title;
+
+fs::Defaults on_create() {
+	engine.app_name = FS_str("Balls");
+	engine.app_version = {2, 2, 0};
+	engine.app_version_info = FS_str("ball to the wall");
+	title = std::format("Ball Demo [{}]", engine.get_version_string().str());
+	return {
+		.window_title = FS_str_std(title),
+	};
 }

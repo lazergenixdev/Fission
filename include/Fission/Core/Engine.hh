@@ -5,117 +5,146 @@
  *	_  __/   _  / _(__  )_(__  )_  / / /_/ /  / / /
  *	/_/      /_/  /____/ /____/ /_/  \____//_/ /_/
  *
- *
+ * 
  * @Author:       lazergenixdev@gmail.com
  * @Development:  (https://github.com/lazergenixdev/Fission)
  * @License:      MIT (see end of file)
  */
 #pragma once
-#include <Fission/Core/Object.hh>
+#include <Fission/Core/Window.hh>
+#include <Fission/Core/Graphics.hh>
+#include <Fission/Core/Font.hh>
+#include <Fission/Core/Layer.hh>
 #include <Fission/Core/Scene.hh>
 #include <Fission/Base/Version.hpp>
+#include <Fission/Core/Renderer_2D.hh>
+#include <mutex>
+#include <condition_variable>
 
-namespace Fission
-{
-	struct Engine;
+typedef struct FT_LibraryRec_* FT_Library;
+namespace fs { struct Defaults; }
 
-	FISSION_API void CreateEngine( void* instance, Engine** ppEngine );
+// ******************************************************************
+// user defined functions
 
-	//! @brief Get the global engine pointer
-	FISSION_API Engine* GetEngine();
+// called before engine/graphics/window creation
+extern fs::Defaults on_create();
 
-	struct Engine : public ManagedObject
-	{
+// called after engine/graphics/window creation to load a new scene
+extern fs::Scene* on_create_scene(fs::Scene_Key const& key);
 
-		//! @brief Function that contains the main game loop, the
-		//!	       application is expected to terminate after this function returns.
-		virtual void Run( Platform::ExitCode * ) = 0;
+__FISSION_BEGIN__
 
+// ONLY meant for HARD-CODED defaults
+// (engine will handle saving/loading settings to/from file)
+struct Defaults {
+	string window_title;
+	int window_width = 1280;
+	int window_height = 720;
+};
 
-		//! @brief Starts a shutdown of the engine, resulting in the application closing.
-		virtual void Shutdown( Platform::ExitCode ) = 0;
+struct FISSION_API Engine {
+	Window               window;
+	Graphics             graphics;
+	Render_Pass          overlay_render_pass;
+	Renderer_2D          renderer_2d;
+	Textured_Renderer_2D textured_renderer_2d;
 
+	Debug_Layer   debug_layer;
+	Console_Layer console_layer;
 
-		/**
-		 * @brief Loads all the reasources need to run our application,
-		 *          this includes: IFGraphics* and IFWindow*, and also giving 
-		 *          the application a reference to the Engine instance.
-		 * 
-		 * @note This function can only be called once after the engine is created,
-		 *			subsequent calls will trigger an exception and will have no effect.
-		 */
-		virtual void LoadApplication( class Application * app ) = 0;
+	Scene* current_scene;
 
+	enum Flag: u64 {
+		fChange_Scene = 1 << 0,
+		fRunning,
+		fWindow_Minimized,
+		fWindow_Resized,
+		fWindow_Destroy_Enable = 1 << 4,
+		fGraphics_Recreate_Swap_Chain = 1 << 5,
+	};
+		
+	// use flags?
+	bool running;
+	bool minimized; // note: rename to window_minimized
+	bool window_resized;
+	u64 flags = 0;
 
-		/**
-		* @brief Register a render to be used with the engine.
-		*        (can be retrieved using @GetRenderer)
-		* 
-		* @note Renderers are managed by the engine using the IFRenderer interface.
-		*/
-		virtual void RegisterRenderer( const char * _Name, struct Renderer * _Renderer ) = 0;
+	enum Modifier : u64 {
+		Modifier_LShift   = 1 << 0,
+		Modifier_RShift   = 1 << 1,
+		Modifier_LControl = 1 << 2,
+		Modifier_RControl = 1 << 3,
+		Modifier_LAlt     = 1 << 4,
+		Modifier_RAlt     = 1 << 5,
 
+		Modifier_Shift    = Modifier_LShift   | Modifier_RShift,
+		Modifier_Control  = Modifier_LControl | Modifier_RControl,
+		Modifier_Alt      = Modifier_LAlt     | Modifier_RAlt,
+	};
+	u64 modifier_keys = 0;
 
-		/**
-		 * @brief  Get a renderer from it's name.
-		 *
-		 * @param  _Name: Name of the renderer you wish to retrieve;
-		 *                "$internal2D" | type: Renderer2D | Engine's internal 2D renderer.
-		 */
-		virtual struct Renderer * GetRenderer( const char * _Name ) = 0;
+	Texture_Layout texture_layout;
 
-		template <class RendererType>
-		inline RendererType * GetRenderer( const char * _Name )
-		{
-			return dynamic_cast<RendererType*>( GetRenderer( _Name ) );
-		}
+	struct {
+		VkDescriptorSet     set;
+		Transform_2D_Layout layout;
+		VkBuffer            buffer;
+		VmaAllocation       allocation;
+	} transform_2d;
 
+	// Pool for Uniform Buffers and Combined image-samplers
+	VkDescriptorPool descriptor_pool;
+		
+	struct {
+		FT_Library library;
 
-		/**
-		* @brief Register a font to be managed by the engine.
-		*        (can be retrieved using @GetFont)
-		*/
-		virtual void RegisterFont( const char* _Name, struct Font* _Font ) = 0;
+		Font_Static debug;
+		Font_Static console;
 
+	//	std::unordered_map<std::string_view, Font*> table;
 
-		/**
-		 * @brief  Get a font from it's name.
-		 *
-		 * @param  _Name: Name of the font you wish to retrieve;
-		 *                "$debug"   | type: Font | used in Debug Layer
-		 *                "$console" | type: Font | used in Console Layer
-		 */
-		virtual struct Font* GetFont( const char* _Name ) = 0;
+		VkSampler sampler;
+	} fonts;
 
+	// only used to put thread to sleep when minimized
+	::std::mutex              _mutex;
+	::std::condition_variable _event;
 
+	union {
+		Scene_Key next_scene_key;
+		struct {
+			VkPresentModeKHR present_mode;
+		} swap_chain_info;
+	};
+	std::vector<u8> _scene_key_memory;
 
-		virtual class DebugLayer * GetDebug() = 0;
+	void* _temp_memory_base = nullptr;
+	u64   _temp_memory_size = 0;
+		
+	// Version stuff
+	compressed_version const version;
+	// Version stuff for app
+	compressed_version app_version;
+	string             app_version_info;
+	string             app_name;
 
-		virtual struct Graphics * GetGraphics() = 0;
+	void* talloc(u64 size);
 
+	void reset_scene_key_memory();
+	string alloc_scene_key_string(string s);
 
-		// create a new scene and set switch to that scene.
-		virtual void EnterScene( const SceneKey& key ) = 0;
+	void run();
+	int create(platform::Instance const& instance, Defaults const& defaults);
+	int destroy();
 
+	string get_version_string();
 
-		// go to the previous scene in history.
-		virtual void ExitScene() = 0;
+private:
+	int create_layers();
+};
 
-
-		virtual void ClearSceneHistory() = 0;
-
-
-		//! @brief  Get Fission Engine Version.
-		virtual version GetVersion() = 0;
-
-
-		//! @brief Gets version in format: "Fission vX.Y.Z"
-		virtual const char * GetVersionString() = 0;
-
-
-	}; // struct Fission::Engine
-
-} // namespace Fission
+__FISSION_END__
 
 /**
  *	MIT License

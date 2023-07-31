@@ -11,76 +11,277 @@
  * @License:      MIT (see end of file)
  */
 #pragma once
-#include <Fission/Core/Graphics/Bindable.hh>
+#include <Fission/config.hpp>
+#include <Fission/Base/Color.hpp>
+#include <Fission/Base/Version.hpp>
+#include <Fission/Base/Math/Vector.hpp>
+#include <vulkan/vulkan.h>
+#include <vk_mem_alloc.h>
 
-namespace Fission
+__FISSION_BEGIN__
+
+struct Graphics_Create_Info {
+	struct Window* window;
+//	bool vsync;
+};
+
+struct RenderTarget {
+	int sampleCount = 1;
+	
+	VkAttachmentDescription attachment;
+	VkFramebuffer framebuffer[4];
+	VkRenderPass renderpass;
+
+	VkImage image;
+	VmaAllocation allocation;
+	VkImageView imageview;
+};
+
+struct RenderTargetCreateInfo {
+	struct Graphics* gfx;
+
+	int sample_count = 1;
+};
+RenderTarget create_swap_chain_render_target(RenderTargetCreateInfo& info);
+
+struct Render_Context {
+	struct Graphics* gfx;
+	VkFramebuffer frame_buffer;
+	VkCommandBuffer command_buffer;
+	u32 frame;
+	u32 image_index;
+};
+
+struct Graphics
 {
+	void upload_buffer(VkBuffer dstBuffer, void const* data, VkDeviceSize size);
+	void upload_image(VkImage dstImage, void* data, VkExtent3D extent);
 
-struct Graphics : public ManagedObject
-{
-public:
-	enum class API {
-		DirectX11, /*!< DirectX 11 */
-		DirectX12, /*!< DirectX 12 */
-		Vulkan,    /*!< Vulkan */
-		Metal,     /*!< Metal */
+	static constexpr int max_sc_images = 4;
 
-		__count__, /*!< Number of Graphics APIs available */
-		Default,   /*!< @Graphics will decide which api is best to use */
-		Noop       /*!< No Graphics API is used, used for debugging only. */
+	VkInstance       instance;
+	VkPhysicalDevice physical_device;
+	VkDevice         device;
+	VkQueue          graphics_queue;
+	VkQueue          present_queue;
+	VkSurfaceKHR     surface;
+	VkSwapchainKHR   swap_chain;
+
+	// "sc" stands for "swap chain"
+	VkExtent2D       sc_extent;
+	VkFormat         sc_format;
+	u32              sc_image_count;
+	VkPresentModeKHR sc_present_mode;
+	VkImageView      sc_image_views[max_sc_images];
+	VkFramebuffer    sc_framebuffers[max_sc_images];
+
+	VkCommandPool    command_pool;
+
+	// use to create short-lived command buffers for copy operations
+	//   that are used with the transfer queue (on a separate thread)
+	VkQueue          transfer_queue;
+	VkCommandPool    transfer_command_pool;
+
+	// Primary Command Buffers
+	VkCommandBuffer  command_buffers          [2];
+	VkFence          cb_fences                [2];
+	VkSemaphore      sc_image_write_semaphore [2];
+	VkSemaphore      sc_image_read_semaphore  [2];
+
+	VmaAllocator     allocator;
+
+	VkDebugUtilsMessengerEXT debugMessenger; // only valid in debug mode
+
+	bool create(Graphics_Create_Info* info); // SUCCESS == false
+	void recreate_swap_chain(struct Window* wnd, VkPresentModeKHR present_mode);
+	version get_api_version();
+
+	Graphics() = default;
+	Graphics(Graphics const&) = delete;
+	~Graphics();
+};
+
+struct Render_Pass {
+	VkRenderPass handle;
+	VkImage multisampled_image;
+
+	inline constexpr operator VkRenderPass() const { return handle; }
+
+	void create(VkSampleCountFlags samples, bool clear);
+	void destroy();
+
+	void begin(Render_Context* ctx, color clear);
+	void begin(Render_Context* ctx);
+	void end(Render_Context* ctx);
+
+	Render_Pass() = default;
+	Render_Pass(Render_Pass const&) = delete;
+};
+
+template <VkShaderStageFlags ShaderStage, VkDescriptorType DescriptorType>
+struct Single_Descriptor_Set_Layout {
+	Single_Descriptor_Set_Layout() = default;
+	Single_Descriptor_Set_Layout(Graphics& gfx) { create(gfx); }
+	inline void create(Graphics& gfx) {
+		VkDescriptorSetLayoutBinding binding;
+		binding.binding = 0;
+		binding.descriptorCount = 1;
+		binding.descriptorType = DescriptorType;
+		binding.stageFlags = ShaderStage;
+		binding.pImmutableSamplers = nullptr;
+		VkDescriptorSetLayoutCreateInfo descriptorInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
+		descriptorInfo.bindingCount = 1;
+		descriptorInfo.pBindings = &binding;
+		vkCreateDescriptorSetLayout(gfx.device, &descriptorInfo, nullptr, &handle);
+	}
+	inline void destroy(Graphics& gfx) {
+		vkDestroyDescriptorSetLayout(gfx.device, handle, nullptr);
+	}
+	inline operator VkDescriptorSetLayout() { return handle; }
+	inline VkDescriptorSetLayout* operator &() { return &handle; }
+	VkDescriptorSetLayout handle;
+};
+
+using Transform_2D_Layout = Single_Descriptor_Set_Layout<VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER>;
+using Texture_Layout      = Single_Descriptor_Set_Layout<VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER>;
+
+struct Transform_2D_Data {
+	v2f32 scale;
+	v2f32 offset;
+};
+
+__FISSION_END__
+
+#define VK_GFX_BIND_DESCRIPTOR_SETS(COMMAND_BUFFER, PIPELINE_LAYOUT, SET_COUNT, SETS) \
+vkCmdBindDescriptorSets(COMMAND_BUFFER, VK_PIPELINE_BIND_POINT_GRAPHICS, PIPELINE_LAYOUT, 0, SET_COUNT, SETS, 0, nullptr)
+
+// vulkan.hpp is kinda trash ngl
+// so here are some functions that are helpful to me
+namespace vk {
+	inline constexpr VkImageViewCreateInfo image_view_2d(VkImage image, VkFormat format, VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT) {
+		return {
+			.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+			.flags = 0,
+			.image = image,
+			.viewType = VK_IMAGE_VIEW_TYPE_2D,
+			.format = format,
+			.components = {}, // Identity
+			.subresourceRange = {
+				.aspectMask = aspect,
+				.baseMipLevel = 0,
+				.levelCount = 1,
+				.baseArrayLayer = 0,
+				.layerCount = 1,
+			}
+		};
+	}
+	inline constexpr VkSamplerCreateInfo sampler(VkFilter filter, VkSamplerAddressMode address_mode) {
+		return {
+			.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+			.magFilter = filter,
+			.minFilter = filter,
+			.addressModeU = address_mode,
+			.addressModeV = address_mode,
+			.addressModeW = address_mode,
+		};
+	}
+
+	/*************************************************************************************/
+	// Template Madness, you are wrong if you think C++ couldn't get any more complicated
+	// TODO: need to move this to some other file, really does not belong here
+
+	// Base
+	template <size_t, typename...>
+	struct _type_at {};
+
+	// Two or more Types
+	template <size_t i, typename T, typename...Rest>
+	struct _type_at<i, T, Rest...> { using type = std::conditional_t<i <= 0, T, typename _type_at<i - 1, Rest...>::type>; };
+
+	// Single Type
+	template <size_t i, typename T>
+	struct _type_at<i, T>          { using type = T; };
+
+	template <size_t i, typename...T>
+	using type_at = _type_at<i, T...>::type;
+
+	// Base
+	template <size_t, typename...>
+	struct _size_of_n {};
+
+	// Two or more Types
+	template <size_t i, typename T, typename...Rest>
+	struct _size_of_n<i, T, Rest...> {
+		static constexpr uint32_t value = (i > 0) ? (sizeof(T) + _size_of_n<i - 1, Rest...>::value) : 0u;
 	};
 
-public:
-
-	//! @brief Get the internal API
-	virtual API GetAPI() = 0;
-
-	//! @brief sets which window we are currently drawing to.
-	virtual void SetContext( struct IFWindow * pWindow ) {};
-
-	virtual void Draw( uint32_t vertexCount, uint32_t vertexOffset = 0u ) = 0;
-
-	virtual void DrawIndexed( uint32_t indexCount, uint32_t indexOffset = 0u, uint32_t vertexOffset = 0u ) = 0;
-
-	virtual void SetClipRect( rf32 rect ) = 0;
-
-
-	virtual gfx::FrameBuffer*    CreateFrameBuffer   ( const gfx::FrameBuffer   ::CreateInfo & info ) = 0;
-	virtual gfx::VertexBuffer*   CreateVertexBuffer  ( const gfx::VertexBuffer  ::CreateInfo & info ) = 0;
-	virtual gfx::ConstantBuffer* CreateConstantBuffer( const gfx::ConstantBuffer::CreateInfo & info ) = 0;
-	virtual gfx::Sampler*        CreateSampler       ( const gfx::Sampler       ::CreateInfo & info ) = 0;
-	virtual gfx::IndexBuffer*    CreateIndexBuffer   ( const gfx::IndexBuffer   ::CreateInfo & info ) = 0;
-	virtual gfx::Shader*         CreateShader        ( const gfx::Shader        ::CreateInfo & info ) = 0;
-	virtual gfx::Texture2D*      CreateTexture2D     ( const gfx::Texture2D     ::CreateInfo & info ) = 0;
-	virtual gfx::Blender*        CreateBlender       ( const gfx::Blender       ::CreateInfo & info ) = 0;
-	virtual gfx::SwapChain*      CreateSwapChain     ( const gfx::SwapChain     ::CreateInfo & info ) = 0;
-
-public:
-
-	using native_handle_type = void *;
-
-	/*!< @brief Only returned by `native_handle()` when `GetAPI() == DirectX11` */
-	struct native_type_dx11
-	{
-		void * pDevice;			/*!< d3d11device */
-		void * pDeviceContext;	/*!< d3d11devicecontext */
+	// Single Type
+	template <size_t i, typename T>
+	struct _size_of_n<i, T> {
+		static constexpr uint32_t value = (i > 0) ? sizeof(T) : 0u;
 	};
 
-	virtual native_handle_type native_handle() = 0;
+	template <size_t i, typename...T>
+	static constexpr uint32_t size_of_n = _size_of_n<i, T...>::value;
+	/*************************************************************************************/
 
-}; // struct Fission::IFGraphics
 
+	template <class>
+	inline constexpr bool _Always_false = false;
 
-struct GraphicsState
-{
-	Graphics::API api         = Graphics::API::Default;
-	vsync_          vsync     = vsync_On;
-	int	            framerate = 0; /*!< framerate only applies when vsync is off, 0 == unlimited framerate */
-	int             msaa      = 1;
+	template <typename T> struct _format_of {
+		static_assert(_Always_false<T>, "No format mapped to this type.");
+		static constexpr VkFormat value = VK_FORMAT_UNDEFINED;
+	};
 
-}; // class Fission::GraphicsState
+	template <>	struct _format_of<fs::rgba>  { static constexpr VkFormat value = VK_FORMAT_R32G32B32A32_SFLOAT; };
+	template <>	struct _format_of<fs::rgb>   { static constexpr VkFormat value = VK_FORMAT_R32G32B32_SFLOAT; };
+	template <>	struct _format_of<fs::v4f32> { static constexpr VkFormat value = VK_FORMAT_R32G32B32A32_SFLOAT; };
+	template <>	struct _format_of<fs::v3f32> { static constexpr VkFormat value = VK_FORMAT_R32G32B32_SFLOAT; };
+	template <>	struct _format_of<fs::v2f32> { static constexpr VkFormat value = VK_FORMAT_R32G32_SFLOAT; };
+	template <>	struct _format_of<fs::f32>   { static constexpr VkFormat value = VK_FORMAT_R32_SFLOAT; };
 
-} // namespace Fission
+	template <typename T> static constexpr VkFormat format_of = _format_of<T>::value;
+
+	template <typename...Attributes>
+	struct Vertex_Input {
+		static constexpr uint32_t attribute_count = sizeof...(Attributes);
+		VkPipelineVertexInputStateCreateInfo info;
+		VkVertexInputBindingDescription binding;
+		VkVertexInputAttributeDescription attributes[attribute_count];
+
+		inline constexpr VkPipelineVertexInputStateCreateInfo const* operator&() const noexcept {
+			return &info;
+		}
+
+		inline constexpr Vertex_Input() noexcept {
+			info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+			info.pNext = nullptr;
+			info.flags = 0;
+			info.vertexBindingDescriptionCount = 1;
+			info.pVertexBindingDescriptions = &binding;
+			info.vertexAttributeDescriptionCount = attribute_count;
+			info.pVertexAttributeDescriptions = attributes;
+
+			binding.binding = 0;
+			binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+			binding.stride = size_of_n<attribute_count, Attributes...>;
+
+			[&] <typename T, size_t...n>(std::integer_sequence<T, n...> int_seq) {
+				((attributes[n].binding = 0), ...);
+				((attributes[n].format = vk::format_of<type_at<n, Attributes...>>), ...);
+				((attributes[n].location = n), ...);
+				(set_offset<n>(), ...);
+			} (std::make_index_sequence<attribute_count>{});
+		}
+
+		// @note: Fuck templates
+		template <size_t n>
+		inline constexpr void set_offset() {
+			attributes[n].offset = size_of_n<(int)n, Attributes...>;
+		}
+	};
+}
 
 /**
  *	MIT License

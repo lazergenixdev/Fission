@@ -8,18 +8,25 @@ project 'sandbox'
 
     files { "%{prj.location}/src/**.cpp" }
 
-    links { 'Fission', 'freetype' }
+    links { 'Fission' }
 
-    libdirs
-    {
-        '%{wks.location}/Fission/vendor/freetype/' .. OutputDir
-    }
-
+	print("--------------------------------! Active Libraries !--------------------------------")
+    for library,path in pairs(fission_links) do
+		print(library,path)
+		links(library)
+		if #path ~= 0 then
+			libdirs(path)
+		end
+    end
+	print("------------------------------------------------------------------------------------")
+	
 	includedirs
 	{
         '%{wks.location}/include',
-        "%{IncludeDir.freetype}",
-        '%{wks.location}/resources'
+        "%{wks.location}/Fission/%{IncludeDir.vulkan}",
+        "%{wks.location}/Fission/%{IncludeDir.freetype}",
+        '%{wks.location}/Fission/vendor',
+		'%{prj.location}/src'
 	}
     
     staticruntime "On"

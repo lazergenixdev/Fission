@@ -1,35 +1,45 @@
 #pragma once
 
 #define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-//#define NOGDICAPMASKS
-//#define NOSYSMETRICS
-#define NOMENUS
-//#define NOICONS
-//#define NOKEYSTATES
-//#define NORASTEROPS
-//#define NOSHOWWINDOW
-//#define NOATOM
-//#define NOCLIPBOARD
-//#define NOCOLOR
-//#define NOCTLMGR
-#define NODRAWTEXT
-//#define NOGDI
-//#define NOKERNEL
-//#define NONLS
-//#define NOMEMMGR
-//#define NOMETAFILE
-//#define NOOPENFILE
-#define NOSCROLL
-//#define NOSOUND
-//#define NOTEXTMETRIC
-//#define NOWH
-//#define NOCOMM
-//#define NOKANJI
-//#define NOHELP
-//#define NOPROFILER
-//#define NODEFERWINDOWPOS
-//#define NOMCX
+#define NOGDICAPMASKS       // - CC_*, LC_*, PC_*, CP_*, TC_*, RC_
+//#define NOVIRTUALKEYCODES // - VK_*
+//#define NOWINMESSAGES     // - WM_*, EM_*, LB_*, CB_*
+//#define NOWINSTYLES       // - WS_*, CS_*, ES_*, LBS_*, SBS_*, CBS_*
+#define NOSYSMETRICS        // - SM_*
+#define NOMENUS             // - MF_*
+//#define NOICONS           // - IDI_*
+#define NOKEYSTATES         // - MK_*
+//#define NOSYSCOMMANDS     // - SC_*
+#define NORASTEROPS         // - Binary and Tertiary raster ops
+//#define NOSHOWWINDOW      // - SW_*
+#define OEMRESOURCE         // - OEM Resource values
+//#define NOATOM            // - Atom Manager routines
+//#define NOCLIPBOARD       // - Clipboard routines
+#define NOCOLOR             // - Screen colors
+//#define NOCTLMGR          // - Control and Dialog routines
+#define NODRAWTEXT          // - DrawText() and DT_*
+//#define NOGDI             // - All GDI defines and routines
+#define NOKERNEL            // - All KERNEL defines and routines
+//#define NOUSER            // - All USER defines and routines
+#define NONLS               // - All NLS defines and routines
+//#define NOMB              // - MB_* and MessageBox()
+#define NOMEMMGR            // - GMEM_*, LMEM_*, GHND, LHND, associated routines
+#define NOMETAFILE          // - typedef METAFILEPICT
+#define NOMINMAX            // - Macros min(a,b) and max(a,b)
+//#define NOMSG             // - typedef MSG and associated routines
+//#define NOOPENFILE        // - OpenFile(), OemToAnsi, AnsiToOem, and OF_*
+#define NOSCROLL            // - SB_* and scrolling routines
+#define NOSERVICE           // - All Service Controller routines, SERVICE_ equates, etc.
+#define NOSOUND             // - Sound driver routines
+#define NOTEXTMETRIC        // - typedef TEXTMETRIC and associated routines
+#define NOWH                // - SetWindowsHook and WH_*
+//#define NOWINOFFSETS      // - GWL_*, GCL_*, associated routines
+#define NOCOMM              // - COMM driver routines
+#define NOKANJI             // - Kanji support stuff.
+#define NOHELP              // - Help engine interface.
+#define NOPROFILER          // - Profiler interface.
+//#define NODEFERWINDOWPOS  // - DeferWindowPos routines
+#define NOMCX               // - Modem Configuration Extensions
 
 #include <windows.h>
 
@@ -48,38 +58,3 @@
 #undef GetWindowLongPtr
 #undef SetWindowLongPtr
 #undef GetMonitorInfo
-
-
-#include <wrl/client.h>
-
-// Win32 Helpers
-namespace Fission::Platform
-{
-	template <typename T>
-	using com_ptr = Microsoft::WRL::ComPtr<T>;
-
-	// HMODULE wrapper that will automatically free the handle as it exits scope.
-	struct Module
-	{
-		Module( HMODULE hModule ) noexcept : m_hModule( hModule ) {}
-		Module( const char * _Module_Name ) : m_hModule( GetModuleHandleA(_Module_Name) ) {}
-
-		static Module Load( const char *_Lib_Name ) noexcept { return { LoadLibraryA(_Lib_Name) }; }
-
-		~Module() { if( m_hModule ) FreeModule( m_hModule ); }
-
-		Module( Module& ) = delete;
-		Module( Module &&src ) : m_hModule( src.m_hModule ) { src.m_hModule = NULL; }
-
-		constexpr operator HMODULE() const noexcept { return m_hModule; }
-		constexpr operator bool() const noexcept { return m_hModule != NULL; }
-
-		constexpr bool is_null() const noexcept { return m_hModule == NULL; }
-
-		template <typename F>
-		F Get( const char *name ) const noexcept { return reinterpret_cast<F>( GetProcAddress(m_hModule,name) ); }
-
-	private:
-		HMODULE m_hModule;
-	};
-}

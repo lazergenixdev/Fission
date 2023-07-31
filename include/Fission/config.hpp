@@ -11,12 +11,12 @@
  * @License:      MIT (see end of file)
  */
 #pragma once
-#include <Fission/Platform/Platform.h> /*!< Determine Target Platform */
+#include <Fission/PlatformConfig.hpp> /*!< Determine Target Platform */
 
-// Fission namespace will be used a lot, no need 
+// Fission namespace (fs) will be used a lot, no need 
 //	for extra indentation.
 
-#define __FISSION_BEGIN__ namespace Fission {
+#define __FISSION_BEGIN__ namespace fs {
 #define __FISSION_END__ }
 
 
@@ -24,15 +24,16 @@
 // Configuration stuff
 
 /* FISSION_API */
-#ifdef FISSION_PLATFORM_WINDOWS
-#	ifdef FISSION_BUILD_DLL
-#		define FISSION_API __declspec(dllexport)
-#	else
-#		define FISSION_API __declspec(dllimport)
-#	endif // FISSION_BUILD_DLL
+#define FISSION_SHARED 0
+#if FISSION_SHARED
+#    if FISSION_BUILD
+#        define FISSION_API FISSION_SHARED_EXPORT
+#    else
+#        define FISSION_API FISSION_SHARED_IMPORT
+#    endif
 #else
-#	define FISSION_API extern
-#endif // FISSION_PLATFORM_WINDOWS
+#    define FISSION_API
+#endif
 
 /*! @brief Engine Name */
 #define FISSION_ENGINE "Fission Engine"
@@ -56,36 +57,73 @@
 #if FISSION_COMPILER_MSVC
 #	define FISSION_FORCE_INLINE __forceinline
 #else
-#	define FISSION_FORCE_INLINE
-#endif
-
-/* FISSION_NDEBUG_NOEXCEPT */
-#if FISSION_DEBUG
-#	define FISSION_NDEBUG_NOEXCEPT
-#else
-#	define FISSION_NDEBUG_NOEXCEPT noexcept
+#	define FISSION_FORCE_INLINE inline
 #endif
 
 //\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\
 
-#define FISSION_PLATFORM_STRING(X) L##X
+#define FS_EXPAND(X) X
+#define FS_COMBINE(A,B) A ## B
+#define FS_COMBINE2(A,B) FS_COMBINE(A,B)
 
 /*! convert Bool to True/False */
-#define FISSION_BTF(B) (B?("True"):("False"))
+#define FS_BTF(B) (B?("True"):("False"))
 
 /*! convert Bool to Yes/No */
-#define FISSION_BYN(B) (B?("Yes"):("No"))
+#define FS_BYN(B) (B?("Yes"):("No"))
 
-/**
-* Important Web Address
-*/
-#define FISSION_Rx2 "https://youtu.be/dQw4w9WgXcQ"
+/*! again, why is this not built into cpp???? */
+#define FS_FOR(COUNT) for (std::remove_const_t<decltype(COUNT)> i = 0; i < (COUNT); ++i)
+
+/* Important Web Address */
+#define FS_IMPORTANT_LINK "https://youtu.be/dQw4w9WgXcQ"
 
 /*! @brief Engine Name */
-#define ENGINE_NAME "Fission Engine"
+#define FS "Fission Engine"
 
-/*! @brief Functions that should be thread safe */
-#define FISSION_THREAD_SAFE
+/*! @brief Marks procedures/functions that should be thread safe */
+#define FS_THREAD_SAFE
+
+__FISSION_BEGIN__
+// Platform.h is required to include "inttypes.h"
+
+using u8  = uint8_t;
+using u16 = uint16_t;
+using u32 = uint32_t;
+using u64 = uint64_t;
+using s8  = int8_t;
+using s16 = int16_t;
+using s32 = int32_t;
+using s64 = int64_t;
+using f32 = float;
+using f64 = double;
+
+using byte = uint8_t;
+
+using c8  = char8_t;
+using c16 = char16_t;
+using chr = char32_t;
+
+template <typename T, typename F>
+inline constexpr T lerp(T const& left, T const& right, F x) {
+	return left * ((F)1 - x) + right * x;
+}
+
+#define FS_KILOBYTES(x) (            (x) * (::fs::u64)(1024))
+#define FS_MEGABYTES(x) (FS_KILOBYTES(x) * (::fs::u64)(1024))
+#define FS_GIGABYTES(x) (FS_MEGABYTES(x) * (::fs::u64)(1024))
+#define FS_TERABYTES(x) (FS_GIGABYTES(x) * (::fs::u64)(1024))
+
+#define FISSION_X_LETTERS        \
+X(A)X(B)X(C)X(D)X(E)X(F)X(G)X(H) \
+X(I)X(J)X(K)X(L)X(M)X(N)X(O)X(P) \
+X(Q)X(R)X(S)X(T)X(U)X(V)X(W)X(X) \
+X(Y)X(Z)
+
+#define FISSION_X_BASE10 \
+X(0)X(1)X(2)X(3)X(4)X(5)X(6)X(7)X(8)X(9)
+
+__FISSION_END__
 
 /**
  *	MIT License

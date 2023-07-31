@@ -1,40 +1,18 @@
 /**
- * @file Rect.hpp
- * @author lazergenixdev@gmail.com
- * 
- *	 _______   _   _____   _____   _   _____   __    _  
- *	|  _____| | | |  ___| |  ___| | | |  _  | |  \  | | 
- *	| |___    | |  \ \     \ \    | | | | | | |   \ | | 
- *	|  ___|   | |   \ \     \ \   | | | | | | | |\ \| | 
- *	| |       | |  __\ \   __\ \  | | | |_| | | | \   | 
- *	|_|       |_| |_____| |_____| |_| |_____| |_|  \__| 
- * 
- *	MIT License
- *	
- *	Copyright (c) 2021-2022 Lazergenix
- *	
- *	Permission is hereby granted, free of charge, to any person obtaining a copy
- *	of this software and associated documentation files (the "Software"), to deal
- *	in the Software without restriction, including without limitation the rights
- *	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *	copies of the Software, and to permit persons to whom the Software is
- *	furnished to do so, subject to the following conditions:
- *	
- *	The above copyright notice and this permission notice shall be included in all
- *	copies or substantial portions of the Software.
- *	
- *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *	SOFTWARE.
+ *	______________              _____
+ *	___  ____/__(_)________________(_)____________
+ *	__  /_   __  /__  ___/_  ___/_  /_  __ \_  __ \
+ *	_  __/   _  / _(__  )_(__  )_  / / /_/ /  / / /
+ *	/_/      /_/  /____/ /____/ /_/  \____//_/ /_/
+ *
+ *
+ * @Author:       lazergenixdev@gmail.com
+ * @Development:  (https://github.com/lazergenixdev/Fission)
+ * @License:      MIT (see end of file)
  */
 #pragma once
 #include <Fission/Base/Math/Vector.hpp>
 #include <Fission/Base/Range.hpp>
-#include <Fission/Base/Size.hpp>
 
 __FISSION_BEGIN__
 
@@ -56,7 +34,6 @@ namespace base
 		using type = _Ty;
 		using range = range<_Ty>;
 		using vector = vector2<_Ty>;
-		using size2 = size2<_Ty>;
 
 		range x, y;
 
@@ -89,10 +66,6 @@ namespace base
 		{
 			return rect(_Left,_Left+_Size_Vector.x,_Top,_Top+_Size_Vector.y);
 		}
-		static inline constexpr rect from_topleft(const type&_Left,const type&_Top,const size2&_Size)
-		{
-			return rect(_Left,_Left+_Size.w,_Top,_Top+_Size.h);
-		}
 		static inline constexpr rect from_topleft(const vector&_TopLeft_Vector,const type&_Width,const type&_Height)
 		{
 			return rect(_TopLeft_Vector.x,_TopLeft_Vector.x+_Width,_TopLeft_Vector.y,_TopLeft_Vector.y+_Height);
@@ -101,10 +74,6 @@ namespace base
 		{
 			return rect(_TopLeft_Vector.x,_TopLeft_Vector.x+_Size_Vector.x,_TopLeft_Vector.y,_TopLeft_Vector.y+_Size_Vector.y);
 		}
-		static inline constexpr rect from_topleft(const vector&_TopLeft_Vector,const size2&_Size)
-		{
-			return rect(_TopLeft_Vector.x,_TopLeft_Vector.x+_Size.w,_TopLeft_Vector.y,_TopLeft_Vector.y+_Size.h);
-		}
 		static inline constexpr rect from_topleft(const type&_Width,const type&_Height)
 		{
 			return rect(static_cast<type>(0),_Width,static_cast<type>(0),_Height);
@@ -112,10 +81,6 @@ namespace base
 		static inline constexpr rect from_topleft(const vector&_Size_Vector)
 		{
 			return rect(static_cast<type>(0),_Size_Vector.x,static_cast<type>(0),_Size_Vector.y);
-		}
-		static inline constexpr rect from_topleft(const size2&_Size)
-		{
-			return rect(static_cast<type>(0),_Size.w,static_cast<type>(0),_Size.h);
 		}
 
 
@@ -130,11 +95,6 @@ namespace base
 			const auto dx = _Size_Vector.x / static_cast<type>(2), dy = _Size_Vector.y / static_cast<type>(2);
 			return rect(_Center_X-dx,_Center_X+dx,_Center_Y-dy,_Center_Y+dy);
 		}
-		static inline constexpr rect from_center(const type&_Center_X,const type&_Center_Y,const size2&_Size)
-		{
-			const auto dx = _Size.w / static_cast<type>(2), dy = _Size.h / static_cast<type>(2);
-			return rect(_Center_X-dx,_Center_X+dx,_Center_Y-dy,_Center_Y+dy);
-		}
 		static inline constexpr rect from_center(const vector&_Center_Vector,const type&_Width,const type&_Height)
 		{
 			const auto dx = _Width / static_cast<type>(2), dy = _Height / static_cast<type>(2);
@@ -145,11 +105,6 @@ namespace base
 			const auto dx = _Size_Vector.x / static_cast<type>(2), dy = _Size_Vector.y / static_cast<type>(2);
 			return rect(_Center_Vector.x-dx,_Center_Vector.x+dx,_Center_Vector.y-dy,_Center_Vector.y+dy);
 		}
-		static inline constexpr rect from_center(const vector&_Center_Vector,const size2&_Size)
-		{
-			const auto dx = _Size.w / static_cast<type>(2), dy = _Size.h / static_cast<type>(2);
-			return rect(_Center_Vector.x-dx,_Center_Vector.x+dx,_Center_Vector.y-dy,_Center_Vector.y+dy);
-		}
 		static inline constexpr rect from_center(const type&_Width,const type&_Height)
 		{
 			const auto dx = _Width / static_cast<type>(2), dy = _Height / static_cast<type>(2);
@@ -158,11 +113,6 @@ namespace base
 		static inline constexpr rect from_center(const vector&_Size_Vector)
 		{
 			const auto dx = _Size_Vector.x / static_cast<type>(2), dy = _Size_Vector.y / static_cast<type>(2);
-			return rect(-dx,dx,-dy,+dy);
-		}
-		static inline constexpr rect from_center(const size2&_Size)
-		{
-			const auto dx = _Size.w / static_cast<type>(2), dy = _Size.h / static_cast<type>(2);
 			return rect(-dx,dx,-dy,+dy);
 		}
 
@@ -200,10 +150,8 @@ namespace base
 
 		inline constexpr auto width()const{return this->x.high-this->x.low;}
 		inline constexpr auto height()const{return this->y.high-this->y.low;}
-		inline constexpr auto sizeVector()const{return vector(this->x.high-this->x.low,this->y.high-this->y.low);}
+		inline constexpr auto size()const{return vector(this->x.high-this->x.low,this->y.high-this->y.low);}
 		inline constexpr auto center()const{auto c=vector(this->x.low+this->x.high,this->y.low+this->y.high);return c/static_cast<type>(2);}
-		template <typename _Out = size2>
-		inline constexpr _Out size()const{return _Out{this->x.high-this->x.low,this->y.high-this->y.low};}
 
 
 		// Modification Functions
@@ -271,3 +219,27 @@ namespace base
 __FISSION_BASE_ALIASES__(base::rect, r);
 
 __FISSION_END__
+
+/**
+ *	MIT License
+ *
+ *	Copyright (c) 2021-2023 lazergenixdev
+ *
+ *	Permission is hereby granted, free of charge, to any person obtaining a copy
+ *	of this software and associated documentation files (the "Software"), to deal
+ *	in the Software without restriction, including without limitation the rights
+ *	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *	copies of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
+ *
+ *	The above copyright notice and this permission notice shall be included in all
+ *	copies or substantial portions of the Software.
+ *
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
+ */

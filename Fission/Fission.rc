@@ -69,9 +69,9 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "CompanyName", FISSION_COMPANY_NAME
-            VALUE "FileDescription", "Fission Game Engine"
+            VALUE "FileDescription", "Fission - A Framework/Platform Layer built for high performance applications"
             VALUE "FileVersion", FISSION_VERSION_NUMBER ".69"
-            VALUE "InternalName", FISSION_ENGINE
+            VALUE "InternalName", "Fission"
             VALUE "LegalCopyright", FISSION_COPYRIGHT
             VALUE "OriginalFilename", "Fission.dll"
             VALUE "ProductName", "Fission Engine"

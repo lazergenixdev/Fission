@@ -1,7 +1,12 @@
+
 project 'Fission'
-    kind 'SharedLib'
+    kind 'StaticLib'
     language 'C++'
     cppdialect "c++20"
+
+	function add_link(name)
+		fission_links[name] = ""
+	end
 
     targetdir ("%{wks.location}/bin/" .. OutputDir)
 	objdir ("%{wks.location}/bin-int/" .. OutputDir .. "/%{prj.name}")
@@ -11,14 +16,6 @@ project 'Fission'
     -- public headers
     files '../include/**'
 
-    links { "yaml", "freetype", "lunasvg" }
-
-    libdirs
-    {
-        '%{prj.location}/vendor/freetype/' .. OutputDir,
-        '%{prj.location}/vendor/lunasvg/' .. OutputDir
-    }
-
 	includedirs
 	{
         "../include",
@@ -26,31 +23,28 @@ project 'Fission'
         "%{IncludeDir.json}",
         '%{IncludeDir.freetype}',
         '%{IncludeDir.lunasvg}',
+        '%{IncludeDir.vulkan}',
         '../resources',
         "vendor",
 	}
     
     staticruntime "On"
-    defines { 'FISSION_BUILD', 'FISSION_BUILD_DLL=1' }
+    defines { 'FISSION_BUILD' }
+	
     
     filter "system:windows"
         files { "resource.h", "Fission.rc" }
 
-        links { 
-            'user32',
-            'ole32'
-        }
-
-        -- Graphics
-        links 'd3dcompiler'
+		add_link("user32")
+		add_link("gdi32")
 
         -- HRESULT translation to readable strings
         includedirs '%{prj.location}/vendor/windows/DXErr'
     
         -- Texture processing library for windows
         includedirs '%{prj.location}/vendor/windows/DirectXTex/include'
-        libdirs { "%{prj.location}/vendor/windows/DirectXTex/%{cfg.buildcfg}-%{cfg.architecture}" }
-        links { 'DirectXTex' }
+    --    libdirs { "%{prj.location}/vendor/windows/DirectXTex/%{cfg.buildcfg}-%{cfg.architecture}" }
+    --    links { 'DirectXTex' }
 
     filter "configurations:Debug"
         defines { "FISSION_DEBUG" }
@@ -63,3 +57,5 @@ project 'Fission'
     filter "configurations:Dist"
         defines { "FISSION_DIST" }
         optimize "Speed"
+		
+		

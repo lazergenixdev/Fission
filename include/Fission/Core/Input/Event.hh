@@ -11,123 +11,48 @@
  * @License:      MIT (see end of file)
  */
 #pragma once
-#include <Fission/Core/Input/Keys.hh>
-#include <Fission/Core/Input/Cursor.hh>
-#include <Fission/Base/Math/Vector.hpp>
-#include <Fission/Base/Size.hpp>
+#include <Fission/config.hpp>
 
-/*! @brief Event has been handled */
-#define FISSION_EVENT_HANDLED  ::Fission::EventResult::Handled
+__FISSION_BEGIN__
 
-/*! @brief Event should be passed to the next event handler */
-#define FISSION_EVENT_PASS     ::Fission::EventResult::Pass
+//// functions that do not exist
+//void on_key_down(u32 key_id, bool repeat);
+//void on_key_up(u32 key_id);
+//
+//struct WindowCallbacks {
+//	decltype(&on_key_down) key_down;
+//	decltype(&on_key_up)   key_up;
+//};
 
-/*! @brief Default behavior of event callbacks */
-#define FISSION_EVENT_DEFAULT { return FISSION_EVENT_PASS; }
+enum EventType {
+	Event_Key_Down,
+	Event_Key_Up,
+	Event_Focus_Lost,
+	Event_Character_Input,
+};
 
+struct Event {
+	u64 timestamp;
+	u8 type;
 
-namespace Fission {
-
-	//! @brief Result of a Event Callback
-	enum class EventResult
-	{
-		Handled = 0,
-		Pass    = 1,
+	struct Key_Down {
+		u32 key_id;
+	};
+	struct Key_Up {
+		u32 key_id;
+	};
+	struct Character_Input {
+		chr codepoint;
 	};
 
-
-/* -------------------------------------- Event Arguments ------------------------------------------- */
-
-	struct NativeEventArgs {
-		Platform::Event * native_event;
+	union {
+		Key_Down        key_down;
+		Key_Up          key_up;
+		Character_Input character_input;
 	};
+};
 
-	struct CloseEventArgs {
-		int ExitCode; 
-	};
-
-	struct KeyDownEventArgs : public NativeEventArgs {
-		Keys::Key key;
-		bool repeat;
-	};
-
-	struct KeyUpEventArgs : public NativeEventArgs {
-		Keys::Key key;
-	};
-
-	struct TextInputEventArgs : public NativeEventArgs {
-		char32_t codepoint;
-	};
-
-	struct MouseMoveEventArgs : public NativeEventArgs {
-		v2i32 position;
-	};
-
-	struct MouseLeaveEventArgs : public NativeEventArgs {};
-
-	struct SetCursorEventArgs : public NativeEventArgs {
-		Cursor * cursor;
-		bool bUseCursor = true; /*!< States whether the window should use the cursor argument when event handled */
-	};
-
-	struct ResizeEventArgs : public NativeEventArgs {
-		size2 size; 
-	};
-
-
-
-/* ================================================================================================== */
-/* -------------------------------------- Event Handler --------------------------------------------- */
-/* ================================================================================================== */
-	
-	struct EventHandler
-	{
-
-		/*!
-		* @brief 
-		*   Get the Default Event Handler (does not respond to events).
-		* 
-		* @note:   
-		*   Allows for the ability to always call the event handler with no nullptr errors.
-		*   Use `IEventHandler::Default()` instead of `nullptr`.
-		*/
-		FISSION_API static EventHandler * Default();
-
-
-
-		FISSION_THREAD_SAFE 
-		virtual EventResult OnKeyDown( KeyDownEventArgs & )	FISSION_EVENT_DEFAULT
-
-		FISSION_THREAD_SAFE 
-		virtual EventResult OnKeyUp( KeyUpEventArgs & ) FISSION_EVENT_DEFAULT
-
-		FISSION_THREAD_SAFE 
-		virtual EventResult OnTextInput( TextInputEventArgs & ) FISSION_EVENT_DEFAULT
-
-		FISSION_THREAD_SAFE
-		virtual EventResult OnMouseMove( MouseMoveEventArgs & ) FISSION_EVENT_DEFAULT
-
-		FISSION_THREAD_SAFE
-		virtual EventResult OnMouseLeave( MouseLeaveEventArgs & ) FISSION_EVENT_DEFAULT
-
-		FISSION_THREAD_SAFE
-		virtual EventResult OnSetCursor( SetCursorEventArgs & ) FISSION_EVENT_DEFAULT
-
-		FISSION_THREAD_SAFE
-		virtual EventResult OnHide() FISSION_EVENT_DEFAULT
-
-		FISSION_THREAD_SAFE 
-		virtual EventResult OnShow() FISSION_EVENT_DEFAULT
-
-		FISSION_THREAD_SAFE
-		virtual EventResult OnClose( CloseEventArgs & ) FISSION_EVENT_DEFAULT
-
-		FISSION_THREAD_SAFE
-		virtual EventResult OnResize( ResizeEventArgs & ) FISSION_EVENT_DEFAULT
-
-	}; // struct Fission::IFEventHandler
-
-} // namespace Fission
+__FISSION_END__
 
 /**
  *	MIT License

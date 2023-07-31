@@ -10,13 +10,21 @@
  * @Development:  (https://github.com/lazergenixdev/Fission)
  * @License:      MIT (see end of file)
  *
- * How to do version numbers:
- *   https://semver.org/
- * 
+ * Some reference: https://semver.org/
  */
 #pragma once
-#include <Fission/Base/Types.hpp>
-#include <format>
+#include <Fission/config.hpp>
+#include <compare>
+#include <concepts>
+
+#ifdef assert
+#undef assert
+#endif
+#if FISSION_DEBUG
+#define assert(E) 
+#else
+#define assert(E) 
+#endif
 
 __FISSION_BEGIN__
 
@@ -32,7 +40,7 @@ struct version
 
 	constexpr version() noexcept : Major(0), Minor(0), Patch(0) {}
 
-	template <std::integral T>
+	template <::std::integral T >
 	constexpr version( T major, T minor, T patch ) noexcept:
 		Major( static_cast<type>(major) ),
 		Minor( static_cast<type>(minor) ),
@@ -41,8 +49,6 @@ struct version
 
 	constexpr auto operator<=>(version const&) const noexcept = default;
 	constexpr bool operator ==(version const&) const noexcept = default;
-
-	std::string string() const { return std::format( "{}.{}.{}", Major, Minor, Patch ); }
 
 }; // Fission::version
 
@@ -63,22 +69,28 @@ struct compressed_version
 
 	constexpr compressed_version() noexcept: _version(0) {}
 
-	// assume all numbers are within limits
 	constexpr compressed_version( int major, int minor, int patch ) noexcept:
 		_version( (major << 26) | (minor << 13) | patch )
-	{}
+	{
+		assert(major > 0 && major < 64);
+		assert(minor > 0 && minor < 8192);
+		assert(patch > 0 && patch < 8192);
+	}
 
 	// assume all numbers are within limits
 	constexpr compressed_version( const version& v ) noexcept:
 		_version( (v.Major << 26) | (v.Minor << 13) | v.Patch )
-	{}
+	{
+		assert(v.Major > 0 && v.Major < 64);
+		assert(v.Minor > 0 && v.Minor < 8192);
+		assert(v.Patch > 0 && v.Patch < 8192);
+	}
 
 	constexpr version uncompress() const {
 		return version( (_version) >> 26, (_version & _Mask_Minor) >> 13, _version & _Mask_Patch );
 	}
 
 }; // Fission::compressed_version
-
 
 __FISSION_END__
 

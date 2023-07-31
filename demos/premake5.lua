@@ -9,16 +9,20 @@ function include_demo(name)
   objdir ('%{wks.location}/bin-int/' .. OutputDir .. '/%{prj.name}')
 
   files { '%{prj.location}/src/**.cpp', '%{prj.location}/src/**.h' }
-  links { 'Fission', 'freetype' }
+  links { 'Fission' }
 
-  libdirs
-  {
-    '%{wks.location}/Fission/vendor/freetype/' .. OutputDir
-  }
+	for library,path in pairs(fission_links) do
+		links(library)
+		if #path ~= 0 then
+			libdirs(path)
+		end
+	end
 
   includedirs
   {
     '%{wks.location}/include',
+    "%{wks.location}/Fission/%{IncludeDir.vulkan}",
+    '%{wks.location}/Fission/vendor',
     '%{wks.location}/resources'
   }
   
@@ -39,5 +43,5 @@ end
 
 group 'demos'
   include_demo('Simple Ball')
-  include_demo('Snake')
+--  include_demo('Snake')
 group ''

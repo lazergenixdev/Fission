@@ -11,108 +11,64 @@
  * @License:      MIT (see end of file)
  */
 #pragma once
-#include <Fission/Core/Graphics.hh>
-#include <Fission/Core/Monitor.hh>
-#include <Fission/Core/Input/Event.hh>
-#include <Fission/Base/Size.hpp>
+#include <Fission/Platform.hpp>
 #include <Fission/Base/String.hpp>
 #include <Fission/Base/Math/Vector.hpp>
-#include <Fission/Base/util/BitFlag.hpp>
+#include <Fission/Core/Input/Event.hh>
+#include <iterator>
+#include <vector>
 
-// todo: implement fixed aspect-ratio flag
-// todo: implement fullscreen
+__FISSION_BEGIN__
 
-namespace Fission
+template <typename T, size_t S>
+struct thread_safe_queue {
+	// S is ignored for now, but I want to use this to
+	//    limit the number events that can be queued.
+
+	template <typename...A>
+	inline void append(A&&... t) {
+		std::scoped_lock lock(access_mutex);
+		array.emplace_back(std::forward<A>(t)...);
+	}
+
+	inline void pop_all(std::vector<T>& out_array) {
+		out_array.clear();
+		std::scoped_lock lock(access_mutex);
+		std::copy(array.begin(), array.end(), std::back_inserter(out_array));
+		array.clear();
+	}
+
+	std::mutex access_mutex;
+	std::vector<T> array;
+};
+
+using Event_Queue = thread_safe_queue<Event, 64>;
+
+struct Window : public platform::Window_Impl
 {
-	namespace wnd
-	{
-		enum class Style
-		{
-			Borderless,     /*!< Window has no border or title bar */
-			Border,         /*!< Window has a border around it with a close button */
-			BorderSizeable, /*!< Window how a border with min/max and able to be resized */
-			Fullscreen,     /*!< Window is fullscreen */
+public:
+	void create(struct Window_Create_Info* info);
 
-			Default = Border
-		};
+	void set_title(string const& title);
+	void close();
+//	void set_callbacks(WindowCallbacks const* callbacks);
 
-		enum Flags : util::bit_flag<32>
-		{
-			None                = 0,
-			RestrictAspectRatio = util::make_flag<0>, /*!< Restrict the window to only have one aspect ratio. */
-			CenterWindow        = util::make_flag<1>, /*!< Center the window to the screen when created. */
-			SavePosition        = util::make_flag<2>, /*!< Saves the window position when closed. */
-			SaveSize            = util::make_flag<3>, /*!< Saves the window size when closed. */
-			AlwaysOnTop         = util::make_flag<4>,
+	bool is_minimized();
 
-			Default	= RestrictAspectRatio | SavePosition | SaveSize | CenterWindow,
-		};
-		using Flag_t = util::bit_flag_t<Flags>;
+	bool exists() const; // this function is weird
 
-		//! @brief struct defining the properties of a given Window
-		struct Properties
-		{
-			string  title       = "Window Title";       /*!< Title of the window that will show in the title bar. */
-			size2   size        = { 1280, 720 };        /*!< Client size of the window. */
-			v2i32   position    = {};                   /*!< Position of the window's Top-Left coordinate. */
-			Style   style       = Style::Default;       /*!< Style of the window, can be one of @IFWindow::Style. */
-			Flag_t  flags       = Flags::Default;       /*!< Flags of the window, can be any combination of @IFWindow::Flags. */
-			int     monitor_idx = MonitorIdx_Automatic; /*!< Monitor to use for fullscreen mode. (0 is always the primary) */
-		};
+	Window() = default;
+	~Window();
+#if defined(FISSION_PLATFORM_WINDOWS)
+	LRESULT _win32_ProcessMessage(HWND, UINT, WPARAM, LPARAM);
+#endif
+public:
+	Event_Queue event_queue;
+	v2s32 mouse_position;
+	int width, height;
+}; // struct fs::Window
 
-	} // namespace wnd
-
-	struct Window : public ManagedObject
-	{
-		/*! @brief Native window handle type */
-		using native_handle_type = Platform::WindowHandle;
-
-		struct CreateInfo
-		{
-			wnd::Properties  properties;
-			EventHandler *   pEventHandler;
-		};
-
-	public:
-
-	//	virtual Input * GetInput() = 0;
-
-	//	virtual void SetEventHandler( IEventHandler * _Event_Handler ) = 0;
-
-		// debug
-		virtual void _debug_set_position( v2i32 p ) = 0;
-
-		virtual void SetTitle( const string & _Title ) = 0;
-
-		virtual string GetTitle() = 0;
-
-		virtual void SetStyle( wnd::Style _Style ) = 0;
-
-		virtual wnd::Style GetStyle() = 0;
-
-		virtual void SetSize( const size2 & _Size ) = 0;
-
-		virtual size2 GetSize() = 0;
-
-		virtual gfx::SwapChain * GetSwapChain() = 0;
-
-		//! @brief Destroy the platform window and exit it's event loop.
-		//! @note This function evokes the `IEventHandler::OnClose` function
-		//!			before destroying the window.
-		virtual void Close() = 0;
-
-		//! @note For entering fullscreen mode, THIS is the monitor that will be used.
-		virtual MonitorPtr GetMonitor() = 0;
-
-		//! @brief Set which monitor the window will prefer for fullscreen mode
-	//	virtual void SetMonitor( MonitorPtr ) = 0;
-
-		//! @brief Get a Handle to the native window
-		virtual native_handle_type native_handle() = 0;
-
-	}; // struct Fission::Window
-
-} // namespace Fission
+__FISSION_END__
 
 /**
  *	MIT License

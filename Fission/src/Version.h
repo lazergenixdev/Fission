@@ -8,19 +8,14 @@
 #define FISSION_MK_STR2(X) FISSION_MK_STR(X)
 #endif
 
-#ifndef FISSION_ENGINE
-#define FISSION_ENGINE "Fission Engine"
-#endif
-
-
 
 //////////////////////////////////////////////////////////////////////////////
 // FISSION VERSION
 #define FISSION_VERSION_MAJ 0
-#define FISSION_VERSION_MIN 8
+#define FISSION_VERSION_MIN 9
 #define FISSION_VERSION_PAT 0
-#define FISSION_VERSION_EX beta
-#define FISSION_VERSION_EXN 5
+#define FISSION_VERSION_EX alpha
+#define FISSION_VERSION_EXN 1
 //////////////////////////////////////////////////////////////////////////////
 
 
@@ -52,16 +47,16 @@ __FISSION_MK_VERSION(FISSION_VERSION_MAJ, FISSION_VERSION_MIN, FISSION_VERSION_P
 //////////////////////////////////////////////////////////////////////////////
 
 // Complete Version String: Fission 1.0.0-alpha.4
-#define FISSION_VERSION_STR   FISSION_ENGINE " " FISSION_VERSION_NUMBER_PRE
+#define FISSION_VERSION_STR  "Fission Engine " FISSION_VERSION_NUMBER_PRE
 
 // Complete Version String: Fission v1.0.0-alpha.4
-#define FISSION_VERSION_STRV FISSION_ENGINE " v" FISSION_VERSION_NUMBER_PRE
+#define FISSION_VERSION_STRV "Fission Engine v" FISSION_VERSION_NUMBER_PRE
 
 //////////////////////////////////////////////////////////////////////////////
 // COPYRIGHT
 //////////////////////////////////////////////////////////////////////////////
 
-#define FISSION_COPYRIGHT_YEAR 2021-2022
+#define FISSION_COPYRIGHT_YEAR 2021-2023
 #define FISSION_COMPANY_NAME "Lazergenix Software"
 
 // Full Copyright String. e.g. Copyright (c) 1945 Poop inc.

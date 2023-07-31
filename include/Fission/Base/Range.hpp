@@ -119,9 +119,7 @@ struct range
 		this->low=_Center-_Delta,this->high=_Center+_Delta;return*this;
 	}
 
-
 	// Extras
-
 private:
 
 	struct range_iterator
@@ -168,6 +166,7 @@ public:
 
 	//! @brief Scale this range from zero.
 	constexpr auto&operator*=(const type&_Scale){this->low*=_Scale,this->high*=_Scale;return*this;}
+	constexpr auto&operator/=(const type&_Scale){this->low/=_Scale,this->high/=_Scale;return*this;}
 
 	// vvv Shift Operators vvv
 
@@ -194,6 +193,11 @@ inline constexpr auto intersect(const range<T>&_A, const range<T>&_B)
 template <typename _Range>
 struct enumerate
 {
+	template <typename T>
+	struct indexed_value {
+		size_t index;
+		T value;
+	};
 private:
 	template <typename _Iterator>
 	struct iter
@@ -203,7 +207,7 @@ private:
 		template <typename T>
 		constexpr bool operator!=( T r ) const { return it != r; }
 		constexpr auto operator++() { ++i; return ++it; }
-		constexpr auto operator*() const { return std::make_pair( i, *it ); }
+		constexpr auto operator*() const { return indexed_value{i, *it}; }
 
 		_Iterator it;
 		size_t i = 0;
