@@ -1,44 +1,24 @@
 /**
- * @file Vector.hpp
- * @author lazergenixdev@gmail.com
- * 
- *	 _______   _   _____   _____   _   _____   __    _  
- *	|  _____| | | |  ___| |  ___| | | |  _  | |  \  | | 
- *	| |___    | |  \ \     \ \    | | | | | | |   \ | | 
- *	|  ___|   | |   \ \     \ \   | | | | | | | |\ \| | 
- *	| |       | |  __\ \   __\ \  | | | |_| | | | \   | 
- *	|_|       |_| |_____| |_____| |_| |_____| |_|  \__| 
- * 
- *	MIT License
- *	
- *	Copyright (c) 2021-2022 Lazergenix
- *	
- *	Permission is hereby granted, free of charge, to any person obtaining a copy
- *	of this software and associated documentation files (the "Software"), to deal
- *	in the Software without restriction, including without limitation the rights
- *	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *	copies of the Software, and to permit persons to whom the Software is
- *	furnished to do so, subject to the following conditions:
- *	
- *	The above copyright notice and this permission notice shall be included in all
- *	copies or substantial portions of the Software.
- *	
- *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *	SOFTWARE.
+ *	______________              _____
+ *	___  ____/__(_)________________(_)____________
+ *	__  /_   __  /__  ___/_  ___/_  /_  __ \_  __ \
+ *	_  __/   _  / _(__  )_(__  )_  / / /_/ /  / / /
+ *	/_/      /_/  /____/ /____/ /_/  \____//_/ /_/
+ *
+ *
+ * @Author:       lazergenixdev@gmail.com
+ * @Development:  (https://github.com/lazergenixdev/Fission)
+ * @License:      MIT (see end of file)
  */
 #pragma once
 #include <Fission/Base/Types.hpp>
 #include <Fission/Base/util/Operators.hpp>
+#include <Fission/Base/Math/Library.hpp>
 #include <compare>
 
 __FISSION_BEGIN__
 
-namespace base
+namespace math
 {
 	template <typename _Ty>
 	struct vector2
@@ -76,19 +56,19 @@ namespace base
 
 		//! @brief Get the squared length of this vector.
 		//! @note This will always be faster than getting the actual length.
-		constexpr auto lensq()const{return this->x*this->x+this->y*this->y;}
+		constexpr type lensq()const{return this->x*this->x+this->y*this->y;}
 
 		//! @brief Get the length of this vector.
-		constexpr auto len()const{return::sqrt(this->x*this->x+this->y*this->y);}
+		constexpr type len()const{return std_library::sqrt(this->x*this->x+this->y*this->y);}
 
 		//! @brief Get the normal vector for this vector.
 		//! @warning UNDEFINED FOR VECTOR {0,0}
-		constexpr auto norm()const{auto k=len();return vector2(this->x/k,this->y/k);}
+		constexpr vector2 norm()const{auto k=len();return vector2(this->x/k,this->y/k);}
 
 		//! @brief Transform vector so that it has a length of one.
 		//! @warning UNDEFINED FOR VECTOR {0,0}
 		//! @return Reference to this vector.
-		constexpr auto&normalize(){auto k=len();this->x/=k,this->y/=k;return*this;}
+		constexpr vector2&normalize(){auto k=len();this->x/=k,this->y/=k;return*this;}
 
 		inline constexpr bool operator==(vector2 const&) const = default;
 		inline constexpr auto operator<=>(vector2 const&) const = default;
@@ -134,19 +114,19 @@ namespace base
 
 		//! @brief Get the squared length of this vector.
 		//! @note This will always be faster than getting the actual length.
-		constexpr auto lensq()const{return this->x*this->x+this->y*this->y+this->z*this->z;}
+		constexpr type lensq()const{return this->x*this->x+this->y*this->y+this->z*this->z;}
 
 		//! @brief Get the length of this vector.
-		constexpr auto len()const{return::sqrt(this->x*this->x+this->y*this->y+this->z*this->z);}
+		constexpr type len()const{return std_library::sqrt(this->x*this->x+this->y*this->y+this->z*this->z);}
 
 		//! @brief Get the normal vector for this vector.
 		//! @warning UNDEFINED FOR VECTOR {0,0,0}
-		constexpr auto norm()const{auto k=len();return vector3(this->x/k,this->y/k,this->z/k);}
+		constexpr vector3 norm()const{auto k=len();return vector3(this->x/k,this->y/k,this->z/k);}
 
 		//! @brief Transform vector so that it has a length of one.
 		//! @warning UNDEFINED FOR VECTOR {0,0,0}
 		//! @return Reference to this vector.
-		constexpr auto&normalize(){auto k=len();this->x/=k,this->y/=k,this->z/=k;return*this;}
+		constexpr vector3&normalize(){auto k=len();this->x/=k,this->y/=k,this->z/=k;return*this;}
 
 
 		inline constexpr bool operator==(vector3 const&) const = default;
@@ -206,19 +186,19 @@ namespace base
 
 		//! @brief Get the squared length of this vector.
 		//! @note This will always be faster than getting the actual length.
-		constexpr auto lensq()const{return this->x*this->x+this->y*this->y+this->z*this->z+this->w*this->w;}
+		constexpr type lensq()const{return this->x*this->x+this->y*this->y+this->z*this->z+this->w*this->w;}
 
 		//! @brief Get the length of this vector.
-		constexpr auto len()const{return::sqrt(this->x*this->x+this->y*this->y+this->z*this->z+this->w*this->w);}
+		constexpr type len()const{return std_library::sqrt(this->x*this->x+this->y*this->y+this->z*this->z+this->w*this->w);}
 
 		//! @brief Get the normal vector for this vector.
 		//! @warning UNDEFINED FOR VECTOR {0,0,0,0}
-		constexpr auto norm()const{auto k=len();return vector4(this->x/k,this->y/k,this->z/k,this->w/k);}
+		constexpr vector4 norm()const{auto k=len();return vector4(this->x/k,this->y/k,this->z/k,this->w/k);}
 
 		//! @brief Transform vector so that it has a length of one.
 		//! @warning UNDEFINED FOR VECTOR {0,0,0,0}
 		//! @return Reference to this vector.
-		constexpr auto&normalize(){auto k=len();this->x/=k,this->y/=k,this->z/=k,this->w/=k;return*this;}
+		constexpr vector4&normalize(){auto k=len();this->x/=k,this->y/=k,this->z/=k,this->w/=k;return*this;}
 
 
 		constexpr bool operator==(vector4 const&) const = default;
@@ -230,17 +210,17 @@ namespace base
 
 }
 
-template<typename _Ty> using v2 = base::vector2<_Ty>;
-template<typename _Ty> using v3 = base::vector3<_Ty>;
-template<typename _Ty> using v4 = base::vector4<_Ty>;
+template<typename _Ty> using v2 = math::vector2<_Ty>;
+template<typename _Ty> using v3 = math::vector3<_Ty>;
+template<typename _Ty> using v4 = math::vector4<_Ty>;
 
-__FISSION_BASE_ALIASES__(base::vector2, v2);
-__FISSION_BASE_ALIASES__(base::vector3, v3);
-__FISSION_BASE_ALIASES__(base::vector4, v4);
+__FISSION_BASE_ALIASES__(math::vector2, v2);
+__FISSION_BASE_ALIASES__(math::vector3, v3);
+__FISSION_BASE_ALIASES__(math::vector4, v4);
 
-template <typename T> _FISSION_DEFINE_OPERATOR_MULTIPLY_2(base::vector2<T>, T, x, y)
-template <typename T> _FISSION_DEFINE_OPERATOR_MULTIPLY_3(base::vector3<T>, T, x, y, z)
-template <typename T> _FISSION_DEFINE_OPERATOR_MULTIPLY_4(base::vector4<T>, T, x, y, z, w)
+template <typename T> _FISSION_DEFINE_OPERATOR_MULTIPLY_2(math::vector2<T>, T, x, y)
+template <typename T> _FISSION_DEFINE_OPERATOR_MULTIPLY_3(math::vector3<T>, T, x, y, z)
+template <typename T> _FISSION_DEFINE_OPERATOR_MULTIPLY_4(math::vector4<T>, T, x, y, z, w)
 
 template<typename _Ty>inline constexpr auto operator/(const _Ty&_Left,const v2<_Ty>&_Right){return v2{_Left/_Right.x,_Left/_Right.y};}
 template<typename _Ty>inline constexpr auto operator/(const _Ty&_Left,const v3<_Ty>&_Right){return v3{_Left/_Right.x,_Left/_Right.y,_Left/_Right.z};}
@@ -251,3 +231,27 @@ template<typename _Ty>inline constexpr _Ty dot(const v3<_Ty>&_A,const v3<_Ty>&_B
 template<typename _Ty>inline constexpr _Ty dot(const v4<_Ty>&_A,const v4<_Ty>&_B){return _A.x*_B.x+_A.y*_B.y+_A.z*_B.z+_A.w*_B.w;}
 
 __FISSION_END__
+
+/**
+ *	MIT License
+ *
+ *	Copyright (c) 2021-2023 lazergenixdev
+ *
+ *	Permission is hereby granted, free of charge, to any person obtaining a copy
+ *	of this software and associated documentation files (the "Software"), to deal
+ *	in the Software without restriction, including without limitation the rights
+ *	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *	copies of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
+ *
+ *	The above copyright notice and this permission notice shall be included in all
+ *	copies or substantial portions of the Software.
+ *
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
+ */

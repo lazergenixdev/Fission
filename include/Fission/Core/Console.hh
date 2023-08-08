@@ -18,6 +18,9 @@ __FISSION_BEGIN__
 
 namespace console_callback {
 	void procedure(string args);
+
+// Maybe add user data pointer? could be useful in reusing functions
+	void __procedure(void* user, string args);
 }
 
 using console_callback_proc = decltype(&console_callback::procedure);

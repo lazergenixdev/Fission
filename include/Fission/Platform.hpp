@@ -19,13 +19,68 @@
 #include <mutex>
 #include <condition_variable>
 __FISSION_BEGIN__
+
+#ifndef FS_utf16_codepoint_builder_error
+#define FS_utf16_codepoint_builder_error(EXPR, MSG) (void)0
+#endif
+
+struct UTF_16_Codepoint_Builder {
+public:
+    c32 codepoint = 0;
+
+    // returns true iff codepoint is now built.
+    // note: garbage in -> garbage out
+    bool append(c16 utf16) {
+        // boring case
+        if (utf16 < 0xD800) {
+            FS_utf16_codepoint_builder_error(bytes_occupied != 0, "Invalid continuation character");
+
+            codepoint = utf16;
+            return true;
+        }
+
+        switch (slots_occupied)
+        {
+        case 0:
+            // store first half of codepoint.
+            codepoint = (utf16 - 0xD800) * 0x400;
+            break;
+        case 1:
+            // store the second half of codepoint.
+            codepoint = ((utf16 - 0xDC00) + codepoint + 0x10000);
+            break;
+        default:
+            FS_utf16_codepoint_builder_error(true, "Slots Occupied cannot be any value other than 0 or 1");
+            break;
+        }
+
+        ++slots_occupied;
+
+        if (slots_occupied == 2) {
+            slots_occupied = 0;
+            return true;
+        }
+
+        return false;
+    }
+
+private:
+    // every "slot" is two bytes
+    int slots_occupied = 0;
+};
+
 namespace platform {
 	struct Instance {}; // useless on windows
 	struct Window_Impl {
-		HWND _handle = NULL;
-		std::thread _thread;
-		std::mutex _mutex;
-		std::condition_variable _cv;
+		HWND                     _handle = NULL;
+		std::thread              _thread;
+		std::mutex               _mutex;
+		std::condition_variable  _cv;
+		short                    _mouse_wheel_delta;
+		UTF_16_Codepoint_Builder _codepoint_builder;
+	};
+	struct Display_Impl {
+		HMONITOR _handle;
 	};
 }
 __FISSION_END__

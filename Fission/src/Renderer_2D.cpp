@@ -1,4 +1,7 @@
 #include <Fission/Core/Renderer_2D.hh>
+#include <Fission/Core/Engine.hh>
+
+extern fs::Engine engine;
 
 __FISSION_BEGIN__
 
@@ -28,31 +31,13 @@ void Renderer_2D::create(Graphics* gfx, VkRenderPass render_pass, Transform_2D_L
 
 	frame_data[0] = Frame_Data(gfx->allocator, max_vertex_count, max_index_count);
 	frame_data[1] = Frame_Data(gfx->allocator, max_vertex_count, max_index_count);
-
-	VkVertexInputBindingDescription bindingDescription{};
-	bindingDescription.binding = 0;
-	bindingDescription.stride = sizeof(vertex);
-	bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-	VkVertexInputAttributeDescription attributeDescriptions[2];
-	attributeDescriptions[0].binding = 0;
-	attributeDescriptions[0].location = 0;
-	attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
-	attributeDescriptions[0].offset = offsetof(vertex, position);
-	attributeDescriptions[1].binding = 0;
-	attributeDescriptions[1].location = 1;
-	attributeDescriptions[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-	attributeDescriptions[1].offset = offsetof(vertex, color);
-	VkPipelineVertexInputStateCreateInfo vertexInputInfo{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
-	vertexInputInfo.vertexBindingDescriptionCount = 1;
-	vertexInputInfo.vertexAttributeDescriptionCount = (u32)std::size(attributeDescriptions);
-	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions;
 	{
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
 		pipelineLayoutInfo.pSetLayouts = &layout;
 		pipelineLayoutInfo.setLayoutCount = 1;
 		vkCreatePipelineLayout(gfx->device, &pipelineLayoutInfo, nullptr, &pipeline_layout);
 	}
+	auto vertex_input = vk::Basic_Vertex_Input<v2f32, color>{};
 	Pipeline_Create_Info pipeline_info;
 	pipeline_info.device = gfx->device;
 	pipeline_info.vertex_shader = create_shader(gfx->device, solid_color_vs::size, solid_color_vs::data);
@@ -60,11 +45,20 @@ void Renderer_2D::create(Graphics* gfx, VkRenderPass render_pass, Transform_2D_L
 	pipeline_info.pipeline_layout = pipeline_layout;
 	pipeline_info.blend_mode = Blend_Mode_Normal;
 	pipeline_info.render_pass = render_pass;
-	pipeline_info.vertex_input = &vertexInputInfo;
+	pipeline_info.vertex_input = &vertex_input;
 	create_pipeline(pipeline_info, &pipeline);
 
-	vkDestroyShaderModule(gfx->device, pipeline_info.fragment_shader, nullptr);
-	vkDestroyShaderModule(gfx->device, pipeline_info.vertex_shader, nullptr);
+	frag = pipeline_info.fragment_shader;
+	vert = pipeline_info.vertex_shader;
+}
+
+void Renderer_2D::end_render(Render_Context const* ctx) {
+	if (d.total_vtx_count) {
+		auto& fd = frame_data[ctx->frame];
+		fd.set_data(ctx->gfx, vertex_data, index_data, d.total_vtx_count, d.total_idx_count);
+//		engine.debug_layer.add("v: %u, i: %u", d.total_vtx_count, d.total_idx_count);
+		d.reset();
+	}
 }
 
 void Textured_Renderer_2D::create(
@@ -85,28 +79,6 @@ void Textured_Renderer_2D::create(
 	frame_data[0] = Frame_Data(gfx->allocator, max_vertex_count, max_index_count);
 	frame_data[1] = Frame_Data(gfx->allocator, max_vertex_count, max_index_count);
 
-	VkVertexInputBindingDescription bindingDescription{};
-	bindingDescription.binding = 0;
-	bindingDescription.stride = sizeof(vertex);
-	bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-	VkVertexInputAttributeDescription attributeDescriptions[3];
-	attributeDescriptions[0].binding = 0;
-	attributeDescriptions[0].location = 0;
-	attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
-	attributeDescriptions[0].offset = offsetof(vertex, position);
-	attributeDescriptions[1].binding = 0;
-	attributeDescriptions[1].location = 1;
-	attributeDescriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
-	attributeDescriptions[1].offset = offsetof(vertex, texcoord);
-	attributeDescriptions[2].binding = 0;
-	attributeDescriptions[2].location = 2;
-	attributeDescriptions[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-	attributeDescriptions[2].offset = offsetof(vertex, color);
-	VkPipelineVertexInputStateCreateInfo vertexInputInfo{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
-	vertexInputInfo.vertexBindingDescriptionCount = 1;
-	vertexInputInfo.vertexAttributeDescriptionCount = (u32)std::size(attributeDescriptions);
-	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions;
 	{
 		VkDescriptorSetLayout layouts[2] = {transform_layout, texture_layout};
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
@@ -114,6 +86,7 @@ void Textured_Renderer_2D::create(
 		pipelineLayoutInfo.setLayoutCount = 2;
 		vkCreatePipelineLayout(gfx->device, &pipelineLayoutInfo, nullptr, &pipeline_layout);
 	}
+	auto vertex_input = vk::Basic_Vertex_Input<v2f32, v2f32, color>{};
 	Pipeline_Create_Info pipeline_info;
 	pipeline_info.device = gfx->device;
 	pipeline_info.vertex_shader = create_shader(gfx->device, textured_2d_vs::size, textured_2d_vs::data);
@@ -121,11 +94,11 @@ void Textured_Renderer_2D::create(
 	pipeline_info.pipeline_layout = pipeline_layout;
 	pipeline_info.blend_mode = Blend_Mode_Normal;
 	pipeline_info.render_pass = render_pass;
-	pipeline_info.vertex_input = &vertexInputInfo;
+	pipeline_info.vertex_input = &vertex_input;
 	create_pipeline(pipeline_info, &pipeline);
 
-	vkDestroyShaderModule(gfx->device, pipeline_info.fragment_shader, nullptr);
-	vkDestroyShaderModule(gfx->device, pipeline_info.vertex_shader, nullptr);
+	frag = pipeline_info.fragment_shader;
+	vert = pipeline_info.vertex_shader  ;
 }
 
 __FISSION_END__

@@ -4,7 +4,8 @@
 #include <format>
 #include <intrin.h>
 
-#define FS_DEBUG_LAYER_SHOW_HARDWARE 1 //FISSION_DEBUG
+#define FS_DEBUG_LAYER_SHOW_HARDWARE    1 //FISSION_DEBUG
+#define FS_DEBUG_FRAME_GRAPH_HEART_BEAT 0
 
 extern fs::Engine engine;
 extern fs::string platform_version;
@@ -51,9 +52,9 @@ void copy_to(string s, std::vector<char>& out) {
 }
 
 void Debug_Layer::create() {
-	frame_count = 240; // wha?
+	frame_count = 128; // wha?
 	frame_times = (float*)_aligned_malloc(frame_count * sizeof(float), 32);
-	FS_FOR(frame_count) frame_times[i] = 1.0f;
+	FS_FOR(frame_count) frame_times[i] = 0.001f;
 
 	character_buffer.reserve(512);
 	left_strings.reserve(16);
@@ -129,13 +130,16 @@ void Debug_Layer::handle_events(std::vector<Event>& events) {
 	for (auto it = events.begin(); it != events.end(); ) {
 		if (it->type == Event_Key_Down) {
 			if (it->key_down.key_id == keys::F3) {
-				flags ^= layer::show;
+				if (flags& layer::enable) flags ^= layer::show;
 				it = events.erase(it);
 				continue;
 			}
+			else if (it->key_down.key_id == fs::keys::F4) {
+				if (flags & layer::show) engine.debug_layer.flags ^= fs::layer::debug_show_verbose;
+			}
 		}
 		else if (it->type == Event_Key_Up) {
-			if (it->key_down.key_id == keys::F3) {
+			if (it->key_up.key_id == keys::F3 || it->key_down.key_id == fs::keys::F4) {
 				it = events.erase(it);
 				continue;
 			}
@@ -151,9 +155,53 @@ void reset(Debug_Layer& db) {
 	db.left_strings.clear();
 }
 
+float Debug_Layer::draw_frame_time_graph(v2f32 top_left) {
+	float const height = 50.0f;
+	float const bottom = top_left.y + height;
+	float const width  = 3.0f * (float)(frame_count-1);
+#if FS_DEBUG_FRAME_GRAPH_HEART_BEAT
+	engine.renderer_2d.add_rect(rf32::from_topleft(top_left, width, height), colors::Black);
+	engine.renderer_2d.add_rect(rf32::from_topleft(top_left.x, bottom - (1.0f / 60.0f) * 2000.0f, width, 1.0f), colors::Lime);
+	FS_FOR(frame_count - 1) {
+		auto const& y0 = frame_times[i];
+		auto const& y1 = frame_times[i + 1];
+
+		auto const x0 = top_left.x + 3.0f * (float)i;
+		auto const x1 = top_left.x + 3.0f * (float)(i + 1);
+
+		engine.renderer_2d.add_line({x0, bottom - y0 * 2000.0f}, {x1, bottom - y1 * 2000.0f}, 1.0f, colors::White, colors::White);
+	}
+	engine.renderer_2d.add_rect(rf32::from_topleft(3.0f * (float)frame_time_index, top_left.y, 1.0f, height), colors::Red);
+	return height;
+#else
+	engine.renderer_2d.add_rect(rf32::from_topleft(top_left, width, height), colors::Black);
+	engine.renderer_2d.add_rect(rf32::from_topleft(top_left.x, bottom - (1.0f / 60.0f) * 2000.0f, width, 1.0f), colors::Lime);
+	float x = top_left.x;
+	for (int i = frame_time_index; i > 0; --i) {
+		auto const y0 = frame_times[i];
+		auto const y1 = frame_times[i - 1];
+		auto const xn = x + 3.0f;
+
+		engine.renderer_2d.add_line({x, bottom - y0 * 2000.0f}, {xn, bottom - y1 * 2000.0f}, 1.0f, colors::White, colors::White);
+		x = xn;
+	}
+	float earlier = frame_times[0];
+	for (int i = frame_count-1; i > frame_time_index; --i) {
+		auto const y0 = earlier;
+		auto const y1 = frame_times[i];
+		auto const xn = x + 3.0f;
+
+		engine.renderer_2d.add_line({x, bottom - y0 * 2000.0f}, {xn, bottom - y1 * 2000.0f}, 1.0f, colors::White, colors::White);
+		x = xn;
+		earlier = y1;
+	}
+	return height;
+#endif
+}
+
 void Debug_Layer::on_update(double dt, Render_Context* ctx) {
-	frame_times[frame_time_index] = (float)dt;
 	if (++frame_time_index >= frame_count) frame_time_index = 0;
+	frame_times[frame_time_index] = (float)dt;
 
 	if (!(flags & layer::show)) return reset(*this);
 
@@ -179,14 +227,21 @@ void Debug_Layer::on_update(double dt, Render_Context* ctx) {
 
 	float mean_frame_time = 0.0f;
 	FS_FOR(frame_count) mean_frame_time += frame_times[i];
-	mean_frame_time /= frame_count;
+	mean_frame_time /= (float)frame_count;
 
 	char buffer[64];
 	int count = sprintf(buffer, "%.1f FPS (%.2f ms)", 1.0f / mean_frame_time, mean_frame_time * 1000.0f);
 
 	add_text(app_info_string);
 	add_text(FS_str_make(buffer, count));
-	offset += height;
+
+	if (flags& layer::debug_show_verbose) {
+		count = sprintf(buffer, "CPU time: %.4f ms", cpu_time*1000.0f);
+		add_text(FS_str_make(buffer, count));
+		offset += draw_frame_time_graph({0.0f, offset});
+	}
+	else offset += height;
+
 	for (auto&& s : left_strings) add_text(s);
 
 	offset = 0.0f;

@@ -15,6 +15,7 @@
 #include <Fission/Base/String.hpp>
 #include <Fission/Base/Math/Vector.hpp>
 #include <Fission/Core/Input/Event.hh>
+#include <Fission/Core/Display.hh>
 #include <iterator>
 #include <vector>
 
@@ -66,6 +67,7 @@ public:
 	Event_Queue event_queue;
 	v2s32 mouse_position;
 	int width, height;
+	Window_Mode mode;
 }; // struct fs::Window
 
 __FISSION_END__

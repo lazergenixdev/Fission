@@ -1,38 +1,16 @@
 /**
- * @file Matrix.hpp
- * @author lazergenixdev@gmail.com
- * 
- *	 _______   _   _____   _____   _   _____   __    _  
- *	|  _____| | | |  ___| |  ___| | | |  _  | |  \  | | 
- *	| |___    | |  \ \     \ \    | | | | | | |   \ | | 
- *	|  ___|   | |   \ \     \ \   | | | | | | | |\ \| | 
- *	| |       | |  __\ \   __\ \  | | | |_| | | | \   | 
- *	|_|       |_| |_____| |_____| |_| |_____| |_|  \__| 
- * 
- *	MIT License
- *	
- *	Copyright (c) 2021-2022 Lazergenix
- *	
- *	Permission is hereby granted, free of charge, to any person obtaining a copy
- *	of this software and associated documentation files (the "Software"), to deal
- *	in the Software without restriction, including without limitation the rights
- *	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *	copies of the Software, and to permit persons to whom the Software is
- *	furnished to do so, subject to the following conditions:
- *	
- *	The above copyright notice and this permission notice shall be included in all
- *	copies or substantial portions of the Software.
- *	
- *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *	SOFTWARE.
+ *	______________              _____
+ *	___  ____/__(_)________________(_)____________
+ *	__  /_   __  /__  ___/_  ___/_  /_  __ \_  __ \
+ *	_  __/   _  / _(__  )_(__  )_  / / /_/ /  / / /
+ *	/_/      /_/  /____/ /____/ /_/  \____//_/ /_/
+ *
+ *
+ * @Author:       lazergenixdev@gmail.com
+ * @Development:  (https://github.com/lazergenixdev/Fission)
+ * @License:      MIT (see end of file)
  */
 #pragma once
-#include <Fission/Base/Math/Library.hpp>
 #include <Fission/Base/Math/Vector.hpp>
 
 __FISSION_BEGIN__
@@ -57,7 +35,7 @@ __FISSION_BEGIN__
  * 
 */
 
-namespace base
+namespace math
 {
 
 /* ========================================= [Matrix Types] ========================================= */
@@ -794,10 +772,34 @@ namespace base
 // `float` will be the type used most often,
 //	so we only need short-hand float variations
 
-using m22 = base::matrix2x2<f32>;
-using m23 = base::matrix2x3<f32>;
-using m33 = base::matrix3x3<f32>;
-using m34 = base::matrix3x4<f32>;
-using m44 = base::matrix4x4<f32>;
+using m22 = math::matrix2x2<f32>;
+using m23 = math::matrix2x3<f32>;
+using m33 = math::matrix3x3<f32>;
+using m34 = math::matrix3x4<f32>;
+using m44 = math::matrix4x4<f32>;
 
 __FISSION_END__
+
+/**
+ *	MIT License
+ *
+ *	Copyright (c) 2021-2023 lazergenixdev
+ *
+ *	Permission is hereby granted, free of charge, to any person obtaining a copy
+ *	of this software and associated documentation files (the "Software"), to deal
+ *	in the Software without restriction, including without limitation the rights
+ *	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *	copies of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
+ *
+ *	The above copyright notice and this permission notice shall be included in all
+ *	copies or substantial portions of the Software.
+ *
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
+ */

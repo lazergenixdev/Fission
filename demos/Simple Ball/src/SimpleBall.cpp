@@ -7,6 +7,21 @@ static std::uniform_real_distribution<float> dist{ 0.0f, 1.0f };
 
 extern fs::Engine engine;
 
+bool bounce(float& pos, float& vel, float radius, float max) {
+	float right = max - radius;
+	if (pos < radius) {
+		pos = radius + (radius - pos);
+		vel = -vel;
+		return true;
+	}
+	if (pos > right) {
+		pos = right - (pos - right);
+		vel = -vel;
+		return true;
+	}
+	return false;
+}
+
 class Ball_Scene : public fs::Scene
 {
 public:
@@ -26,24 +41,12 @@ public:
 		radius = 40.0f * sinf( count += dt ) + 70.0f;
 
 		// Collide with the top and bottom
-		if( pos.y + radius >= 720.0f )
-			pos.y = 720.0f - radius,
-			velocity.y =- velocity.y,
-			color = rgb( hsv( dist(rng), 1.0f, 1.0f ) );
-		else if( pos.y - radius <= 0.0f )
-			pos.y = radius,
-			velocity.y =- velocity.y,
+		if (bounce(pos.y, velocity.y, radius, 720.0f))
 			color = rgb( hsv( dist(rng), 1.0f, 1.0f ) );
 
 		// Collide with the left and right
-		if( pos.x + radius >= 1280.0f )
-			pos.x = 1280.0f - radius,
-			velocity.x =- velocity.x,
-			color = rgb( hsv( dist(rng), 1.0f, 1.0f ) );
-		else if( pos.x - radius <= 0.0f )
-			pos.x = radius,
-			velocity.x =- velocity.x,
-			color = rgb( hsv( dist(rng), 1.0f, 1.0f ) );
+		if (bounce(pos.x, velocity.x, radius, 1280.0f))
+			color = rgb(hsv(dist(rng), 1.0f, 1.0f));
 
 		// Draw the circle to the screen
 	//	renderer2d->DrawCircle( pos, radius, {}, color( color, 0.5f ), 20.0f, StrokeStyle::Inside ); // inner glow
@@ -53,6 +56,7 @@ public:
 	//	renderer2d->Render();
 	//	renderer2d->SetBlendMode( Fission::BlendMode::Normal );
 		rp.begin(ctx, fs::colors::Black);
+		VK_GFX_BIND_DESCRIPTOR_SETS(ctx->command_buffer, engine.renderer_2d.pipeline_layout, 1, &engine.transform_2d.set);
 		engine.renderer_2d.add_rect(rf32::from_center(pos, radius*2, radius*2), color);
 		engine.renderer_2d.draw(*ctx);
 		rp.end(ctx);

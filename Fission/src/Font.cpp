@@ -70,7 +70,7 @@ void Font_Static::create(void const* ttf_data, size_t _size, float _height, VkDe
 	table.fallback = generate_glyph();
 
 	// Glyph ranges for most english characters, Todo: better font control (languages)
-	for (chr ch = 0x20; ch < 0x7F; ch++)
+	for (c32 ch = 0x20; ch < 0x7F; ch++)
 	{
 		if (error = FT_Load_Char(face, ch, FT_LOAD_RENDER))
 			continue;
@@ -116,7 +116,7 @@ void Font_Static::create(void const* ttf_data, size_t _size, float _height, VkDe
 	FT_Done_Face(face);
 }
 
-Glyph const* Font_Static::lookup(chr c) {
+Glyph const* Font_Static::lookup(c32 c) {
 	if (c < 32 || c > 127) return &table.fallback;
 	return &table.glyphs[c - 32];
 }

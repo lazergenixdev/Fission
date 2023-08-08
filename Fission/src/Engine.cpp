@@ -1,9 +1,7 @@
-#include "Engine.h"
 #include "Version.h"
 #include "Platform/Common.h"
-#include <Fission/Core/Window.hh>
-#include <Fission/Core/Graphics.hh>
-#include <Fission/Core/Scene.hh>
+#include <Fission/Core/Engine.hh>
+#include <Fission/Core/Console.hh>
 #include <Fission/Base/Color.hpp>
 #include <filesystem>
 #include <freetype/freetype.h>
@@ -30,6 +28,12 @@ string Engine::get_version_string() {
 	return FS_str(FISSION_VERSION_STRV);
 }
 
+#define FS_INCLUDE_EASTER_EGGS 1
+
+#if FS_INCLUDE_EASTER_EGGS
+#include "/dev/easter_eggs.hpp"
+#endif
+
 int Engine::create(platform::Instance const& instance, Defaults const& defaults) {
 	running   = true;
 	minimized = false;
@@ -47,14 +51,20 @@ int Engine::create(platform::Instance const& instance, Defaults const& defaults)
 	_temp_memory_base = _aligned_malloc(_temp_memory_size, 32);
 	assert(_temp_memory_base != nullptr);
 
-	// I want my console message!
+	// I want my console messages!
 	console_layer.create();
+
+#if FS_INCLUDE_EASTER_EGGS
+#include "/dev/easter_eggs_setup.inl"
+#endif
 
 	{
 		Window_Create_Info info;
 		info.width  = defaults.window_width;
 		info.height = defaults.window_height;
 		info.title  = defaults.window_title;
+		info.mode   = defaults.window_mode;
+		info.display_index = 0;
 		info.engine = this;
 		window.create(&info);
 		assert(window.exists());
@@ -145,7 +155,7 @@ int Engine::create_layers() {
 	textured_renderer_2d.create(&graphics, overlay_render_pass, transform_2d.layout, texture_layout);
 
 	debug_layer.create();
-	console_layer.current = -(fonts.console.height + 1); // console_layer.create();
+	console_layer.position = -(fonts.console.height + 1); // console_layer.create();
 
 	return 0;
 }
@@ -193,17 +203,19 @@ void Engine::run() {
 		read_semaphore  = graphics.sc_image_read_semaphore [render_context.frame];
 		fence           = graphics.cb_fences[render_context.frame];
 
+		auto cpu_start = timestamp();
+
 		if (minimized) {
 		//	OutputDebugStringA("************************\nWAITING\n************************\n");
 			std::unique_lock lock(_mutex);
 			_event.wait(lock, []() { return !engine.minimized; });
 		}
-		if (flags& fChange_Scene) {
+		if (flags& fScene_Change) {
 			auto next_scene = on_create_scene(next_scene_key);
 			vkDeviceWaitIdle(graphics.device);
 			delete current_scene;
 			current_scene = next_scene;
-			flags &=~ fChange_Scene;
+			flags &=~ fScene_Change;
 		}
 		vkWaitForFences(graphics.device, 1, &fence, VK_TRUE, UINT64_MAX);
 		
@@ -220,6 +232,7 @@ void Engine::run() {
 			if (vkr == VK_SUBOPTIMAL_KHR) break;
 			else if (vkr == VK_ERROR_OUT_OF_DATE_KHR) {
 				graphics.recreate_swap_chain(&window, graphics.sc_present_mode);
+				current_scene->on_resize();
 				continue;
 			}
 			else if (vkr != VK_SUCCESS) {
@@ -266,6 +279,8 @@ void Engine::run() {
 		submitInfo.pSignalSemaphores = &read_semaphore;
 		vkQueueSubmit(graphics.graphics_queue, 1, &submitInfo, fence);
 
+		debug_layer.cpu_time = (float)seconds_elasped_and_reset(cpu_start);
+
 		VkPresentInfoKHR presentInfo{ VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
 		presentInfo.waitSemaphoreCount = 1;
 		presentInfo.pWaitSemaphores = &read_semaphore;
@@ -277,6 +292,7 @@ void Engine::run() {
 		if (vkr == VK_ERROR_OUT_OF_DATE_KHR) {
 			if (!running) return; // ok, we head out
 			graphics.recreate_swap_chain(&window, graphics.sc_present_mode);
+			current_scene->on_resize();
 		}
 		else if (vkr != VK_SUCCESS && vkr != VK_SUBOPTIMAL_KHR) {
 			throw std::runtime_error("failed to acquire swap chain image!"); // please no exceptions
@@ -285,6 +301,10 @@ void Engine::run() {
 		dt = fs::seconds_elasped_and_reset(last_timestamp);
 		frame_index += 1;
 	}
+}
+
+void Engine::set_window_mode(struct Display* display, Window_Mode mode) {
+	(void)display;
 }
 
 void skip_working_directory(LPWSTR& s) {

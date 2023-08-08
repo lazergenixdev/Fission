@@ -432,7 +432,7 @@ inline constexpr rgb::operator hsv() const noexcept
 		} else {
 			x_max = b;
 			c = x_max - x_min;
-			out.h = c == 0.0f ? 0.0f : math::two_thirds<type> + ( r - g ) / ( 6.0f * c );
+			out.h = c == 0.0f ? 0.0f : type(2.0/3.0) + (r - g) / (6.0f * c);
 		}
 	}
 	else // G > R
@@ -441,11 +441,11 @@ inline constexpr rgb::operator hsv() const noexcept
 		if( g > b ) {
 			x_max = g;
 			c = x_max - x_min;
-			out.h = c == 0.0f ? 0.0f : math::one_third<type> + ( b - r ) / ( 6.0f * c );
+			out.h = c == 0.0f ? 0.0f : type(1.0/3.0) + (b - r) / (6.0f * c);
 		} else {
 			x_max = b;
 			c = x_max - x_min;
-			out.h = c == 0.0f ? 0.0f : math::two_thirds<type> + ( r - g ) / ( 6.0f * c );
+			out.h = c == 0.0f ? 0.0f : type(2.0/3.0) + (r - g) / (6.0f * c);
 		}
 	}
 
@@ -472,7 +472,7 @@ inline constexpr rgb::operator hsl() const noexcept
 		else {
 			x_max = b;
 			c = x_max - x_min;
-			out.h = c == 0.0f ? 0.0f : math::two_thirds<type> +( r - g ) / ( 6.0f * c );
+			out.h = c == 0.0f ? 0.0f : type(2.0/3.0) +( r - g ) / ( 6.0f * c );
 		}
 	}
 	else // G > R
@@ -481,12 +481,12 @@ inline constexpr rgb::operator hsl() const noexcept
 		if( g > b ) {
 			x_max = g;
 			c = x_max - x_min;
-			out.h = c == 0.0f ? 0.0f : math::one_third<type> +( b - r ) / ( 6.0f * c );
+			out.h = c == 0.0f ? 0.0f : type(1.0/3.0) +( b - r ) / ( 6.0f * c );
 		}
 		else {
 			x_max = b;
 			c = x_max - x_min;
-			out.h = c == 0.0f ? 0.0f : math::two_thirds<type> +( r - g ) / ( 6.0f * c );
+			out.h = c == 0.0f ? 0.0f : type(2.0/3.0) +( r - g ) / ( 6.0f * c );
 		}
 	}
 

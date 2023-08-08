@@ -38,9 +38,10 @@ __FISSION_BEGIN__
 // ONLY meant for HARD-CODED defaults
 // (engine will handle saving/loading settings to/from file)
 struct Defaults {
-	string window_title;
-	int window_width = 1280;
-	int window_height = 720;
+	string      window_title   = FS_str(":)");
+	int         window_width   = 1280;
+	int         window_height  = 720;
+	Window_Mode window_mode    = Windowed;
 };
 
 struct FISSION_API Engine {
@@ -56,12 +57,13 @@ struct FISSION_API Engine {
 	Scene* current_scene;
 
 	enum Flag: u64 {
-		fChange_Scene = 1 << 0,
-		fRunning,
-		fWindow_Minimized,
-		fWindow_Resized,
-		fWindow_Destroy_Enable = 1 << 4,
-		fGraphics_Recreate_Swap_Chain = 1 << 5,
+		fScene_Change                  = 1 << 0,
+		fRunning                       = 1 << 1,
+		fWindow_Minimized              = 1 << 2,
+		fWindow_Resized                = 1 << 3,
+		fWindow_Destroy_Enable         = 1 << 4,
+		fGraphics_Recreate_Swap_Chain  = 1 << 5,
+		fWindow_Mode_Change            = 1 << 6,
 	};
 		
 	// use flags?
@@ -69,19 +71,6 @@ struct FISSION_API Engine {
 	bool minimized; // note: rename to window_minimized
 	bool window_resized;
 	u64 flags = 0;
-
-	enum Modifier : u64 {
-		Modifier_LShift   = 1 << 0,
-		Modifier_RShift   = 1 << 1,
-		Modifier_LControl = 1 << 2,
-		Modifier_RControl = 1 << 3,
-		Modifier_LAlt     = 1 << 4,
-		Modifier_RAlt     = 1 << 5,
-
-		Modifier_Shift    = Modifier_LShift   | Modifier_RShift,
-		Modifier_Control  = Modifier_LControl | Modifier_RControl,
-		Modifier_Alt      = Modifier_LAlt     | Modifier_RAlt,
-	};
 	u64 modifier_keys = 0;
 
 	Texture_Layout texture_layout;
@@ -133,6 +122,8 @@ struct FISSION_API Engine {
 
 	void reset_scene_key_memory();
 	string alloc_scene_key_string(string s);
+
+	void set_window_mode(struct Display* display, Window_Mode mode);
 
 	void run();
 	int create(platform::Instance const& instance, Defaults const& defaults);

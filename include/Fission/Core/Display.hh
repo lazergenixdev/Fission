@@ -12,68 +12,60 @@
  */
 #pragma once
 #include <Fission/config.hpp>
-#include <Fission/Base/Size.hpp>
-#include <Fission/Base/Buffer.hpp>
+#include <Fission/Platform.hpp>
+#include <Fission/Base/Math/Vector.hpp>
+#include <vector>
 
-namespace Fission
+__FISSION_BEGIN__
+
+enum Window_Mode: u32 {
+	Windowed             = 0,
+	Windowed_Fullscreen  = 1,
+	Exclusive_Fullscreen = 2,
+};
+
+struct Display_Mode {
+	v2u32 resolution;
+	int   refresh_rate;
+};
+
+enum DisplayIdx_
 {
-	struct DisplayMode
-	{
-		size2 resolution;
-		int   refresh_rate;
-	};
+	DisplayIdx_Primary = 0,
 
-	class Monitor;
+	//! @brief Set in a window's properties for it to determine
+	//!        it's monitor automatically based on where the window is.
+	DisplayIdx_Automatic = -1,
+};
 
-	// Public API will always use raw pointers,
-	// because monitors are something that will never
-	// need to be changed by the user
-	using MonitorPtr = Monitor *;
+struct Display : public platform::Display_Impl
+{
+	/*! @brief Native monitor handle type */
+	using native_handle_type = void*;// Platform::MonitorHandle;
 
-	enum MonitorIdx_
-	{
-		MonitorIdx_Primary = 0,
+	string name() const;
 
-		//! @brief Set in a window's properties for it to determine
-		//!        it's monitor automatically based on where the window is.
-		MonitorIdx_Automatic = -1,
-	};
+	Display_Mode const* current_mode() const;
 
-	class Monitor
-	{
-	public:
-		/*! @brief Native monitor handle type */
-		using native_handle_type = Platform::MonitorHandle;
+	/*! @brief Get the index of this monitor.
+		* 
+		*  @note Monitors are always arranged from index 0 to N,
+		*	      so a monitors index in @Monitor::GetMonitors()
+		*        will always equal this value.
+		*/
+	int index() const;
 
-	public:
+//	//! @brief Change the display mode that is currently set.
+//	bool SetDisplayMode(const Display_Mode *);
+//
+//	//! @brief Revert the display mode to the user's default for this monitor.
+//	bool RevertDisplayMode();
 
-		FISSION_API static buffer<MonitorPtr> GetMonitors();
+	std::vector<Display_Mode> supported_display_modes();
 
-		virtual const char * GetName() const = 0;
+};
 
-		virtual const DisplayMode * GetCurrentDisplayMode() const = 0;
-
-		/*! @brief Get the index of this monitor.
-		 * 
-		 *  @note Monitors are always arranged from index 0 to N,
-		 *	      so a monitors index in @Monitor::GetMonitors()
-		 *        will always equal this value.
-		 */
-		virtual int GetIndex() const = 0;
-
-		//! @brief Change the display mode that is currently set.
-		virtual bool SetDisplayMode(const DisplayMode *) = 0;
-
-		//! @brief Revert the display mode to the user's default for this monitor.
-		virtual bool RevertDisplayMode() = 0;
-
-		virtual buffer<DisplayMode> GetSupportedDisplayModes() = 0;
-
-		virtual native_handle_type native_handle() = 0;
-
-	}; // class Fission::Monitor
-
-} // namespace Fission
+__FISSION_END__
 
 /**
  *	MIT License

@@ -107,9 +107,10 @@ struct Render_Pass {
 
 	inline constexpr operator VkRenderPass() const { return handle; }
 
-	void create(VkSampleCountFlags samples, bool clear);
+	void create(VkSampleCountFlagBits samples, bool clear);
 	void destroy();
 
+	void begin(Render_Context* ctx, VkFramebuffer fb, color clear);
 	void begin(Render_Context* ctx, color clear);
 	void begin(Render_Context* ctx);
 	void end(Render_Context* ctx);
@@ -186,51 +187,8 @@ namespace vk {
 		};
 	}
 
-	/*************************************************************************************/
-	// Template Madness, you are wrong if you think C++ couldn't get any more complicated
-	// TODO: need to move this to some other file, really does not belong here
-
-	// Base
-	template <size_t, typename...>
-	struct _type_at {};
-
-	// Two or more Types
-	template <size_t i, typename T, typename...Rest>
-	struct _type_at<i, T, Rest...> { using type = std::conditional_t<i <= 0, T, typename _type_at<i - 1, Rest...>::type>; };
-
-	// Single Type
-	template <size_t i, typename T>
-	struct _type_at<i, T>          { using type = T; };
-
-	template <size_t i, typename...T>
-	using type_at = _type_at<i, T...>::type;
-
-	// Base
-	template <size_t, typename...>
-	struct _size_of_n {};
-
-	// Two or more Types
-	template <size_t i, typename T, typename...Rest>
-	struct _size_of_n<i, T, Rest...> {
-		static constexpr uint32_t value = (i > 0) ? (sizeof(T) + _size_of_n<i - 1, Rest...>::value) : 0u;
-	};
-
-	// Single Type
-	template <size_t i, typename T>
-	struct _size_of_n<i, T> {
-		static constexpr uint32_t value = (i > 0) ? sizeof(T) : 0u;
-	};
-
-	template <size_t i, typename...T>
-	static constexpr uint32_t size_of_n = _size_of_n<i, T...>::value;
-	/*************************************************************************************/
-
-
-	template <class>
-	inline constexpr bool _Always_false = false;
-
 	template <typename T> struct _format_of {
-		static_assert(_Always_false<T>, "No format mapped to this type.");
+		static_assert(fs::always_false<T>, "No format mapped to this type.");
 		static constexpr VkFormat value = VK_FORMAT_UNDEFINED;
 	};
 
@@ -244,7 +202,7 @@ namespace vk {
 	template <typename T> static constexpr VkFormat format_of = _format_of<T>::value;
 
 	template <typename...Attributes>
-	struct Vertex_Input {
+	struct Basic_Vertex_Input {
 		static constexpr uint32_t attribute_count = sizeof...(Attributes);
 		VkPipelineVertexInputStateCreateInfo info;
 		VkVertexInputBindingDescription binding;
@@ -254,7 +212,7 @@ namespace vk {
 			return &info;
 		}
 
-		inline constexpr Vertex_Input() noexcept {
+		inline constexpr Basic_Vertex_Input() noexcept {
 			info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 			info.pNext = nullptr;
 			info.flags = 0;
@@ -265,11 +223,11 @@ namespace vk {
 
 			binding.binding = 0;
 			binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-			binding.stride = size_of_n<attribute_count, Attributes...>;
+			binding.stride = fs::size_of_n<attribute_count, Attributes...>;
 
 			[&] <typename T, size_t...n>(std::integer_sequence<T, n...> int_seq) {
 				((attributes[n].binding = 0), ...);
-				((attributes[n].format = vk::format_of<type_at<n, Attributes...>>), ...);
+				((attributes[n].format = vk::format_of<fs::type_at<n, Attributes...>>), ...);
 				((attributes[n].location = n), ...);
 				(set_offset<n>(), ...);
 			} (std::make_index_sequence<attribute_count>{});
@@ -278,7 +236,7 @@ namespace vk {
 		// @note: Fuck templates
 		template <size_t n>
 		inline constexpr void set_offset() {
-			attributes[n].offset = size_of_n<(int)n, Attributes...>;
+			attributes[n].offset = fs::size_of_n<(int)n, Attributes...>;
 		}
 	};
 }

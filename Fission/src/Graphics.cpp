@@ -325,6 +325,7 @@ bool Graphics::create(Graphics_Create_Info* info)
 
 		const std::vector<const char*> deviceExtensions = {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+		//	VK_EXT_FULL_SCREEN_EXCLUSIVE_EXTENSION_NAME,
 		};
 		deviceInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
 		deviceInfo.ppEnabledExtensionNames = deviceExtensions.data();
@@ -346,6 +347,7 @@ bool Graphics::create(Graphics_Create_Info* info)
 
 		VkPhysicalDeviceFeatures deviceFeatures{};
 		deviceFeatures.fillModeNonSolid = VK_TRUE;
+		deviceFeatures.sampleRateShading = VK_TRUE;
 		deviceInfo.pEnabledFeatures = &deviceFeatures;
 
 		check_result(vkCreateDevice(physical_device, &deviceInfo, nullptr, &device), "Failed to create device");
@@ -360,7 +362,7 @@ bool Graphics::create(Graphics_Create_Info* info)
 			physical_device,
 			device,
 			surface,
-			VK_PRESENT_MODE_FIFO_KHR,
+			VK_PRESENT_MODE_FIFO_RELAXED_KHR,
 			info->window->width,
 			info->window->height,
 			VK_NULL_HANDLE,
@@ -808,26 +810,42 @@ Graphics::~Graphics() {
 	}
 }
 
-void Render_Pass::create(VkSampleCountFlags samples, bool clear)
+void Render_Pass::create(VkSampleCountFlagBits samples, bool clear)
 {
 	VkAttachmentDescription colorAttachment{};
 	colorAttachment.format = engine.graphics.sc_format;
-	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	colorAttachment.samples = samples;
 	colorAttachment.loadOp = clear? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	colorAttachment.initialLayout = clear? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-	colorAttachment.finalLayout = clear? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	colorAttachment.finalLayout = (clear||samples != VK_SAMPLE_COUNT_1_BIT)? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+	VkAttachmentDescription colorAttachmentResolve{};
+	colorAttachmentResolve.format = engine.graphics.sc_format;
+	colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
+	colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 	VkAttachmentReference colorAttachmentRef{};
 	colorAttachmentRef.attachment = 0;
 	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+	VkAttachmentReference colorAttachmentResolveRef{};
+	colorAttachmentResolveRef.attachment = 1;
+	colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
 	VkSubpassDescription subpass{};
 	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	subpass.colorAttachmentCount = 1;
 	subpass.pColorAttachments = &colorAttachmentRef;
+	if (samples != VK_SAMPLE_COUNT_1_BIT)
+	subpass.pResolveAttachments = &colorAttachmentResolveRef;
 
 	VkSubpassDependency dependency{};
 	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -837,9 +855,11 @@ void Render_Pass::create(VkSampleCountFlags samples, bool clear)
 	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
+	auto attachments = {colorAttachment, colorAttachmentResolve};
+
 	VkRenderPassCreateInfo renderPassInfo{ VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
-	renderPassInfo.attachmentCount = 1;
-	renderPassInfo.pAttachments = &colorAttachment;
+	renderPassInfo.attachmentCount = (samples == VK_SAMPLE_COUNT_1_BIT)? 1:2;
+	renderPassInfo.pAttachments = attachments.begin();
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpass;
 	renderPassInfo.dependencyCount = 1;
@@ -850,17 +870,20 @@ void Render_Pass::create(VkSampleCountFlags samples, bool clear)
 void Render_Pass::destroy() {
 	vkDestroyRenderPass(engine.graphics.device, handle, nullptr);
 }
-void Render_Pass::begin(Render_Context* ctx, color clear) {
+void Render_Pass::begin(Render_Context* ctx, VkFramebuffer fb, color clear) {
 	VkClearValue clear_value;
-	clear_value.color = { clear.r, clear.g, clear.b, clear.a };
-	VkRenderPassBeginInfo beginInfo{ VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
-	beginInfo.framebuffer = ctx->frame_buffer;
+	clear_value.color = {clear.r, clear.g, clear.b, clear.a};
+	VkRenderPassBeginInfo beginInfo{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
+	beginInfo.framebuffer = fb;
 	beginInfo.renderPass = handle;
 	beginInfo.clearValueCount = 1;
 	beginInfo.pClearValues = &clear_value;
 	beginInfo.renderArea.extent = ctx->gfx->sc_extent;
-	beginInfo.renderArea.offset = { 0, 0 };
+	beginInfo.renderArea.offset = {0, 0};
 	vkCmdBeginRenderPass(ctx->command_buffer, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
+}
+void Render_Pass::begin(Render_Context* ctx, color clear) {
+	begin(ctx, ctx->frame_buffer, clear);
 }
 void Render_Pass::begin(Render_Context* ctx) {
 	VkRenderPassBeginInfo beginInfo{ VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };

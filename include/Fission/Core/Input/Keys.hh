@@ -11,7 +11,6 @@
  * @License:      MIT (see end of file)
  */
 // todo: add more keys
-// todo: add documentation
 
 #pragma once
 #include <Fission/config.hpp>
@@ -93,6 +92,19 @@ Numpad ## N = VK_NUMPAD ## N,
 		Equal,			       // =
 #endif
 	}; // Fission::Keys::Key
+
+	enum Modifier : u64 {
+		Mod_LShift   = 1 << 0,
+		Mod_RShift   = 1 << 1,
+		Mod_LControl = 1 << 2,
+		Mod_RControl = 1 << 3,
+		Mod_LAlt     = 1 << 4,
+		Mod_RAlt     = 1 << 5,
+
+		Mod_Shift   = Mod_LShift   | Mod_RShift,
+		Mod_Control = Mod_LControl | Mod_RControl,
+		Mod_Alt     = Mod_LAlt     | Mod_RAlt,
+	};
 
 	//! @warning NOT IMPLEMENTED
 	static constexpr Key_Id string_to_key( const char * _str )

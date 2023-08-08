@@ -81,11 +81,19 @@
 /*! @brief Engine Name */
 #define FS "Fission Engine"
 
+#define FS_PI  3.1415926535897932384626433
+#define FS_TAU 6.2831853071795864769252867
+
 /*! @brief Marks procedures/functions that should be thread safe */
 #define FS_THREAD_SAFE
 
+#if defined(FISSION_PLATFORM_WINDOWS)
+#define FS_debug_print(STRING) OutputDebugStringA(STRING)
+#define FS_debug_printf(FORMAT, ...) { char _buf[256]; sprintf_s(_buf, FORMAT, __VA_ARGS__); OutputDebugStringA(_buf); } (void)0
+#endif
+
 __FISSION_BEGIN__
-// Platform.h is required to include "inttypes.h"
+// PlatformConfig.hpp is required to include "inttypes.h"
 
 using u8  = uint8_t;
 using u16 = uint16_t;
@@ -102,11 +110,22 @@ using byte = uint8_t;
 
 using c8  = char8_t;
 using c16 = char16_t;
-using chr = char32_t;
+using c32 = char32_t;
 
 template <typename T, typename F>
 inline constexpr T lerp(T const& left, T const& right, F x) {
 	return left * ((F)1 - x) + right * x;
+}
+
+template <typename _Type, typename _Convertable_To_Type>
+inline constexpr _Type max(_Type a, _Convertable_To_Type b) noexcept {
+	if (a > static_cast<_Type>(b)) return a;
+	return b;
+}
+template <typename _Type, typename _Convertable_To_Type>
+inline constexpr _Type min(_Type a, _Convertable_To_Type b) noexcept {
+	if (a < static_cast<_Type>(b)) return a;
+	return b;
 }
 
 #define FS_KILOBYTES(x) (            (x) * (::fs::u64)(1024))
@@ -122,6 +141,62 @@ X(Y)X(Z)
 
 #define FISSION_X_BASE10 \
 X(0)X(1)X(2)X(3)X(4)X(5)X(6)X(7)X(8)X(9)
+
+//*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
+//-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+// Template Magic: you are wrong if you think C++ couldn't get any more complicated
+
+template <typename> static constexpr bool always_false = false; // c++ really do be this dumb...
+
+// True Case
+template <bool b, typename L, typename R>
+struct _if_t { using type = L; };
+
+// False Case
+template <typename L, typename R>
+struct _if_t<false, L, R> { using type = R; };
+
+template <bool b, typename L, typename R>
+using if_t = _if_t<b, L, R>::type;
+
+
+// Base
+template <size_t, typename...>
+struct _type_at {};
+
+// Two or more Types
+template <size_t i, typename T, typename...Rest>
+struct _type_at<i, T, Rest...> { using type = if_t<i <= 0, T, typename _type_at<i - 1, Rest...>::type>; };
+
+// Single Type
+template <size_t i, typename T>
+struct _type_at<i, T> { using type = T; };
+
+template <size_t i, typename...T>
+using type_at = _type_at<i, T...>::type;
+
+
+// Base
+template <size_t, typename...>
+struct _size_of_n {};
+
+// Two or more Types
+template <size_t i, typename T, typename...Rest>
+struct _size_of_n<i, T, Rest...> {
+	static constexpr uint32_t value = (i > 0) ? (sizeof(T) + _size_of_n<i - 1, Rest...>::value) : 0u;
+};
+
+// Single Type
+template <size_t i, typename T>
+struct _size_of_n<i, T> {
+	static constexpr uint32_t value = (i > 0) ? sizeof(T) : 0u;
+};
+
+template <size_t i, typename...T>
+static constexpr uint32_t size_of_n = _size_of_n<i, T...>::value;
+
+//*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
+//-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 __FISSION_END__
 

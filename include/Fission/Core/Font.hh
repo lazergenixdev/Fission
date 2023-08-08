@@ -44,7 +44,7 @@ struct Font {
 	float height;
 
 	// TODO: There will only every be two variants of this function, virtual is overkill
-	virtual Glyph const* lookup(chr codepoint) = 0;
+	virtual Glyph const* lookup(c32 codepoint) = 0;
 	virtual void destroy() = 0;
 };
 
@@ -63,7 +63,7 @@ struct Font_Static : public Font {
 
 	void create(void const* ttf_data, size_t size, float height, VkDescriptorSet set, VkSampler sampler);
 
-	virtual Glyph const* lookup(chr codepoint) override;
+	virtual Glyph const* lookup(c32 codepoint) override;
 	virtual void destroy() override;
 };
 

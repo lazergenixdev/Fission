@@ -84,7 +84,10 @@ struct Pipeline_Create_Info {
 	VkShaderModule fragment_shader;
 	VkPipelineVertexInputStateCreateInfo const* vertex_input;
 	Blending_Mode blend_mode;
+	float sampleRateShading = 0.0f;
+	VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT;
 	uint32_t subpass = 0;
+
 };
 static void create_pipeline(Pipeline_Create_Info const& createInfo, VkPipeline* outPipeline) {
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo{ VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
@@ -123,7 +126,11 @@ static void create_pipeline(Pipeline_Create_Info const& createInfo, VkPipeline* 
 
 	VkPipelineMultisampleStateCreateInfo multisampling{ VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };
 	multisampling.sampleShadingEnable = VK_FALSE;
-	multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+	multisampling.rasterizationSamples = createInfo.samples;
+	if (createInfo.sampleRateShading != 0.0f) {
+		multisampling.sampleShadingEnable = VK_TRUE;
+		multisampling.minSampleShading = createInfo.sampleRateShading;
+	}
 
 	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 	colorBlendAttachment.colorWriteMask = 0b1111;
@@ -225,6 +232,26 @@ public:
 		d.vtx_count += 3;
 	}
 
+	void add_line(v2f32 start, v2f32 end, float stroke, color startColor, color endColor)
+	{
+		const auto edge_vector = (end - start).perp().norm() * stroke / 2.0f;
+
+		index_data[d.total_idx_count++] = d.vtx_count + 0u;
+		index_data[d.total_idx_count++] = d.vtx_count + 1u;
+		index_data[d.total_idx_count++] = d.vtx_count + 2u;
+		index_data[d.total_idx_count++] = d.vtx_count + 2u;
+		index_data[d.total_idx_count++] = d.vtx_count + 1u;
+		index_data[d.total_idx_count++] = d.vtx_count + 3u;
+
+		vertex_data[d.total_vtx_count++] = vertex((start + edge_vector), startColor);
+		vertex_data[d.total_vtx_count++] = vertex((start - edge_vector), startColor);
+		vertex_data[d.total_vtx_count++] = vertex((end + edge_vector), endColor);
+		vertex_data[d.total_vtx_count++] = vertex((end - edge_vector), endColor);
+
+		d.idx_count += 6;
+		d.vtx_count += 4;
+	}
+
 	void add_rect(rf32 rect, color color) {
 		index_data[d.total_idx_count++] = d.vtx_count + 0;
 		index_data[d.total_idx_count++] = d.vtx_count + 1;
@@ -240,6 +267,43 @@ public:
 
 		d.idx_count += 6;
 		d.vtx_count += 4;
+	}
+
+	void add_rect_outline(rf32 rect, color color) {
+		for( int i = 0; i < 8; i++ ) {
+		// I bet you've never seen code like this:
+			i & 0x1 ?
+			(
+				index_data[d.total_idx_count++] = d.vtx_count + i,
+				index_data[d.total_idx_count++] = d.vtx_count + ( i + 1u ) % 8u,
+				index_data[d.total_idx_count++] = d.vtx_count + ( i + 2u ) % 8u
+			):(
+				index_data[d.total_idx_count++] = d.vtx_count + i,
+				index_data[d.total_idx_count++] = d.vtx_count + ( i + 2u ) % 8u,
+				index_data[d.total_idx_count++] = d.vtx_count + ( i + 1u ) % 8u
+			)
+			;
+		}
+		float in_l = rect.x.low,  out_l = in_l;
+		float in_r = rect.x.high, out_r = in_r;
+		float in_t = rect.y.low,  out_t = in_t;
+		float in_b = rect.y.high, out_b = in_b;
+		float stroke_width = 1.0f;
+
+		out_l -= stroke_width, out_t -= stroke_width;
+		out_r += stroke_width, out_b += stroke_width;
+
+		vertex_data[d.total_vtx_count++] = vertex(v2f32(out_l, out_b), color);
+		vertex_data[d.total_vtx_count++] = vertex(v2f32( in_l,  in_b), color);
+		vertex_data[d.total_vtx_count++] = vertex(v2f32(out_l, out_t), color);
+		vertex_data[d.total_vtx_count++] = vertex(v2f32( in_l,  in_t), color);
+		vertex_data[d.total_vtx_count++] = vertex(v2f32(out_r, out_t), color);
+		vertex_data[d.total_vtx_count++] = vertex(v2f32( in_r,  in_t), color);
+		vertex_data[d.total_vtx_count++] = vertex(v2f32(out_r, out_b), color);
+		vertex_data[d.total_vtx_count++] = vertex(v2f32( in_r,  in_b), color);
+
+		d.idx_count += 24;
+		d.vtx_count += 8;
 	}
 
 	// TODO: remove
@@ -260,13 +324,7 @@ public:
 		d.vtx_count += 4;
 	}
 
-	void end_render(Render_Context const* ctx) {
-		if (d.total_vtx_count) {
-			auto& fd = frame_data[ctx->frame];
-			fd.set_data(ctx->gfx, vertex_data, index_data, d.total_vtx_count, d.total_idx_count);
-			d.reset();
-		}
-	}
+	void end_render(Render_Context const* ctx);
 
 	void draw(Render_Context& ctx) {
 		auto& fd = frame_data[ctx.frame];
@@ -295,7 +353,36 @@ public:
 
 		d.start_new_draw();
 	}
+	void draw_pipeline(VkPipeline pipeline, Render_Context& ctx) {
+		auto& fd = frame_data[ctx.frame];
+
+		vkCmdBindPipeline(ctx.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+		vkCmdBindIndexBuffer(ctx.command_buffer, fd.index_buffer, 0, VK_INDEX_TYPE_UINT16);
+		VkDeviceSize offset = 0;
+		vkCmdBindVertexBuffers(ctx.command_buffer, 0, 1, &fd.vertex_buffer, &offset);
+
+		VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = static_cast<float>(ctx.gfx->sc_extent.width);
+		viewport.height = static_cast<float>(ctx.gfx->sc_extent.height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		vkCmdSetViewport(ctx.command_buffer, 0, 1, &viewport);
+
+		VkRect2D scissor{};
+		scissor.offset = { 0, 0 };
+		scissor.extent = ctx.gfx->sc_extent;
+		vkCmdSetScissor(ctx.command_buffer, 0, 1, &scissor);
+
+		vkCmdDrawIndexed(ctx.command_buffer, d.idx_count, 1, d.idx_offset, d.vtx_offset, 0);
+
+		d.start_new_draw();
+	}
 	void destroy() {
+		vkDestroyShaderModule(device, vert, nullptr);
+		vkDestroyShaderModule(device, frag, nullptr);
 		vkDestroyPipelineLayout(device, pipeline_layout, nullptr);
 		vkDestroyPipeline(device, pipeline, nullptr);
 		_aligned_free(vertex_data);
@@ -321,6 +408,9 @@ public:
 	u16*    index_data;
 
 	Draw_Data d;
+
+	VkShaderModule vert;
+	VkShaderModule frag;
 };
 
 struct Textured_Renderer_2D
@@ -461,6 +551,9 @@ public:
 	}
 
 	void draw(Render_Context& ctx) {
+		draw_pipeline(pipeline, ctx);
+	}
+	void draw_pipeline(VkPipeline pipeline, Render_Context& ctx) {
 		auto& fd = frame_data[ctx.frame];
 
 		vkCmdBindPipeline(ctx.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
@@ -479,15 +572,17 @@ public:
 		vkCmdSetViewport(ctx.command_buffer, 0, 1, &viewport);
 
 		VkRect2D scissor{};
-		scissor.offset = { 0, 0 };
+		scissor.offset = {0, 0};
 		scissor.extent = ctx.gfx->sc_extent;
 		vkCmdSetScissor(ctx.command_buffer, 0, 1, &scissor);
 
 		vkCmdDrawIndexed(ctx.command_buffer, d.idx_count, 1, d.idx_offset, d.vtx_offset, 0);
-		
+
 		d.start_new_draw();
 	}
 	void destroy() {
+		vkDestroyShaderModule(device, vert, nullptr);
+		vkDestroyShaderModule(device, frag, nullptr);
 		vkDestroyPipelineLayout(device, pipeline_layout, nullptr);
 		vkDestroyPipeline(device, pipeline, nullptr);
 		_aligned_free(vertex_data);
@@ -515,6 +610,9 @@ public:
 	u16*    index_data;
 
 	Draw_Data d;
+
+	VkShaderModule vert;
+	VkShaderModule frag;
 };
 
 __FISSION_END__

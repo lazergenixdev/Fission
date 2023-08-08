@@ -13,6 +13,7 @@
 #pragma once
 #include <Fission/config.hpp>
 #include <Fission/Base/String.hpp>
+#include <Fission/Base/Math/Vector.hpp>
 #include <Fission/Core/Input/Event.hh>
 #include <vector>
 
@@ -22,7 +23,14 @@ namespace layer {
 	enum Flags: u32 {
 		show   = 1 << 0,
 		enable = 1 << 1,
+
+		debug_show_verbose = 1 << 2,
 	};
+}
+
+template <typename Layer>
+static inline constexpr void disable_layer(Layer& layer) noexcept {
+	layer.flags &=~ (layer::show | layer::enable);
 }
 
 struct Debug_Layer {
@@ -37,11 +45,13 @@ struct Debug_Layer {
 		add(FS_str_make(_buffer, count));
 	}
 
-	u32 flags = 0;
+	u32 flags = layer::enable;
 
 	float* frame_times;
 	int frame_count;
 	int frame_time_index = 0;
+
+	float cpu_time = 0.0f;
 	
 	// TODO: Use string "ranges" instead of "string", use after free error waiting to happen...
 	string app_info_string;
@@ -55,21 +65,30 @@ struct Debug_Layer {
 	
 	void create();
 	void destroy();
+
+private:
+	float draw_frame_time_graph(v2f32 top_left);
 };
 
 // ESCXXXhelloESC
 // X for a byte [0,255] representing a color component
 // XXX => RGB
 struct Console_Layer {
-	u32 flags = 0;
+	u32 flags = layer::enable;
 	
 	static constexpr u64 default_buffer_size = FS_KILOBYTES(4);
 
-	float current;
-	string input;
-	c8 input_buffer[72];
-	string buffer_view;
-	u64 buffer_capacity;
+	float    position;
+
+	string   input; // input from user
+	c8       input_buffer[72];
+
+	string   buffer_view; // fixed size console buffer to display stuff
+	u64      buffer_capacity;
+
+	s64              current_command = -1; // -1 == "user input", [0, command_count-1] == "command in command_history_buffer"
+	std::vector<u32> command_history_ends; // constains the end indicies for all commands in command_history_buffer
+	std::vector<c8>  command_history_buffer;
 
 	void handle_events(std::vector<struct Event>& events);
 	void on_update(double dt, struct Render_Context* ctx);

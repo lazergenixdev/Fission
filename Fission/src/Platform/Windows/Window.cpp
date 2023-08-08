@@ -13,7 +13,6 @@ extern fs::Engine engine;
 
 __FISSION_BEGIN__
 
-#define GetWindowsStyle() (WS_MINIMIZEBOX | WS_SYSMENU | WS_CAPTION | WS_VISIBLE)
 #define WindowClassName L"Fission Window Class"
 
 inline LARGE_INTEGER last_timestamp;
@@ -40,7 +39,7 @@ static LRESULT Window_Message_Callback(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
         break;
     }
 
-    // No application menu pls thx
+    // No application menu pls thaaaaaaaaaaaaaaaaaaaks
     case WM_COMMAND: return 0;
     case WM_SYSCOMMAND:
     {
@@ -84,13 +83,12 @@ static LRESULT Window_Message_Callback(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
     return wnd->_win32_ProcessMessage(hwnd, msg, wp, lp);
 }
 
-// process messages that will eventually make it back to the application :)
 LRESULT Window::_win32_ProcessMessage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 {
     static constexpr u64 modifier_map[3] = {
-        engine.Modifier_Shift,
-        engine.Modifier_Control,
-        engine.Modifier_Alt,
+        fs::keys::Mod_Shift,
+        fs::keys::Mod_Control,
+        fs::keys::Mod_Alt,
     };
 
     switch (msg)
@@ -113,6 +111,21 @@ LRESULT Window::_win32_ProcessMessage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
         break;
     }
 
+    case WM_SYSKEYUP:
+    case WM_KEYUP: {
+        Event event{
+            .timestamp = (unsigned)last_timestamp.QuadPart,
+            .type = Event_Key_Up,
+            .key_up = {
+                .key_id = (u32)wp,
+            }
+        };
+        event_queue.append(event);
+        if (wp >= VK_SHIFT && wp <= VK_MENU)
+            engine.modifier_keys &= ~modifier_map[wp - VK_SHIFT];
+        break;
+    }
+
     case WM_LBUTTONDOWN: case WM_LBUTTONDBLCLK:
     case WM_RBUTTONDOWN: case WM_RBUTTONDBLCLK:
     case WM_MBUTTONDOWN: case WM_MBUTTONDBLCLK:
@@ -131,8 +144,8 @@ LRESULT Window::_win32_ProcessMessage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
             }
         };
         event_queue.append(event);
+        return 0;
     }
-    return 0;
 
     case WM_LBUTTONUP:
     case WM_RBUTTONUP:
@@ -152,27 +165,41 @@ LRESULT Window::_win32_ProcessMessage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
             }
         };
         event_queue.append(event);
+        return 0;
     }
-    return 0;
-
-    case WM_SYSKEYUP:
-    case WM_KEYUP: {
+    case WM_MOUSEWHEEL: {
         Event event{
             .timestamp = (unsigned)last_timestamp.QuadPart,
-            .type = Event_Key_Up,
-            .key_up = {
-                .key_id = (u32)wp,
-            }
         };
-        event_queue.append(event);
-        if (wp >= VK_SHIFT && wp <= VK_MENU)
-            engine.modifier_keys &= ~modifier_map[wp - VK_SHIFT];
+        _mouse_wheel_delta += GET_WHEEL_DELTA_WPARAM(wp);
+
+        {
+            std::scoped_lock lock{event_queue.access_mutex};
+            event.key_down.key_id = keys::Mouse_WheelUp;
+            while (_mouse_wheel_delta >= WHEEL_DELTA) {
+                event.type = Event_Key_Down;
+                event_queue.array.emplace_back(event);
+                event.type = Event_Key_Up;
+                event_queue.array.emplace_back(event);
+                _mouse_wheel_delta -= WHEEL_DELTA;
+            }
+            event.key_down.key_id = keys::Mouse_WheelDown;
+            while (_mouse_wheel_delta <= WHEEL_DELTA) {
+                event.type = Event_Key_Down;
+                event_queue.array.emplace_back(event);
+                event.type = Event_Key_Up;
+                event_queue.array.emplace_back(event);
+                _mouse_wheel_delta += WHEEL_DELTA;
+            }
+        }
         break;
     }
+
     case WM_MOUSEMOVE: {
         mouse_position = (v2s32)reinterpret_cast<v2s16&>(lp);
         break;
     }
+
     case WM_KILLFOCUS: {
         Event event{
             .timestamp = (unsigned)last_timestamp.QuadPart,
@@ -182,17 +209,21 @@ LRESULT Window::_win32_ProcessMessage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
         engine.modifier_keys = 0;
         break;
     }
+
     case WM_CHAR: {
-        Event event{
-            .timestamp = (unsigned)last_timestamp.QuadPart,
-            .type      = Event_Character_Input,
-            .character_input = {
-                .codepoint = wp & 0xFFFF,
-            }
-        };
-        event_queue.append(event);
+        if (_codepoint_builder.append(wp & 0xFFFF)) {
+            Event event{
+                .timestamp = (unsigned)last_timestamp.QuadPart,
+                .type      = Event_Character_Input,
+                .character_input = {
+                    .codepoint = _codepoint_builder.codepoint,
+                }
+            };
+            event_queue.append(event);
+        }
         break;
     }
+
     default:break;
     }
     return DefWindowProcW(hwnd, msg, wp, lp);
@@ -227,15 +258,27 @@ static int window_main(Window_Thread_Info* info) {
         for (u64 i = 0; i < initial_title.count; ++i)
             title.push_back((wchar_t)initial_title.data[i]);
 
-        RECT wr = { 0, 0, window->width, window->height };
+        auto style_from_mode = [](Window_Mode m) -> DWORD {
+            switch (m)
+            {
+            case fs::Windowed:             return(WS_MINIMIZEBOX | WS_SYSMENU | WS_CAPTION | WS_VISIBLE);
+            case fs::Windowed_Fullscreen:  return(WS_POPUP | WS_VISIBLE);
+            case fs::Exclusive_Fullscreen: return(WS_VISIBLE);
+            default:                       return(WS_VISIBLE);
+            }
+        };
+        auto ex_style_from_mode = [](Window_Mode m) {
+            return 0;
+        };
 
-        ::AdjustWindowRect(&wr, GetWindowsStyle(), FALSE);
+        RECT wr = { 0, 0, window->width, window->height };
+        if(window->mode == Windowed)::AdjustWindowRect(&wr, style_from_mode(window->mode), FALSE);
 
         window->_handle = CreateWindowExW(
-            0L,                                 // Ex Style
+            ex_style_from_mode(window->mode),   // Ex Style
             WindowClassName,                    // Window Class Name
             title.c_str(),                      // Window Title
-            GetWindowsStyle(),                  // Style
+            style_from_mode(window->mode),      // Style
             CW_USEDEFAULT, CW_USEDEFAULT,       // Position
             wr.right - wr.left,                 // Width
             wr.bottom - wr.top,                 // Height
@@ -307,6 +350,7 @@ void Window::create(Window_Create_Info* info)
 
     width  = info->width;
     height = info->height;
+    mode   = info->mode;
 
     static Window_Thread_Info thread_info; // this is stupid
     thread_info.window = this;

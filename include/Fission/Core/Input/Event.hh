@@ -12,6 +12,7 @@
  */
 #pragma once
 #include <Fission/config.hpp>
+#include <Fission/Base/String.hpp>
 
 __FISSION_BEGIN__
 
@@ -42,7 +43,7 @@ struct Event {
 		u32 key_id;
 	};
 	struct Character_Input {
-		chr codepoint;
+		c32 codepoint;
 	};
 
 	union {
