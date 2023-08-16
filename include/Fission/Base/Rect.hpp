@@ -116,7 +116,7 @@ struct rect
 
 	//! @brief Create a rect from a Windows RECT.
 	template <typename _Win_Rect_Type>
-	static inline constexpr rect from_win(const _Win_Rect_Type &_Win_Rect)
+	static inline constexpr rect from_win32(const _Win_Rect_Type &_Win_Rect)
 	{
 		return rect(_Win_Rect.left, _Win_Rect.right, _Win_Rect.top, _Win_Rect.bottom);
 	}

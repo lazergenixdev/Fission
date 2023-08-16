@@ -3,6 +3,7 @@
 #include <Fission/Core/Engine.hh>
 #include <Fission/Core/Input/Keys.hh>
 #include "../Common.h"
+#include <Dbt.h>
 using namespace fs;
 
 void EnableDarkModeAPI() noexcept;
@@ -69,9 +70,18 @@ static LRESULT Window_Message_Callback(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
     }
 
     case WM_SETCURSOR: {
+        // Probably can improve this with some user-defined stuff..
         if ((short)lp == HTCLIENT) {
             SetCursor(LoadCursorW(NULL, IDC_ARROW));
             return TRUE;
+        }
+        break;
+    }
+
+    case WM_DEVICECHANGE: {
+        // "A device has been added to or removed from the system."
+        if (wp == DBT_DEVNODES_CHANGED) {
+        //  enumerate_displays(engine.displays);
         }
         break;
     }
@@ -105,6 +115,8 @@ LRESULT Window::_win32_ProcessMessage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
         if (!(lp & 0x40000000)) { // not a repeat
             event_queue.append(event);
 
+        // TODO: There is a better way:
+        // https://learn.microsoft.com/en-us/windows/win32/inputdev/about-keyboard-input#keystroke-message-flags
             if (wp >= VK_SHIFT && wp <= VK_MENU)
                 engine.modifier_keys |= modifier_map[wp - VK_SHIFT];
         }
@@ -200,6 +212,14 @@ LRESULT Window::_win32_ProcessMessage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
         break;
     }
 
+    case WM_MOVE: {
+        if (_flags & platform::Window_Disable_Position_Update); else {
+            auto point = MAKEPOINTS(lp);
+            position = v2s32::from(point);
+        }
+        break;
+    }
+
     case WM_KILLFOCUS: {
         Event event{
             .timestamp = (unsigned)last_timestamp.QuadPart,
@@ -229,8 +249,19 @@ LRESULT Window::_win32_ProcessMessage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
     return DefWindowProcW(hwnd, msg, wp, lp);
 }
 
-#undef assert // I DECIDE WHAT ASSERT DOES, NOT YOU!! BITCH ASS CASSERT
+#undef assert // I DECIDE WHAT ASSERT DOES, NOT YOU!! BITCH ASS CASSERT <- angry boi
 #define assert(R, WHAT) if(!(R)) { display_win32_fatal_error(L##WHAT); return 1; } (void)0
+
+HMONITOR get_monitor(int index, HWND hwnd) {
+    if (index == Display_Index_Automatic)
+        return MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+
+    else if (index < engine.displays.size() && index >= 0)
+        return engine.displays[index]._handle;
+
+    else
+        return MonitorFromWindow(NULL, MONITOR_DEFAULTTOPRIMARY);
+}
 
 struct Window_Thread_Info {
     Window* window;
@@ -250,36 +281,50 @@ static int window_main(Window_Thread_Info* info) {
             ~defer() { wnd->_cv.notify_one(); }
         } _notify{window};
 
-        std::wstring title;
-
         EnableDarkModeAPI();
+        
+        auto monitor = get_monitor(window->display_index, window->_handle);
+        assert(monitor != NULL, "Failed to get monitor handle");
 
-        title.reserve(initial_title.count);
-        for (u64 i = 0; i < initial_title.count; ++i)
-            title.push_back((wchar_t)initial_title.data[i]);
+        MONITORINFO mi;
+        mi.cbSize = sizeof(mi);
+        GetMonitorInfoW(monitor, &mi);
 
-        auto style_from_mode = [](Window_Mode m) -> DWORD {
-            switch (m)
-            {
-            case fs::Windowed:             return(WS_MINIMIZEBOX | WS_SYSMENU | WS_CAPTION | WS_VISIBLE);
-            case fs::Windowed_Fullscreen:  return(WS_POPUP | WS_VISIBLE);
-            case fs::Exclusive_Fullscreen: return(WS_VISIBLE);
-            default:                       return(WS_VISIBLE);
-            }
-        };
-        auto ex_style_from_mode = [](Window_Mode m) {
-            return 0;
-        };
+        auto style = window->_get_style();
 
         RECT wr = { 0, 0, window->width, window->height };
-        if(window->mode == Windowed)::AdjustWindowRect(&wr, style_from_mode(window->mode), FALSE);
+        if (window->mode == Windowed) {
+            auto bRet = ::AdjustWindowRectEx(&wr, style.value, FALSE, style.ex);
+            assert(bRet != 0, "Failed to calculate window size [AdjustWindowRectEx]");
+
+            auto monitor_size = v2s32(mi.rcMonitor.right - mi.rcMonitor.left, mi.rcMonitor.bottom - mi.rcMonitor.top);
+            auto offset = (monitor_size - v2s32(wr.right - wr.left, wr.bottom - wr.top)) / 2;
+            wr.left   += offset.x;
+            wr.right  += offset.x;
+            wr.top    += offset.y;
+            wr.bottom += offset.y;
+        }
+        else if (window->mode == Windowed_Fullscreen) {
+            wr = mi.rcMonitor;
+            window->_flags |= platform::Window_Disable_Position_Update;
+        }
+
+        c16 buffer[512]; // Don't think Windows can even handle titles this long...
+
+        string src_title = initial_title;
+        src_title.count = std::min(src_title.count, std::size(buffer) - 1);
+
+        string_utf16 win32_title = {.count = std::size(buffer) - 1, .data = buffer};
+        convert_utf8_to_utf16(&win32_title, src_title);
+
+        win32_title.data[win32_title.count] = 0; // null terminate
 
         window->_handle = CreateWindowExW(
-            ex_style_from_mode(window->mode),   // Ex Style
+            style.ex,                           // Ex Style
             WindowClassName,                    // Window Class Name
-            title.c_str(),                      // Window Title
-            style_from_mode(window->mode),      // Style
-            CW_USEDEFAULT, CW_USEDEFAULT,       // Position
+            (wchar_t*)win32_title.data,         // Window Title
+            style.value,                        // Style
+            wr.left, wr.top,                    // Position
             wr.right - wr.left,                 // Width
             wr.bottom - wr.top,                 // Height
             NULL, NULL,                         // Parent Window, Menu
@@ -303,33 +348,83 @@ static int window_main(Window_Thread_Info* info) {
         DispatchMessageW(&msg);
     }
 
+    // Window handle is no longer valid
     window->_handle = NULL;
 
-    // CHECK: This may need to be syncronized across threads
+    // This may need to be syncronized across threads, but i'm too fucking lazy
     engine.running = false;
 
     return 0;
 }
 #undef assert
 
+v2s32 Window::_get_size() {
+    RECT wr = {0, 0, width, height};
+    auto style = _get_style();
+    AdjustWindowRectEx(&wr, style.value, NULL, style.ex);
+    return {wr.right - wr.left, wr.bottom - wr.top};
+}
+
+Window::_Style Window::_get_style() {
+    switch (mode)
+    {
+    case Windowed:             return {0, WS_VISIBLE|WS_MINIMIZEBOX|WS_SYSMENU|WS_CAPTION};
+    case Windowed_Fullscreen:  return {WS_EX_APPWINDOW, WS_VISIBLE|WS_POPUP};
+    case Exclusive_Fullscreen: return {0, WS_VISIBLE};
+    default:                   return {};
+    }
+}
+
+void Window::set_mode(Window_Mode mode) {
+
+    HMONITOR display_handle = get_monitor(display_index, _handle);
+    if (display_handle == NULL) {
+        display_win32_fatal_error(L"Failed to get monitor handle");
+        return;
+    }
+
+    this->mode = mode;
+    auto style = _get_style();
+    SetWindowLongW(_handle, GWL_STYLE  , style.value);
+    SetWindowLongW(_handle, GWL_EXSTYLE, style.ex);
+
+    rs32 r;
+    {
+        MONITORINFO info;
+        info.cbSize = sizeof(MONITORINFO);
+        GetMonitorInfoW(display_handle, &info);
+        r = rs32::from_win32(info.rcMonitor);
+    }
+
+    switch (mode)
+    {
+    default: // windowed right?
+    case fs::Windowed: {
+        auto size = _get_size();
+        SetWindowPos(_handle, NULL, position.x, position.y, size.x, size.y, SWP_ASYNCWINDOWPOS|SWP_FRAMECHANGED);
+        _flags &=~ platform::Window_Disable_Position_Update;
+        break;
+    }
+    case fs::Windowed_Fullscreen:
+    case fs::Exclusive_Fullscreen: // same as other fullscreen for now
+        _flags |= platform::Window_Disable_Position_Update;
+        SetWindowPos(_handle, NULL, r.x.low, r.y.low, r.x.distance(), r.y.distance(), SWP_ASYNCWINDOWPOS|SWP_FRAMECHANGED);
+        break;
+    }
+}
+
 void Window::set_title(string const& title)
 {
-    std::wstring ws;
+    c16 buffer[512]; // Don't think Windows can even handle titles this long...
+    
+    string input = title;
+    input.count = std::min(input.count, std::size(buffer) - 1);
 
-    // TODO: fix stupid conversion
-    ws.reserve(title.count);
-#if 1
-    for (int i = 0; i < title.count; ++i)
-        ws.push_back((wchar_t)title.data[i]);
-#else
-    string_utf16 dst;
-    dst.data  = (c16*)ws.data();
-    dst.count = title.count;
-    convert_utf8_to_utf16(&dst, title);
-    ws.resize(dst.count);
-#endif
+    string_utf16 utf16 = {.count = std::size(buffer) - 1, .data = buffer};
+    convert_utf8_to_utf16(&utf16, input);
 
-    SetWindowTextW(_handle, ws.c_str());
+    utf16.data[utf16.count] = 0; // null terminate
+    SetWindowTextW(_handle, (wchar_t*)utf16.data);
 }
 
 void Window::close() {

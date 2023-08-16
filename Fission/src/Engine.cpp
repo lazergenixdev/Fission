@@ -23,6 +23,7 @@ __FISSION_BEGIN__
 Scene_Key cmdline_to_scene_key(platform::Instance);
 extern s64 timestamp();
 extern double seconds_elasped_and_reset(s64& last);
+void enumerate_displays(std::vector<struct Display>& out);
 
 string Engine::get_version_string() {
 	return FS_str(FISSION_VERSION_STRV);
@@ -57,6 +58,8 @@ int Engine::create(platform::Instance const& instance, Defaults const& defaults)
 #if FS_INCLUDE_EASTER_EGGS
 #include "/dev/easter_eggs_setup.inl"
 #endif
+
+	enumerate_displays(displays);
 
 	{
 		Window_Create_Info info;
@@ -203,8 +206,6 @@ void Engine::run() {
 		read_semaphore  = graphics.sc_image_read_semaphore [render_context.frame];
 		fence           = graphics.cb_fences[render_context.frame];
 
-		auto cpu_start = timestamp();
-
 		if (minimized) {
 		//	OutputDebugStringA("************************\nWAITING\n************************\n");
 			std::unique_lock lock(_mutex);
@@ -220,8 +221,7 @@ void Engine::run() {
 		vkWaitForFences(graphics.device, 1, &fence, VK_TRUE, UINT64_MAX);
 		
 		if (flags& fGraphics_Recreate_Swap_Chain) {
-			graphics.recreate_swap_chain(&window, swap_chain_info.present_mode);
-			current_scene->on_resize();
+			resize();
 			flags &=~ fGraphics_Recreate_Swap_Chain;
 		}
 
@@ -231,8 +231,7 @@ void Engine::run() {
 
 			if (vkr == VK_SUBOPTIMAL_KHR) break;
 			else if (vkr == VK_ERROR_OUT_OF_DATE_KHR) {
-				graphics.recreate_swap_chain(&window, graphics.sc_present_mode);
-				current_scene->on_resize();
+				resize();
 				continue;
 			}
 			else if (vkr != VK_SUCCESS) {
@@ -240,6 +239,8 @@ void Engine::run() {
 			}
 		}
 		vkResetFences(graphics.device, 1, &fence);
+
+		auto cpu_start = timestamp();
 
 		render_context.frame_buffer   = graphics.sc_framebuffers[imageIndex];
 		render_context.command_buffer = graphics.command_buffers[render_context.frame];
@@ -291,8 +292,7 @@ void Engine::run() {
 
 		if (vkr == VK_ERROR_OUT_OF_DATE_KHR) {
 			if (!running) return; // ok, we head out
-			graphics.recreate_swap_chain(&window, graphics.sc_present_mode);
-			current_scene->on_resize();
+			resize();
 		}
 		else if (vkr != VK_SUCCESS && vkr != VK_SUBOPTIMAL_KHR) {
 			throw std::runtime_error("failed to acquire swap chain image!"); // please no exceptions
@@ -303,8 +303,15 @@ void Engine::run() {
 	}
 }
 
-void Engine::set_window_mode(struct Display* display, Window_Mode mode) {
-	(void)display;
+void Engine::resize() {
+	graphics.recreate_swap_chain(&window, graphics.sc_present_mode);
+
+	fs::Transform_2D_Data transform;
+	transform.offset = {-1.0f,-1.0f};
+	transform.scale = {2.0f / (float)graphics.sc_extent.width, 2.0f / (float)graphics.sc_extent.height};
+	graphics.upload_buffer(transform_2d.buffer, &transform, sizeof(fs::Transform_2D_Data));
+
+	current_scene->on_resize();
 }
 
 void skip_working_directory(LPWSTR& s) {

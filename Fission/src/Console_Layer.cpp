@@ -200,6 +200,8 @@ void Console_Layer::handle_character_input(Event::Character_Input in) {
 	break; case '\b':
 		if (input.count > 2) input.count -= 1;
 	break; case '\r': {
+		if (input.count <= 2) break;
+
 		console::println(input); // Execute Command
 		auto cmd = find_command(input.substr(2));
 		auto it = console::callback_table.find(std::string(cmd.str()));

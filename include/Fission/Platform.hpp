@@ -71,6 +71,9 @@ private:
 
 namespace platform {
 	struct Instance {}; // useless on windows
+    enum Window_ {
+        Window_Disable_Position_Update = 1 << 0,
+    };
 	struct Window_Impl {
 		HWND                     _handle = NULL;
 		std::thread              _thread;
@@ -78,6 +81,7 @@ namespace platform {
 		std::condition_variable  _cv;
 		short                    _mouse_wheel_delta;
 		UTF_16_Codepoint_Builder _codepoint_builder;
+        u32                      _flags = 0;
 	};
 	struct Display_Impl {
 		HMONITOR _handle;

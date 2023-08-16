@@ -1,5 +1,7 @@
 #include <Fission/Base/String.hpp>
 #include <Fission/Platform.hpp>
+#include <Fission/Core/Display.hh>
+#include <algorithm>
 
 fs::string platform_version;
 
@@ -62,9 +64,7 @@ namespace fs::platform {
 fs::platform::Version_Data _platform_version_data{};
 
 /////////////////////////////////////////////////////////////////////////////////////////
-
 // Timestamps
-
 /////////////////////////////////////////////////////////////////////////////////////////
 
 __FISSION_BEGIN__
@@ -90,6 +90,118 @@ double seconds_elasped_and_reset(s64& last) {
 	double elapsed = double(now.QuadPart - last) / _freq.value;
 	last = now.QuadPart;
 	return elapsed;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// Monitors
+/////////////////////////////////////////////////////////////////////////////////////////
+
+struct MonitorEnumData
+{
+	DISPLAYCONFIG_PATH_INFO* pathArray;
+	UINT32 index;
+	UINT32 pathArrayCount;
+	std::vector<Display>* out;
+};
+
+BOOL CALLBACK MonitorEnumCallback(HMONITOR hMonitor, HDC, LPRECT, LPARAM pMonitorEnumData)
+{
+	auto pEnumData = reinterpret_cast<MonitorEnumData*>(pMonitorEnumData);
+
+	// Number of monitors changed after our query, this is a big problem.
+	if (pEnumData->index >= pEnumData->pathArrayCount)
+		return FALSE;
+
+	DISPLAYCONFIG_TARGET_DEVICE_NAME request;
+	request.header.adapterId = pEnumData->pathArray[pEnumData->index].targetInfo.adapterId;
+	request.header.id = pEnumData->pathArray[pEnumData->index].targetInfo.id;
+	request.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME;
+	request.header.size = sizeof(request);
+
+	LONG result;
+	if ((result = DisplayConfigGetDeviceInfo((DISPLAYCONFIG_DEVICE_INFO_HEADER*)&request)) != ERROR_SUCCESS)
+	{
+		return FALSE;
+		//	char error_msg[64];
+		//	sprintf(error_msg, "`DisplayConfigGetDeviceInfo` returned (%X)", result);
+		//	FISSION_THROW("Monitor Enum Error", .append(error_msg));
+	}
+
+	Display display;
+	display._handle = hMonitor;
+
+	FS_FOR(64) {
+		display.name_buffer[i] = (c8)request.monitorFriendlyDeviceName[i];
+	}
+	display.name_count = (int)strlen((char*)display.name_buffer);
+
+	MONITORINFOEX mi;
+	mi.cbSize = sizeof(mi);
+	GetMonitorInfoW(hMonitor, &mi);
+	display.rect = rs32::from_win32(mi.rcMonitor);
+
+	if ((mi.dwFlags & MONITORINFOF_PRIMARY) && pEnumData->index != 0) {
+		display.index = 0;
+		if (pEnumData->out->size())
+			(*pEnumData->out)[0].index = pEnumData->index;
+	}
+	else display.index = pEnumData->index;
+
+	pEnumData->out->emplace_back(display);
+	pEnumData->index++;
+
+	// Continue to enumerate more monitors.
+	return TRUE;
+}
+
+void enumerate_displays(std::vector<struct Display>& out) {
+	out.clear();
+
+	UINT32 numPathArrayElements;
+	UINT32 numModeInfoArrayElements;
+	DISPLAYCONFIG_PATH_INFO* pathArray = NULL;
+	DISPLAYCONFIG_MODE_INFO* modeInfoArray = NULL;
+	DISPLAYCONFIG_TOPOLOGY_ID currentTopologyId;
+
+	UINT32 count = 3;
+	LONG error = 0;
+
+	do {
+		numPathArrayElements = count;
+		numModeInfoArrayElements = count * 2u;
+		pathArray = (DISPLAYCONFIG_PATH_INFO*)_aligned_realloc(pathArray, numPathArrayElements * sizeof DISPLAYCONFIG_PATH_INFO, 64u);
+		modeInfoArray = (DISPLAYCONFIG_MODE_INFO*)_aligned_realloc(modeInfoArray, numModeInfoArrayElements * sizeof DISPLAYCONFIG_MODE_INFO, 64u);
+
+		if (pathArray == NULL || modeInfoArray == NULL)
+			throw std::bad_alloc();
+
+		error = QueryDisplayConfig(QDC_DATABASE_CURRENT, &numPathArrayElements, pathArray, &numModeInfoArrayElements, modeInfoArray, &currentTopologyId);
+
+	} while (error && (count += 3) < 25); // what kind of while loop is this?
+
+	if (error == ERROR_INSUFFICIENT_BUFFER)
+	{
+		// TODO: Fix this function.
+	//	Console::Error( "How do you have more than 24 monitors?? You are INSANE." );
+		throw std::logic_error("rip");
+	}
+
+	MonitorEnumData enumData;
+	enumData.index = 0;
+	enumData.pathArray = pathArray;
+	enumData.pathArrayCount = numPathArrayElements;
+	enumData.out = &out;
+
+	// Init list of monitors
+	EnumDisplayMonitors(NULL, nullptr, MonitorEnumCallback, (LPARAM)&enumData);
+
+	// stupid
+	std::sort(out.begin(), out.end(), [](Display const& a, Display const& b) { return a.index < b.index; });
+
+	// Free memory that we are done with.
+	_aligned_free(pathArray);
+	_aligned_free(modeInfoArray);
 }
 
 __FISSION_END__

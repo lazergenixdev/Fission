@@ -53,13 +53,6 @@
 #	error "Compiler not recognized!"
 #endif
 
-/* FISSION_FORCE_INLINE */
-#if FISSION_COMPILER_MSVC
-#	define FISSION_FORCE_INLINE __forceinline
-#else
-#	define FISSION_FORCE_INLINE inline
-#endif
-
 //\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\
 
 #define FS_EXPAND(X) X
@@ -81,8 +74,8 @@
 /*! @brief Engine Name */
 #define FS "Fission Engine"
 
-#define FS_PI  3.1415926535897932384626433
-#define FS_TAU 6.2831853071795864769252867
+#define FS_PI  (3.1415926535897932384626433)
+#define FS_TAU (6.2831853071795864769252867)
 
 /*! @brief Marks procedures/functions that should be thread safe */
 #define FS_THREAD_SAFE
@@ -108,6 +101,8 @@ using f64 = double;
 
 using byte = uint8_t;
 
+// This is only for seeing the strings correctly in the debugger,
+//    literally no other reason for this to be here :)
 using c8  = char8_t;
 using c16 = char16_t;
 using c32 = char32_t;
@@ -117,6 +112,7 @@ inline constexpr T lerp(T const& left, T const& right, F x) {
 	return left * ((F)1 - x) + right * x;
 }
 
+// min/max from std are kinda trash ngl
 template <typename _Type, typename _Convertable_To_Type>
 inline constexpr _Type max(_Type a, _Convertable_To_Type b) noexcept {
 	if (a > static_cast<_Type>(b)) return a;

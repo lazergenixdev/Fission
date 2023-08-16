@@ -45,16 +45,6 @@ struct Defaults {
 };
 
 struct FISSION_API Engine {
-	Window               window;
-	Graphics             graphics;
-	Render_Pass          overlay_render_pass;
-	Renderer_2D          renderer_2d;
-	Textured_Renderer_2D textured_renderer_2d;
-
-	Debug_Layer   debug_layer;
-	Console_Layer console_layer;
-
-	Scene* current_scene;
 
 	enum Flag: u64 {
 		fScene_Change                  = 1 << 0,
@@ -65,6 +55,18 @@ struct FISSION_API Engine {
 		fGraphics_Recreate_Swap_Chain  = 1 << 5,
 		fWindow_Mode_Change            = 1 << 6,
 	};
+
+	////////////////////////////////////////////////////////////////////////////
+	Window               window;
+	Graphics             graphics;
+	Render_Pass          overlay_render_pass;
+	Renderer_2D          renderer_2d;
+	Textured_Renderer_2D textured_renderer_2d;
+
+	Debug_Layer   debug_layer;
+	Console_Layer console_layer;
+
+	Scene* current_scene;
 		
 	// use flags?
 	bool running;
@@ -84,7 +86,7 @@ struct FISSION_API Engine {
 
 	// Pool for Uniform Buffers and Combined image-samplers
 	VkDescriptorPool descriptor_pool;
-		
+
 	struct {
 		FT_Library library;
 
@@ -95,6 +97,8 @@ struct FISSION_API Engine {
 
 		VkSampler sampler;
 	} fonts;
+
+	std::vector<Display> displays;
 
 	// only used to put thread to sleep when minimized
 	::std::mutex              _mutex;
@@ -118,12 +122,12 @@ struct FISSION_API Engine {
 	string             app_version_info;
 	string             app_name;
 
+	////////////////////////////////////////////////////////////////////////////
+
 	void* talloc(u64 size);
 
 	void reset_scene_key_memory();
 	string alloc_scene_key_string(string s);
-
-	void set_window_mode(struct Display* display, Window_Mode mode);
 
 	void run();
 	int create(platform::Instance const& instance, Defaults const& defaults);
@@ -132,6 +136,7 @@ struct FISSION_API Engine {
 	string get_version_string();
 
 private:
+	void resize();
 	int create_layers();
 };
 

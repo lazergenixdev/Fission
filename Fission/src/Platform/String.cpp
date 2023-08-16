@@ -5,7 +5,63 @@
 __FISSION_BEGIN__
 
 void convert_utf8_to_utf16(string_utf16* out_buffer, string input) {
-	throw std::runtime_error("are you for real?");
+	c16* dst = out_buffer->data;
+
+	const c8* src = input.data;
+	const c8* const end = src + input.count;
+
+	uint32_t _ax, _bx, _cx, _dx;
+
+	// perfection.
+	while (src != end)
+
+		if (*src & 0b10000000)
+		{
+			if ((*src & 0b11100000) == 0b11100000)
+			{
+				if ((*src & 0b11111000) == 0b11110000)
+				{
+					if (end - src < 4) { ++src; continue; }
+					// 4 bytes
+					_ax = *src++ & 0b00000111;
+					_bx = *src++ & 0b00111111;
+					_cx = *src++ & 0b00111111;
+					_dx = *src++ & 0b00111111;
+
+					_dx = (_ax << 18) | (_bx << 12) | (_cx << 6) | _dx;
+					_dx -= 0x10000;
+
+					*dst++ = c16((_dx >> 10) + 0xD800);
+					*dst++ = c16((_dx & 0b11'1111'1111) + 0xDC00);
+
+					continue;
+				}
+
+				if (end - src < 3) { ++src; continue; }
+				// 3 bytes
+				_ax = *src++ & 0b00001111;
+				_bx = *src++ & 0b00111111;
+				_cx = *src++ & 0b00111111;
+
+				*dst++ = c16((_ax << 12) | (_bx << 6) | _cx);
+
+				continue;
+			}
+
+			if (end - src < 2) { ++src; continue; }
+			// 2 bytes
+			_ax = *src++ & 0b00011111;
+			_bx = *src++ & 0b00111111;
+
+			*dst++ = c16((_ax << 6) | _bx);
+
+			continue;
+		}
+		else
+
+			*dst++ = c16(*src++);
+
+	out_buffer->count = (dst - out_buffer->data);
 }
 
 void convert_utf16_to_utf8(string* out_buffer, string_utf16 input) {

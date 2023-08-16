@@ -178,8 +178,6 @@ struct Piece {
 	Piece& add_rotation(int x) { rotation = (rotation + x) & 0b11; return *this; }
 };
 
-auto ______ = sizeof(Piece);
-
 struct Tetris {
 	fs::v2s32 size;
 	fs::rgba8* grid = nullptr;

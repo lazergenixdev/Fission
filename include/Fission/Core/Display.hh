@@ -14,6 +14,7 @@
 #include <Fission/config.hpp>
 #include <Fission/Platform.hpp>
 #include <Fission/Base/Math/Vector.hpp>
+#include <Fission/Base/Rect.hpp>
 #include <vector>
 
 __FISSION_BEGIN__
@@ -29,40 +30,31 @@ struct Display_Mode {
 	int   refresh_rate;
 };
 
-enum DisplayIdx_
+enum Display_Index_: int
 {
-	DisplayIdx_Primary = 0,
+	Display_Index_Primary = 0,
 
 	//! @brief Set in a window's properties for it to determine
 	//!        it's monitor automatically based on where the window is.
-	DisplayIdx_Automatic = -1,
+	Display_Index_Automatic = -1,
 };
 
 struct Display : public platform::Display_Impl
 {
-	/*! @brief Native monitor handle type */
-	using native_handle_type = void*;// Platform::MonitorHandle;
+	int index;
+	c8 name_buffer[64];
+	int name_count;
+	rs32 rect;
 
-	string name() const;
+	string name() const noexcept { return FS_str_make(name_buffer, name_count); }
 
-	Display_Mode const* current_mode() const;
+	Display_Mode current_mode() const;
 
-	/*! @brief Get the index of this monitor.
-		* 
-		*  @note Monitors are always arranged from index 0 to N,
-		*	      so a monitors index in @Monitor::GetMonitors()
-		*        will always equal this value.
-		*/
-	int index() const;
-
-//	//! @brief Change the display mode that is currently set.
-//	bool SetDisplayMode(const Display_Mode *);
-//
-//	//! @brief Revert the display mode to the user's default for this monitor.
-//	bool RevertDisplayMode();
-
+	/*
 	std::vector<Display_Mode> supported_display_modes();
-
+	bool set_display_mode(const Display_Mode *);
+	bool revert_display_mode();
+	*/
 };
 
 __FISSION_END__

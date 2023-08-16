@@ -1,4 +1,4 @@
-#include <Fission/Platform.hpp>
+﻿#include <Fission/Platform.hpp>
 #include <Fission/Core/Engine.hh>
 #include <Fission/Core/Window.hh>
 #include <Fission/Core/Graphics.hh>
@@ -64,6 +64,7 @@ namespace ui {
 	struct Global_State {
 		id hot = 0;
 		id active = 0;
+
 		bool mouse_went_up   = false;
 		bool mouse_went_down = false;
 		fs::v2f32 mouse;
@@ -393,6 +394,10 @@ struct Main_Menu_Scene : public fs::Scene {
 		static bool vsync = true;
 		ui::state.mouse = (fs::v2f32)engine.window.mouse_position;
 
+		// reset
+		ui::state.mouse_went_down = false;
+		ui::state.mouse_went_up = false;
+
 		for (auto const& event : events) {
 			switch (event.type)
 			{
@@ -416,7 +421,8 @@ struct Main_Menu_Scene : public fs::Scene {
 			//		vsync = true;
 			//	}
 				if (event.key_down.key_id == fs::keys::F11) {
-					engine.set_window_mode(nullptr, fs::Windowed_Fullscreen);
+					engine.window.set_mode((fs::Window_Mode)!(bool)engine.window.mode);
+					engine.flags |= engine.fGraphics_Recreate_Swap_Chain;
 				}
 			break; case fs::Event_Key_Up:
 				if (event.key_up.key_id == fs::keys::Mouse_Left) {
@@ -433,31 +439,21 @@ struct Main_Menu_Scene : public fs::Scene {
 		static float value = 0.0f;
 
 		float value_target = 0.0f;
-		float expand_target = 0.0f;
-		float min_target = 0.04f, max_target = 0.2f;
 		if (rect[ui::state.mouse]) {
-		//	min_target = 0.2f;
-		//	max_target = 0.9f;
-		//	expand_target = 5.0f;
 			value_target = 1.0f;
 		}
-		value = Exp_Update(value, value_target, 12.0f);
-#if 0
-		ui.min = Exp_Update(ui.min, min_target, 12.0f);
-		ui.max = Exp_Update(ui.max, max_target, 12.0f);
-		expand = Exp_Update(expand, expand_target, 12.0f);
-#else
+		value = Exp_Update(value, value_target, 16.0f);
 		ui.min = fs::lerp(0.04f, 0.2f, value);
 		ui.max = fs::lerp(0.2f , 0.9f, value);
 		expand = fs::lerp(0.0f, 5.0f, value);
-#endif
 
 		engine.debug_layer.add("min = %.2f, max = %.2f", ui.min, ui.max);
+		engine.debug_layer.add("position = (%i, %i)", engine.window.position.x, engine.window.position.y);
 
 		using namespace fs;
 
 #if USE_MSAA
-		rp.begin(ctx, frame_buffers[ctx->image_index], colors::Gray);
+		rp.begin(ctx, frame_buffers[ctx->image_index], colors::Black);
 #else
 		rp.begin(ctx, colors::Black);
 #endif
@@ -471,7 +467,7 @@ struct Main_Menu_Scene : public fs::Scene {
 
 		ui.update(dt, *ctx);
 
-		engine.renderer_2d.add_rect_outline(rect.expanded(expand), colors::White);
+		engine.renderer_2d.add_rect_outline(rect.expanded(expand), color(colors::White,1.0f-value));
 		auto off = (rect.size() - bounding_box(&engine.fonts.debug, FS_str("select"))) * 0.5f;
 		engine.textured_renderer_2d.add_string(FS_str("select"), rect.topLeft() + off, colors::gray(1.0f-value));
 
@@ -480,17 +476,33 @@ struct Main_Menu_Scene : public fs::Scene {
 		engine.textured_renderer_2d.draw_pipeline(tpipeline, *ctx); 
 	
 		rp.end(ctx);
-
-		// reset
-		ui::state.mouse_went_down = false;
-		ui::state.mouse_went_up   = false;
 	}
 	virtual void on_resize() override {
 #if USE_MSAA
+		auto& gfx = engine.graphics;
+
+		vmaDestroyImage(engine.graphics.allocator, colorImage, colorAllocation);
+		vkDestroyImageView(engine.graphics.device, colorImageView, nullptr);
+
+		VmaAllocationCreateInfo allocInfo = {};
+		allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+		VkImageCreateInfo imageInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+		imageInfo.usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		imageInfo.arrayLayers = 1;
+		imageInfo.extent = {.width = gfx.sc_extent.width, .height = gfx.sc_extent.height, .depth = 1};
+		imageInfo.format = gfx.sc_format;
+		imageInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageInfo.mipLevels = 1;
+		imageInfo.samples = VK_SAMPLE_COUNT_8_BIT;
+		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		vmaCreateImage(gfx.allocator, &imageInfo, &allocInfo, &colorImage, &colorAllocation, nullptr);
+
+		auto imageViewInfo = vk::image_view_2d(colorImage, gfx.sc_format);
+		vkCreateImageView(gfx.device, &imageViewInfo, nullptr, &colorImageView);
+
 		FS_FOR(engine.graphics.sc_image_count) {
 			vkDestroyFramebuffer(engine.graphics.device, frame_buffers[i], nullptr);
 		}
-		auto& gfx = engine.graphics;
 		VkImageView attachments[] = {colorImageView, VK_NULL_HANDLE};
 		VkFramebufferCreateInfo framebufferInfo{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
 		framebufferInfo.renderPass = rp;
@@ -577,6 +589,16 @@ struct Main_Menu_Scene : public fs::Scene {
 		fs::create_pipeline(pi, &tpipeline);
 
 		fs::console::register_command(FS_str("exit"), [](fs::string) { engine.running = false; });
+
+		fs::string buffer_view;
+		char buffer[128];
+		buffer_view = FS_str_make(buffer, 0);
+
+		for (auto&& d : engine.displays) {
+			buffer_view.count = sprintf_s(buffer, "Monitor index: %i", d.index);
+			fs::console::println(buffer_view);
+			fs::console::println(d.name());
+		}
 	}
 	~Main_Menu_Scene() override {
 		rp.destroy();
@@ -608,104 +630,10 @@ struct Main_Menu_Scene : public fs::Scene {
 	Menu_UI ui;
 };
 
-struct MonitorEnumData
-{
-	DISPLAYCONFIG_PATH_INFO* pathArray;
-	UINT32 index;
-	UINT32 pathArrayCount;
-};
-
-BOOL CALLBACK MonitorEnumCallback(HMONITOR hMonitor, HDC, LPRECT, LPARAM pMonitorEnumData)
-{
-	auto pEnumData = reinterpret_cast<MonitorEnumData*>(pMonitorEnumData);
-
-	// Number of monitors changed after our query, this is a big problem.
-	if (pEnumData->index >= pEnumData->pathArrayCount)
-		return FALSE;
-
-	DISPLAYCONFIG_TARGET_DEVICE_NAME request;
-	request.header.adapterId = pEnumData->pathArray[pEnumData->index].targetInfo.adapterId;
-	request.header.id = pEnumData->pathArray[pEnumData->index].targetInfo.id;
-	request.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME;
-	request.header.size = sizeof(request);
-
-	LONG result;
-	if ((result = DisplayConfigGetDeviceInfo((DISPLAYCONFIG_DEVICE_INFO_HEADER*)&request)) != ERROR_SUCCESS)
-	{
-		throw 0x45;
-	//	char error_msg[64];
-	//	sprintf(error_msg, "`DisplayConfigGetDeviceInfo` returned (%X)", result);
-	//	FISSION_THROW("Monitor Enum Error", .append(error_msg));
-	}
-
-	char buffer[64];
-	FS_FOR(64) {
-		buffer[i] = (char)request.monitorFriendlyDeviceName[i];
-	}
-
-	fs::console::println(FS_str_make(buffer, strlen(buffer)));
-	MONITORINFOEX mi;
-	mi.cbSize = sizeof(mi);
-	GetMonitorInfoA(hMonitor, &mi);
-	
-	//fs::console::println(FS_str_make(buffer, strlen(buffer)));
-
-	pEnumData->index++;
-
-	// Continue to enumerate more monitors.
-	return TRUE;
-}
-
-void EnumMonitors()
-{
-	UINT32 numPathArrayElements;
-	UINT32 numModeInfoArrayElements;
-	DISPLAYCONFIG_PATH_INFO* pathArray = NULL;
-	DISPLAYCONFIG_MODE_INFO* modeInfoArray = NULL;
-	DISPLAYCONFIG_TOPOLOGY_ID currentTopologyId;
-
-	UINT32 count = 3;
-	LONG error = 0;
-
-	do {
-		numPathArrayElements = count;
-		numModeInfoArrayElements = count * 2u;
-		pathArray = (DISPLAYCONFIG_PATH_INFO*)_aligned_realloc(pathArray, numPathArrayElements * sizeof DISPLAYCONFIG_PATH_INFO, 64u);
-		modeInfoArray = (DISPLAYCONFIG_MODE_INFO*)_aligned_realloc(modeInfoArray, numModeInfoArrayElements * sizeof DISPLAYCONFIG_MODE_INFO, 64u);
-
-		if (pathArray == NULL || modeInfoArray == NULL)
-			throw std::bad_alloc();
-
-		error = QueryDisplayConfig(QDC_DATABASE_CURRENT, &numPathArrayElements, pathArray, &numModeInfoArrayElements, modeInfoArray, &currentTopologyId);
-
-	} while (error && (count += 3) < 25);
-
-	if (error == ERROR_INSUFFICIENT_BUFFER)
-	{
-		// TODO: Fix this function.
-	//	Console::Error( "How do you have more than 24 monitors?? You are INSANE." );
-		throw std::logic_error("rip");
-	}
-
-	MonitorEnumData enumData;
-	enumData.index = 0;
-	enumData.pathArray = pathArray;
-	enumData.pathArrayCount = numPathArrayElements;
-
-	// Init list of monitors
-	EnumDisplayMonitors(NULL, nullptr, MonitorEnumCallback, (LPARAM)&enumData);
-
-	// Free memory that we are done with.
-	_aligned_free(pathArray);
-	_aligned_free(modeInfoArray);
-}
-
 fs::Scene* on_create_scene(fs::Scene_Key const& key) {
 	// if(fs::equal(key.id, "Level_Editor")) {
 	// 	return new Level_Editor(level_path);
 	// }
-	EnumMonitors();
-
 //	fs::disable_layer(engine.debug_layer);
 
 	return new Main_Menu_Scene;
@@ -719,13 +647,11 @@ fs::Defaults on_create() {
 #else
 	engine.app_version_info = FS_str("vanilla");
 #endif
-	engine.app_name = FS_str("Rythmn Dash");
+	engine.app_name = FS_str("Sandbox");
 	return {
-		.window_title = FS_str("Rythmn Dash"),
+		.window_title = FS_str("Sandbox"),
 		.window_width  = 600 + GAME_WIDTH * CELL_SIZE,
 		.window_height = GAME_HEIGHT * CELL_SIZE + 20,
-	//	.window_width  = 1920,
-	//	.window_height = 1080,
 	//	.window_mode  = fs::Windowed_Fullscreen,
 	};
 }

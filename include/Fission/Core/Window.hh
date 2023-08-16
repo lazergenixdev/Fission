@@ -47,27 +47,33 @@ using Event_Queue = thread_safe_queue<Event, 64>;
 
 struct Window : public platform::Window_Impl
 {
-public:
-	void create(struct Window_Create_Info* info);
-
-	void set_title(string const& title);
-	void close();
-//	void set_callbacks(WindowCallbacks const* callbacks);
-
-	bool is_minimized();
-
-	bool exists() const; // this function is weird
-
-	Window() = default;
-	~Window();
-#if defined(FISSION_PLATFORM_WINDOWS)
-	LRESULT _win32_ProcessMessage(HWND, UINT, WPARAM, LPARAM);
-#endif
-public:
 	Event_Queue event_queue;
 	v2s32 mouse_position;
 	int width, height;
+	v2s32 position = {}; // position when in Windowed mode only
 	Window_Mode mode;
+	int display_index = Display_Index_Automatic;
+
+public:
+	void create(struct Window_Create_Info* info);
+
+	FS_THREAD_SAFE void set_title(string const& title);
+	FS_THREAD_SAFE void close();
+	FS_THREAD_SAFE bool is_minimized();
+	FS_THREAD_SAFE bool exists() const; // this function is weird
+	
+	//! @brief Display that is used is determined by the `display_index`
+	FS_THREAD_SAFE void set_mode(Window_Mode mode);
+
+	Window() = default;
+	~Window();
+
+#if defined(FISSION_PLATFORM_WINDOWS)
+	LRESULT _win32_ProcessMessage(HWND, UINT, WPARAM, LPARAM);
+	v2s32 _get_size();
+	struct _Style { DWORD ex, value; };
+	_Style _get_style();
+#endif
 }; // struct fs::Window
 
 __FISSION_END__
