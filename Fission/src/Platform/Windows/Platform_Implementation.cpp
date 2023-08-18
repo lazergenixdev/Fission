@@ -44,6 +44,9 @@ namespace fs::platform {
 			if (0 != RtlGetVersion(&version))
 				goto error;
 
+			// Windows, please get your shit together! Why do I have to do your work??
+			if (version.dwBuildNumber > 22000) version.dwMajorVersion = 11;
+
 #ifdef FISSION_PLATFORM_WINDOWS32
 			BOOL IsRunningOn64 = FALSE;
 			if (FALSE == IsWow64Process(GetCurrentProcess(), &IsRunningOn64)) throw FISSION_THROW("Win32 Error", "IsWow64Process() returned false");
