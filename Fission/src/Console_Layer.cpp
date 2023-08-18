@@ -9,24 +9,29 @@ extern fs::Engine engine;
 
 __FISSION_BEGIN__
 
+//////////////////////////////////////////////////////////////////////////////
+// Public facing interface
 namespace console {
 
+	// std::string because I am lazy
 	std::unordered_map<std::string, console_callback_proc> callback_table;
+	std::mutex access_mutex;
 
-	bool register_command(string name, console_callback_proc proc) {
+	void register_command(string name, console_callback_proc proc) {
 		auto std = std::string(name.str());
-		callback_table[std] = proc;
-		return true;
+		callback_table.emplace(std, proc);
 	}
 	void unregister_command(string name) {
-		(void)name;
+		callback_table.erase(std::string(name.str()));
 	}
 
 	void clear() {
+		std::scoped_lock lock{access_mutex};
 		engine.console_layer.buffer_view.count = 0;
 	}
 
 	void println(string text) {
+		std::scoped_lock lock{access_mutex};
 		u64 space_needed = text.count + 1;
 
 		if (space_needed >= Console_Layer::default_buffer_size - 1)
@@ -41,6 +46,7 @@ namespace console {
 	}
 
 	void println(string text, rgb8 color) {
+		std::scoped_lock lock{access_mutex};
 		u64 space_needed = text.count + 1 + 4 + 1;
 
 		if (space_needed >= Console_Layer::default_buffer_size - 1)
@@ -61,6 +67,7 @@ namespace console {
 	}
 
 	void print(string text) {
+		std::scoped_lock lock{access_mutex};
 		if (text.count >= Console_Layer::default_buffer_size - 1)
 			return; // silent fail... too long didn't read
 
@@ -71,10 +78,13 @@ namespace console {
 		console_view.count += text.count;
 	}
 	void print(string text, rgb8 color) {
-		if (text.count >= Console_Layer::default_buffer_size - 1)
+		std::scoped_lock lock{access_mutex};
+		u64 space_needed = text.count + 4 + 1;
+
+		if (space_needed >= Console_Layer::default_buffer_size - 1)
 			return; // silent fail... too long didn't read
 
-		engine.console_layer._reserve_space_for(text.count + 4 + 1);
+		engine.console_layer._reserve_space_for(space_needed);
 		auto& console_view = engine.console_layer.buffer_view;
 
 		c8 color_code[4] = { ESCAPE, color.r, color.g, color.b };
@@ -88,6 +98,7 @@ namespace console {
 	}
 
 }
+//////////////////////////////////////////////////////////////////////////////
 
 void Console_Layer::_reserve_space_for(u64 added_count) {
 	if (buffer_view.count + added_count < buffer_capacity) return;
@@ -129,15 +140,20 @@ void Console_Layer::create() {
 
 	console::println(FS_str("Fission Console! :)\nHello \x1b\xFF\0\0r\x1b\x1b\0\xFF\0g\x1b\x1b\0\0\xFF""b\x1b!"));
 
-	auto clear_proc = [](string) { console::clear(); };
-	console::register_command(FS_str("clear"), clear_proc);
+	{
+		auto clear_proc = [](string) { console::clear(); };
+		console::register_command(FS_str("clear"), clear_proc);
+	} {
+		auto echo_proc = [](string input) { console::println(input); };
+		console::register_command(FS_str("echo"), echo_proc);
+	}
 }
 
 void Console_Layer::destroy() {
 	_aligned_free(buffer_view.data);
 }
 
-string find_command(string s) {
+string find_command_action(string s) {
 	u64 len = 0;
 	while (len < s.count) {
 		if (s.data[len] == ' ')
@@ -145,6 +161,32 @@ string find_command(string s) {
 		++len;
 	}
 	return string{.count = len, .data = s.data};
+}
+
+string find_command_arguments(string s) {
+	u64 cursor = 0;
+	bool found_space = false;
+
+	while (cursor < s.count) {
+		if (s.data[cursor] == ' ') {
+			found_space = true;
+			break;
+		}
+		++cursor;
+	}
+
+	if (!found_space) return string{.count = 0, .data = s.data + s.count};
+
+	++cursor;
+
+	// find anything other than a space:
+	while (cursor < s.count) {
+		if (s.data[cursor] != ' ')
+			break;
+		++cursor;
+	}
+
+	return string{.count = s.count - cursor, .data = s.data + cursor};
 }
 
 // For Pasting from clipboard
@@ -165,7 +207,6 @@ void Console_Layer::handle_character_input(Event::Character_Input in) {
 		// ignored
 	case ESCAPE:
 	case '\n':
-	case 127:
 
 	break; case 22: { // Ctrl+V
 #if defined(FISSION_PLATFORM_WINDOWS)
@@ -189,49 +230,101 @@ void Console_Layer::handle_character_input(Event::Character_Input in) {
 					if(acceptable_character(ch))
 						input.data[input.count++] = ch;
 				}
+				input_cursor = input.count;
 				GlobalUnlock(hglb);
 			}
 		}
 		CloseClipboard();
 #undef debug_print
+#elif defined(FISSION_PLATFORM_LINUX)
 #endif // FISSION_PLATFORM_
 	}
 
 	break; case '\b':
-		if (input.count > 2) input.count -= 1;
-	break; case '\r': {
-		if (input.count <= 2) break;
+		if (input_cursor > 2) {
+			// move characters down
+			for (int i = input_cursor - 1; i < input.count; ++i) {
+				input.data[i] = input.data[i + 1];
+			}
 
-		console::println(input); // Execute Command
-		auto cmd = find_command(input.substr(2));
-		auto it = console::callback_table.find(std::string(cmd.str()));
+			--input.count;
+			--input_cursor;
+		}
+	break; case '\r': {
+		if (input.count <= 2 && current_command == -1) break;
+
+		auto command = (current_command == -1)? input.substr(2) : command_from_history();
+
+		console::print(FS_str("> "));
+		console::println(command);
+
+		auto action = find_command_action(command);
+
+		auto it = console::callback_table.find(std::string(action.str()));
 		if (it != console::callback_table.end()) {
-			it->second(cmd);
+		// Execute Command
+			it->second(find_command_arguments(command));
 		} else {
-			string message;
-			cmd.data[cmd.count] = '\0'; // cmd.count will never index outside the array, this is safe
-			FS_FORMAT_TO_STRING(sizeof(input_buffer) + 24, message, "unknown command: %s", (char*)cmd.data);
-			console::println(message, rgb8(255,50,50));
+			console::print(FS_str("\x1b\xFF\x25\x25unknown command: "));
+			console::print(action);
+			console::print(FS_str("\x1b\n"));
 		}
 
 		// copy command to command history buffer
-		{
-			auto whole_cmd = input.substr(2);
-			FS_FOR(whole_cmd.count) {
-				command_history_buffer.emplace_back(whole_cmd.data[i]);
-			}
-		}
-		// insert command end position into end buffer
-		{
-			command_history_ends.emplace_back((u32)command_history_buffer.size());
+		FS_FOR(command.count) {
+			command_history_buffer.emplace_back(command.data[i]);
 		}
 
-		input.count = 2;
+		// insert command end position into end buffer
+		command_history_ends.emplace_back((u32)command_history_buffer.size());
+
+		input.count  = 2;
+		input_cursor = 2;
+		current_command = -1;
+		buffer_view_offset = 0;
 	}
-	break; default:
-		if (input.count < 71) input.data[input.count++] = (u8&)ch;
+	break; default: {
+		if (current_command != -1) {
+			// copy command into input
+			auto cmd = command_from_history();
+
+			memcpy(input.data + 2, cmd.data, cmd.count);
+
+			input.count = cmd.count + 2;
+			input_cursor = input.count;
+			current_command = -1;
+		}
+
+		// have enough room for a new character
+		if (input.count < 71) {
+			
+			// shift characters to make room for new one
+			if (input_cursor != input.count) {
+				for (int i = int(input.count-1); i >= input_cursor; --i) {
+					input.data[i + 1] = input.data[i];
+				}
+			}
+
+			input.data[input_cursor] = (u8&)ch;
+
+			++input_cursor;
+			++input.count;
+		}
 		break;
 	}
+	}
+}
+
+string Console_Layer::command_from_history()
+{
+	string command;
+
+	auto index = (s64)command_history_ends.size() - 1 - current_command;
+	u32 start = (index > 0) ? command_history_ends[index - 1] : 0;
+	
+	command.data = command_history_buffer.data() + start;
+	command.count = command_history_ends[index] - start;
+	return command;
 }
 
 void Console_Layer::handle_events(std::vector<Event>& events) {
@@ -251,6 +344,28 @@ void Console_Layer::handle_events(std::vector<Event>& events) {
 				}
 				break; case keys::Down: {
 					current_command = max(current_command-1, -1);
+				}
+				break; case keys::Left: {
+					input_cursor = max(input_cursor-1, 2);
+				}
+				break; case keys::Right: {
+					input_cursor = min(input_cursor+1, input.count);
+				}
+				break; case keys::Mouse_WheelUp: {
+					++buffer_view_offset;
+				}
+				break; case keys::Mouse_WheelDown: {
+					buffer_view_offset = max(buffer_view_offset-1, 0);
+				}
+				break; case keys::Delete: {
+					if (input_cursor < input.count) {
+						// move characters down
+						for (int i = input_cursor; i < input.count; ++i) {
+							input.data[i] = input.data[i + 1];
+						}
+
+						--input.count;
+					}
 				}
 				}
 				it = events.erase(it);
@@ -278,7 +393,8 @@ void Console_Layer::handle_events(std::vector<Event>& events) {
 		}
 		++it;
 	}
-	engine.debug_layer.add("current_cmd = %i", (int)current_command);
+//	engine.debug_layer.add("current_cmd = %i", (int)current_command);
+//	engine.debug_layer.add("buffer_view_offset = %i", buffer_view_offset);
 }
 
 // "hello\nweh\n"
@@ -344,14 +460,36 @@ void Console_Layer::draw_console_buffer(Textured_Renderer_2D& r, float top, floa
 	auto end   = start + buffer_view.count;
 	auto cursor = end - 1;
 
-	while (cursor > start) {
-		if (*cursor == '\n')
-			--cursor;
-		else break;
-	}
-	cursor = std::min(cursor + 1, end);
+	{
+		int newline_count = -1;
+		while (cursor > start) {
+			if (*cursor == '\n')
+				++newline_count;
 
-	while (top >= -ystride && cursor != start) {
+			--cursor;
+		}
+
+		buffer_view_offset = min(buffer_view_offset, newline_count);
+
+		if (buffer_view_offset == newline_count)
+			flags |=  layer::console_end_of_buffer;
+		else
+			flags &=~ layer::console_end_of_buffer;
+	}
+
+	int count = -1;
+	cursor = end - 1;
+	while (true) {
+		if (*cursor == '\n')
+			++count;
+
+		if (cursor > start && count < buffer_view_offset); else
+			break;
+
+		--cursor;
+	}
+
+	while (top >= -ystride && cursor > start) {
 		auto str = get_string(cursor, start);
 		
 		add_string(r, str, {4, top});
@@ -385,13 +523,17 @@ void Console_Layer::on_update(double dt, Render_Context* ctx) {
 	auto bot = position + font.height;
 	r2d.add_rect({ 0, screen_width, position, bot }, color(colors::Black, 0.96f));
 
+	if (flags & layer::console_end_of_buffer)
+	r2d.add_rect({ 0, screen_width, position, position + 1 }, colors::Gray);
+
 	r2d.add_rect({ 0, screen_width, bot, bot + 1 }, colors::Black);
 	v2f32 string_size;
 	
 	// Show from user input
 	if(current_command == -1) {
-		string_size = tr2d.add_string(input, {4, position}, colors::White);
-		r2d.add_rect(rf32::from_topleft(4+string_size.x, position+1, 1, string_size.y-2), colors::White);
+		tr2d.add_string(input, {4, position}, colors::White);
+		auto width = font.table.fallback.advance;
+		r2d.add_rect(rf32::from_topleft(4+width*float(input_cursor), position+1, 1, font.height-2), colors::White);
 
 	// Show from history
 	} else {

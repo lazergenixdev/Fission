@@ -121,7 +121,7 @@ inline constexpr _Type max(_Type a, _Convertable_To_Type b) noexcept {
 template <typename _Type, typename _Convertable_To_Type>
 inline constexpr _Type min(_Type a, _Convertable_To_Type b) noexcept {
 	if (a < static_cast<_Type>(b)) return a;
-	return b;
+	return static_cast<_Type>(b);
 }
 
 #define FS_KILOBYTES(x) (            (x) * (::fs::u64)(1024))

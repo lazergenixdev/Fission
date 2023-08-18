@@ -34,9 +34,7 @@ namespace console {
 
 	FISSION_API void clear();
 
-	// TODO: provide print_sync and println_sync that use locking (for other threads)
-
-	FISSION_API bool register_command(string name, console_callback_proc proc);
+	FISSION_API void register_command(string name, console_callback_proc proc);
 	FISSION_API void unregister_command(string name);
 }
 

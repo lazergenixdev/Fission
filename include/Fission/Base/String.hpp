@@ -53,8 +53,8 @@ struct string_utf16 {
 	c16* data = nullptr;
 };
 
-void convert_utf8_to_utf16(string_utf16* out_buffer, string       input); // out_size = in_size
-void convert_utf16_to_utf8(string*       out_buffer, string_utf16 input); // out_size = in_size * 3
+void convert_utf8_to_utf16(string_utf16* output_buffer, string       source); // out_size = in_size
+void convert_utf16_to_utf8(string*       output_buffer, string_utf16 source); // out_size = in_size * 3
 
 __FISSION_END__
 /**

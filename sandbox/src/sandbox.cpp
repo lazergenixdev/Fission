@@ -403,10 +403,10 @@ struct Main_Menu_Scene : public fs::Scene {
 			{
 			default:
 			break; case fs::Event_Key_Down:
-				if (event.key_down.key_id == fs::keys::Delete) {
-					engine.next_scene_key = {};
-					engine.flags |= engine.fScene_Change;
-				}
+			//	if (event.key_down.key_id == fs::keys::Delete) {
+			//		engine.next_scene_key = {};
+			//		engine.flags |= engine.fScene_Change;
+			//	}
 				if (event.key_down.key_id == fs::keys::Mouse_Left) {
 					ui::state.mouse_went_down = true;
 				}

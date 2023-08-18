@@ -24,7 +24,8 @@ namespace layer {
 		show   = 1 << 0,
 		enable = 1 << 1,
 
-		debug_show_verbose = 1 << 2,
+		debug_show_verbose    = 1 << 2,
+		console_end_of_buffer = 1 << 2,
 	};
 }
 
@@ -82,9 +83,11 @@ struct Console_Layer {
 
 	string   input; // input from user
 	c8       input_buffer[72];
+	int      input_cursor = 2;
 
 	string   buffer_view; // fixed size console buffer to display stuff
 	u64      buffer_capacity;
+	int      buffer_view_offset = 0;
 
 	s64              current_command = -1; // -1 == "user input", [0, command_count-1] == "command in command_history_buffer"
 	std::vector<u32> command_history_ends; // constains the end indicies for all commands in command_history_buffer
@@ -100,6 +103,7 @@ struct Console_Layer {
 private:
 	void draw_console_buffer(struct Textured_Renderer_2D& r, float top, float ystride);
 	void handle_character_input(Event::Character_Input in);
+	string command_from_history();
 
 	static constexpr u64 minimum_buffer_delete_count = FS_KILOBYTES(1);
 	static constexpr u64 maximum_buffer_delete_count = FS_KILOBYTES(2);
