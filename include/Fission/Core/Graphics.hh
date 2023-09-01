@@ -14,48 +14,53 @@
 #include <Fission/config.hpp>
 #include <Fission/Base/Color.hpp>
 #include <Fission/Base/Version.hpp>
+#include <Fission/Base/Array.hpp>
 #include <Fission/Base/Math/Vector.hpp>
 #include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
 
+#define FISSION_DEFAULT_SWAP_CHAIN_USAGE \
+VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT
+
 __FISSION_BEGIN__
 
 struct Graphics_Create_Info {
-	struct Window* window;
-//	bool vsync;
+	struct Window*   window;
+	VkPresentModeKHR present_mode;
 };
 
-struct RenderTarget {
-	int sampleCount = 1;
-	
-	VkAttachmentDescription attachment;
-	VkFramebuffer framebuffer[4];
-	VkRenderPass renderpass;
-
-	VkImage image;
+struct MSAA_Info {
+	VkSampleCountFlagBits sampleCount;
+	VkImage       image;
 	VmaAllocation allocation;
-	VkImageView imageview;
+	VkImageView   imageview;
 };
-
-struct RenderTargetCreateInfo {
-	struct Graphics* gfx;
-
-	int sample_count = 1;
-};
-RenderTarget create_swap_chain_render_target(RenderTargetCreateInfo& info);
 
 struct Render_Context {
-	struct Graphics* gfx;
+	struct Graphics* const gfx;
 	VkFramebuffer frame_buffer;
 	VkCommandBuffer command_buffer;
 	u32 frame;
 	u32 image_index;
 };
 
+// Rarely used data for Graphics
+struct Graphics_Stale_Data {
+	struct Queue_Families {
+		u32 graphics;
+		u32 present;
+		u32 transfer;
+	} queue_family_index;
+};
+
 struct Graphics
 {
 	void upload_buffer(VkBuffer dstBuffer, void const* data, VkDeviceSize size);
-	void upload_image(VkImage dstImage, void* data, VkExtent3D extent);
+	void upload_image(VkImage dstImage, void* data, VkExtent3D extent, VkFormat format, VkImageLayout outLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+	array<VkPresentModeKHR> supported_present_modes() { return {}; }
+
+	version get_api_version();
 
 	static constexpr int max_sc_images = 4;
 
@@ -68,17 +73,17 @@ struct Graphics
 	VkSwapchainKHR   swap_chain;
 
 	// "sc" stands for "swap chain"
-	VkExtent2D       sc_extent;
-	VkFormat         sc_format;
-	u32              sc_image_count;
-	VkPresentModeKHR sc_present_mode;
-	VkImageView      sc_image_views[max_sc_images];
-	VkFramebuffer    sc_framebuffers[max_sc_images];
+	VkExtent2D        sc_extent;
+	VkFormat          sc_format;
+	VkImageUsageFlags sc_image_usage;
+	u32               sc_image_count;
+	VkPresentModeKHR  sc_present_mode;
+	VkImage           sc_images       [max_sc_images];
+	VkImageView       sc_image_views  [max_sc_images];
 
+	// Main graphics command pool
 	VkCommandPool    command_pool;
 
-	// use to create short-lived command buffers for copy operations
-	//   that are used with the transfer queue (on a separate thread)
 	VkQueue          transfer_queue;
 	VkCommandPool    transfer_command_pool;
 
@@ -92,13 +97,15 @@ struct Graphics
 
 	VkDebugUtilsMessengerEXT debugMessenger; // only valid in debug mode
 
-	bool create(Graphics_Create_Info* info); // SUCCESS == false
-	void recreate_swap_chain(struct Window* wnd, VkPresentModeKHR present_mode);
-	version get_api_version();
-
 	Graphics() = default;
 	Graphics(Graphics const&) = delete;
 	~Graphics();
+
+private:
+	friend struct Engine;
+
+	bool create(Graphics_Create_Info* info); // SUCCESS == false
+	void recreate_swap_chain(struct Window* wnd);
 };
 
 struct Render_Pass {
@@ -112,6 +119,7 @@ struct Render_Pass {
 
 	void begin(Render_Context* ctx, VkFramebuffer fb, color clear);
 	void begin(Render_Context* ctx, color clear);
+	void begin(Render_Context* ctx, VkFramebuffer fb);
 	void begin(Render_Context* ctx);
 	void end(Render_Context* ctx);
 
@@ -200,6 +208,130 @@ namespace vk {
 	template <>	struct _format_of<fs::f32>   { static constexpr VkFormat value = VK_FORMAT_R32_SFLOAT; };
 
 	template <typename T> static constexpr VkFormat format_of = _format_of<T>::value;
+
+	static constexpr uint32_t size_of(VkFormat format) {
+		switch (format)
+		{
+		case VK_FORMAT_UNDEFINED:
+			return 0;
+		case VK_FORMAT_R8_UNORM:
+		case VK_FORMAT_R8_SNORM:
+		case VK_FORMAT_R8_USCALED:
+		case VK_FORMAT_R8_SSCALED:
+		case VK_FORMAT_R8_UINT:
+		case VK_FORMAT_R8_SINT:
+		case VK_FORMAT_R8_SRGB:
+			return 1;
+		case VK_FORMAT_R8G8_UNORM:
+		case VK_FORMAT_R8G8_SNORM:
+		case VK_FORMAT_R8G8_USCALED:
+		case VK_FORMAT_R8G8_SSCALED:
+		case VK_FORMAT_R8G8_UINT:
+		case VK_FORMAT_R8G8_SINT:
+		case VK_FORMAT_R8G8_SRGB:
+		case VK_FORMAT_R16_UNORM:
+		case VK_FORMAT_R16_SNORM:
+		case VK_FORMAT_R16_USCALED:
+		case VK_FORMAT_R16_SSCALED:
+		case VK_FORMAT_R16_UINT:
+		case VK_FORMAT_R16_SINT:
+		case VK_FORMAT_R16_SFLOAT:
+			return 2;
+		case VK_FORMAT_R8G8B8_UNORM:
+		case VK_FORMAT_R8G8B8_SNORM:
+		case VK_FORMAT_R8G8B8_USCALED:
+		case VK_FORMAT_R8G8B8_SSCALED:
+		case VK_FORMAT_R8G8B8_UINT:
+		case VK_FORMAT_R8G8B8_SINT:
+		case VK_FORMAT_R8G8B8_SRGB:
+		case VK_FORMAT_B8G8R8_UNORM:
+		case VK_FORMAT_B8G8R8_SNORM:
+		case VK_FORMAT_B8G8R8_USCALED:
+		case VK_FORMAT_B8G8R8_SSCALED:
+		case VK_FORMAT_B8G8R8_UINT:
+		case VK_FORMAT_B8G8R8_SINT:
+		case VK_FORMAT_B8G8R8_SRGB:
+			return 3;
+		case VK_FORMAT_R8G8B8A8_UNORM:
+		case VK_FORMAT_R8G8B8A8_SNORM:
+		case VK_FORMAT_R8G8B8A8_USCALED:
+		case VK_FORMAT_R8G8B8A8_SSCALED:
+		case VK_FORMAT_R8G8B8A8_UINT:
+		case VK_FORMAT_R8G8B8A8_SINT:
+		case VK_FORMAT_R8G8B8A8_SRGB:
+		case VK_FORMAT_B8G8R8A8_UNORM:
+		case VK_FORMAT_B8G8R8A8_SNORM:
+		case VK_FORMAT_B8G8R8A8_USCALED:
+		case VK_FORMAT_B8G8R8A8_SSCALED:
+		case VK_FORMAT_B8G8R8A8_UINT:
+		case VK_FORMAT_B8G8R8A8_SINT:
+		case VK_FORMAT_B8G8R8A8_SRGB:
+		case VK_FORMAT_R16G16_UNORM:
+		case VK_FORMAT_R16G16_SNORM:
+		case VK_FORMAT_R16G16_USCALED:
+		case VK_FORMAT_R16G16_SSCALED:
+		case VK_FORMAT_R16G16_UINT:
+		case VK_FORMAT_R16G16_SINT:
+		case VK_FORMAT_R16G16_SFLOAT:
+		case VK_FORMAT_R32_UINT:
+		case VK_FORMAT_R32_SINT:
+		case VK_FORMAT_R32_SFLOAT:
+			return 4;
+		case VK_FORMAT_R16G16B16_UNORM:
+		case VK_FORMAT_R16G16B16_SNORM:
+		case VK_FORMAT_R16G16B16_USCALED:
+		case VK_FORMAT_R16G16B16_SSCALED:
+		case VK_FORMAT_R16G16B16_UINT:
+		case VK_FORMAT_R16G16B16_SINT:
+		case VK_FORMAT_R16G16B16_SFLOAT:
+			return 6;
+		case VK_FORMAT_R16G16B16A16_UNORM:
+		case VK_FORMAT_R16G16B16A16_SNORM:
+		case VK_FORMAT_R16G16B16A16_USCALED:
+		case VK_FORMAT_R16G16B16A16_SSCALED:
+		case VK_FORMAT_R16G16B16A16_UINT:
+		case VK_FORMAT_R16G16B16A16_SINT:
+		case VK_FORMAT_R16G16B16A16_SFLOAT:
+		case VK_FORMAT_R32G32_UINT:
+		case VK_FORMAT_R32G32_SINT:
+		case VK_FORMAT_R32G32_SFLOAT:
+		case VK_FORMAT_R64_UINT:
+		case VK_FORMAT_R64_SINT:
+		case VK_FORMAT_R64_SFLOAT:
+			return 8;
+		case VK_FORMAT_R32G32B32_UINT:
+		case VK_FORMAT_R32G32B32_SINT:
+		case VK_FORMAT_R32G32B32_SFLOAT:
+			return 12;
+		case VK_FORMAT_R32G32B32A32_UINT:
+		case VK_FORMAT_R32G32B32A32_SINT:
+		case VK_FORMAT_R32G32B32A32_SFLOAT:
+		case VK_FORMAT_R64G64_UINT:
+		case VK_FORMAT_R64G64_SINT:
+		case VK_FORMAT_R64G64_SFLOAT:
+			return 16;
+		case VK_FORMAT_R64G64B64_UINT:
+		case VK_FORMAT_R64G64B64_SINT:
+		case VK_FORMAT_R64G64B64_SFLOAT:
+			return 24;
+		case VK_FORMAT_R64G64B64A64_UINT:
+		case VK_FORMAT_R64G64B64A64_SINT:
+		case VK_FORMAT_R64G64B64A64_SFLOAT:
+			return 32;
+		case VK_FORMAT_D16_UNORM:
+		case VK_FORMAT_D32_SFLOAT:
+		case VK_FORMAT_S8_UINT:
+		case VK_FORMAT_D16_UNORM_S8_UINT:
+		case VK_FORMAT_D24_UNORM_S8_UINT:
+		case VK_FORMAT_D32_SFLOAT_S8_UINT:
+		default:
+			return -1;
+		}
+	}
+
+	static constexpr VkExtent3D extent3d(VkExtent2D extent) {
+		return VkExtent3D{.width = extent.width, .height = extent.height, .depth = 1};
+	}
 
 	template <typename...Attributes>
 	struct Basic_Vertex_Input {

@@ -17,7 +17,17 @@
 __FISSION_BEGIN__
 
 namespace math {
-    
+
+    template <std::floating_point T>
+    static inline constexpr T lerp_speed(T dt, T speed) {
+        return T(1.0) - std::pow(T(0.5), dt * speed);
+    }
+
+    template <std::floating_point T>
+    static inline constexpr T exp_update(T current, T target, T dt, T speed) {
+        return fs::lerp(current, target, lerp_speed(dt, speed));
+    }
+
     // this serves no purpose, I think this is funny.
     enum { _537895 = 537895 };
     

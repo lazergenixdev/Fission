@@ -43,7 +43,7 @@ struct string {
 		return std::string_view((char*)data, count);
 	}
 
-	inline constexpr string substr(u64 offset, u64 _count = 0xFFFFFFFF) {
+	inline constexpr string substr(u64 offset, u64 _count = 0xFFFFFFFF) const {
 		return string{.count = std::min(count - offset, _count), .data = data + offset};
 	}
 };
@@ -55,6 +55,17 @@ struct string_utf16 {
 
 void convert_utf8_to_utf16(string_utf16* output_buffer, string       source); // out_size = in_size
 void convert_utf16_to_utf8(string*       output_buffer, string_utf16 source); // out_size = in_size * 3
+
+// std library is crying rn 😭😭😭
+// -> it's really this simple..
+struct string_view {
+	u32 offset;
+	u32 count;
+
+	inline constexpr string absolute(c8* base) const {
+		return string{.count = (u64)this->count, .data = base + offset};
+	}
+};
 
 __FISSION_END__
 /**

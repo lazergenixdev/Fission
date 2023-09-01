@@ -17,13 +17,13 @@ FISSION_MAIN_FUNCTION()
 {
 	platform::Instance instance = { FISSION_MAIN_ARGS };
 
-	if (engine.create(instance, on_create()))
-		return 1;
+	if (int r = engine.create(instance, on_create()))
+		return r;
 
 	engine.run();
 
-	if (engine.destroy())
-		return 1;
+	if (int r = engine.destroy())
+		return r;
 
 	return 0;
 }

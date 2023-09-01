@@ -5,50 +5,68 @@
  *	_  __/   _  / _(__  )_(__  )_  / / /_/ /  / / /
  *	/_/      /_/  /____/ /____/ /_/  \____//_/ /_/
  *
- *
+ * 
  * @Author:       lazergenixdev@gmail.com
  * @Development:  (https://github.com/lazergenixdev/Fission)
  * @License:      MIT (see end of file)
+ *
+ * Some reference: https://semver.org/
  */
 #pragma once
 #include <Fission/config.hpp>
-#include <Fission/Platform.hpp>
-#include <Fission/Base/Math/Vector.hpp>
-#include <Fission/Base/Rect.hpp>
-#include <vector>
+#include <memory.h>
 
 __FISSION_BEGIN__
 
-struct Display_Mode {
-	v2u32 resolution;
-	int   refresh_rate;
-};
+#define FISSION_DEFAULT_ALLOC(Size) _aligned_malloc(Size, 64)
+#define FISSION_DEFAULT_FREE(Ptr)   _aligned_free(Ptr)
 
-enum Display_Index_: int
+//! @brief Default Bump Allocator
+struct bump_allocator
 {
-	Display_Index_Primary = 0,
+	u8* base            = nullptr;
+	u64 bytes_allocated = 0;
+	u64 capacity        = 0;
 
-	//! @brief Set in a window's properties for it to determine
-	//!        it's monitor automatically based on where the window is.
-	Display_Index_Automatic = -1,
-};
+	void* alloc(u64 size) {
+		auto ptr = base + bytes_allocated;
+		bytes_allocated += size;
+		if (bytes_allocated > capacity) {
+			return nullptr; // have fun! :)
+		}
+		return ptr;
+	}
 
-struct Display : public platform::Display_Impl
-{
-	int index;
-	c8 name_buffer[64];
-	int name_count;
-	rs32 rect;
+	template <typename T>
+	T* alloc(u64 count) {
+		auto ptr = base + bytes_allocated;
+		bytes_allocated += count * sizeof(T);
+		if (bytes_allocated > capacity) {
+			return nullptr; // have fun! :)
+		}
+		return reinterpret_cast<T*>(ptr);
+	}
 
-	string name() const noexcept { return FS_str_make(name_buffer, name_count); }
+	bump_allocator() = default;
+	bump_allocator(u64 capacity)
+	:	base((u8*)FISSION_DEFAULT_ALLOC(capacity)), capacity(capacity)
+	{}
 
-	Display_Mode current_mode() const;
+	void create(u64 capacity) {
+		this->capacity = capacity;
+		bytes_allocated = 0;
+		base = (u8*)FISSION_DEFAULT_ALLOC(capacity);
+	}
 
-	/*
-	std::vector<Display_Mode> supported_display_modes();
-	bool set_display_mode(const Display_Mode *);
-	bool revert_display_mode();
-	*/
+	void* release() {
+		auto ptr = base;
+		base = nullptr;
+		return ptr;
+	}
+
+	~bump_allocator() {
+		if(base) FISSION_DEFAULT_FREE(base);
+	}
 };
 
 __FISSION_END__
@@ -56,7 +74,7 @@ __FISSION_END__
 /**
  *	MIT License
  *
- *	Copyright (c) 2021-2023 lazergenixdev
+ *	Copyright (c) 2023 lazergenixdev
  *
  *	Permission is hereby granted, free of charge, to any person obtaining a copy
  *	of this software and associated documentation files (the "Software"), to deal

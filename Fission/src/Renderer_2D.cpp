@@ -1,5 +1,6 @@
 #include <Fission/Core/Renderer_2D.hh>
 #include <Fission/Core/Engine.hh>
+#include <Fission/Base/Memory.hpp>
 
 extern fs::Engine engine;
 
@@ -20,14 +21,13 @@ struct textured_2d_fs {
 
 void Renderer_2D::create(Graphics* gfx, VkRenderPass render_pass, Transform_2D_Layout layout)
 {
-	device = gfx->device,
-	allocator = gfx->allocator,
-	max_vertex_count = _r2d_max_count,
-	max_index_count = _r2d_max_count * 2,
+	max_vertex_count = _r2d_max_count;
+	max_index_count = _r2d_max_count * 2;
 
-	// TODO: only one malloc needed
-	vertex_data = (vertex*)_aligned_malloc(max_vertex_count * sizeof(vertex), 32);
-	index_data = (u16*)_aligned_malloc(max_index_count * sizeof(u16), 32);
+	bump_allocator allocator{max_vertex_count * sizeof(vertex) + max_index_count * sizeof(u16)};
+	vertex_data = allocator.alloc<vertex>(max_vertex_count);
+	index_data  = allocator.alloc<u16>(max_index_count);
+	allocator.release();
 
 	frame_data[0] = Frame_Data(gfx->allocator, max_vertex_count, max_index_count);
 	frame_data[1] = Frame_Data(gfx->allocator, max_vertex_count, max_index_count);
@@ -61,20 +61,31 @@ void Renderer_2D::end_render(Render_Context const* ctx) {
 	}
 }
 
+void Renderer_2D::destroy() {
+	FISSION_DEFAULT_FREE(vertex_data);
+	vkDestroyShaderModule(engine.graphics.device, vert, nullptr);
+	vkDestroyShaderModule(engine.graphics.device, frag, nullptr);
+	vkDestroyPipelineLayout(engine.graphics.device, pipeline_layout, nullptr);
+	vkDestroyPipeline(engine.graphics.device, pipeline, nullptr);
+	for (auto&& fd : frame_data) {
+		vmaDestroyBuffer(engine.graphics.allocator, fd.vertex_buffer, fd.vertex_allocation);
+		vmaDestroyBuffer(engine.graphics.allocator, fd.index_buffer, fd.index_allocation);
+	}
+}
+
 void Textured_Renderer_2D::create(
 	Graphics* gfx,
 	VkRenderPass render_pass,
 	Transform_2D_Layout transform_layout,
 	Texture_Layout texture_layout
 ) {
-	device = gfx->device;
-	allocator = gfx->allocator;
-
 	max_vertex_count = _r2d_max_count;
 	max_index_count = _r2d_max_count * 2;
-
-	vertex_data = (vertex*)_aligned_malloc(max_vertex_count * sizeof(vertex), 32);
-	index_data = (u16*)_aligned_malloc(max_index_count * sizeof(u16), 32);
+	
+	bump_allocator allocator{max_vertex_count * sizeof(vertex) + max_index_count * sizeof(u16)};
+	vertex_data = allocator.alloc<vertex>(max_vertex_count);
+	index_data  = allocator.alloc<u16>(max_index_count);
+	allocator.release();
 
 	frame_data[0] = Frame_Data(gfx->allocator, max_vertex_count, max_index_count);
 	frame_data[1] = Frame_Data(gfx->allocator, max_vertex_count, max_index_count);
@@ -99,6 +110,18 @@ void Textured_Renderer_2D::create(
 
 	frag = pipeline_info.fragment_shader;
 	vert = pipeline_info.vertex_shader  ;
+}
+
+void Textured_Renderer_2D::destroy() {
+	FISSION_DEFAULT_FREE(vertex_data);
+	vkDestroyShaderModule(engine.graphics.device, vert, nullptr);
+	vkDestroyShaderModule(engine.graphics.device, frag, nullptr);
+	vkDestroyPipelineLayout(engine.graphics.device, pipeline_layout, nullptr);
+	vkDestroyPipeline(engine.graphics.device, pipeline, nullptr);
+	for (auto&& fd : frame_data) {
+		vmaDestroyBuffer(engine.graphics.allocator, fd.vertex_buffer, fd.vertex_allocation);
+		vmaDestroyBuffer(engine.graphics.allocator, fd.index_buffer, fd.index_allocation);
+	}
 }
 
 __FISSION_END__

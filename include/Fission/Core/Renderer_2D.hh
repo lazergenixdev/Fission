@@ -153,8 +153,8 @@ static void create_pipeline(Pipeline_Create_Info const& createInfo, VkPipeline* 
 		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
 		colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
 		colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
-		colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 	break;
 	}
 
@@ -269,6 +269,24 @@ public:
 		d.vtx_count += 4;
 	}
 
+	void add_circle(v2f32 position, float radius, color color) {
+		int vtx_count = min(max(int(radius), 16), 128);
+
+		FS_FOR(vtx_count-2) {
+			index_data[d.total_idx_count++] = d.vtx_count;
+			index_data[d.total_idx_count++] = d.vtx_count + i + 1;
+			index_data[d.total_idx_count++] = d.vtx_count + i + 2;
+		}
+
+		FS_FOR(vtx_count) {
+			float t = float(FS_TAU) * float(i) / float(vtx_count);
+			vertex_data[d.total_vtx_count++] = {position + v2f32(cosf(t), sinf(t))*radius, color};
+		}
+
+		d.vtx_count += vtx_count;
+		d.idx_count += (vtx_count - 2) * 3;
+	}
+
 	void add_rect_outline(rf32 rect, color color) {
 		for( int i = 0; i < 8; i++ ) {
 		// I bet you've never seen code like this:
@@ -327,31 +345,7 @@ public:
 	void end_render(Render_Context const* ctx);
 
 	void draw(Render_Context& ctx) {
-		auto& fd = frame_data[ctx.frame];
-
-		vkCmdBindPipeline(ctx.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-
-		vkCmdBindIndexBuffer(ctx.command_buffer, fd.index_buffer, 0, VK_INDEX_TYPE_UINT16);
-		VkDeviceSize offset = 0;
-		vkCmdBindVertexBuffers(ctx.command_buffer, 0, 1, &fd.vertex_buffer, &offset);
-
-		VkViewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(ctx.gfx->sc_extent.width);
-		viewport.height = static_cast<float>(ctx.gfx->sc_extent.height);
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(ctx.command_buffer, 0, 1, &viewport);
-
-		VkRect2D scissor{};
-		scissor.offset = { 0, 0 };
-		scissor.extent = ctx.gfx->sc_extent;
-		vkCmdSetScissor(ctx.command_buffer, 0, 1, &scissor);
-
-		vkCmdDrawIndexed(ctx.command_buffer, d.idx_count, 1, d.idx_offset, d.vtx_offset, 0);
-
-		d.start_new_draw();
+		draw_pipeline(pipeline, ctx);
 	}
 	void draw_pipeline(VkPipeline pipeline, Render_Context& ctx) {
 		auto& fd = frame_data[ctx.frame];
@@ -380,22 +374,8 @@ public:
 
 		d.start_new_draw();
 	}
-	void destroy() {
-		vkDestroyShaderModule(device, vert, nullptr);
-		vkDestroyShaderModule(device, frag, nullptr);
-		vkDestroyPipelineLayout(device, pipeline_layout, nullptr);
-		vkDestroyPipeline(device, pipeline, nullptr);
-		_aligned_free(vertex_data);
-		_aligned_free(index_data);
-		for (auto&& fd : frame_data) {
-			vmaDestroyBuffer(allocator, fd.vertex_buffer, fd.vertex_allocation);
-			vmaDestroyBuffer(allocator, fd.index_buffer, fd.index_allocation);
-		}
-	}
+	void destroy();
 
-	VkDevice device;
-	VmaAllocator allocator;
-	
 	VkPipeline pipeline;
 	VkPipelineLayout pipeline_layout;
 
@@ -580,22 +560,8 @@ public:
 
 		d.start_new_draw();
 	}
-	void destroy() {
-		vkDestroyShaderModule(device, vert, nullptr);
-		vkDestroyShaderModule(device, frag, nullptr);
-		vkDestroyPipelineLayout(device, pipeline_layout, nullptr);
-		vkDestroyPipeline(device, pipeline, nullptr);
-		_aligned_free(vertex_data);
-		_aligned_free(index_data);
-		for (auto&& fd : frame_data) {
-			vmaDestroyBuffer(allocator, fd.vertex_buffer, fd.vertex_allocation);
-			vmaDestroyBuffer(allocator, fd.index_buffer, fd.index_allocation);
-		}
-	}
+	void destroy();
 
-	VkDevice device;
-	VmaAllocator allocator;
-	
 	VkPipeline pipeline;
 	VkPipelineLayout pipeline_layout;
 

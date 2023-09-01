@@ -1,11 +1,10 @@
-
 project 'Fission'
     kind 'StaticLib'
     language 'C++'
     cppdialect "c++20"
 
 	function add_link(name)
-		fission_links[name] = ""
+		FissionLinks[name] = ""
 	end
 
     targetdir ("%{wks.location}/bin/" .. OutputDir)
@@ -16,14 +15,10 @@ project 'Fission'
     -- public headers
     files '../include/**'
 
-	includedirs
-	{
+	includedirs {
         "../include",
-        "%{IncludeDir.yaml}",
-        "%{IncludeDir.json}",
-        '%{IncludeDir.freetype}',
-        '%{IncludeDir.lunasvg}',
         '%{IncludeDir.vulkan}',
+        '%{IncludeDir.freetype}',
         '../resources',
         "vendor",
 	}
@@ -31,6 +26,9 @@ project 'Fission'
     staticruntime "On"
     defines { 'FISSION_BUILD' }
 	
+	if os.isfile("/dev/easter_eggs.hpp") and os.isfile("/dev/easter_eggs_setup.inl") then
+		defines "FS_INCLUDE_EASTER_EGGS"
+	end
     
     filter "system:windows"
         files { "resource.h", "Fission.rc" }
@@ -43,8 +41,6 @@ project 'Fission'
     
         -- Texture processing library for windows
         includedirs '%{prj.location}/vendor/windows/DirectXTex/include'
-    --    libdirs { "%{prj.location}/vendor/windows/DirectXTex/%{cfg.buildcfg}-%{cfg.architecture}" }
-    --    links { 'DirectXTex' }
 
     filter "configurations:Debug"
         defines { "FISSION_DEBUG" }

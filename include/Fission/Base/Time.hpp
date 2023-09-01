@@ -78,7 +78,7 @@ namespace base
 
 	}; // class Fission::simple_timer
 
-	// TODO: ?
+	// TODO: implement datatime or no?
 	struct time {};
 	struct date {};
 	struct datetime {};

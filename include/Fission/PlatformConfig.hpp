@@ -57,6 +57,7 @@
 #include "inttypes.h"
 
 #if defined(FISSION_PLATFORM_WINDOWS)
+#define FISSION_MAIN wWinMain
 #define FISSION_MAIN_FUNCTION() int WINAPI wWinMain( \
 _In_ HINSTANCE hInstance,                            \
 _In_opt_ HINSTANCE hPrevInstance,                    \

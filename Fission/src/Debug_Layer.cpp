@@ -2,6 +2,7 @@
 #include <Fission/Core/Engine.hh>
 #include <Fission/Core/Input/Keys.hh>
 #include <format>
+#include <random>
 #include <intrin.h>
 
 #define FS_DEBUG_LAYER_SHOW_HARDWARE    1 //FISSION_DEBUG
@@ -47,7 +48,7 @@ struct ::std::formatter<fs::compressed_version> {
 	}
 };
 
-void copy_to(string s, std::vector<char>& out) {
+void copy_to(string s, std::vector<c8>& out) {
 	FS_FOR(s.count) out.emplace_back(s.data[i]);
 }
 
@@ -60,59 +61,44 @@ void Debug_Layer::create() {
 	left_strings.reserve(16);
 	right_strings.reserve(16);
 
-	auto p = (c8*)character_buffer.data();
-#define end(V) (c8*)(V.data() + V.size())
-	
+#define next_view string_view{.offset = (u32)offset, .count = u32(character_buffer.size() - offset)}
+
+	size_t offset = 0;
 	std::format_to(std::back_inserter(character_buffer), "{} ({}/{})",
 		engine.app_name.str(), engine.app_version, engine.app_version_info.str());
-	{
-		auto start = p;
-		p = end(character_buffer);
-		app_info_string = string{ .count = u64(p - start), .data = start };
-	}
-	copy_to(engine.get_version_string(), character_buffer);
-	{
-		auto start = p;
-		p = end(character_buffer);
-		right_strings.emplace_back(string{.count = u64(p-start), .data = start});
-	}
+	app_info_string = next_view;
+
+	offset = character_buffer.size();
+	copy_to(std::random_device{}() % 128 ? engine.get_version_string() : FS_str("Unreal Engine v6.0.0"), character_buffer);
+	right_strings.emplace_back(next_view);
+	
+	offset = character_buffer.size();
 	copy_to(platform_version, character_buffer);
-	{
-		auto start = p;
-		p = end(character_buffer);
-		right_strings.emplace_back(string{.count = u64(p-start), .data = start});
-	}
+	right_strings.emplace_back(next_view);
+	
 	auto vk_version = engine.graphics.get_api_version();
+	offset = character_buffer.size();
 	std::format_to(std::back_inserter(character_buffer), "Vulkan ({}.{}.{})",
 		vk_version.Major, vk_version.Minor, vk_version.Patch);
-	{
-		auto start = p;
-		p = end(character_buffer);
-		right_strings.emplace_back(string{.count = u64(p-start), .data = start});
-	}
+	right_strings.emplace_back(next_view);
+
 #if FS_DEBUG_LAYER_SHOW_HARDWARE
 	right_strings.emplace_back();
 	char CPUBrandString[0x40];
 	string cpu_string = FS_str_buffer(CPUBrandString);
 	get_cpu_string(cpu_string);
+	offset = character_buffer.size();
 	std::format_to(std::back_inserter(character_buffer), "CPU: {}", cpu_string.str());
-	{
-		auto start = p;
-		p = end(character_buffer);
-		right_strings.emplace_back(string{ .count = u64(p - start), .data = start });
-	}
+	right_strings.emplace_back(next_view);
+	
 	VkPhysicalDeviceProperties props;
 	vkGetPhysicalDeviceProperties(engine.graphics.physical_device, &props);
-	std::format_to(std::back_inserter(character_buffer), "GPU: {}",
-		std::string_view(props.deviceName));
-	{
-		auto start = p;
-		p = end(character_buffer);
-		right_strings.emplace_back(string{.count = u64(p-start), .data = start});
-	}
+	offset = character_buffer.size();
+	std::format_to(std::back_inserter(character_buffer), "GPU: {}", std::string_view(props.deviceName));
+	right_strings.emplace_back(next_view);
 #endif
-#undef end
-	character_count = (int)character_buffer.size();
+	
+	character_count_initial = (int)character_buffer.size();
 }
 
 void Debug_Layer::destroy() {
@@ -120,7 +106,7 @@ void Debug_Layer::destroy() {
 }
 
 void Debug_Layer::add(string s) {
-	left_strings.emplace_back(string{ .count = s.count, .data = (c8*)(character_buffer.data() + character_buffer.size()) });
+	left_strings.emplace_back(string_view{.offset = (u32)character_buffer.size(), .count = (u32)s.count});
 	FS_FOR(s.count) {
 		character_buffer.emplace_back(s.data[i]);
 	}
@@ -151,7 +137,7 @@ void Debug_Layer::handle_events(std::vector<Event>& events) {
 static constexpr float padding = 4.0f;
 
 void reset(Debug_Layer& db) {
-	db.character_buffer.resize(db.character_count);
+	db.character_buffer.resize(db.character_count_initial);
 	db.left_strings.clear();
 }
 
@@ -231,8 +217,10 @@ void Debug_Layer::on_update(double dt, Render_Context* ctx) {
 
 	char buffer[64];
 	int count = sprintf(buffer, "%.1f FPS (%.2f ms)", 1.0f / mean_frame_time, mean_frame_time * 1000.0f);
+	
+	auto base = character_buffer.data();
 
-	add_text(app_info_string);
+	add_text(app_info_string.absolute(base));
 	add_text(FS_str_make(buffer, count));
 
 	if (flags& layer::debug_show_verbose) {
@@ -242,10 +230,10 @@ void Debug_Layer::on_update(double dt, Render_Context* ctx) {
 	}
 	else offset += height;
 
-	for (auto&& s : left_strings) add_text(s);
+	for (auto&& s : left_strings) add_text(s.absolute(base));
 
 	offset = 0.0f;
-	for (auto&& s : right_strings) add_text_right(s);
+	for (auto&& s : right_strings) add_text_right(s.absolute(base));
 
 	engine.renderer_2d         .draw(*ctx);
 	engine.textured_renderer_2d.draw(*ctx);

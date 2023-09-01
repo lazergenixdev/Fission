@@ -94,7 +94,7 @@ void Font_Static::create(void const* ttf_data, size_t _size, float _height, VkDe
 		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		vmaCreateImage(engine.graphics.allocator, &imageInfo, &allocInfo, &atlas_image, &atlas_allocation, nullptr);
-		engine.graphics.upload_image(atlas_image, pixel_data, imageInfo.extent);
+		engine.graphics.upload_image(atlas_image, pixel_data, imageInfo.extent, VK_FORMAT_R8G8B8A8_SRGB);
 
 		free(pixel_data);
 	}

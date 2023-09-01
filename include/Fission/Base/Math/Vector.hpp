@@ -32,6 +32,9 @@ namespace math
 		/*! @brief Create default vector: {0,0} */
 		constexpr vector2():x(static_cast<type>(0)),y(static_cast<type>(0)){}
 
+		/*! @brief Create vector with one value for all components. */
+		explicit constexpr vector2(type _X):x(_X),y(_X){}
+
 		/*! @brief Create vector with values X and Y. */
 		constexpr vector2(type _X,type _Y):x(_X),y(_Y){}
 
@@ -43,9 +46,6 @@ namespace math
 		//! @param  _Vector: vector object with public variables x and y.
 		template <typename _VecTy>
 		static constexpr auto from(const _VecTy&_Vector){return vector2(_Vector.x,_Vector.y);}
-
-		/*! @brief Create vector with one value for all components. */
-		static constexpr auto from1(type _Val){return vector2(_Val,_Val);}
 
 
 		//! @brief Get vector with fliped components.
@@ -90,6 +90,9 @@ namespace math
 		/*! @brief Create default vector: {0,0,0} */
 		constexpr vector3():x(static_cast<type>(0)),y(static_cast<type>(0)),z(static_cast<type>(0)){}
 
+		/*! @brief Create vector with one value for all components. */
+		explicit constexpr vector3(type _X):x(_X),y(_X),z(_X){}
+
 		/*! @brief Create vector with values X, Y, and Z. */
 		constexpr vector3(type _X,type _Y,type _Z):x(_X),y(_Y),z(_Z){}
 
@@ -107,9 +110,6 @@ namespace math
 		//! @param  _Vector: vector object with public variables x, y, and z.
 		template <typename _VecTy>
 		static constexpr auto from(const _VecTy&_Vector){return vector3(_Vector.x,_Vector.y,_Vector.z);}
-
-		/*! @brief Create vector with one value for all components. */
-		static constexpr auto from1(type _Val){return vector3(_Val,_Val,_Val);}
 
 
 		//! @brief Get the squared length of this vector.
@@ -150,6 +150,9 @@ namespace math
 		/*! @brief Create default vector: {0,0,0,0} */
 		constexpr vector4():x(static_cast<type>(0)),y(static_cast<type>(0)),z(static_cast<type>(0)),w(static_cast<type>(0)){}
 
+		/*! @brief Create vector with one value for all components. */
+		explicit constexpr vector4(type _X):x(_X),y(_X),z(_X),w(_X){}
+
 		/*! @brief Create vector with values X, Y, Z, and W. */
 		constexpr vector4(type _X,type _Y,type _Z,type _W):x(_X),y(_Y),z(_Z),w(_W){}
 
@@ -179,9 +182,6 @@ namespace math
 		//! @param  _Vector: vector object with public variables x, y, z, and w.
 		template <typename _VecTy>
 		static constexpr auto from(const _VecTy&_Vector){return vector4(_Vector.x,_Vector.y,_Vector.z,_Vector.w);}
-
-		/*! @brief Create vector with one value for all components. */
-		static constexpr auto from1(type _Val){return vector4(_Val,_Val,_Val,_Val);}
 
 
 		//! @brief Get the squared length of this vector.

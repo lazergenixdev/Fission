@@ -21,6 +21,12 @@
 
 __FISSION_BEGIN__
 
+enum Window_Mode: u32 {
+	Windowed             = 0,
+	Windowed_Fullscreen  = 1,
+	Exclusive_Fullscreen = 2,
+};
+
 template <typename T, size_t S>
 struct thread_safe_queue {
 	// S is ignored for now, but I want to use this to
@@ -68,7 +74,15 @@ public:
 	Window() = default;
 	~Window();
 
+private:
+	friend struct Engine;
+
+	void sleep_until_not_minimized();
+
 #if defined(FISSION_PLATFORM_WINDOWS)
+	friend int window_main(struct Window_Thread_Info* info);
+	static LRESULT Callback_Setup(HWND, UINT, WPARAM, LPARAM);
+	static LRESULT Message_Callback(HWND, UINT, WPARAM, LPARAM);
 	LRESULT _win32_ProcessMessage(HWND, UINT, WPARAM, LPARAM);
 	v2s32 _get_size();
 	struct _Style { DWORD ex, value; };

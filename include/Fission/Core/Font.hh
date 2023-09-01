@@ -74,6 +74,29 @@ struct Font_Dynamic {
 
 };
 
+
+static v2f32 bounding_box(Font* font, string s) {
+	Glyph const* glyph = nullptr;
+	v2f32 pos = {0, font->height};
+	float max_width = 0.0f;
+
+	FS_FOR(s.count) {
+		auto c = s.data[i];
+		glyph = font->lookup(c);
+		if (c == '\n') {
+			max_width = std::max(max_width, pos.x);
+			pos.x = 0;
+			pos.y += font->height;
+			continue;
+		}
+		if (glyph) {
+			pos.x += glyph->advance;
+		}
+	}
+
+	return {std::max(max_width, pos.x), pos.y};
+}
+
 __FISSION_END__
 
 /**

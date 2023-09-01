@@ -1,9 +1,11 @@
 #include <Fission/Base/String.hpp>
 #include <Fission/Platform.hpp>
 #include <Fission/Core/Display.hh>
+#include <Fission/Core/Engine.hh>
 #include <algorithm>
 
 fs::string platform_version;
+extern fs::Engine engine;
 
 namespace fs::platform {
 	struct Module {
@@ -93,6 +95,66 @@ double seconds_elasped_and_reset(s64& last) {
 	double elapsed = double(now.QuadPart - last) / _freq.value;
 	last = now.QuadPart;
 	return elapsed;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// Command Line Parser
+/////////////////////////////////////////////////////////////////////////////////////////
+
+void skip_working_directory(LPWSTR& s) {
+	if (*s != L'"') return;
+	++s;
+	while (*s != L'"') ++s;
+	s += 2;
+}
+
+u64 wstrlen(LPWSTR s) {
+	u64 size = 0;
+	while (true) {
+		if (s[size] == L'\0') break;
+		++size;
+	}
+	return size;
+}
+
+string parse_next(LPWSTR cursor, LPWSTR const end, std::vector<u8>& temp) {
+	string next;
+	temp.clear();
+	while (cursor != end) {
+		if (*cursor == L'"') {
+
+		}
+		else if (*cursor == L' ') ++cursor;
+		else {
+			auto start = cursor;
+			while (cursor != end) {
+				if (*cursor == L' ') break;
+			}
+			auto out = FS_str_std(temp);
+			//	convert_utf16_to_utf8(&out, )
+		}
+	}
+	return next;
+}
+
+// windows only :(
+Scene_Key cmdline_to_scene_key(platform::Instance) {
+	Scene_Key key;
+	//auto lpCmdLine = GetCommandLineW();
+	//auto end = lpCmdLine + wstrlen(lpCmdLine);
+
+	//skip_working_directory(lpCmdLine);
+
+	//auto cursor = lpCmdLine;
+	//std::vector<u8> temp;
+	//temp.reserve(64);
+
+	//key.id = parse_next(cursor, end, temp);
+	//for (auto&& s : key.arguments) {
+	//	s = parse_next(cursor, end, temp);
+	//}
+
+	return key;
 }
 
 
@@ -185,7 +247,7 @@ void enumerate_displays(std::vector<struct Display>& out) {
 
 	if (error == ERROR_INSUFFICIENT_BUFFER)
 	{
-		// TODO: Fix this function.
+		// TODO: do error handling here
 	//	Console::Error( "How do you have more than 24 monitors?? You are INSANE." );
 		throw std::logic_error("rip");
 	}

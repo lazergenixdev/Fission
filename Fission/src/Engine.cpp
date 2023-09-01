@@ -18,26 +18,27 @@ struct Console_Font {
 
 extern fs::Engine engine;
 
+void display_fatal_error(const char* title, const char* what);
+void display_fatal_graphics_error(VkResult result, const char* what);
+
 __FISSION_BEGIN__
 
 Scene_Key cmdline_to_scene_key(platform::Instance);
 extern s64 timestamp();
 extern double seconds_elasped_and_reset(s64& last);
 void enumerate_displays(std::vector<struct Display>& out);
+void add_engine_console_commands();
 
 string Engine::get_version_string() {
 	return FS_str(FISSION_VERSION_STRV);
 }
-
-#define FS_INCLUDE_EASTER_EGGS 1
 
 #if FS_INCLUDE_EASTER_EGGS
 #include "/dev/easter_eggs.hpp"
 #endif
 
 int Engine::create(platform::Instance const& instance, Defaults const& defaults) {
-	running   = true;
-	minimized = false;
+	flags |= fRunning;
 
 	struct _defer {
 		~_defer() { engine.flags |= fWindow_Destroy_Enable; }
@@ -46,29 +47,37 @@ int Engine::create(platform::Instance const& instance, Defaults const& defaults)
 //	auto a = std::filesystem::current_path();
 //	next_scene_key = cmdline_to_scene_key(instance);
 //	MessageBoxW(0, GetCommandLineW(), L"Command Line", MB_CANCELTRYCONTINUE);
+//	wchar_t buffer[128];
+//	auto dwRet = GetEnvironmentVariableW(L"APPDATA", buffer, std::size(buffer));
+//	OutputDebugStringW(L"APPDATA = ");
+//	OutputDebugStringW(buffer);
+//	OutputDebugStringW(L"\n");
 //	return 1;
 
-	_temp_memory_size = FS_KILOBYTES(64);
-	_temp_memory_base = _aligned_malloc(_temp_memory_size, 32);
-	assert(_temp_memory_base != nullptr);
+#if WIP
+	_ts_size = FS_KILOBYTES(64);
+	_ts_base = _aligned_malloc(_ts_size, 32);
+	assert(_ts_base != nullptr);
+#endif
 
-	// I want my console messages!
-	console_layer.create();
+	// setup the console early so we can use it as soon as possible
+	console_layer.setup_console_api();
 
 #if FS_INCLUDE_EASTER_EGGS
 #include "/dev/easter_eggs_setup.inl"
 #endif
 
+	add_engine_console_commands();
+
 	enumerate_displays(displays);
 
 	{
 		Window_Create_Info info;
-		info.width  = defaults.window_width;
-		info.height = defaults.window_height;
-		info.title  = defaults.window_title;
-		info.mode   = defaults.window_mode;
-		info.display_index = 0;
-		info.engine = this;
+		info.width         = defaults.window_width;
+		info.height        = defaults.window_height;
+		info.title         = defaults.window_title;
+		info.mode          = defaults.window_mode;
+		info.display_index = defaults.display_index;
 		window.create(&info);
 		assert(window.exists());
 	}
@@ -82,6 +91,7 @@ int Engine::create(platform::Instance const& instance, Defaults const& defaults)
 	if (create_layers()) return 1;
 
 	{
+		next_scene_key = cmdline_to_scene_key(instance);
 		current_scene = on_create_scene(next_scene_key);
 		assert(current_scene != nullptr);
 	}
@@ -95,12 +105,27 @@ int Engine::create_layers() {
 	texture_layout.create(graphics);
 	transform_2d.layout.create(graphics);
 
+	{
+		VkFramebufferCreateInfo framebufferInfo{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
+		framebufferInfo.renderPass = overlay_render_pass;
+		framebufferInfo.attachmentCount = 1;
+		framebufferInfo.width  = graphics.sc_extent.width;
+		framebufferInfo.height = graphics.sc_extent.height;
+		framebufferInfo.layers = 1;
+
+		FS_FOR(graphics.sc_image_count) {
+			framebufferInfo.pAttachments = graphics.sc_image_views + i;
+			vkCreateFramebuffer(graphics.device, &framebufferInfo, nullptr, framebuffers + i);
+		}
+	}
+
 	// 0 = transform_2d, 1 = debug font, 2 = console font
 	VkDescriptorSet sets[3] = {};
 	{
 		VkDescriptorPoolSize pool_sizes[] = {
 			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         16},
 			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,112},
+		//	{VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,       16},
 		};
 		VkDescriptorPoolCreateInfo descPoolInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
 		descPoolInfo.maxSets = 128;
@@ -130,6 +155,7 @@ int Engine::create_layers() {
 		transform.scale = { 2.0f / (float)graphics.sc_extent.width, 2.0f / (float)graphics.sc_extent.height };
 		graphics.upload_buffer(transform_2d.buffer, &transform, sizeof(fs::Transform_2D_Data));
 	}
+
 	// Create Descriptor Set for the transform
 	{
 		transform_2d.set = sets[0];
@@ -163,6 +189,7 @@ int Engine::create_layers() {
 	return 0;
 }
 
+// too lazy to do some destructor nice-ty, so this will have to suffice..
 int Engine::destroy() {
 	if (graphics.device) {
 		vkDeviceWaitIdle(graphics.device);
@@ -180,9 +207,15 @@ int Engine::destroy() {
 	vkDestroyDescriptorSetLayout(engine.graphics.device, transform_2d.layout, nullptr);
 	vkDestroyDescriptorSetLayout(graphics.device, texture_layout, nullptr);
 	FT_Done_FreeType(fonts.library);
+	FS_FOR(graphics.sc_image_count) {
+		vkDestroyFramebuffer(graphics.device, framebuffers[i], nullptr);
+	}
 	overlay_render_pass.destroy();
 	return 0;
 }
+
+#define unlikely [[unlikely]] // pretty sure this does nothing, but it's a nice thought
+#define vk_check(Result, What) if (Result) { display_fatal_graphics_error(vk_result, What); return; } (void)0
 
 void Engine::run() {
 	VkSemaphore write_semaphore;
@@ -199,75 +232,109 @@ void Engine::run() {
 	Render_Context render_context{.gfx = &graphics};
 	double dt = 0.0;
 
-	while (running) {
+	_next = clock::now();
+
+	VkFence _fence;
+	VkFenceCreateInfo fenceInfo{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
+	vkCreateFence(graphics.device, &fenceInfo, nullptr, &_fence);
+
+	while (flags& fRunning) {
 		render_context.frame = frame_index & 1;
 
 		write_semaphore = graphics.sc_image_write_semaphore[render_context.frame];
 		read_semaphore  = graphics.sc_image_read_semaphore [render_context.frame];
 		fence           = graphics.cb_fences[render_context.frame];
 
-		if (minimized) {
-		//	OutputDebugStringA("************************\nWAITING\n************************\n");
-			std::unique_lock lock(_mutex);
-			_event.wait(lock, []() { return !engine.minimized; });
+		//-------------------------------------------------------------------------------------
+		// Check for anything to do before processing the next frame
+		unlikely if (window.is_minimized()) {
+			window.sleep_until_not_minimized();
 		}
-		if (flags& fScene_Change) {
+		unlikely if (flags& fChange_Scene) {
 			auto next_scene = on_create_scene(next_scene_key);
 			vkDeviceWaitIdle(graphics.device);
 			delete current_scene;
 			current_scene = next_scene;
-			flags &=~ fScene_Change;
+			flags &=~ fChange_Scene;
 		}
-		vkWaitForFences(graphics.device, 1, &fence, VK_TRUE, UINT64_MAX);
-		
-		if (flags& fGraphics_Recreate_Swap_Chain) {
+		unlikely if (flags& fGraphics_Recreate_Swap_Chain) {
 			resize();
 			flags &=~ fGraphics_Recreate_Swap_Chain;
 		}
+		// TODO: fix [fFPS_Limiter_Enable]
+		// This is a WIP, don't know why this doesn't give good results
+		unlikely if (flags & fFPS_Limiter_Enable) {
+			std::chrono::nanoseconds offset{(long long)(1e9f / (fps_limit*2.0f))};
+			_next += offset;
 
-		VkResult vkr = VK_ERROR_UNKNOWN;
-		while (vkr != VK_SUCCESS) {
-			vkr = vkAcquireNextImageKHR(graphics.device, graphics.swap_chain, UINT64_MAX, write_semaphore, VK_NULL_HANDLE, &imageIndex);
+			if constexpr(0) {
+				std::this_thread::sleep_until(_next);
+			}
+			else {
+				// this gives better results than `sleep_until` SMH, fix your shit microsoft
+				vkWaitForFences(graphics.device, 1, &_fence, VK_TRUE, offset.count());
+			}
+		}
 
-			if (vkr == VK_SUBOPTIMAL_KHR) break;
-			else if (vkr == VK_ERROR_OUT_OF_DATE_KHR) {
+		//-------------------------------------------------------------------------------------
+
+		VkResult vk_result = VK_ERROR_UNKNOWN;
+		while (vk_result != VK_SUCCESS) {
+			vk_result = vkAcquireNextImageKHR(graphics.device, graphics.swap_chain, UINT64_MAX, write_semaphore, VK_NULL_HANDLE, &imageIndex);
+
+			if (vk_result == VK_SUBOPTIMAL_KHR) break;
+			else if (vk_result == VK_ERROR_OUT_OF_DATE_KHR) {
 				resize();
 				continue;
 			}
-			else if (vkr != VK_SUCCESS) {
-				throw std::runtime_error("failed to acquire swap chain image!"); // please no exceptions
+			else if (vk_result != VK_SUCCESS) {
+				display_fatal_graphics_error(vk_result, "Failed to get swap chain image [vkAcquireNextImageKHR]");
+				return; // TODO: should try to recover here
 			}
 		}
-		vkResetFences(graphics.device, 1, &fence);
+
+		vk_check(vkWaitForFences(graphics.device, 1, &fence, VK_TRUE, UINT64_MAX), "[vkWaitForFences] failed");
+		vk_check(vkResetFences(graphics.device, 1, &fence), "[vkResetFences] failed");
+
+		//-------------------------------------------------------------------------------------
 
 		auto cpu_start = timestamp();
 
-		render_context.frame_buffer   = graphics.sc_framebuffers[imageIndex];
+		render_context.frame_buffer   = framebuffers[imageIndex];
 		render_context.command_buffer = graphics.command_buffers[render_context.frame];
 		render_context.image_index    = imageIndex;
 
 		VkCommandBufferBeginInfo beginInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
 		vkBeginCommandBuffer(render_context.command_buffer, &beginInfo);
 
+		//-------------------------------------------------------------------------------------
+		// Eat any events handled by debug and console layers
 		window.event_queue.pop_all(events);
 		debug_layer  .handle_events(events);
 		console_layer.handle_events(events);
-		
+		//-------------------------------------------------------------------------------------
+
 		current_scene->on_update(dt, events, &render_context);
 
+		//-------------------------------------------------------------------------------------
+		// Render console and debug overlay
 		overlay_render_pass.begin(&render_context);
-		VkDescriptorSet sets[] = { transform_2d.set, fonts.console.texture };
-		VK_GFX_BIND_DESCRIPTOR_SETS(render_context.command_buffer, textured_renderer_2d.pipeline_layout, 2, sets);
-		console_layer.on_update(dt, &render_context);
-		sets[1] = fonts.debug.texture;
-		VK_GFX_BIND_DESCRIPTOR_SETS(render_context.command_buffer, textured_renderer_2d.pipeline_layout, 2, sets);
-		debug_layer.on_update(dt, &render_context);
+		{
+			bind_font(render_context.command_buffer, &fonts.console);
+			console_layer.on_update(dt, &render_context);
+
+			bind_font(render_context.command_buffer, &fonts.debug);
+			debug_layer.on_update(dt, &render_context);
+		}
 		overlay_render_pass.end(&render_context);
+		//-------------------------------------------------------------------------------------
 
 		vkEndCommandBuffer(render_context.command_buffer);
 
 		renderer_2d         .end_render(&render_context);
 		textured_renderer_2d.end_render(&render_context);
+
+		//-------------------------------------------------------------------------------------
 
 		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 		VkSubmitInfo submitInfo{ VK_STRUCTURE_TYPE_SUBMIT_INFO };
@@ -278,9 +345,11 @@ void Engine::run() {
 		submitInfo.pCommandBuffers = &render_context.command_buffer;
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = &read_semaphore;
-		vkQueueSubmit(graphics.graphics_queue, 1, &submitInfo, fence);
+		vk_check(vkQueueSubmit(graphics.graphics_queue, 1, &submitInfo, fence), "[vkQueueSubmit] failed");
 
 		debug_layer.cpu_time = (float)seconds_elasped_and_reset(cpu_start);
+
+		//-------------------------------------------------------------------------------------
 
 		VkPresentInfoKHR presentInfo{ VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
 		presentInfo.waitSemaphoreCount = 1;
@@ -288,86 +357,96 @@ void Engine::run() {
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = &graphics.swap_chain;
 		presentInfo.pImageIndices = &imageIndex;
-		vkr = vkQueuePresentKHR(graphics.present_queue, &presentInfo);
-
-		if (vkr == VK_ERROR_OUT_OF_DATE_KHR) {
-			if (!running) return; // ok, we head out
+		vk_result = vkQueuePresentKHR(graphics.present_queue, &presentInfo);
+		if (vk_result == VK_ERROR_OUT_OF_DATE_KHR) {
+			if (!(flags& fRunning)) break; // ok, we head out
 			resize();
 		}
-		else if (vkr != VK_SUCCESS && vkr != VK_SUBOPTIMAL_KHR) {
-			throw std::runtime_error("failed to acquire swap chain image!"); // please no exceptions
+		else if (vk_result != VK_SUCCESS && vk_result != VK_SUBOPTIMAL_KHR) {
+			display_fatal_graphics_error(vk_result, "[vkQueuePresentKHR] failed");
+			return;
 		}
 
+		//-------------------------------------------------------------------------------------
+		// Calculate next frame time
 		dt = fs::seconds_elasped_and_reset(last_timestamp);
 		frame_index += 1;
 	}
+
+	vkDestroyFence(graphics.device, _fence, nullptr);
 }
 
 void Engine::resize() {
-	graphics.recreate_swap_chain(&window, graphics.sc_present_mode);
+	if (window.is_minimized())
+		window.sleep_until_not_minimized();
 
+	graphics.recreate_swap_chain(&window);
+
+	// Update 2D transform
 	fs::Transform_2D_Data transform;
 	transform.offset = {-1.0f,-1.0f};
 	transform.scale = {2.0f / (float)graphics.sc_extent.width, 2.0f / (float)graphics.sc_extent.height};
 	graphics.upload_buffer(transform_2d.buffer, &transform, sizeof(fs::Transform_2D_Data));
 
+	// Recreate framebuffers
+	FS_FOR(graphics.sc_image_count) {
+		vkDestroyFramebuffer(graphics.device, framebuffers[i], nullptr);
+	}
+	{
+		VkFramebufferCreateInfo framebufferInfo{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
+		framebufferInfo.renderPass = overlay_render_pass;
+		framebufferInfo.attachmentCount = 1;
+		framebufferInfo.width  = graphics.sc_extent.width;
+		framebufferInfo.height = graphics.sc_extent.height;
+		framebufferInfo.layers = 1;
+
+		FS_FOR(graphics.sc_image_count) {
+			framebufferInfo.pAttachments = graphics.sc_image_views + i;
+			vkCreateFramebuffer(graphics.device, &framebufferInfo, nullptr, framebuffers + i);
+		}
+	}
+
 	current_scene->on_resize();
 }
 
-void skip_working_directory(LPWSTR& s) {
-	if (*s != L'"') return;
-	++s;
-	while (*s != L'"') ++s;
-	s += 2;
-}
+#define ADD_COMMAND(Name, Body) auto proc_##Name = [](string args) Body; console::register_command(FS_str(#Name), proc_##Name)
 
-u64 wstrlen(LPWSTR s) {
-	u64 size = 0;
-	while (true) {
-		if (s[size] == L'\0') break;
-		++size;
-	}
-	return size;
-}
-
-string parse_next(LPWSTR cursor, LPWSTR const end, std::vector<u8>& temp) {
-	string next;
-	temp.clear();
-	while (cursor != end) {
-		if (*cursor == L'"') {
-
+void add_engine_console_commands() {
+	ADD_COMMAND(vsync, {
+		if (args.str() == "on") {
+			engine.graphics.sc_present_mode = VK_PRESENT_MODE_FIFO_RELAXED_KHR;
+			engine.flags |= engine.fGraphics_Recreate_Swap_Chain;
+			console::println(FS_str("vsync enabled"));
 		}
-		else if (*cursor == L' ') ++cursor;
-		else {
-			auto start = cursor;
-			while (cursor != end) {
-				if (*cursor == L' ') break;
-			}
-			auto out = FS_str_std(temp);
-		//	convert_utf16_to_utf8(&out, )
+		else if (args.str() == "off") {
+			engine.graphics.sc_present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+			engine.flags |= engine.fGraphics_Recreate_Swap_Chain;
+			console::println(FS_str("vsync disabled"));
 		}
-	}
-	return next;
-}
+	});
 
-// windows only :(
-Scene_Key cmdline_to_scene_key(platform::Instance) {
-	Scene_Key key;
-	auto lpCmdLine = GetCommandLineW();
-	auto end = lpCmdLine + wstrlen(lpCmdLine);
+	ADD_COMMAND(fps_limit, {
+		if (args.str() == "on") {
+			engine._next = Engine::clock::now();
+			engine.flags |= engine.fFPS_Limiter_Enable;
+			console::println(FS_str("fps limiter enabled"));
+		}
+		else if (args.str() == "off") {
+			engine.flags &=~ engine.fFPS_Limiter_Enable;
+			console::println(FS_str("fps limiter disabled"));
+		}
+	});
 
-	skip_working_directory(lpCmdLine);
-
-	auto cursor = lpCmdLine;
-	std::vector<u8> temp;
-	temp.reserve(64);
-
-	key.id = parse_next(cursor, end, temp);
-	for (auto&& s : key.arguments) {
-		s = parse_next(cursor, end, temp);
-	}
-
-	return key;
+	ADD_COMMAND(fps, {
+		args.data[args.count] = 0;
+		float fps = strtof((char*)args.data, nullptr);
+		if (fps != 0.0f) {
+			engine.fps_limit = fps;
+			string out;
+			FS_FORMAT_TO_STRING(64, out, "set fps to: %.1f", fps);
+			console::println(out);
+		}
+	});
 }
 
 __FISSION_END__

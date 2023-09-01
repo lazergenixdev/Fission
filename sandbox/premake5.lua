@@ -11,7 +11,7 @@ project 'sandbox'
     links { 'Fission' }
 
 	print("--------------------------------! Active Libraries !--------------------------------")
-    for library,path in pairs(fission_links) do
+    for library,path in pairs(FissionLinks) do
 		print(library,path)
 		links(library)
 		if #path ~= 0 then

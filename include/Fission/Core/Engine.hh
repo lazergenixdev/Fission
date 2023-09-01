@@ -20,6 +20,7 @@
 #include <Fission/Core/Renderer_2D.hh>
 #include <mutex>
 #include <condition_variable>
+#include <chrono>
 
 typedef struct FT_LibraryRec_* FT_Library;
 namespace fs { struct Defaults; }
@@ -42,24 +43,34 @@ struct Defaults {
 	int         window_width   = 1280;
 	int         window_height  = 720;
 	Window_Mode window_mode    = Windowed;
+	int         display_index  = Display_Index_Automatic;
+	string      settings_folder_name = FS_str(".Fission"); // "app_name"
 };
 
 struct FISSION_API Engine {
 
 	enum Flag: u64 {
-		fScene_Change                  = 1 << 0,
-		fRunning                       = 1 << 1,
-		fWindow_Minimized              = 1 << 2,
-		fWindow_Resized                = 1 << 3,
-		fWindow_Destroy_Enable         = 1 << 4,
-		fGraphics_Recreate_Swap_Chain  = 1 << 5,
-		fWindow_Mode_Change            = 1 << 6,
+		fRunning                       = 1 << 0,
+		fGraphics_Recreate_Swap_Chain  = 1 << 1,
+
+		// Do NOT edit these:
+	//	fWindow_Resized                = 1 << 2,
+		fWindow_Destroy_Enable         = 1 << 3,
+
+		fChange_Scene                  = 1 << 4,
+		fFPS_Limiter_Enable            = 1 << 5,
 	};
 
 	////////////////////////////////////////////////////////////////////////////
+	// Members
 	Window               window;
 	Graphics             graphics;
+
+	// Engine overlay's render pass, expects current
+	//	swap chain image to be in layout: COLOR_ATTACHMENT_OPTIMAL
 	Render_Pass          overlay_render_pass;
+	VkFramebuffer        framebuffers[Graphics::max_sc_images];
+
 	Renderer_2D          renderer_2d;
 	Textured_Renderer_2D textured_renderer_2d;
 
@@ -68,12 +79,16 @@ struct FISSION_API Engine {
 
 	Scene* current_scene;
 		
-	// use flags?
-	bool running;
-	bool minimized; // note: rename to window_minimized
-	bool window_resized;
 	u64 flags = 0;
 	u64 modifier_keys = 0;
+	float fps_limit = 60.0f;
+
+	// Version stuff
+	compressed_version const version;
+	// Version stuff for app
+	compressed_version app_version = {0,1,0};
+	string             app_version_info = FS_str("dev");
+	string             app_name = FS_str("app name");
 
 	Texture_Layout texture_layout;
 
@@ -85,6 +100,7 @@ struct FISSION_API Engine {
 	} transform_2d;
 
 	// Pool for Uniform Buffers and Combined image-samplers
+	//	(what the engine uses internally)
 	VkDescriptorPool descriptor_pool;
 
 	struct {
@@ -100,42 +116,35 @@ struct FISSION_API Engine {
 
 	std::vector<Display> displays;
 
-	// only used to put thread to sleep when minimized
-	::std::mutex              _mutex;
-	::std::condition_variable _event;
+	Scene_Key next_scene_key;
 
-	union {
-		Scene_Key next_scene_key;
-		struct {
-			VkPresentModeKHR present_mode;
-		} swap_chain_info;
-	};
-	std::vector<u8> _scene_key_memory;
+	void* _ts_base = nullptr;
+	u64   _ts_size = 0;
 
-	void* _temp_memory_base = nullptr;
-	u64   _temp_memory_size = 0;
-		
-	// Version stuff
-	compressed_version const version;
-	// Version stuff for app
-	compressed_version app_version;
-	string             app_version_info;
-	string             app_name;
+	using clock = std::chrono::steady_clock;
+	clock::time_point _next;
+
+	Graphics_Stale_Data graphics_ext;
 
 	////////////////////////////////////////////////////////////////////////////
+	// Engine API
+	void* talloc(u64 size); // WIP
 
-	void* talloc(u64 size);
+	string get_version_string();
 
-	void reset_scene_key_memory();
-	string alloc_scene_key_string(string s);
+	inline void bind_font(VkCommandBuffer cmd, Font_Static* font) {
+		VkDescriptorSet sets[] = { transform_2d.set, font->texture };
+		VK_GFX_BIND_DESCRIPTOR_SETS(cmd, textured_renderer_2d.pipeline_layout, 2, sets);
+	}
 
+private:
+#if defined(FISSION_PLATFORM_WINDOWS)
+	friend int WINAPI ::wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int);
+#endif
 	void run();
 	int create(platform::Instance const& instance, Defaults const& defaults);
 	int destroy();
 
-	string get_version_string();
-
-private:
 	void resize();
 	int create_layers();
 };

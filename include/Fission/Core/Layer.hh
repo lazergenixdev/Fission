@@ -33,6 +33,10 @@ template <typename Layer>
 static inline constexpr void disable_layer(Layer& layer) noexcept {
 	layer.flags &=~ (layer::show | layer::enable);
 }
+template <typename Layer>
+static inline constexpr void enable_layer(Layer& layer) noexcept {
+	layer.flags |= layer::enable;
+}
 
 struct Debug_Layer {
 	// note: string is copied, no need to keep the string memory around :)
@@ -54,12 +58,11 @@ struct Debug_Layer {
 
 	float cpu_time = 0.0f;
 	
-	// TODO: Use string "ranges" instead of "string", use after free error waiting to happen...
-	string app_info_string;
-	std::vector<string> right_strings;
-	std::vector<string> left_strings;
-	std::vector<char>   character_buffer;
-	int character_count = 0;
+	string_view app_info_string;
+	std::vector<string_view> right_strings;
+	std::vector<string_view> left_strings;
+	std::vector<c8>          character_buffer;
+	int character_count_initial = 0;
 
 	void handle_events(std::vector<struct Event>& events);
 	void on_update(double dt, struct Render_Context* ctx);
@@ -95,6 +98,8 @@ struct Console_Layer {
 
 	void handle_events(std::vector<struct Event>& events);
 	void on_update(double dt, struct Render_Context* ctx);
+
+	void setup_console_api();
 
 	void create();
 	void destroy();

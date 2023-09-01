@@ -33,31 +33,29 @@ public:
 	}
 	virtual void on_update(double _dt, std::vector<fs::Event> const&, fs::Render_Context* ctx) override
 	{
-		float dt = (float)_dt;
 		using namespace fs;
+		float dt = (float)_dt;
+		auto wnd_size = v2f32((float)engine.graphics.sc_extent.width, (float)engine.graphics.sc_extent.height);
+		
 		// Update ball position
 		pos += velocity * dt;
-
-		radius = 40.0f * sinf( count += dt ) + 70.0f;
+		radius = 40.0f * sinf(count += dt) + 70.0f;
 
 		// Collide with the top and bottom
-		if (bounce(pos.y, velocity.y, radius, 720.0f))
+		if (bounce(pos.y, velocity.y, radius, wnd_size.y))
 			color = rgb( hsv( dist(rng), 1.0f, 1.0f ) );
 
 		// Collide with the left and right
-		if (bounce(pos.x, velocity.x, radius, 1280.0f))
+		if (bounce(pos.x, velocity.x, radius, wnd_size.x))
 			color = rgb(hsv(dist(rng), 1.0f, 1.0f));
 
 		// Draw the circle to the screen
-	//	renderer2d->DrawCircle( pos, radius, {}, color( color, 0.5f ), 20.0f, StrokeStyle::Inside ); // inner glow
-	//	renderer2d->DrawCircle( pos, radius, color( color, 0.5f ), {}, 20.0f, StrokeStyle::Outside ); // outer glow
-	//	renderer2d->DrawCircle( pos, radius, color, 5.0f, StrokeStyle::Center ); // circle
-	//	renderer2d->SetBlendMode( Fission::BlendMode::Add );
-	//	renderer2d->Render();
-	//	renderer2d->SetBlendMode( Fission::BlendMode::Normal );
 		rp.begin(ctx, fs::colors::Black);
 		VK_GFX_BIND_DESCRIPTOR_SETS(ctx->command_buffer, engine.renderer_2d.pipeline_layout, 1, &engine.transform_2d.set);
-		engine.renderer_2d.add_rect(rf32::from_center(pos, radius*2, radius*2), color);
+		float radius2 = 450.0f * sinf(count*0.5f) + 450.0f;
+		engine.renderer_2d.add_circle({}      , radius2, color*0.15f);
+		engine.renderer_2d.add_circle(wnd_size, radius2, color*0.15f);
+		engine.renderer_2d.add_circle(pos, radius, color);
 		engine.renderer_2d.draw(*ctx);
 		rp.end(ctx);
 	}
@@ -74,13 +72,11 @@ fs::Scene* on_create_scene(fs::Scene_Key const& key) {
 	return new Ball_Scene;
 }
 
-std::string title;
-
 fs::Defaults on_create() {
 	engine.app_name = FS_str("Balls");
 	engine.app_version = {2, 2, 0};
 	engine.app_version_info = FS_str("ball to the wall");
-	title = std::format("Ball Demo [{}]", engine.get_version_string().str());
+	static auto title = std::format("Ball Demo [{}]", engine.get_version_string().str());
 	return {
 		.window_title = FS_str_std(title),
 	};

@@ -299,7 +299,7 @@ struct Tetris {
 
 	void draw(fs::Renderer_2D& r) {
 		fs::v2f32 offset = {300.0f, 10.0f};
-		fs::v2f32 cs     = fs::v2f32::from1(cell_size);
+		fs::v2f32 cs     = fs::v2f32(cell_size);
 
 		for (int y = 0; y < size.y; ++y) {
 			for (int x = 0; x < size.x; ++x) {
@@ -378,9 +378,10 @@ void tetris_update(Tetris* t, float dt, std::vector<fs::Event> const& events, fs
 			case fs::keys::Q: {
 				int i = 0;
 				fs::v2s32 offset = {};
-				while (i++ < 2) {
+				while (i++ < 3) {
 					if (t->valid_move(t->current_piece, offset, 1)) {
 						t->current_piece.add_rotation(1);
+						t->current_piece.position += offset;
 						break;
 					}
                     if(t->current_piece.position.x < (t->size.x / 2))
@@ -394,9 +395,10 @@ void tetris_update(Tetris* t, float dt, std::vector<fs::Event> const& events, fs
 			case fs::keys::E:{
 				int i = 0;
 				fs::v2s32 offset = {};
-				while (i++ < 2) {
+				while (i++ < 3) {
 					if (t->valid_move(t->current_piece, offset, -1)) {
 						t->current_piece.add_rotation(-1);
+						t->current_piece.position += offset;
 						break;
 					}
                     if (t->current_piece.position.x < (t->size.x / 2))

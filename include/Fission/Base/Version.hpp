@@ -61,16 +61,16 @@ struct compressed_version
 	// 
 	//          6 bits + 13 bits       + 13 bits       = 32 bit
 	//          High Bits <--          --> Low Bits
-	u32 _version;
+	u32 value;
 
 	static constexpr u32 _Mask_Major = 0xFC00'0000;
 	static constexpr u32 _Mask_Minor = 0x03FF'E000;
 	static constexpr u32 _Mask_Patch = 0x0000'1FFF;
 
-	constexpr compressed_version() noexcept: _version(0) {}
+	constexpr compressed_version() noexcept: value(0) {}
 
 	constexpr compressed_version( int major, int minor, int patch ) noexcept:
-		_version( (major << 26) | (minor << 13) | patch )
+		value( (major << 26) | (minor << 13) | patch )
 	{
 		assert(major > 0 && major < 64);
 		assert(minor > 0 && minor < 8192);
@@ -79,7 +79,7 @@ struct compressed_version
 
 	// assume all numbers are within limits
 	constexpr compressed_version( const version& v ) noexcept:
-		_version( (v.Major << 26) | (v.Minor << 13) | v.Patch )
+		value( (v.Major << 26) | (v.Minor << 13) | v.Patch )
 	{
 		assert(v.Major > 0 && v.Major < 64);
 		assert(v.Minor > 0 && v.Minor < 8192);
@@ -87,7 +87,7 @@ struct compressed_version
 	}
 
 	constexpr version uncompress() const {
-		return version( (_version) >> 26, (_version & _Mask_Minor) >> 13, _version & _Mask_Patch );
+		return version( (value) >> 26, (value & _Mask_Minor) >> 13, value & _Mask_Patch );
 	}
 
 }; // Fission::compressed_version

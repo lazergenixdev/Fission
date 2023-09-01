@@ -1,8 +1,7 @@
-#include <Fission/Core/Window.hh>
+#include "../Common.h"
 #include <Fission/Base/Assert.hpp>
 #include <Fission/Core/Engine.hh>
 #include <Fission/Core/Input/Keys.hh>
-#include "../Common.h"
 #include <Dbt.h>
 using namespace fs;
 
@@ -18,15 +17,14 @@ __FISSION_BEGIN__
 
 inline LARGE_INTEGER last_timestamp;
 
-static LRESULT WinProcSetup(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
-static LRESULT Window_Message_Callback(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
+LRESULT Window::Message_Callback(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     QueryPerformanceCounter(&last_timestamp);
     switch (msg)
     {
     case WM_CLOSE: {
         if (engine.flags & engine.fWindow_Destroy_Enable) {
             DestroyWindow(hwnd);
-            engine.running = false;
+            engine.flags &=~ engine.fRunning;
         }
         return 0;
     }
@@ -55,18 +53,6 @@ static LRESULT Window_Message_Callback(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
             break;
         }
         break;
-    }
-
-    case WM_SIZE: {
-        if (wp == SIZE_MINIMIZED) {
-            engine.minimized = true;
-        }
-        else if (engine.minimized) {
-            std::unique_lock lock(engine._mutex);
-            engine.minimized = false;
-            engine._event.notify_one();
-        }
-        return 0;
     }
 
     case WM_SETCURSOR: {
@@ -220,6 +206,18 @@ LRESULT Window::_win32_ProcessMessage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
         break;
     }
 
+    case WM_SIZE: {
+        if (wp == SIZE_MINIMIZED) {
+            _flags |= platform::Window_Minimized;
+        }
+        else if (_flags & platform::Window_Minimized) {
+            std::unique_lock lock(_mutex);
+            _flags &=~ platform::Window_Minimized;
+            _cv.notify_one();
+        }
+        return 0;
+    }
+
     case WM_KILLFOCUS: {
         Event event{
             .timestamp = (unsigned)last_timestamp.QuadPart,
@@ -268,8 +266,8 @@ struct Window_Thread_Info {
     string initial_title;
 };
 
-static int window_main(Window_Thread_Info* info) {
-    auto&& [window, initial_title] = *info;
+int window_main(Window_Thread_Info* info) {
+    auto [window, initial_title] = *info;
     auto hInstance = GetModuleHandleW(nullptr);
 
     { // Create Window
@@ -352,7 +350,7 @@ static int window_main(Window_Thread_Info* info) {
     window->_handle = NULL;
 
     // This may need to be syncronized across threads, but i'm too fucking lazy
-    engine.running = false;
+    engine.flags &=~ engine.fRunning;
 
     return 0;
 }
@@ -418,7 +416,8 @@ void Window::set_title(string const& title)
     c16 buffer[512]; // Don't think Windows can even handle titles this long...
     
     string input = title;
-    input.count = std::min(input.count, std::size(buffer) - 1);
+    // Here we cut off the input if it is too long, but this could be a problem for multi-byte codepoints...
+    if (input.count > std::size(buffer) - 1) input.count = std::size(buffer) - 1;
 
     string_utf16 utf16 = {.count = std::size(buffer) - 1, .data = buffer};
     convert_utf8_to_utf16(&utf16, input);
@@ -437,7 +436,7 @@ void Window::create(Window_Create_Info* info)
     wClassDesc.cbSize = sizeof(WNDCLASSEXW);
     wClassDesc.lpszClassName = WindowClassName;
     wClassDesc.hInstance = GetModuleHandleW(nullptr);
-    wClassDesc.lpfnWndProc = WinProcSetup;
+    wClassDesc.lpfnWndProc = Window::Callback_Setup;
     wClassDesc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
     wClassDesc.hIcon = LoadIcon(NULL, IDI_SHIELD);
 
@@ -447,9 +446,11 @@ void Window::create(Window_Create_Info* info)
     height = info->height;
     mode   = info->mode;
 
-    static Window_Thread_Info thread_info; // this is stupid
+    Window_Thread_Info thread_info; // this is stupid
     thread_info.window = this;
     thread_info.initial_title = info->title;
+
+    _flags |= platform::Window_Init_Completed;
 
     std::unique_lock lock(_mutex);
     _thread = std::thread(window_main, &thread_info);
@@ -475,12 +476,19 @@ Window::~Window() {
     if (_handle) {
         SendMessageW(_handle, WM_DESTROY, 0, 0);
     }
-    _thread.join();
-    UnregisterClassW(WindowClassName, GetModuleHandleW(nullptr));
+    if (_flags& platform::Window_Init_Completed) {
+        _thread.join();
+        UnregisterClassW(WindowClassName, GetModuleHandleW(nullptr));
+    }
+}
+
+void Window::sleep_until_not_minimized() {
+    std::unique_lock lock(_mutex);
+    _cv.wait(lock, [this]() { return !(_flags & platform::Window_Minimized); });
 }
 
 // Chili Tomato Noodle
-static LRESULT WinProcSetup(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
+LRESULT Window::Callback_Setup(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
     // use create parameter passed in from CreateWindow() to store window class pointer at WinAPI side
     if (Msg == WM_NCCREATE)
     {
@@ -492,7 +500,7 @@ static LRESULT WinProcSetup(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
         // set WinAPI-managed user data to store ptr to window class
         SetWindowLongPtrW(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pWnd));
         // set message proc to normal (non-setup) handler now that setup is finished
-        SetWindowLongPtrW(hWnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(Window_Message_Callback));
+        SetWindowLongPtrW(hWnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(Window::Message_Callback));
     }
     // if we get a message before the WM_NCCREATE message, handle with default handler
     return DefWindowProcW(hWnd, Msg, wParam, lParam);

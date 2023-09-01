@@ -1,13 +1,18 @@
-IncludeDir = {}
-IncludeDir["yaml"] 		= "vendor/yaml-cpp/include"
-IncludeDir["json"] 		= "vendor/json/single_include"
-IncludeDir["freetype"] 	= 'vendor/freetype/include'
-IncludeDir["lunasvg"] 	= 'vendor/lunasvg/include'
-IncludeDir["vulkan"] 	= 'vendor/vulkan/include'
+if VULKAN_SDK == nil then
+	VULKAN_SDK = os.getenv("VULKAN_SDK")
+end
 
-fission_links = {}
-fission_links["vulkan-1"]="%{wks.location}/Fission/vendor/vulkan"
-fission_links["freetype"]="%{wks.location}/Fission/vendor/freetype/%{OutputDir}"
+if VULKAN_SDK == nil then
+	error("Must have Vulkan SDK installed")
+end
+
+IncludeDir = {}
+IncludeDir["vulkan"] 	= '%{VULKAN_SDK}/Include'
+IncludeDir["freetype"] 	= 'vendor/freetype/include'
+
+FissionLinks = {}
+FissionLinks["vulkan-1"]="%{VULKAN_SDK}/Lib"
+FissionLinks["freetype"]="%{wks.location}/Fission/vendor/freetype/%{OutputDir}"
 
 if _FISSION_EXTERNAL then
 	include 'Fission'

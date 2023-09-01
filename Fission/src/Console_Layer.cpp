@@ -124,7 +124,7 @@ void Console_Layer::_reserve_space_for(u64 added_count) {
 	memmove(buffer_view.data, new_start, buffer_view.count);
 }
 
-void Console_Layer::create() {
+void Console_Layer::setup_console_api() {
 	input.count = 2;
 	input.data  = input_buffer;
 	memset(input_buffer, 0, sizeof(input_buffer));
@@ -230,7 +230,7 @@ void Console_Layer::handle_character_input(Event::Character_Input in) {
 					if(acceptable_character(ch))
 						input.data[input.count++] = ch;
 				}
-				input_cursor = input.count;
+				input_cursor = (int)input.count;
 				GlobalUnlock(hglb);
 			}
 		}
@@ -240,7 +240,18 @@ void Console_Layer::handle_character_input(Event::Character_Input in) {
 #endif // FISSION_PLATFORM_
 	}
 
-	break; case '\b':
+	break; case '\b': {
+		// copy command into input
+		if (current_command != -1) {
+			auto cmd = command_from_history();
+
+			memcpy(input.data + 2, cmd.data, cmd.count);
+
+			input.count = cmd.count + 2;
+			input_cursor = (int)input.count;
+			current_command = -1;
+		}
+
 		if (input_cursor > 2) {
 			// move characters down
 			for (int i = input_cursor - 1; i < input.count; ++i) {
@@ -250,6 +261,7 @@ void Console_Layer::handle_character_input(Event::Character_Input in) {
 			--input.count;
 			--input_cursor;
 		}
+	}
 	break; case '\r': {
 		if (input.count <= 2 && current_command == -1) break;
 
@@ -284,14 +296,14 @@ void Console_Layer::handle_character_input(Event::Character_Input in) {
 		buffer_view_offset = 0;
 	}
 	break; default: {
+		// copy command into input
 		if (current_command != -1) {
-			// copy command into input
 			auto cmd = command_from_history();
 
 			memcpy(input.data + 2, cmd.data, cmd.count);
 
 			input.count = cmd.count + 2;
-			input_cursor = input.count;
+			input_cursor = (int)input.count;
 			current_command = -1;
 		}
 
@@ -299,10 +311,8 @@ void Console_Layer::handle_character_input(Event::Character_Input in) {
 		if (input.count < 71) {
 			
 			// shift characters to make room for new one
-			if (input_cursor != input.count) {
-				for (int i = int(input.count-1); i >= input_cursor; --i) {
-					input.data[i + 1] = input.data[i];
-				}
+			for (int i = int(input.count-1); i >= input_cursor; --i) {
+				input.data[i + 1] = input.data[i];
 			}
 
 			input.data[input_cursor] = (u8&)ch;
@@ -501,16 +511,13 @@ void Console_Layer::draw_console_buffer(Textured_Renderer_2D& r, float top, floa
 	}
 }
 
-// TODO: put this in a header somewhere?
-#define Exp_Update(CURRENT, TARGET, LERP_SPEED) fs::lerp(CURRENT, TARGET, 1.0f - std::powf(0.5f, (float)dt * LERP_SPEED))
-
 void Console_Layer::on_update(double dt, Render_Context* ctx) {
 	auto& font = engine.fonts.console;
 	
 	// update current position
 	float _top = -(font.height + 1.0f);
 	float target = (flags & layer::show)? font.height * 10.0f : _top;
-	position = Exp_Update(position, target, 20.0f);
+	position = math::exp_update(position, target, (float)dt, 20.0f);
 
 	if (position <= _top + 0.001f) return; // not visible
 
