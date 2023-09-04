@@ -46,15 +46,39 @@ struct string {
 	inline constexpr string substr(u64 offset, u64 _count = 0xFFFFFFFF) const {
 		return string{.count = std::min(count - offset, _count), .data = data + offset};
 	}
+
+	inline constexpr bool is_empty() const noexcept {
+		return count == 0;
+	}
 };
+
+template <size_t Right_Size>
+static constexpr bool operator==(string const& left, char const(&right)[Right_Size]) {
+	if (left.count != Right_Size - 1) return false;
+	FS_FOR(left.count) {
+		if (left.data[i] != (c8)right[i]) {
+			return false;
+		}
+	}
+	return true;
+}
+
+template <std::integral C>
+u64 strlen (C const* c_string) {
+	u64 count = 0;
+	while (c_string[count] != 0) ++count;
+	return count;
+}
 
 struct string_utf16 {
 	u64 count = 0;
 	c16* data = nullptr;
 };
 
-void convert_utf8_to_utf16(string_utf16* output_buffer, string       source); // out_size = in_size
-void convert_utf16_to_utf8(string*       output_buffer, string_utf16 source); // out_size = in_size * 3
+// out_size = in_size
+void convert_utf8_to_utf16(string_utf16* output_buffer, string       source);
+// out_size = in_size * 3
+void convert_utf16_to_utf8(string*       output_buffer, string_utf16 source);
 
 // std library is crying rn 😭😭😭
 // -> it's really this simple..

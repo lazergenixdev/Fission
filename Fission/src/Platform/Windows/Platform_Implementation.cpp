@@ -2,7 +2,9 @@
 #include <Fission/Platform.hpp>
 #include <Fission/Core/Display.hh>
 #include <Fission/Core/Engine.hh>
+#include <Fission/Core/Console.hh>
 #include <algorithm>
+#include "../../Scene_Key_Parser.hpp"
 
 fs::string platform_version;
 extern fs::Engine engine;
@@ -98,62 +100,34 @@ double seconds_elasped_and_reset(s64& last) {
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
-// Command Line Parser
+// Command Line Stuff
 /////////////////////////////////////////////////////////////////////////////////////////
 
-void skip_working_directory(LPWSTR& s) {
-	if (*s != L'"') return;
-	++s;
-	while (*s != L'"') ++s;
-	s += 2;
+void skip_application_path(string& s) {
+	u64 idx = 0;
+	while (idx < s.count && s.data[idx] != ' ') ++idx;
+	while (idx < s.count && s.data[idx] == ' ') ++idx;
+	s = s.substr(idx);
 }
 
-u64 wstrlen(LPWSTR s) {
-	u64 size = 0;
-	while (true) {
-		if (s[size] == L'\0') break;
-		++size;
-	}
-	return size;
-}
-
-string parse_next(LPWSTR cursor, LPWSTR const end, std::vector<u8>& temp) {
-	string next;
-	temp.clear();
-	while (cursor != end) {
-		if (*cursor == L'"') {
-
-		}
-		else if (*cursor == L' ') ++cursor;
-		else {
-			auto start = cursor;
-			while (cursor != end) {
-				if (*cursor == L' ') break;
-			}
-			auto out = FS_str_std(temp);
-			//	convert_utf16_to_utf8(&out, )
-		}
-	}
-	return next;
-}
-
-// windows only :(
 Scene_Key cmdline_to_scene_key(platform::Instance) {
 	Scene_Key key;
-	//auto lpCmdLine = GetCommandLineW();
-	//auto end = lpCmdLine + wstrlen(lpCmdLine);
+	string_utf16 win32_command_line;
+	win32_command_line.data = (c16*)GetCommandLineW();
+	win32_command_line.count = strlen(win32_command_line.data);
 
-	//skip_working_directory(lpCmdLine);
+	// could probably avoid allocation by using stack
+	auto temp_buffer = std::make_unique<c8[]>(win32_command_line.count * 3);
 
-	//auto cursor = lpCmdLine;
-	//std::vector<u8> temp;
-	//temp.reserve(64);
+	string command_line;
+	command_line.data = temp_buffer.get();
+	convert_utf16_to_utf8(&command_line, win32_command_line);
 
-	//key.id = parse_next(cursor, end, temp);
-	//for (auto&& s : key.arguments) {
-	//	s = parse_next(cursor, end, temp);
-	//}
+	console::println(command_line);
+	skip_application_path(command_line);
 
+	Scene_Key_Parser parser{command_line};
+	parser.parse(key.stream);
 	return key;
 }
 

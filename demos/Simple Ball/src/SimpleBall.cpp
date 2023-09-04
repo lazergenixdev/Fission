@@ -43,7 +43,7 @@ public:
 
 		// Collide with the top and bottom
 		if (bounce(pos.y, velocity.y, radius, wnd_size.y))
-			color = rgb( hsv( dist(rng), 1.0f, 1.0f ) );
+			color = rgb(hsv(dist(rng), 1.0f, 1.0f));
 
 		// Collide with the left and right
 		if (bounce(pos.x, velocity.x, radius, wnd_size.x))

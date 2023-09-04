@@ -13,9 +13,6 @@ struct Console_Font {
 #include <BinaryFonts/JetBrainsMono-Regular.inl>
 };
 
-#undef assert
-#define assert(R) if(!(R)) return 1
-
 extern fs::Engine engine;
 
 void display_fatal_error(const char* title, const char* what);
@@ -44,9 +41,6 @@ int Engine::create(platform::Instance const& instance, Defaults const& defaults)
 		~_defer() { engine.flags |= fWindow_Destroy_Enable; }
 	} defer;
 
-//	auto a = std::filesystem::current_path();
-//	next_scene_key = cmdline_to_scene_key(instance);
-//	MessageBoxW(0, GetCommandLineW(), L"Command Line", MB_CANCELTRYCONTINUE);
 //	wchar_t buffer[128];
 //	auto dwRet = GetEnvironmentVariableW(L"APPDATA", buffer, std::size(buffer));
 //	OutputDebugStringW(L"APPDATA = ");
@@ -79,21 +73,29 @@ int Engine::create(platform::Instance const& instance, Defaults const& defaults)
 		info.mode          = defaults.window_mode;
 		info.display_index = defaults.display_index;
 		window.create(&info);
-		assert(window.exists());
+		if (!window.exists()) return 1;
 	}
 
 	{
 		Graphics_Create_Info info;
 		info.window = &window;
-		assert(graphics.create(&info) == false);
+		if (graphics.create(&info)) return 1;
 	}
 
-	if (create_layers()) return 1;
+	if (create_layers()) {
+		destroy();
+		return 1;
+	}
 
 	{
 		next_scene_key = cmdline_to_scene_key(instance);
 		current_scene = on_create_scene(next_scene_key);
-		assert(current_scene != nullptr);
+
+		if (current_scene == nullptr) {
+			display_fatal_error("Undefined Scene ID", "Provided Scene ID does not exist.");
+			destroy();
+			return 1;
+		}
 	}
 
 	return 0;
@@ -387,7 +389,7 @@ void Engine::resize() {
 	transform.offset = {-1.0f,-1.0f};
 	transform.scale = {2.0f / (float)graphics.sc_extent.width, 2.0f / (float)graphics.sc_extent.height};
 	graphics.upload_buffer(transform_2d.buffer, &transform, sizeof(fs::Transform_2D_Data));
-
+	
 	// Recreate framebuffers
 	FS_FOR(graphics.sc_image_count) {
 		vkDestroyFramebuffer(graphics.device, framebuffers[i], nullptr);
@@ -413,12 +415,12 @@ void Engine::resize() {
 
 void add_engine_console_commands() {
 	ADD_COMMAND(vsync, {
-		if (args.str() == "on") {
+		if (args == "on") {
 			engine.graphics.sc_present_mode = VK_PRESENT_MODE_FIFO_RELAXED_KHR;
 			engine.flags |= engine.fGraphics_Recreate_Swap_Chain;
 			console::println(FS_str("vsync enabled"));
 		}
-		else if (args.str() == "off") {
+		else if (args == "off") {
 			engine.graphics.sc_present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
 			engine.flags |= engine.fGraphics_Recreate_Swap_Chain;
 			console::println(FS_str("vsync disabled"));
@@ -426,12 +428,12 @@ void add_engine_console_commands() {
 	});
 
 	ADD_COMMAND(fps_limit, {
-		if (args.str() == "on") {
+		if (args == "on") {
 			engine._next = Engine::clock::now();
 			engine.flags |= engine.fFPS_Limiter_Enable;
 			console::println(FS_str("fps limiter enabled"));
 		}
-		else if (args.str() == "off") {
+		else if (args == "off") {
 			engine.flags &=~ engine.fFPS_Limiter_Enable;
 			console::println(FS_str("fps limiter disabled"));
 		}

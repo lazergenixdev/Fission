@@ -53,7 +53,7 @@ struct Graphics_Stale_Data {
 	} queue_family_index;
 };
 
-struct Graphics
+struct FISSION_API Graphics
 {
 	void upload_buffer(VkBuffer dstBuffer, void const* data, VkDeviceSize size);
 	void upload_image(VkImage dstImage, void* data, VkExtent3D extent, VkFormat format, VkImageLayout outLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);

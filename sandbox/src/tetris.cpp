@@ -333,7 +333,7 @@ struct Tetris {
 		ghost_piece = current_piece;
 		while (valid_move(ghost_piece, {0, 1}, 0))
 			ghost_piece.position.y += 1;
-		ghost_piece.color = {200, 200, 200, 40};
+		ghost_piece.color = {200, 200, 200, 10};
 
 		draw_piece(ghost_piece);
 		draw_piece(current_piece);

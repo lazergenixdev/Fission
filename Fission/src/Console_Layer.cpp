@@ -18,8 +18,7 @@ namespace console {
 	std::mutex access_mutex;
 
 	void register_command(string name, console_callback_proc proc) {
-		auto std = std::string(name.str());
-		callback_table.emplace(std, proc);
+		callback_table.emplace(std::string(name.str()), proc);
 	}
 	void unregister_command(string name) {
 		callback_table.erase(std::string(name.str()));
@@ -141,11 +140,11 @@ void Console_Layer::setup_console_api() {
 	console::println(FS_str("Fission Console! :)\nHello \x1b\xFF\0\0r\x1b\x1b\0\xFF\0g\x1b\x1b\0\0\xFF""b\x1b!"));
 
 	{
-		auto clear_proc = [](string) { console::clear(); };
-		console::register_command(FS_str("clear"), clear_proc);
+		auto callback = [](string) { console::clear(); };
+		console::register_command(FS_str("clear"), callback);
 	} {
-		auto echo_proc = [](string input) { console::println(input); };
-		console::register_command(FS_str("echo"), echo_proc);
+		auto callback = [](string input) { console::println(input); };
+		console::register_command(FS_str("echo"), callback);
 	}
 }
 

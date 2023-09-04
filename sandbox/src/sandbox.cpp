@@ -447,20 +447,20 @@ struct Scene_OK : public fs::Scene {
 		static char buffer[256];
 		static string text = FS_str_make(buffer, 0);
 
-		for (auto&& e: events) {
-			switch (e.type)
-			{
-			default:
-			break; case Event_Character_Input: {
-				auto c = (c8)e.character_input.codepoint;
-				if (c == '\b') {
-					if(text.count != 0) --text.count;
-				}
-				else text.data[text.count++] = c;
-			}
-			break;
-			}
-		}
+	//	for (auto&& e: events) {
+	//		switch (e.type)
+	//		{
+	//		default:
+	//		break; case Event_Character_Input: {
+	//			auto c = (c8)e.character_input.codepoint;
+	//			if (c == '\b') {
+	//				if(text.count != 0) --text.count;
+	//			}
+	//			else text.data[text.count++] = c;
+	//		}
+	//		break;
+	//		}
+	//	}
 
 		auto size = 100.0f;
 		float rad = float(engine.graphics.sc_extent.height/2) - size*0.75f;
@@ -486,6 +486,7 @@ struct Scene_OK : public fs::Scene {
 		m22 rot = m22::Rotation(t*1.45312f);
 
 		engine.renderer_2d.add_triangle(pos + rot*a*size, pos + rot*b*size, pos + rot*c*size, rgb(hsv(0.6f, 0.8f, 1.0f)));
+		tetris_update(tetris, (float)dt, events, engine.renderer_2d);
 #endif
 	//	engine.renderer_2d.add_rect(rf32::from_center(mouse_pos, 50.0f, 50.0f), colors::White);
 
@@ -654,6 +655,7 @@ struct Scene_OK : public fs::Scene {
 			pipelineInfo.vertex_shader = engine.renderer_2d.vert;
 			pipelineInfo.fragment_shader = engine.renderer_2d.frag;
 			pipelineInfo.vertex_input = &vertex_input;
+			pipelineInfo.blend_mode = fs::Blending_Mode::Blend_Mode_Add;
 			fs::create_pipeline(pipelineInfo, &pipeline);
 		}
 		{
@@ -667,6 +669,8 @@ struct Scene_OK : public fs::Scene {
 		}
 
 		create_blend_pipeline(gfx.device);
+
+		tetris = tetris_init(GAME_WIDTH, GAME_HEIGHT);
 	}
 	virtual ~Scene_OK() override {
 		auto& gfx = engine.graphics;
@@ -683,8 +687,11 @@ struct Scene_OK : public fs::Scene {
 		vkDestroyPipeline(gfx.device, blend_pipeline, nullptr);
 		FS_FOR(engine.graphics.sc_image_count) vkDestroyFramebuffer(gfx.device, frame_buffers[i], nullptr);
 		render_pass.destroy();
+
+		tetris_uninit(tetris);
 	}
 
+	Tetris* tetris;
 	fs::Render_Pass render_pass;
 
 	VkImage       src_image;
@@ -709,20 +716,29 @@ struct Scene_OK : public fs::Scene {
 	VkPipeline    blend_pipeline;
 };
 
-bool operator==(fs::string Left, char const* right) {
-	return false;
+bool operator==(fs::string Left, char const* Right) {
+	FS_FOR(Left.count) {
+		if (Left.data[i] != Right[i]) {
+			return false;
+		}
+	}
+	return Left.count == strlen(Right);
 }
 
 fs::Scene* on_create_scene(fs::Scene_Key const& key) {
-//	if(key.id() == "Level_Editor") {
-//		return new Level_Editor(key);
-//	}
-//	else if (key.id() == "Settings") {
-//		return new Settings(key);
-//	}
-
-//	return new Tetris_Scene;
-	return new Scene_OK;
+	using namespace fs;
+	return nullptr;
+	// Default:
+	if (key.id().is_empty()) {
+		return new Scene_OK;
+	}
+	else if (key.id() == "Tetris") {
+		return new Tetris_Scene;
+	}
+	else if (key.id() == "Start") {
+		return new Scene_OK;
+	}
+	return nullptr; // scene id is undefined
 }
 
 fs::Defaults on_create() {
@@ -736,9 +752,12 @@ fs::Defaults on_create() {
 	engine.app_name = FS_str("sandbox");
 	return {
 		.window_title = FS_str(u8" Sandbox reflexões 出展 うこそ"),
-#if 1
+#if 0
 		.window_width  = 600 + GAME_WIDTH * CELL_SIZE,
 		.window_height = GAME_HEIGHT * CELL_SIZE + 20,
+#elif 1
+		.window_width = 1280,
+		.window_height = 720,
 #else
 		.window_width  = 1920,
 		.window_height = 1080,
