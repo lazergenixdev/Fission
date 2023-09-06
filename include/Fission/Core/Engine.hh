@@ -121,9 +121,6 @@ struct FISSION_API Engine {
 	void* _ts_base = nullptr;
 	u64   _ts_size = 0;
 
-	using clock = std::chrono::steady_clock;
-	clock::time_point _next;
-
 	Graphics_Stale_Data graphics_ext;
 
 	////////////////////////////////////////////////////////////////////////////

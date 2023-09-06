@@ -219,6 +219,9 @@ int Engine::destroy() {
 #define unlikely [[unlikely]] // pretty sure this does nothing, but it's a nice thought
 #define vk_check(Result, What) if (Result) { display_fatal_graphics_error(vk_result, What); return; } (void)0
 
+// bad
+inline s64 fps_last;
+
 void Engine::run() {
 	VkSemaphore write_semaphore;
 	VkSemaphore read_semaphore;
@@ -234,11 +237,10 @@ void Engine::run() {
 	Render_Context render_context{.gfx = &graphics};
 	double dt = 0.0;
 
-	_next = clock::now();
-
-	VkFence _fence;
-	VkFenceCreateInfo fenceInfo{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
-	vkCreateFence(graphics.device, &fenceInfo, nullptr, &_fence);
+	fps_last = timestamp();
+#if defined(FISSION_PLATFORM_WINDOWS)
+	auto timer = CreateWaitableTimerExW(NULL, NULL, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);
+#endif
 
 	while (flags& fRunning) {
 		render_context.frame = frame_index & 1;
@@ -263,19 +265,19 @@ void Engine::run() {
 			resize();
 			flags &=~ fGraphics_Recreate_Swap_Chain;
 		}
-		// TODO: fix [fFPS_Limiter_Enable]
-		// This is a WIP, don't know why this doesn't give good results
 		unlikely if (flags & fFPS_Limiter_Enable) {
-			std::chrono::nanoseconds offset{(long long)(1e9f / (fps_limit*2.0f))};
-			_next += offset;
+#if defined(FISSION_PLATFORM_WINDOWS)
+			auto offset = s64(1e7f / fps_limit);
+			auto next   = fps_last + offset;
+			auto now = timestamp();
 
-			if constexpr(0) {
-				std::this_thread::sleep_until(_next);
+			LARGE_INTEGER due_time;
+			due_time.QuadPart = -((next - now) / 100);
+			if (due_time.QuadPart < 0 && SetWaitableTimerEx(timer, &due_time, 0, NULL, NULL, NULL, 0)) {
+				WaitForSingleObject(timer, INFINITE);
 			}
-			else {
-				// this gives better results than `sleep_until` SMH, fix your shit microsoft
-				vkWaitForFences(graphics.device, 1, &_fence, VK_TRUE, offset.count());
-			}
+			fps_last = next;
+#endif
 		}
 
 		//-------------------------------------------------------------------------------------
@@ -375,7 +377,7 @@ void Engine::run() {
 		frame_index += 1;
 	}
 
-	vkDestroyFence(graphics.device, _fence, nullptr);
+	CloseHandle(timer);
 }
 
 void Engine::resize() {
@@ -429,7 +431,7 @@ void add_engine_console_commands() {
 
 	ADD_COMMAND(fps_limit, {
 		if (args == "on") {
-			engine._next = Engine::clock::now();
+			fps_last = timestamp();
 			engine.flags |= engine.fFPS_Limiter_Enable;
 			console::println(FS_str("fps limiter enabled"));
 		}
