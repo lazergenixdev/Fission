@@ -5,16 +5,15 @@ if VULKAN_SDK == nil then
 	end
 end
 
--- how will this work when using Fission as a dependency?
-function prebuild_shader_compile()
+function prebuild_shader_compile(fission_location)
 	prebuildcommands {
-		"cd %{wks.location}/scripts",
+		"cd " .. fission_location .. "/scripts",
 		"python compile_shaders.py %{prj.location}"
 	}
 	prebuildmessage "Compiling Shaders..."
 end
 
-IncludeDir = {}
+if IncludeDir == nil then IncludeDir = {} end
 IncludeDir["vulkan"] 	= '%{VULKAN_SDK}/Include'
 IncludeDir["freetype"] 	= 'vendor/freetype/include'
 
@@ -22,7 +21,7 @@ FissionLinks = {}
 FissionLinks["vulkan-1"]="%{VULKAN_SDK}/Lib"
 FissionLinks["freetype"]="%{wks.location}/Fission/vendor/freetype/%{OutputDir}"
 
-if _FISSION_EXTERNAL then
+if Fission_External then
 	include 'Fission'
 else
 	workspace 'Fission'
@@ -38,9 +37,4 @@ else
 	
 	include 'Fission'
 	include 'sandbox'
-	include 'demos'
 end
-
--- group "Dependencies"
--- 	include "Fission/vendor/yaml-cpp"
--- group ""

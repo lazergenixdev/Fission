@@ -447,20 +447,20 @@ struct Scene_OK : public fs::Scene {
 		static char buffer[256];
 		static string text = FS_str_make(buffer, 0);
 
-	//	for (auto&& e: events) {
-	//		switch (e.type)
-	//		{
-	//		default:
-	//		break; case Event_Character_Input: {
-	//			auto c = (c8)e.character_input.codepoint;
-	//			if (c == '\b') {
-	//				if(text.count != 0) --text.count;
-	//			}
-	//			else text.data[text.count++] = c;
-	//		}
-	//		break;
-	//		}
-	//	}
+		for (auto&& e: events) {
+			switch (e.type)
+			{
+			default:
+			break; case Event_Character_Input: {
+				auto c = (c8)e.character_input.codepoint;
+				if (c == '\b') {
+					if(text.count != 0) --text.count;
+				}
+				else text.data[text.count++] = c;
+			}
+			break;
+			}
+		}
 
 		auto size = 100.0f;
 		float rad = float(engine.graphics.sc_extent.height/2) - size*0.75f;
