@@ -425,27 +425,31 @@ string get_string(c8 const* cursor, c8 const* start) {
 	return string{.count = u64(end - cursor), .data = (c8*)cursor};
 }
 
-void add_string(Textured_Renderer_2D& r, string str, v2f32 pos) {
+struct Color_Info {
+	rgb8 color = colors::White;
+	bool using_color = false;
+};
+
+void add_string(Textured_Renderer_2D& r, Color_Info& info, string str, v2f32 pos) {
 	fs::Glyph const* glyph;
-	rgb color = colors::White;
-	bool use_color = false;
+	info = {};
 
 	FS_FOR(str.count) {
 		u32 c = str.data[i];
 		
 		// handle colored console text
 		if (c == ESCAPE) {
-			if (use_color) {
-				color = colors::White;
+			if (info.using_color) {
+				info.color = colors::White;
 			} else {
 				if(i + 2 >= str.count) // "not enough bytes for color value [add_string]"
 					return; // silent fail
 				u8 red   = str.data[++i];
 				u8 green = str.data[++i];
 				u8 blue  = str.data[++i];
-				color = rgb8(red, green, blue);
+				info.color = rgb8(red, green, blue);
 			}
-			use_color = !use_color;
+			info.using_color = !info.using_color;
 			continue;
 		}
 		else if (c == '\t') {
@@ -457,13 +461,14 @@ void add_string(Textured_Renderer_2D& r, string str, v2f32 pos) {
 		glyph = engine.fonts.console.lookup(c);
 
 		if (c != ' ') {
-			r.add_glyph(glyph, pos, 1.0f, color);
+			r.add_glyph(glyph, pos, 1.0f, color(info.color));
 		}
 
 		pos.x += glyph->advance;
 	}
 }
 
+// TODO: refactor console so that it draws from top to bottom (to fix colors on multiple lines)
 void Console_Layer::draw_console_buffer(Textured_Renderer_2D& r, float top, float ystride) {
 	auto start = buffer_view.data;
 	auto end   = start + buffer_view.count;
@@ -492,16 +497,18 @@ void Console_Layer::draw_console_buffer(Textured_Renderer_2D& r, float top, floa
 		if (*cursor == '\n')
 			++count;
 
+		// this is bad programming, please someone fix this shit
 		if (cursor > start && count < buffer_view_offset); else
 			break;
 
 		--cursor;
 	}
 
+	Color_Info color_info;
 	while (top >= -ystride && cursor > start) {
 		auto str = get_string(cursor, start);
 		
-		add_string(r, str, {4, top});
+		add_string(r, color_info, str, {4, top});
 
 		cursor = std::max(str.data - 1, start);
 		top -= ystride;
@@ -516,7 +523,7 @@ void Console_Layer::on_update(double dt, Render_Context* ctx) {
 	// update current position
 	float _top = -(font.height + 1.0f);
 	float target = (flags & layer::show)? font.height * 10.0f : _top;
-	position = math::exp_update(position, target, (float)dt, 20.0f);
+	position = math::exp_update(position, target, (float)dt, 30.0f);
 
 	if (position <= _top + 0.001f) return; // not visible
 
