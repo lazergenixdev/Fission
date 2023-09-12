@@ -17,7 +17,7 @@
 #include <Fission/Base/Array.hpp>
 #include <Fission/Base/Math/Vector.hpp>
 #include <vulkan/vulkan.h>
-#include <vk_mem_alloc.h>
+#include <vma/vk_mem_alloc.h>
 
 #define FISSION_DEFAULT_SWAP_CHAIN_USAGE \
 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT
