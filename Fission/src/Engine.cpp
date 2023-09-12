@@ -267,8 +267,8 @@ void Engine::run() {
 		}
 		unlikely if (flags & fFPS_Limiter_Enable) {
 #if defined(FISSION_PLATFORM_WINDOWS)
-			auto offset = s64(1e7f / fps_limit);
-			auto next   = fps_last + offset;
+			auto time_between_frames = s64(1e7f / fps_limit);
+			auto next   = fps_last + time_between_frames;
 			auto now = timestamp();
 
 			LARGE_INTEGER due_time;
@@ -340,6 +340,8 @@ void Engine::run() {
 
 		//-------------------------------------------------------------------------------------
 
+		debug_layer.cpu_time = (float)seconds_elasped_and_reset(cpu_start);
+
 		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 		VkSubmitInfo submitInfo{ VK_STRUCTURE_TYPE_SUBMIT_INFO };
 		submitInfo.waitSemaphoreCount = 1;
@@ -350,8 +352,6 @@ void Engine::run() {
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = &read_semaphore;
 		vk_check(vkQueueSubmit(graphics.graphics_queue, 1, &submitInfo, fence), "[vkQueueSubmit] failed");
-
-		debug_layer.cpu_time = (float)seconds_elasped_and_reset(cpu_start);
 
 		//-------------------------------------------------------------------------------------
 

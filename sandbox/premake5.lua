@@ -9,6 +9,13 @@ project 'sandbox'
     files { "%{prj.location}/src/**.cpp" }
 
     links { 'Fission' }
+	
+	-- compile shaders
+	prebuildcommands {
+		"cd %{wks.location}/scripts",
+		"python compile_shaders.py %{prj.location}"
+	}
+	prebuildmessage "Compiling Shaders..."
 
 	print("--------------------------------! Active Libraries !--------------------------------")
     for library,path in pairs(FissionLinks) do
@@ -20,8 +27,7 @@ project 'sandbox'
     end
 	print("------------------------------------------------------------------------------------")
 	
-	includedirs
-	{
+	includedirs {
         '%{wks.location}/include',
         "%{wks.location}/Fission/%{IncludeDir.vulkan}",
         "%{wks.location}/Fission/%{IncludeDir.freetype}",
@@ -32,13 +38,13 @@ project 'sandbox'
     staticruntime "On"
 
     filter "configurations:Debug"
-        defines { "DEBUG" }
+        defines "DEBUG"
         symbols "On"
 
     filter "configurations:Release"
-        defines { "RELEASE" }
+        defines "RELEASE"
         optimize "On"
 
     filter "configurations:Dist"
-        defines { "DIST" }
+        defines "DIST"
         optimize "Speed"

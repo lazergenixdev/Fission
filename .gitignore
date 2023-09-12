@@ -32,3 +32,6 @@ bin-int/
 # debug stuff
 *.ini
 *.args.json
+
+# compiled shaders
+sandbox/shaders/*.inl

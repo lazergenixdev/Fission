@@ -53,6 +53,17 @@ struct Graphics_Stale_Data {
 	} queue_family_index;
 };
 
+enum Graphics_Present_Mode {
+	// does not wait for vsync (high power usage)
+	Present_Immediate            = VK_PRESENT_MODE_IMMEDIATE_KHR,
+	// no vsync, but without tearing (high power usage)
+	Present_Immediate_No_Tearing = VK_PRESENT_MODE_MAILBOX_KHR,
+	// regular vsync (low power usage)
+	Present_V_Sync               = VK_PRESENT_MODE_FIFO_KHR,
+	// waits for vsync, but presents immediately when vsync is missed (low power usage)
+	Present_Partial_V_Sync       = VK_PRESENT_MODE_FIFO_RELAXED_KHR,
+};
+
 struct FISSION_API Graphics
 {
 	void upload_buffer(VkBuffer dstBuffer, void const* data, VkDeviceSize size);

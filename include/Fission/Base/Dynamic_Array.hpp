@@ -11,60 +11,49 @@
  * @License:      MIT (see end of file)
  */
 #pragma once
-#include <Fission/config.hpp>
-#include <memory.h>
+#include <Fission/Base/Memory.hpp>
 
 __FISSION_BEGIN__
 
-#define FISSION_DEFAULT_ALLOC(Size) _aligned_malloc(Size, 64)
-#define FISSION_DEFAULT_FREE(Ptr)   _aligned_free(Ptr)
-
-//! @brief Default Bump Allocator
-struct bump_allocator
+//! @note: DO NOT use with types that have a move constructor,
+//!          only does a shallow copy when reallocating buffer
+template <typename _Ty>
+struct dynamic_array
 {
-	u8* base            = nullptr;
-	u64 bytes_allocated = 0;
-	u64 capacity        = 0;
+	using type = _Ty;
+	
+	type* data = nullptr;
+	u32   count = 0; // no need for u64, arrays will never get that big (hopefully, or we have a bigger problem)
+	u32   capacity = 0;
+	
+	constexpr dynamic_array() = default;
+	
+	dynamic_array(u32 initial_capacity)
+	:	capacity(initial_capacity), count(0), data(nullptr)
+	{
+		data = FISSION_DEFAULT_ALLOC(initial_capacity * sizeof(type));
+	}
+	
+	void push_back(type const& value) {
+		reserve(count+1);
+		data[count++] = value;
+	}
 
-	void* alloc(u64 size) {
-		auto ptr = base + bytes_allocated;
-		bytes_allocated += size;
-		if (bytes_allocated > capacity) {
-			return nullptr; // have fun! :)
+	void reserve(u32 new_capacity) {
+		if (new_capacity <= capacity) return;
+		
+		auto ptr = FISSION_DEFAULT_ALLOC(new_capacity);
+		if (data != nullptr) {
+			memcpy(ptr, data, count * sizeof(type));
+			FISSION_DEFAULT_FREE(data);
 		}
-		return ptr;
+		data = ptr;
 	}
 
-	template <typename T>
-	T* alloc(u64 count) {
-		auto ptr = base + bytes_allocated;
-		bytes_allocated += count * sizeof(T);
-		if (bytes_allocated > capacity) {
-			return nullptr; // have fun! :)
-		}
-		return reinterpret_cast<T*>(ptr);
-	}
-
-	bump_allocator() = default;
-	bump_allocator(u64 capacity)
-	:	base((u8*)FISSION_DEFAULT_ALLOC(capacity)), capacity(capacity)
-	{}
-
-	void create(u64 capacity) {
-		this->capacity = capacity;
-		bytes_allocated = 0;
-		base = (u8*)FISSION_DEFAULT_ALLOC(capacity);
-	}
-
-	void* release() {
-		auto ptr = base;
-		base = nullptr;
-		return ptr;
-	}
-
-	~bump_allocator() {
-		if(base) FISSION_DEFAULT_FREE(base);
-	}
+	constexpr type const* begin() const { return data; }
+	constexpr type      * begin()       { return data; }
+	constexpr type const* end() const { return data + count; }
+	constexpr type      * end()       { return data + count; }
 };
 
 __FISSION_END__

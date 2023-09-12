@@ -14,8 +14,8 @@ __FISSION_BEGIN__
 namespace console {
 
 	// std::string because I am lazy
-	std::unordered_map<std::string, console_callback_proc> callback_table;
-	std::mutex access_mutex;
+	static std::unordered_map<std::string, console_callback_proc> callback_table;
+	static std::mutex access_mutex;
 
 	void register_command(string name, console_callback_proc proc) {
 		callback_table.emplace(std::string(name.str()), proc);

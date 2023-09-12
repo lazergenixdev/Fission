@@ -9,7 +9,11 @@ layout (set = 0, binding = 0) uniform A {
 	vec2 offset;
 } transform_2d;
 
+layout (push_constant) uniform B {
+	vec2 scale;
+} anim;
+
 void main() {
 	outColor = inColor;
-	gl_Position = vec4(inPositionEmmission.xy * transform_2d.scale + transform_2d.offset, 0.0, 1.0);
+	gl_Position = vec4(anim.scale * (inPositionEmmission.xy * transform_2d.scale + transform_2d.offset), 0.0, 1.0);
 }

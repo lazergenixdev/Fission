@@ -557,8 +557,10 @@ struct Bloom_Scene : public fs::Scene {
 
 		using namespace fs;
 
+		auto mouse = (fs::v2f32)engine.window.mouse_position;
+
 		static float t = 0.0f;
-		add_triangle((fs::v2f32)engine.window.mouse_position, 20, 5.0f*(sinf(t) + 1.0f), colors::White);
+		add_triangle(mouse, 20, 5.0f*(sinf(t) + 1.0f), colors::White);
 		t += (float)dt;
 
 		ps.update(dt, vertex_data, index_data, d);
@@ -576,8 +578,11 @@ struct Bloom_Scene : public fs::Scene {
 		beginInfo.renderArea.offset = {0, 0};
 		vkCmdBeginRenderPass(ctx->command_buffer, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-		VK_GFX_BIND_DESCRIPTOR_SETS(ctx->command_buffer, engine.renderer_2d.pipeline_layout, 1, &engine.transform_2d.set);
+		VK_GFX_BIND_DESCRIPTOR_SETS(ctx->command_buffer, color_pipeline_layout, 1, &engine.transform_2d.set);
 		vkCmdBindPipeline(ctx->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, color_pipeline);
+	
+		v2f32 scale = mouse / 100.0f;
+		vkCmdPushConstants(ctx->command_buffer, color_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, 8, &scale);
 
 		VkViewport viewport{};
 		viewport.x = 0.0f;
@@ -609,6 +614,7 @@ struct Bloom_Scene : public fs::Scene {
 		vkCmdNextSubpass(ctx->command_buffer, VK_SUBPASS_CONTENTS_INLINE);
 
 		vkCmdBindPipeline(ctx->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, emmission_pipeline);
+		vkCmdPushConstants(ctx->command_buffer, color_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, 8, &scale);
 
 		vkCmdBindVertexBuffers(ctx->command_buffer, 0, 1, &vertex_buffer, &offset);
 		vkCmdBindIndexBuffer(ctx->command_buffer, index_buffer, offset, VK_INDEX_TYPE_UINT16);
@@ -786,12 +792,24 @@ struct Bloom_Scene : public fs::Scene {
 			}
 		}
 
+		{
+			VkPushConstantRange push_constant_range{};
+			push_constant_range.size = 8;
+			push_constant_range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+			VkPipelineLayoutCreateInfo pipelineLayoutInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+			pipelineLayoutInfo.pSetLayouts = &engine.transform_2d.layout;
+			pipelineLayoutInfo.setLayoutCount = 1;
+			pipelineLayoutInfo.pPushConstantRanges = &push_constant_range;
+			pipelineLayoutInfo.pushConstantRangeCount = 1;
+			vkCreatePipelineLayout(gfx.device, &pipelineLayoutInfo, nullptr, &color_pipeline_layout);
+		}
+
 		vk::Basic_Vertex_Input<fs::v3f32, fs::rgba> vi{};
 
 		fs::Pipeline_Create_Info pi;
 		pi.device          = gfx.device;
 		pi.render_pass     = color_render_pass;
-		pi.pipeline_layout = engine.renderer_2d.pipeline_layout;
+		pi.pipeline_layout = color_pipeline_layout;
 		pi.vertex_shader   = fs::create_shader(gfx.device, color_vert::size, color_vert::data);
 		pi.fragment_shader = fs::create_shader(gfx.device, color_frag::size, color_frag::data);
 		pi.vertex_input = &vi;
@@ -1068,6 +1086,7 @@ struct Bloom_Scene : public fs::Scene {
 		vkDestroyPipeline(gfx.device, blur_pipeline, nullptr);
 		vkDestroyPipeline(gfx.device, composite_pipeline, nullptr);
 
+		vkDestroyPipelineLayout(gfx.device, color_pipeline_layout, nullptr);
 		vkDestroyPipelineLayout(gfx.device, mask_pipeline_layout, nullptr);
 		vkDestroyPipelineLayout(gfx.device, blur_pipeline_layout, nullptr);
 		vkDestroyPipelineLayout(gfx.device, composite_pipeline_layout, nullptr);
@@ -1146,6 +1165,8 @@ struct Bloom_Scene : public fs::Scene {
 	VkPipeline      mask_pipeline;
 	VkPipeline      blur_pipeline;
 	VkPipeline      composite_pipeline;
+
+	VkPipelineLayout      color_pipeline_layout;
 
 	VkPipelineLayout      mask_pipeline_layout;
 	VkDescriptorSetLayout mask_descriptor_layout;

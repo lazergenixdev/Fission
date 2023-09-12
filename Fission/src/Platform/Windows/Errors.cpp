@@ -6,6 +6,8 @@
 #define USE_DEBUG_OUTPUT_WINDOW 1
 #endif
 
+#define MBT_ERROR  (MB_OK | MB_ICONERROR | MB_SYSTEMMODAL)
+
 using _int0          = VkDebugUtilsMessageSeverityFlagBitsEXT;
 using _int1          = VkDebugUtilsMessageTypeFlagsEXT;
 using _callback_data = VkDebugUtilsMessengerCallbackDataEXT const*;
@@ -30,7 +32,7 @@ void display_win32_fatal_error(WCHAR const* what) {
     OutputDebugStringW(body.c_str());
     OutputDebugStringA("\n");
 #endif
-    MessageBoxW(NULL, body.c_str(), L"Fatal Error :(", MB_OK | MB_ICONERROR);
+    MessageBoxW(NULL, body.c_str(), L"Fatal Error :(", MBT_ERROR);
 }
 
 void display_fatal_error(const char* title, const char* what) {
@@ -38,7 +40,7 @@ void display_fatal_error(const char* title, const char* what) {
     OutputDebugStringA(what);
     OutputDebugStringA("\n");
 #endif
-    MessageBoxA(NULL, what, title, MB_OK | MB_ICONERROR);
+    MessageBoxA(NULL, what, title, MBT_ERROR);
 }
 
 constexpr const char* vulkan_result_to_string(VkResult result) {
@@ -103,14 +105,14 @@ void display_fatal_graphics_error(VkResult r, char const* what) {
 #ifdef USE_DEBUG_OUTPUT_WINDOW
     OutputDebugStringA(body.c_str());
 #endif
-    MessageBoxA(NULL, body.c_str(), "Fatal Graphics Error :(", MB_OK | MB_ICONERROR | MB_SYSTEMMODAL);
+    MessageBoxA(NULL, body.c_str(), "Fatal Graphics Error :(", MBT_ERROR);
 }
 void display_fatal_graphics_error(char const* what) {
 #ifdef USE_DEBUG_OUTPUT_WINDOW
     OutputDebugStringA(what);
     OutputDebugStringA("\n");
 #endif
-    MessageBoxA(NULL, what, "Fatal Graphics Error :(", MB_OK | MB_ICONERROR | MB_SYSTEMMODAL);
+    MessageBoxA(NULL, what, "Fatal Graphics Error :(", MBT_ERROR);
 }
 
 const char* severity_string(VkDebugUtilsMessageSeverityFlagBitsEXT severity) {

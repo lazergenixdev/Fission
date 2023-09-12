@@ -1,9 +1,17 @@
 if VULKAN_SDK == nil then
 	VULKAN_SDK = os.getenv("VULKAN_SDK")
+	if VULKAN_SDK == nil then
+		error("Must have Vulkan SDK installed")
+	end
 end
 
-if VULKAN_SDK == nil then
-	error("Must have Vulkan SDK installed")
+-- how will this work when using Fission as a dependency?
+function prebuild_shader_compile()
+	prebuildcommands {
+		"cd %{wks.location}/scripts",
+		"python compile_shaders.py %{prj.location}"
+	}
+	prebuildmessage "Compiling Shaders..."
 end
 
 IncludeDir = {}

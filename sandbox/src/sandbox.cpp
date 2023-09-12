@@ -727,7 +727,6 @@ bool operator==(fs::string Left, char const* Right) {
 
 fs::Scene* on_create_scene(fs::Scene_Key const& key) {
 	using namespace fs;
-	return nullptr;
 	// Default:
 	if (key.id().is_empty()) {
 		return new Scene_OK;
