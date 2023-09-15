@@ -57,7 +57,7 @@ struct Tetris_Scene : public fs::Scene {
 #endif
 
 		VkDescriptorSet sets[] = { engine.transform_2d.set, engine.fonts.debug.texture };
-		VK_GFX_BIND_DESCRIPTOR_SETS(ctx->command_buffer, engine.textured_renderer_2d.pipeline_layout, (uint32_t)std::size(sets), sets);
+		FS_VK_BIND_DESCRIPTOR_SETS(ctx->command_buffer, engine.textured_renderer_2d.pipeline_layout, (uint32_t)std::size(sets), sets);
 		engine.textured_renderer_2d.set_font(&engine.fonts.debug);
 
 		tetris_update(tetris, (float)dt, events, engine.renderer_2d);
@@ -519,7 +519,7 @@ struct Scene_OK : public fs::Scene {
 		vkCmdNextSubpass(cmd, VK_SUBPASS_CONTENTS_INLINE);
 		
 		// Blend src Image with dst Image
-		VK_GFX_BIND_DESCRIPTOR_SETS(cmd, blend_pipeline_layout, 1, &blend_descriptor_set);
+		FS_VK_BIND_DESCRIPTOR_SETS(cmd, blend_pipeline_layout, 1, &blend_descriptor_set);
 		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, blend_pipeline);
 		float blend = std::powf(0.9f, (float)dt * 120.0f);
 		engine.debug_layer.add("blend = %.2f", blend);
@@ -530,7 +530,7 @@ struct Scene_OK : public fs::Scene {
 #ifdef THIRD_PASS
 		vkCmdNextSubpass(cmd, VK_SUBPASS_CONTENTS_INLINE);
 
-		VK_GFX_BIND_DESCRIPTOR_SETS(cmd, blend_pipeline_layout, 1, &copy_descriptor_set);
+		FS_VK_BIND_DESCRIPTOR_SETS(cmd, blend_pipeline_layout, 1, &copy_descriptor_set);
 		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, copy_pipeline);
 		vkCmdDraw(cmd, 3, 1, 0, 0);
 #endif

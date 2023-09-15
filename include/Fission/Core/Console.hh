@@ -36,6 +36,15 @@ namespace console {
 
 	FISSION_API void register_command(string name, console_callback_proc proc);
 	FISSION_API void unregister_command(string name);
+	
+	template <int buffer_size = 128, typename...T>
+	static void printf(const char* format, T&&...args) {
+		char buffer[buffer_size];
+		string formatted;
+		formatted.count = sprintf(buffer, format, std::forward<T>(args)...);
+		formatted.data = (::fs::c8*)buffer;
+		print(formatted);
+	}
 }
 
 __FISSION_END__

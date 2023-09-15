@@ -35,9 +35,6 @@
 #    define FISSION_API
 #endif
 
-/*! @brief Engine Name */
-#define FISSION_ENGINE "Fission Engine"
-
 /*! @brief Fission Engine Build String, identifying the config we built. */
 #ifdef FISSION_DEBUG
 #	define FISSION_BUILD_STRING "(Debug)"   /* Debug build of the engine. */
@@ -56,8 +53,8 @@
 //\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\||//\\//\\
 
 #define FS_EXPAND(X) X
-#define FS_COMBINE(A,B) A ## B
-#define FS_COMBINE2(A,B) FS_COMBINE(A,B)
+#define FS_CAT(A,B) A ## B
+#define FS_CAT2(A,B) FS_CAT(A,B)
 
 /*! convert Bool to True/False */
 #define FS_BTF(B) (B?("True"):("False"))
@@ -70,9 +67,6 @@
 
 /* Important Web Address */
 #define FS_IMPORTANT_LINK "https://youtu.be/dQw4w9WgXcQ"
-
-/*! @brief Engine Name */
-#define FS "Fission Engine"
 
 #define FS_PI  (3.1415926535897932384626433)
 #define FS_TAU (6.2831853071795864769252867)

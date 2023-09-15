@@ -29,14 +29,8 @@ __FISSION_BEGIN__
 // string from Pointer and Count
 #define FS_str_make(PTR, COUNT)   ::fs::string{.count = static_cast<::fs::u64>(COUNT), .data = (::fs::c8*)PTR}
 
-// Will this ever be useful?
-#define FS_FORMAT_TO_STRING(SIZE, STR, FORMAT_STRING, ...) \
-char FS_COMBINE2(__buffer_,__LINE__) [SIZE]; \
-STR.count = sprintf_s(FS_COMBINE2(__buffer_,__LINE__), FORMAT_STRING, __VA_ARGS__); \
-STR.data  = (::fs::c8*)FS_COMBINE2(__buffer_,__LINE__)
-
 struct string {
-	u64 count = 0;
+	u64 count = 0; //! note: u32 is probably good enough for all string counts
 	c8* data  = nullptr;
 
 	inline constexpr std::string_view str() const noexcept {
@@ -51,6 +45,19 @@ struct string {
 		return count == 0;
 	}
 };
+
+struct _Formattable_String {
+	const char* format;
+
+	template <typename...T>
+	string operator()(char* buffer, T&&...args) const {
+		auto count = (u64)sprintf(buffer, format, std::forward<T>(args)...);
+		return {count, reinterpret_cast<c8*>(buffer)};
+	}
+};
+static _Formattable_String constexpr operator""_fmt(const char* str, std::size_t) {
+	return {str};
+}
 
 template <size_t Right_Size>
 static constexpr bool operator==(string const& left, char const(&right)[Right_Size]) {

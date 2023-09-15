@@ -24,12 +24,12 @@ struct dynamic_array
 	
 	type* data = nullptr;
 	u32   count = 0; // no need for u64, arrays will never get that big (hopefully, or we have a bigger problem)
-	u32   capacity = 0;
+	u32   allocated = 0;
 	
 	constexpr dynamic_array() = default;
 	
 	dynamic_array(u32 initial_capacity)
-	:	capacity(initial_capacity), count(0), data(nullptr)
+	:	allocated(initial_capacity), count(0), data(nullptr)
 	{
 		data = FISSION_DEFAULT_ALLOC(initial_capacity * sizeof(type));
 	}
@@ -40,7 +40,7 @@ struct dynamic_array
 	}
 
 	void reserve(u32 new_capacity) {
-		if (new_capacity <= capacity) return;
+		if (new_capacity <= allocated) return;
 		
 		auto ptr = FISSION_DEFAULT_ALLOC(new_capacity);
 		if (data != nullptr) {

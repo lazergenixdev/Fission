@@ -442,13 +442,13 @@ void add_engine_console_commands() {
 	});
 
 	ADD_COMMAND(fps, {
+		using namespace fs;
 		args.data[args.count] = 0;
 		float fps = strtof((char*)args.data, nullptr);
 		if (fps != 0.0f) {
 			engine.fps_limit = fps;
-			string out;
-			FS_FORMAT_TO_STRING(64, out, "set fps to: %.1f", fps);
-			console::println(out);
+			char buffer[32];
+			console::println("set fps to: %.1f"_fmt(buffer, fps));
 		}
 	});
 }

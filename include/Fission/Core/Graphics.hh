@@ -106,7 +106,7 @@ struct FISSION_API Graphics
 
 	VmaAllocator     allocator;
 
-	VkDebugUtilsMessengerEXT debugMessenger; // only valid in debug mode
+	VkDebugUtilsMessengerEXT debugMessenger = nullptr; // only valid in debug mode
 
 	Graphics() = default;
 	Graphics(Graphics const&) = delete;
@@ -172,7 +172,7 @@ struct Transform_2D_Data {
 
 __FISSION_END__
 
-#define VK_GFX_BIND_DESCRIPTOR_SETS(COMMAND_BUFFER, PIPELINE_LAYOUT, SET_COUNT, SETS) \
+#define FS_VK_BIND_DESCRIPTOR_SETS(COMMAND_BUFFER, PIPELINE_LAYOUT, SET_COUNT, SETS) \
 vkCmdBindDescriptorSets(COMMAND_BUFFER, VK_PIPELINE_BIND_POINT_GRAPHICS, PIPELINE_LAYOUT, 0, SET_COUNT, SETS, 0, nullptr)
 
 // vulkan.hpp is kinda trash ngl

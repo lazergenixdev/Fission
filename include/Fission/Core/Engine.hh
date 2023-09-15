@@ -39,12 +39,12 @@ __FISSION_BEGIN__
 // ONLY meant for HARD-CODED defaults
 // (engine will handle saving/loading settings to/from file)
 struct Defaults {
-	string      window_title   = FS_str(":)");
-	int         window_width   = 1280;
-	int         window_height  = 720;
-	Window_Mode window_mode    = Windowed;
-	int         display_index  = Display_Index_Automatic;
-	string      settings_folder_name = FS_str(".Fission"); // "app_name"
+	string      window_title     = FS_str(":)");
+	int         window_width     = 1280;
+	int         window_height    = 720;
+	Window_Mode window_mode      = Windowed;
+	int         display_index    = Display_Index_Automatic;
+	string      config_location  = FS_str(".Fission"); // "app_name"
 };
 
 struct FISSION_API Engine {
@@ -131,7 +131,7 @@ struct FISSION_API Engine {
 
 	inline void bind_font(VkCommandBuffer cmd, Font_Static* font) {
 		VkDescriptorSet sets[] = { transform_2d.set, font->texture };
-		VK_GFX_BIND_DESCRIPTOR_SETS(cmd, textured_renderer_2d.pipeline_layout, 2, sets);
+		FS_VK_BIND_DESCRIPTOR_SETS(cmd, textured_renderer_2d.pipeline_layout, 2, sets);
 	}
 
 private:
