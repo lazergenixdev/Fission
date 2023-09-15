@@ -4,21 +4,20 @@ project 'Fission'
     cppdialect "c++20"
 
 	function add_link(name)
-		FissionLinks[name] = ""
+		FISSION_LINKS[name] = ""
 	end
 
-    targetdir ("%{wks.location}/bin/" .. OutputDir)
-	objdir ("%{wks.location}/bin-int/" .. OutputDir .. "/%{prj.name}")
+    targetdir ("%{wks.location}/bin/" .. output_location)
+	objdir ("%{wks.location}/bin-int/" .. output_location .. "/%{prj.name}")
 
     files { "%{prj.location}/src/**.cpp", "%{prj.location}/src/**.h", "%{prj.location}/src/**.hh" }
 
     -- public headers
     files '../include/**'
 
+	includedirs (FISSION_INCLUDE_DIRS)
+
 	includedirs {
-        "../include",
-        '%{IncludeDir.vulkan}',
-        '%{IncludeDir.freetype}',
         '../resources',
         "vendor",
 	}

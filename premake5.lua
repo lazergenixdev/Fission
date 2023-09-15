@@ -1,3 +1,5 @@
+output_location = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
+
 if VULKAN_SDK == nil then
 	VULKAN_SDK = os.getenv("VULKAN_SDK")
 	if VULKAN_SDK == nil then
@@ -5,34 +7,78 @@ if VULKAN_SDK == nil then
 	end
 end
 
-function prebuild_shader_compile(fission_location)
+function prebuild_shader_compile()
 	prebuildcommands {
-		"cd " .. fission_location .. "/scripts",
+		"cd " .. FISSION_LOCATION .. "/scripts",
 		"python compile_shaders.py %{prj.location}"
 	}
 	prebuildmessage "Compiling Shaders..."
 end
 
-if IncludeDir == nil then IncludeDir = {} end
-IncludeDir["vulkan"] 	= '%{VULKAN_SDK}/Include'
-IncludeDir["freetype"] 	= 'vendor/freetype/include'
+function fission_project(name)
+	project (name)
+    kind 'WindowedApp'
+    language 'C++'
+    cppdialect "c++20"
 
-FissionLinks = {}
-FissionLinks["vulkan-1"]="%{VULKAN_SDK}/Lib"
-FissionLinks["freetype"]="%{wks.location}/Fission/vendor/freetype/%{OutputDir}"
+    targetdir ("%{wks.location}/bin/" .. output_location)
+	objdir ("%{wks.location}/bin-int/" .. output_location .. "/%{prj.name}")
 
-if Fission_External then
+    links 'Fission'
+	
+	print("--------------------------------! Active Libraries !--------------------------------")
+    for library,path in pairs(FISSION_LINKS) do
+		print(library,path)
+		links(library)
+		if #path ~= 0 then
+			libdirs(path)
+		end
+    end
+	print("------------------------------------------------------------------------------------")
+	includedirs (FISSION_INCLUDE_DIRS)
+
+    staticruntime "On"
+	
+    filter "configurations:Debug"
+        defines "DEBUG"
+        symbols "On"
+
+    filter "configurations:Release"
+        defines "RELEASE"
+        optimize "On"
+
+    filter "configurations:Dist"
+        defines "DIST"
+        optimize "Speed"
+
+	filter {}
+end
+
+FISSION_INCLUDE_DIRS = {}
+FISSION_INCLUDE_DIRS["Fission"]   = '%{FISSION_LOCATION}/include'
+FISSION_INCLUDE_DIRS["vulkan"]   = '%{VULKAN_SDK}/include'
+FISSION_INCLUDE_DIRS["freetype"] = '%{FISSION_LOCATION}/Fission/vendor/freetype/include'
+
+-- Links needed to compile with Fission Engine
+FISSION_LINKS = {}
+FISSION_LINKS["freetype"]="%{FISSION_LOCATION}/Fission/vendor/freetype/%{output_location}"
+if _TARGET_OS == "windows" then
+	FISSION_LINKS["vulkan-1"]="%{VULKAN_SDK}/lib"
+else
+	FISSION_LINKS["vulkan"]="%{VULKAN_SDK}/lib"
+end
+
+if FISSION_EXTERNAL then
 	include 'Fission'
 else
 	workspace 'Fission'
 	architecture "x86_64"
 	configurations { 'Debug', 'Release', 'Dist' }
 	
-	OutputDir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
-	
 	flags { 'MultiProcessorCompile', 'MFC' }
 	defines '_CRT_SECURE_NO_WARNINGS'
-	
+
+	FISSION_LOCATION = '%{wks.location}'
 	startproject 'sandbox'
 	
 	include 'Fission'
