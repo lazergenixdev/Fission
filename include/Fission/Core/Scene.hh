@@ -19,11 +19,19 @@ __FISSION_BEGIN__
 struct Event;
 struct Render_Context;
 
-// TODO: align int64 and float64 values to 8-byte boundaries?
+//! @brief Information that describes a scene, consisting of a scene's Name, and Key-Value pairs.
 struct Scene_Key {
+	/*
+	* Example scene key:
+	* -----------------------------------------
+	*	source command line:
+	*		Level -level_id 69
+	*	scene key byte stream:
+	*		u8[count = 5] "Level" u8[count = 8] "level_id" u8[type = .Int64] s64[value = 69]
+	*/
 	::std::vector<u8> stream;
 
-	string id() const {
+	string name() const {
 		if (stream.empty()) return string{};
 		return FS_str_make(stream.data() + 1, stream[0]);
 	}
@@ -34,21 +42,25 @@ struct Scene_Key {
 			String = 1,
 			Int64 = 2,
 			Float64 = 3,
-			Int64x2 = 4, // NOT IMPLEMENTED (1, 2)
+		//	Int64x2 = 4, // format: "(1, 2)" ???
 		};
 
 		u8 type;
 		union {
-			string string;
-			s64    int64;
-			f64    float64;
+			// gcc does not like it when the type is the same as the variable name,
+			// NOTE TO GCC: Fuck you piece of shit compiler, I am the programmer,
+			//              let me do what I want, I will eventually rewrite this
+			//              engine in Jai anyways, so good job being a piece of shit.
+			string v_string;
+			s64    v_s64;
+			f64    v_f64;
 		};
 	};
 
-	void reset(string scene_id) {
+	void reset(string name) {
 		stream.clear();
 		stream.reserve(256); // start off well sized
-		insert_string(scene_id);
+		insert_string(name);
 	}
 
 	void add_flag(string key) {
@@ -67,7 +79,7 @@ struct Scene_Key {
 	}
 	void add_int64(string key, s64 value) {
 		insert_string(key);
-		stream.emplace_back(Value::Float64);
+		stream.emplace_back(Value::Int64);
 		insert_raw(value);
 	}
 
@@ -89,7 +101,6 @@ private:
 	}
 public:
 
-
 	u64 start() const { return (u64)stream.front() + 1; }
 
 	string next_key(u64& cursor) const {
@@ -108,16 +119,18 @@ public:
 		default:
 			// "undefined next value"
 			value.type = 0;
+			// move cursor to end, so that we do not read corrupted memory
+			cursor = stream.size();
 		break; case Value::Flag:
 		break; case Value::String:
-			value.string.count = (u64)stream[cursor++];
-			value.string.data = (c8*)stream.data() + cursor;
-			cursor += value.string.count;
+			value.v_string.count = (u64)stream[cursor++];
+			value.v_string.data = (c8*)stream.data() + cursor;
+			cursor += value.v_string.count;
 		break; case Value::Int64:
-			value.int64 = *reinterpret_cast<s64 const*>(stream.data() + cursor);
+			value.v_s64 = *reinterpret_cast<s64 const*>(stream.data() + cursor);
 			cursor += 8;
 		break; case Value::Float64:
-			value.float64 = *reinterpret_cast<f64 const*>(stream.data() + cursor);
+			value.v_f64 = *reinterpret_cast<f64 const*>(stream.data() + cursor);
 			cursor += 8;
 			break;
 		}

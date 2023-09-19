@@ -728,13 +728,13 @@ bool operator==(fs::string Left, char const* Right) {
 fs::Scene* on_create_scene(fs::Scene_Key const& key) {
 	using namespace fs;
 	// Default:
-	if (key.id().is_empty()) {
+	if (key.name().is_empty()) {
 		return new Scene_OK;
 	}
-	else if (key.id() == "Tetris") {
+	else if (key.name() == "Tetris") {
 		return new Tetris_Scene;
 	}
-	else if (key.id() == "Start") {
+	else if (key.name() == "Start") {
 		return new Scene_OK;
 	}
 	return nullptr; // scene id is undefined
