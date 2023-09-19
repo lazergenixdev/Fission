@@ -63,13 +63,13 @@ struct Window : public platform::Window_Impl
 public:
 	void create(struct Window_Create_Info* info);
 
-	FS_THREAD_SAFE void set_title(string const& title);
-	FS_THREAD_SAFE void close();
-	FS_THREAD_SAFE bool is_minimized();
-	FS_THREAD_SAFE bool exists() const; // this function is weird
+	void set_title(string const& title);
+	void close();
+	bool is_minimized();
+	bool exists() const; // this function is weird
 	
 	//! @brief Display that is used is determined by the `display_index`
-	FS_THREAD_SAFE void set_mode(Window_Mode mode);
+	void set_mode(Window_Mode mode);
 
 	Window() = default;
 	~Window();

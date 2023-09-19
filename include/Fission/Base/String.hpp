@@ -46,18 +46,23 @@ struct string {
 	}
 };
 
+////////////////////////////////////////////////////////////////////
+// EXAMPLE USAGE:
+//	char buffer[128];
+//	console::print("I am %i and my name is %s"_fmt(buffer, age, name));
 struct _Formattable_String {
 	const char* format;
 
-	template <typename...T>
-	string operator()(char* buffer, T&&...args) const {
-		auto count = (u64)sprintf(buffer, format, std::forward<T>(args)...);
+	template <size_t buffer_size, typename...T>
+	string operator()(char (&buffer)[buffer_size], T&&...args) const {
+		auto count = (u64)snprintf(buffer, buffer_size, format, std::forward<T>(args)...);
 		return {count, reinterpret_cast<c8*>(buffer)};
 	}
 };
 static _Formattable_String constexpr operator""_fmt(const char* str, std::size_t) {
 	return {str};
 }
+////////////////////////////////////////////////////////////////////
 
 template <size_t Right_Size>
 static constexpr bool operator==(string const& left, char const(&right)[Right_Size]) {

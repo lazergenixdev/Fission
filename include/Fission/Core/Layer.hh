@@ -42,12 +42,12 @@ struct Debug_Layer {
 	// note: string is copied, no need to keep the string memory around :)
 	void add(string s);
 
-	template <size_t Buffer_Size = 128, typename...T>
+	template <size_t Buffer_Size = 64, typename...T>
 	void add(const char* fmt, T&&...args)
 	{
-		char _buffer[Buffer_Size];
-		size_t count = sprintf_s(_buffer, fmt, std::forward<T>(args)...);
-		add(FS_str_make(_buffer, count));
+		char buffer[Buffer_Size] = {};
+		size_t count = snprintf(buffer, Buffer_Size, fmt, std::forward<T>(args)...);
+		add(FS_str_make(buffer, count));
 	}
 
 	u32 flags = layer::enable;

@@ -57,10 +57,10 @@
 #define FS_CAT2(A,B) FS_CAT(A,B)
 
 /*! convert Bool to True/False */
-#define FS_BTF(B) (B?("True"):("False"))
+#define FS_BTF(B) ((B)?"True":"False")
 
 /*! convert Bool to Yes/No */
-#define FS_BYN(B) (B?("Yes"):("No"))
+#define FS_BYN(B) (B)?"Yes":"No")
 
 /*! again, why is this not built into cpp???? */
 #define FS_FOR(COUNT) for (std::remove_const_t<decltype(COUNT)> i = 0; i < (COUNT); ++i)
@@ -71,29 +71,30 @@
 #define FS_PI  (3.1415926535897932384626433)
 #define FS_TAU (6.2831853071795864769252867)
 
-/*! @brief Marks procedures/functions that should be thread safe */
-#define FS_THREAD_SAFE
-
-#if defined(FISSION_PLATFORM_WINDOWS)
-#define FS_debug_print(STRING) OutputDebugStringA(STRING)
-#define FS_debug_printf(FORMAT, ...) { char _buf[256]; sprintf_s(_buf, FORMAT, __VA_ARGS__); OutputDebugStringA(_buf); } (void)0
+#if defined(FISSION_DEBUG) && defined(FISSION_PLATFORM_WINDOWS)
+#	define FS_debug_print(STRING) OutputDebugStringA(STRING)
+#	define FS_debug_printf(FORMAT, ...) \
+{ char b[128] = {}; snprintf(b, sizeof(b), FORMAT, __VA_ARGS__); OutputDebugStringA(b); } (void)0
+#else
+#	define FS_debug_print(STRING)       (void)0
+#	define FS_debug_printf(FORMAT, ...) (void)0
 #endif
 
 __FISSION_BEGIN__
+
 // PlatformConfig.hpp is required to include "inttypes.h"
 
-using u8  = uint8_t;
-using u16 = uint16_t;
-using u32 = uint32_t;
-using u64 = uint64_t;
-using s8  = int8_t;
-using s16 = int16_t;
-using s32 = int32_t;
-using s64 = int64_t;
-using f32 = float;
-using f64 = double;
-
 using byte = uint8_t;
+using u8   = uint8_t;
+using u16  = uint16_t;
+using u32  = uint32_t;
+using u64  = uint64_t;
+using s8   = int8_t;
+using s16  = int16_t;
+using s32  = int32_t;
+using s64  = int64_t;
+using f32  = float;
+using f64  = double;
 
 // This is only for seeing the strings correctly in the debugger,
 //    literally no other reason for this to be here :)

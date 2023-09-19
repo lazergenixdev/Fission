@@ -215,17 +215,15 @@ void Debug_Layer::on_update(double dt, Render_Context* ctx) {
 	FS_FOR(frame_count) mean_frame_time += frame_times[i];
 	mean_frame_time /= (float)frame_count;
 
-	char buffer[64];
-	int count = sprintf(buffer, "%.1f FPS (%.2f ms)", 1.0f / mean_frame_time, mean_frame_time * 1000.0f);
-	
 	auto base = character_buffer.data();
-
+	
 	add_text(app_info_string.absolute(base));
-	add_text(FS_str_make(buffer, count));
+
+	char buffer[64];
+	add_text("%.1f FPS (%.2f ms)"_fmt(buffer, 1.0f / mean_frame_time, mean_frame_time * 1000.0f));
 
 	if (flags& layer::debug_show_verbose) {
-		count = sprintf(buffer, "CPU time: %.4f ms", cpu_time*1000.0f);
-		add_text(FS_str_make(buffer, count));
+		add_text("CPU time: %.4f ms"_fmt(buffer, cpu_time*1000.f));
 		offset += draw_frame_time_graph({0.0f, offset});
 	}
 	else offset += height;

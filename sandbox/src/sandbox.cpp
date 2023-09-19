@@ -176,14 +176,12 @@ struct Tetris_Scene : public fs::Scene {
 
 		fs::console::register_command(FS_str("exit"), [](fs::string) { engine.flags &=~ engine.fRunning; });
 
-		fs::string buffer_view;
-		char buffer[128];
-		buffer_view = FS_str_make(buffer, 0);
+		using namespace fs;
+		char buffer[32] = {};
 
 		for (auto&& d : engine.displays) {
-			buffer_view.count = sprintf_s(buffer, "Monitor index: %i", d.index);
-			fs::console::println(buffer_view);
 			fs::console::println(d.name());
+			fs::console::println("Monitor index = %i"_fmt(buffer, d.index));
 		}
 	}
 	~Tetris_Scene() override {

@@ -39,9 +39,9 @@ namespace console {
 	
 	template <int buffer_size = 128, typename...T>
 	static void printf(const char* format, T&&...args) {
-		char buffer[buffer_size];
+		char buffer[buffer_size] = {};
 		string formatted;
-		formatted.count = sprintf(buffer, format, std::forward<T>(args)...);
+		formatted.count = snprintf(buffer, buffer_size, format, std::forward<T>(args)...);
 		formatted.data = (::fs::c8*)buffer;
 		print(formatted);
 	}
