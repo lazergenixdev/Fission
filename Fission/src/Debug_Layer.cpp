@@ -194,12 +194,14 @@ void Debug_Layer::on_update(double dt, Render_Context* ctx) {
 
 	engine.textured_renderer_2d.set_font(&engine.fonts.debug);
 
+	static constexpr auto bg_color = color(colors::Black, 0.95f);
+
 	float height = engine.fonts.debug.height;
 	float offset = 0.0f;
 	auto add_text = [&](string s) {
 		if (s.count) {
 			auto bounds = engine.textured_renderer_2d.add_string(s, { 0.0f, offset }, colors::White);
-			engine.renderer_2d.add_rect({0.0f, bounds.x+padding, offset, offset+bounds.y}, color(colors::Black, 0.9f));
+			engine.renderer_2d.add_rect({0.0f, bounds.x+padding, offset, offset+bounds.y}, bg_color);
 		}
 		offset += height;
 	};
@@ -207,7 +209,7 @@ void Debug_Layer::on_update(double dt, Render_Context* ctx) {
 	auto add_text_right = [&](string s) {
 		if (s.count) {
 			auto bounds = engine.textured_renderer_2d.add_string_rtl(s, { right, offset }, colors::White);
-			engine.renderer_2d.add_rect({right-bounds.x-padding, right, offset, offset + bounds.y}, color(colors::Black, 0.9f));
+			engine.renderer_2d.add_rect({right-bounds.x-padding, right, offset, offset + bounds.y}, bg_color);
 		}
 		offset += height;
 	};
