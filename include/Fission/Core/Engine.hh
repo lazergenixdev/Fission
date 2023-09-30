@@ -36,6 +36,9 @@ extern fs::Scene* on_create_scene(fs::Scene_Key const& key);
 
 __FISSION_BEGIN__
 
+// Temparary Alloc
+extern void* talloc(u64 size);
+
 // ONLY meant for HARD-CODED defaults
 // (engine will handle saving/loading settings to/from file)
 struct Defaults {
@@ -60,6 +63,13 @@ struct FISSION_API Engine {
 		fChange_Scene                  = 1 << 4,
 		fFPS_Limiter_Enable            = 1 << 5,
 	};
+
+	string get_version_string();
+
+	inline void bind_font(VkCommandBuffer cmd, Font_Static* font) {
+		VkDescriptorSet sets[] = { transform_2d.set, font->texture };
+		FS_VK_BIND_DESCRIPTOR_SETS(cmd, textured_renderer_2d.pipeline_layout, 2, sets);
+	}
 
 	////////////////////////////////////////////////////////////////////////////
 	// Members
@@ -90,19 +100,6 @@ struct FISSION_API Engine {
 	string             app_version_info = FS_str("dev");
 	string             app_name = FS_str("app name");
 
-	Texture_Layout texture_layout;
-
-	struct {
-		VkDescriptorSet     set;
-		Transform_2D_Layout layout;
-		VkBuffer            buffer;
-		VmaAllocation       allocation;
-	} transform_2d;
-
-	// Pool for Uniform Buffers and Combined image-samplers
-	//	(what the engine uses internally)
-	VkDescriptorPool descriptor_pool;
-
 	struct {
 		FT_Library library;
 
@@ -114,25 +111,28 @@ struct FISSION_API Engine {
 		VkSampler sampler;
 	} fonts;
 
-	std::vector<Display> displays;
+	struct {
+		VkDescriptorSet     set;
+		Transform_2D_Layout layout;
+		VkBuffer            buffer;
+		VmaAllocation       allocation;
+	} transform_2d;
+
+	Texture_Layout texture_layout;
+
+	// Pool for Uniform Buffers and Combined image-samplers
+	//	(what the engine uses internally)
+	VkDescriptorPool descriptor_pool;
+
+	void* _ts_base = nullptr;
+	u32   _ts_allocated = 0;
+	u32   _ts_size = 0;
 
 	Scene_Key next_scene_key;
 
-	void* _ts_base = nullptr;
-	u64   _ts_size = 0;
+	std::vector<Display> displays;
 
 	Graphics_Stale_Data graphics_ext;
-
-	////////////////////////////////////////////////////////////////////////////
-	// Engine API
-	void* talloc(u64 size); // WIP
-
-	string get_version_string();
-
-	inline void bind_font(VkCommandBuffer cmd, Font_Static* font) {
-		VkDescriptorSet sets[] = { transform_2d.set, font->texture };
-		FS_VK_BIND_DESCRIPTOR_SETS(cmd, textured_renderer_2d.pipeline_layout, 2, sets);
-	}
 
 private:
 #if defined(FISSION_PLATFORM_WINDOWS)

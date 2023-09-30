@@ -86,6 +86,7 @@ struct Pipeline_Create_Info {
 	Blending_Mode blend_mode;
 	float sampleRateShading = 0.0f;
 	VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT;
+	VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	uint32_t subpass = 0;
 
 };
@@ -101,7 +102,7 @@ static void create_pipeline(Pipeline_Create_Info const& createInfo, VkPipeline* 
 	VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly{ VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
-	inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	inputAssembly.topology = createInfo.topology;
 	inputAssembly.primitiveRestartEnable = VK_FALSE;
 
 	VkDynamicState dynamicStates[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };

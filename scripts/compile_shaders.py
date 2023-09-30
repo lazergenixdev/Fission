@@ -45,7 +45,10 @@ def main():
 					else:
 						print(f"error: shader compilation failed with code {r}")
 
-	os.remove("a.spv")
+	try:
+		os.remove("a.spv")
+	except Exception:
+		pass
 
 if __name__ == "__main__":
     main()

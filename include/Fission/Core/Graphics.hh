@@ -217,6 +217,8 @@ namespace vk {
 	template <>	struct _format_of<fs::v3f32> { static constexpr VkFormat value = VK_FORMAT_R32G32B32_SFLOAT; };
 	template <>	struct _format_of<fs::v2f32> { static constexpr VkFormat value = VK_FORMAT_R32G32_SFLOAT; };
 	template <>	struct _format_of<fs::f32>   { static constexpr VkFormat value = VK_FORMAT_R32_SFLOAT; };
+	template <>	struct _format_of<fs::s32>   { static constexpr VkFormat value = VK_FORMAT_R32_SINT; };
+	template <>	struct _format_of<fs::u32>   { static constexpr VkFormat value = VK_FORMAT_R32_UINT; };
 
 	template <typename T> static constexpr VkFormat format_of = _format_of<T>::value;
 

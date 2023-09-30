@@ -91,6 +91,10 @@ s64 timestamp() {
 	return o.QuadPart;
 }
 
+double seconds_elasped(s64 start, s64 end) {
+	return double(end - start) / _freq.value;
+}
+
 double seconds_elasped_and_reset(s64& last) {
 	LARGE_INTEGER now;
 	QueryPerformanceCounter(&now);

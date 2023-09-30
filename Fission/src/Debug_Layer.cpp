@@ -1,6 +1,7 @@
 #include <Fission/Core/Layer.hh>
 #include <Fission/Core/Engine.hh>
 #include <Fission/Core/Input/Keys.hh>
+#include "Version.h"
 #include <format>
 #include <random>
 #include <intrin.h>
@@ -69,7 +70,7 @@ void Debug_Layer::create() {
 	app_info_string = next_view;
 
 	offset = character_buffer.size();
-	copy_to(std::random_device{}() % 128 ? engine.get_version_string() : FS_str("Unreal Engine v6.0.0"), character_buffer);
+	copy_to(std::random_device{}() % 128 ? FS_str("Fission Engine (" FISSION_VERSION_NUMBER_PRE ")") : FS_str("Unreal Engine v6.0.0"), character_buffer);
 	right_strings.emplace_back(next_view);
 	
 	offset = character_buffer.size();

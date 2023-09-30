@@ -92,7 +92,7 @@ LRESULT Window::_win32_ProcessMessage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
     case WM_SYSKEYDOWN:
     case WM_KEYDOWN: {
         Event event{
-            .timestamp = (unsigned)last_timestamp.QuadPart,
+            .timestamp = last_timestamp.QuadPart,
             .type = Event_Key_Down,
             .key_down = {
                 .key_id = (u32)wp,
@@ -112,7 +112,7 @@ LRESULT Window::_win32_ProcessMessage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
     case WM_SYSKEYUP:
     case WM_KEYUP: {
         Event event{
-            .timestamp = (unsigned)last_timestamp.QuadPart,
+            .timestamp = last_timestamp.QuadPart,
             .type = Event_Key_Up,
             .key_up = {
                 .key_id = (u32)wp,
@@ -135,7 +135,7 @@ LRESULT Window::_win32_ProcessMessage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
         //if( Msg == WM_XBUTTONDOWN || Msg == WM_XBUTTONDBLCLK ) { button = ( GET_XBUTTON_WPARAM( wParam ) == XBUTTON1 ) ? 3 : 4; }
         SetCapture(hwnd);
         Event event{
-            .timestamp = (unsigned)last_timestamp.QuadPart,
+            .timestamp = last_timestamp.QuadPart,
             .type = Event_Key_Down,
             .key_down = {
                 .key_id = id,
@@ -156,7 +156,7 @@ LRESULT Window::_win32_ProcessMessage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
         //	if( Msg == WM_XBUTTONUP ) { button = ( GET_XBUTTON_WPARAM( wParam ) == XBUTTON1 ) ? 3 : 4; }
         ReleaseCapture();
         Event event{
-            .timestamp = (unsigned)last_timestamp.QuadPart,
+            .timestamp = last_timestamp.QuadPart,
             .type = Event_Key_Up,
             .key_up = {
                 .key_id = id,
@@ -167,7 +167,7 @@ LRESULT Window::_win32_ProcessMessage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
     }
     case WM_MOUSEWHEEL: {
         Event event{
-            .timestamp = (unsigned)last_timestamp.QuadPart,
+            .timestamp = last_timestamp.QuadPart,
         };
         _mouse_wheel_delta += GET_WHEEL_DELTA_WPARAM(wp);
 
@@ -182,7 +182,7 @@ LRESULT Window::_win32_ProcessMessage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
                 _mouse_wheel_delta -= WHEEL_DELTA;
             }
             event.key_down.key_id = keys::Mouse_WheelDown;
-            while (_mouse_wheel_delta <= WHEEL_DELTA) {
+            while (_mouse_wheel_delta <= -WHEEL_DELTA) {
                 event.type = Event_Key_Down;
                 event_queue.array.emplace_back(event);
                 event.type = Event_Key_Up;
@@ -220,7 +220,7 @@ LRESULT Window::_win32_ProcessMessage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 
     case WM_KILLFOCUS: {
         Event event{
-            .timestamp = (unsigned)last_timestamp.QuadPart,
+            .timestamp = last_timestamp.QuadPart,
             .type = Event_Focus_Lost,
         };
         event_queue.append(event);
@@ -231,7 +231,7 @@ LRESULT Window::_win32_ProcessMessage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
     case WM_CHAR: {
         if (_codepoint_builder.append(wp & 0xFFFF)) {
             Event event{
-                .timestamp = (unsigned)last_timestamp.QuadPart,
+                .timestamp = last_timestamp.QuadPart,
                 .type      = Event_Character_Input,
                 .character_input = {
                     .codepoint = _codepoint_builder.codepoint,

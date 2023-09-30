@@ -7,10 +7,10 @@ if VULKAN_SDK == nil then
 	end
 end
 
-function prebuild_shader_compile()
+function prebuild_shader_compile(location)
 	prebuildcommands {
 		"cd " .. FISSION_LOCATION .. "/scripts",
-		"python compile_shaders.py %{prj.location}"
+		"python compile_shaders.py " .. location
 	}
 	prebuildmessage "Compiling Shaders..."
 end

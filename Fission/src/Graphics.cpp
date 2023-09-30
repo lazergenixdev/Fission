@@ -434,7 +434,7 @@ bool Graphics::create(Graphics_Create_Info* info)
 			device,
 			surface,
 			&swap_chain,
-			VK_PRESENT_MODE_FIFO_RELAXED_KHR,
+			VK_PRESENT_MODE_FIFO_KHR,
 			sc_image_usage,
 			info->window->width,
 			info->window->height,

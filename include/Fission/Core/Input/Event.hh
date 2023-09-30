@@ -33,7 +33,7 @@ enum EventType {
 };
 
 struct Event {
-	u64 timestamp;
+	s64 timestamp;
 	u8 type;
 
 	struct Key_Down {

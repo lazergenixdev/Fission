@@ -3,6 +3,8 @@
 #include <Fission/Core/Engine.hh>
 #include <Fission/Core/Console.hh>
 #include <Fission/Base/Color.hpp>
+#include <Fission/Base/Time.hpp>
+#include <Fission/Base/Memory.hpp>
 #include <filesystem>
 #include <freetype/freetype.h>
 
@@ -21,13 +23,23 @@ void display_fatal_graphics_error(VkResult result, const char* what);
 __FISSION_BEGIN__
 
 Scene_Key cmdline_to_scene_key(platform::Instance);
-extern s64 timestamp();
-extern double seconds_elasped_and_reset(s64& last);
 void enumerate_displays(std::vector<struct Display>& out);
 void add_engine_console_commands();
 
 string Engine::get_version_string() {
 	return FS_str(FISSION_VERSION_STRV);
+}
+
+void* talloc(u64 size) {
+	auto ptr = (byte*)engine._ts_base + engine._ts_allocated;
+	engine._ts_allocated += size;
+#if defined(FISSION_DEBUG)
+	if (ptr > ((byte*)engine._ts_base + engine._ts_size)) {
+		display_fatal_error("Error", "Allocated past end of temparary storage!");
+		return nullptr;
+	}
+#endif
+	return ptr;
 }
 
 #if FS_INCLUDE_EASTER_EGGS
@@ -41,18 +53,10 @@ int Engine::create(platform::Instance const& instance, Defaults const& defaults)
 		~_defer() { engine.flags |= fWindow_Destroy_Enable; }
 	} defer;
 
-//	wchar_t buffer[128];
-//	auto dwRet = GetEnvironmentVariableW(L"APPDATA", buffer, std::size(buffer));
-//	OutputDebugStringW(L"APPDATA = ");
-//	OutputDebugStringW(buffer);
-//	OutputDebugStringW(L"\n");
-//	return 1;
-
-#if WIP
 	_ts_size = FS_KILOBYTES(64);
-	_ts_base = _aligned_malloc(_ts_size, 32);
-	assert(_ts_base != nullptr);
-#endif
+	_ts_base = FISSION_DEFAULT_ALLOC(_ts_size);
+	// TODO: might want to check every malloc in case we run out of memory,
+	//       but that is such a damn edge case, not worth thinking about for now.
 
 	// setup the console early so we can use it as soon as possible
 	console_layer.setup_console_api();
@@ -125,12 +129,11 @@ int Engine::create_layers() {
 	VkDescriptorSet sets[3] = {};
 	{
 		VkDescriptorPoolSize pool_sizes[] = {
-			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         16},
-			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,112},
-		//	{VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,       16},
+			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         32},
+			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 64},
 		};
 		VkDescriptorPoolCreateInfo descPoolInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
-		descPoolInfo.maxSets = 128;
+		descPoolInfo.maxSets = 32 + 64;
 		descPoolInfo.poolSizeCount = (fs::u32)std::size(pool_sizes);
 		descPoolInfo.pPoolSizes = pool_sizes;
 		vkCreateDescriptorPool(graphics.device, &descPoolInfo, nullptr, &descriptor_pool);
@@ -179,14 +182,16 @@ int Engine::create_layers() {
 	}
 
 	FT_Init_FreeType(&fonts.library);
-	fonts.debug  .create(  Debug_Font::data,   Debug_Font::size, 20.0f, sets[1], fonts.sampler);
+	fonts.debug  .create(  Debug_Font::data,   Debug_Font::size, 18.0f, sets[1], fonts.sampler);
 	fonts.console.create(Console_Font::data, Console_Font::size, 16.0f, sets[2], fonts.sampler);
 
 	renderer_2d         .create(&graphics, overlay_render_pass, transform_2d.layout);
 	textured_renderer_2d.create(&graphics, overlay_render_pass, transform_2d.layout, texture_layout);
 
 	debug_layer.create();
-	console_layer.position = -(fonts.console.height + 1); // console_layer.create();
+
+	// Initialize console position
+	console_layer.position = -(fonts.console.height + 1);
 
 	return 0;
 }
@@ -413,12 +418,12 @@ void Engine::resize() {
 	current_scene->on_resize();
 }
 
-#define ADD_COMMAND(Name, Body) auto proc_##Name = [](string args) Body; console::register_command(FS_str(#Name), proc_##Name)
+#define ADD_COMMAND(Name, Body) console::register_command(FS_str(#Name), [](string args) Body)
 
 void add_engine_console_commands() {
 	ADD_COMMAND(vsync, {
 		if (args == "on") {
-			engine.graphics.sc_present_mode = VK_PRESENT_MODE_FIFO_RELAXED_KHR;
+			engine.graphics.sc_present_mode = VK_PRESENT_MODE_FIFO_KHR;
 			engine.flags |= engine.fGraphics_Recreate_Swap_Chain;
 			console::println(FS_str("vsync enabled"));
 		}
