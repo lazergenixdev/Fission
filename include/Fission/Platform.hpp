@@ -75,6 +75,7 @@ namespace platform {
         Window_Disable_Position_Update = 1 << 0,
         Window_Minimized               = 1 << 1,
         Window_Init_Completed          = 1 << 2,
+        Window_Enable_Mouse_Deltas     = 1 << 3,
     };
 	struct Window_Impl {
 		HWND                     _handle = NULL;

@@ -456,6 +456,10 @@ struct Scene_OK : public fs::Scene {
 				}
 				else text.data[text.count++] = c;
 			}
+			break; case Event_Mouse_Move_Relative: {
+				rect_pos.x += 0.25f * (fs::f32)e.mouse_move_relative.delta.x;
+				rect_pos.y += 0.25f * (fs::f32)e.mouse_move_relative.delta.y;
+			}
 			break;
 			}
 		}
@@ -484,6 +488,9 @@ struct Scene_OK : public fs::Scene {
 		m22 rot = m22::Rotation(t*1.45312f);
 
 		engine.renderer_2d.add_triangle(pos + rot*a*size, pos + rot*b*size, pos + rot*c*size, rgb(hsv(0.6f, 0.8f, 1.0f)));
+
+		engine.renderer_2d.add_rect(fs::rf32::from_center(rect_pos, 100, 100), fs::colors::Red);
+
 		tetris_update(tetris, (float)dt, events, engine.renderer_2d);
 #endif
 	//	engine.renderer_2d.add_rect(rf32::from_center(mouse_pos, 50.0f, 50.0f), colors::White);
@@ -534,11 +541,15 @@ struct Scene_OK : public fs::Scene {
 #endif
 
 		vkCmdEndRenderPass(cmd);
+
+		engine.debug_layer.add("mouse position: %d %d", engine.window.mouse_position.x, engine.window.mouse_position.y);
 	}
 	virtual void on_resize() override {
 	
 	}
 	Scene_OK() {
+		engine.window.set_using_mouse_detlas(true);
+
 		create_render_pass();
 
 		auto& gfx = engine.graphics;
@@ -712,6 +723,8 @@ struct Scene_OK : public fs::Scene {
 	VkPipeline    pipeline;
 	VkPipeline    tpipeline;
 	VkPipeline    blend_pipeline;
+
+	fs::v2f32 rect_pos = {100,100};
 };
 
 bool operator==(fs::string Left, char const* Right) {

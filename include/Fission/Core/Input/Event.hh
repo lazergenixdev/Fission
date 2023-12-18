@@ -13,6 +13,7 @@
 #pragma once
 #include <Fission/config.hpp>
 #include <Fission/Base/String.hpp>
+#include <Fission/Base/Math/Vector.hpp>
 
 __FISSION_BEGIN__
 
@@ -30,6 +31,12 @@ enum EventType {
 	Event_Key_Up,
 	Event_Focus_Lost,
 	Event_Character_Input,
+
+	// Does this really need to be here?
+	// mouse position is always stored in `engine.window.mouse_position`
+	Event_Mouse_Move_Absolute,
+
+	Event_Mouse_Move_Relative,
 };
 
 struct Event {
@@ -45,11 +52,19 @@ struct Event {
 	struct Character_Input {
 		c32 codepoint;
 	};
+	struct Mouse_Move_Absolute {
+		v2s32 position;
+	};
+	struct Mouse_Move_Relative {
+		v2s32 delta;
+	};
 
 	union {
-		Key_Down        key_down;
-		Key_Up          key_up;
-		Character_Input character_input;
+		Key_Down            key_down;
+		Key_Up              key_up;
+		Character_Input     character_input;
+		Mouse_Move_Absolute mouse_move_absolute;
+		Mouse_Move_Relative mouse_move_relative;
 	};
 };
 

@@ -1,6 +1,7 @@
 #include "../Common.h"
 #include <Fission/Base/Assert.hpp>
 #include <Fission/Core/Engine.hh>
+#include <Fission/Core/Console.hh>
 #include <Fission/Core/Input/Keys.hh>
 #include <Dbt.h>
 using namespace fs;
@@ -14,6 +15,8 @@ extern fs::Engine engine;
 __FISSION_BEGIN__
 
 #define WindowClassName L"Fission Window Class"
+#define HID_USAGE_PAGE_GENERIC  0x01
+#define HID_USAGE_GENERIC_MOUSE 0x02
 
 inline LARGE_INTEGER last_timestamp;
 
@@ -109,6 +112,42 @@ LRESULT Window::_win32_ProcessMessage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
         break;
     }
 
+    case WM_INPUT:
+    {
+        if (!(_flags & platform::Window_Enable_Mouse_Deltas)) break;
+        
+        static std::vector<RAWINPUT> rawBuffer;
+        
+        UINT result, size;
+        // first get the size of the input data
+        result = GetRawInputData(reinterpret_cast<HRAWINPUT>(lp), RID_INPUT, nullptr, &size, sizeof(RAWINPUTHEADER));
+        if (result == -1) break;
+        
+        rawBuffer.resize(size/sizeof(RAWINPUT));
+        
+        result = GetRawInputData(reinterpret_cast<HRAWINPUT>(lp),RID_INPUT,rawBuffer.data(),&size,sizeof(RAWINPUTHEADER));
+        if (result != size) break;
+
+        // process the raw input data
+        for (auto const& raw_input : rawBuffer) {
+            auto ri = reinterpret_cast<RAWINPUT const&>(raw_input);
+
+            if (ri.header.dwType == RIM_TYPEMOUSE &&
+               (ri.data.mouse.lLastX != 0 || ri.data.mouse.lLastY != 0))
+            {
+                Event event{
+                    .timestamp = last_timestamp.QuadPart,
+                    .type = Event_Mouse_Move_Relative,
+                    .mouse_move_relative = {
+                        fs::v2s32(ri.data.mouse.lLastX, ri.data.mouse.lLastY),
+                    }
+                };
+                event_queue.append(event);
+            }
+        }
+        break;
+    }
+
     case WM_SYSKEYUP:
     case WM_KEYUP: {
         Event event{
@@ -195,6 +234,14 @@ LRESULT Window::_win32_ProcessMessage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 
     case WM_MOUSEMOVE: {
         mouse_position = (v2s32)reinterpret_cast<v2s16&>(lp);
+        Event event{
+            .timestamp = last_timestamp.QuadPart,
+            .type = Event_Mouse_Move_Absolute,
+            .mouse_move_absolute = {
+                mouse_position,
+            }
+        };
+        event_queue.append(event);
         break;
     }
 
@@ -333,6 +380,17 @@ int window_main(Window_Thread_Info* info) {
         assert(window->_handle != NULL, "Failed to create window [CreateWindowExW]");
     }
 
+    {
+        RAWINPUTDEVICE rid = {
+            .usUsagePage = HID_USAGE_PAGE_GENERIC,
+            .usUsage     = HID_USAGE_GENERIC_MOUSE,
+            .dwFlags     = 0,
+            .hwndTarget  = nullptr,
+        };
+        auto r = RegisterRawInputDevices(&rid, 1, sizeof(rid));
+        assert(r != FALSE, "Failed to register input devices [RegisterRawInputDevices]");
+    }
+
     window->event_queue.array.reserve(100);
 
     MSG msg = {};
@@ -408,6 +466,26 @@ void Window::set_mode(Window_Mode mode) {
         _flags |= platform::Window_Disable_Position_Update;
         SetWindowPos(_handle, NULL, r.x.low, r.y.low, r.x.distance(), r.y.distance(), SWP_ASYNCWINDOWPOS|SWP_FRAMECHANGED);
         break;
+    }
+}
+
+bool Window::is_using_mouse_deltas() {
+    return _flags & platform::Window_Enable_Mouse_Deltas;
+}
+
+void Window::set_using_mouse_detlas(bool use) {
+    if (use) {
+        _flags |=  platform::Window_Enable_Mouse_Deltas;
+
+        RECT rect;
+        GetClientRect(_handle, &rect);
+        MapWindowPoints(_handle, nullptr, reinterpret_cast<POINT*>(&rect), 2);
+        ClipCursor(&rect);
+    }
+    else {
+        _flags &=~ platform::Window_Enable_Mouse_Deltas;
+
+        ClipCursor(nullptr);
     }
 }
 

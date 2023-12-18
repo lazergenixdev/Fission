@@ -71,6 +71,9 @@ public:
 	//! @brief Display that is used is determined by the `display_index`
 	void set_mode(Window_Mode mode);
 
+	bool is_using_mouse_deltas();
+	void set_using_mouse_detlas(bool use);
+
 	Window() = default;
 	~Window();
 
