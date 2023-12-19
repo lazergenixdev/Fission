@@ -207,6 +207,10 @@ struct rect
 	inline constexpr auto clamp(const vector&_Vector)const{return vector(x.clamp(_Vector.x),y.clamp(_Vector.y));}
 
 	inline constexpr auto operator*(const type&_Right)const{return rect(this->x.low*_Right,this->x.high*_Right,this->y.low*_Right,this->y.high*_Right);}
+	inline constexpr auto operator*(const vector&_Right)const{return rect(this->x.low*_Right.x,this->x.high*_Right.x,this->y.low*_Right.y,this->y.high*_Right.y);}
+
+	inline constexpr auto operator/(const type&_Right)const{return rect(this->x.low/_Right,this->x.high/_Right,this->y.low/_Right,this->y.high/_Right);}
+	inline constexpr auto operator/(const vector&_Right)const{return rect(this->x.low/_Right.x,this->x.high/_Right.x,this->y.low/_Right.y,this->y.high/_Right.y);}
 
 	inline constexpr bool valid()const{return x.valid()&&y.valid();}
 
