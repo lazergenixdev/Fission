@@ -10,6 +10,10 @@ void EnableDarkModeAPI() noexcept;
 void SetDarkModeForWindow(HWND hwnd) noexcept;
 void display_win32_fatal_error(WCHAR const* what) noexcept;
 
+
+#define __hide_cursor() while (::ShowCursor(FALSE) >= 0)
+#define __show_cursor() while (::ShowCursor(TRUE)   < 0)
+
 extern fs::Engine engine;
 
 __FISSION_BEGIN__
@@ -17,6 +21,9 @@ __FISSION_BEGIN__
 #define WindowClassName L"Fission Window Class"
 #define HID_USAGE_PAGE_GENERIC  0x01
 #define HID_USAGE_GENERIC_MOUSE 0x02
+
+#define WM_USER_SHOW_CURSOR (WM_USER + 0)
+#define WM_USER_HIDE_CURSOR (WM_USER + 1)
 
 inline LARGE_INTEGER last_timestamp;
 
@@ -75,6 +82,16 @@ LRESULT Window::Message_Callback(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         break;
     }
 
+    case WM_USER_SHOW_CURSOR: {
+        __show_cursor();
+        return 0;
+    }
+
+    case WM_USER_HIDE_CURSOR: {
+        __hide_cursor();
+        return 0;
+    }
+
     default:break;
     }
 
@@ -108,6 +125,22 @@ LRESULT Window::_win32_ProcessMessage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
         // https://learn.microsoft.com/en-us/windows/win32/inputdev/about-keyboard-input#keystroke-message-flags
             if (wp >= VK_SHIFT && wp <= VK_MENU)
                 engine.modifier_keys |= modifier_map[wp - VK_SHIFT];
+        }
+        break;
+    }
+
+    case WM_ACTIVATE: {
+        if (!(_flags & platform::Window_Enable_Mouse_Deltas)) break;
+
+        if (wp & WA_ACTIVE) {
+            RECT rect;
+            GetClientRect(_handle, &rect);
+            MapWindowPoints(_handle, nullptr, reinterpret_cast<POINT*>(&rect), 2);
+            ClipCursor(&rect);
+            __hide_cursor();
+        } else {
+            ClipCursor(nullptr);
+            __show_cursor();
         }
         break;
     }
@@ -481,11 +514,13 @@ void Window::set_using_mouse_detlas(bool use) {
         GetClientRect(_handle, &rect);
         MapWindowPoints(_handle, nullptr, reinterpret_cast<POINT*>(&rect), 2);
         ClipCursor(&rect);
+        SendMessageW(_handle, WM_USER_HIDE_CURSOR, 0, 0);
     }
     else {
         _flags &=~ platform::Window_Enable_Mouse_Deltas;
 
         ClipCursor(nullptr);
+        SendMessageW(_handle, WM_USER_SHOW_CURSOR, 0, 0);
     }
 }
 

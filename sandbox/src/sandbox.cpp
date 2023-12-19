@@ -9,6 +9,7 @@
 #include <Fission/Core/Input/Keys.hh>
 #include <Fission/Core/Font.hh>
 #include <Fission/Core/Console.hh>
+#include <Fission/Platform/utils.h>
 //#include "stdio.h"
 //#include <random>
 //#include <freetype/freetype.h>
@@ -219,7 +220,7 @@ struct Tetris_Scene : public fs::Scene {
 #	define PASS_COUNT 2
 #endif
 
-#if 0
+#if 1
 static constexpr auto     image_format = VK_FORMAT_B10G11R11_UFLOAT_PACK32;
 static constexpr auto src_image_format = VK_FORMAT_A2R10G10B10_UNORM_PACK32;
 #else
@@ -548,7 +549,14 @@ struct Scene_OK : public fs::Scene {
 	
 	}
 	Scene_OK() {
-		engine.window.set_using_mouse_detlas(true);
+		{
+			fs::u64 size;
+			auto p = fs::platform::load_entire_file("shaders/blend.frag", &size);
+			auto s = FS_str_make(p, size);
+
+			fs::console::println(s);
+			free(p);
+		}
 
 		create_render_pass();
 
@@ -680,6 +688,8 @@ struct Scene_OK : public fs::Scene {
 		create_blend_pipeline(gfx.device);
 
 		tetris = tetris_init(GAME_WIDTH, GAME_HEIGHT);
+
+		engine.window.set_using_mouse_detlas(true);
 	}
 	virtual ~Scene_OK() override {
 		auto& gfx = engine.graphics;

@@ -3,6 +3,7 @@
 #include <Fission/Core/Display.hh>
 #include <Fission/Core/Engine.hh>
 #include <Fission/Core/Console.hh>
+#include <Fission/Platform/utils.h>
 #include <algorithm>
 #include "../../Scene_Key_Parser.hpp"
 
@@ -245,6 +246,70 @@ void enumerate_displays(std::vector<struct Display>& out) {
 	// Free memory that we are done with.
 	_aligned_free(pathArray);
 	_aligned_free(modeInfoArray);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// Utils
+/////////////////////////////////////////////////////////////////////////////////////////
+
+struct Auto_Closing_File {
+	FILE* handle = NULL;
+
+	FILE** operator&() { return &handle; }
+
+	~Auto_Closing_File() {
+		if (handle != NULL) fclose(handle);
+	}
+};
+
+void* platform::load_entire_file(platform::path const& filepath, u64* out_file_size) {
+	Auto_Closing_File file;
+	errno_t err = _wfopen_s(&file, filepath.c_str(), L"rb");
+
+	if (err != 0 || file.handle == NULL) {
+		FS_debug_printf("error: could not open file \"%s\"\n", filepath.string().c_str());
+		return nullptr;
+	}
+
+	_fseeki64(file.handle, 0, SEEK_END);
+	u64 file_size = (u64)_ftelli64(file.handle);
+	_fseeki64(file.handle, 0, SEEK_SET);
+
+	void* file_data = malloc(file_size);
+	if (file_data == nullptr) {
+		FS_debug_printf("error: malloc failed [size = %llu]\n", file_size);
+		return nullptr;
+	}
+
+	auto bytes_read = fread(file_data, 1, file_size, file.handle);
+
+	if (bytes_read != file_size) {
+		FS_debug_printf("error: failed to read file \"%s\"", filepath.string().c_str());
+		return file_data; // TODO: is this ok? I guess this is very rare so.. eh, whatever.
+	}
+
+	*out_file_size = file_size;
+	return file_data;
+}
+
+FISSION_API bool platform::dump_to_file(path const& filepath, void* data, u64 size)
+{
+	Auto_Closing_File file;
+	errno_t err = _wfopen_s(&file, filepath.c_str(), L"wb");
+
+	if (err != 0 || file.handle == NULL) {
+		FS_debug_printf("error: could not open file \"%s\"\n", filepath.string().c_str());
+		return true;
+	}
+
+	u64 bytes_written = fwrite(data, 1, size, file.handle);
+
+	if (bytes_written != size) {
+		return true;
+	}
+
+	return false;
 }
 
 __FISSION_END__

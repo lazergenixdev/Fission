@@ -20,6 +20,12 @@ namespace platform
 {
 	using namespace std::filesystem;
 
+	// returns nullptr if file does not exist or unable to load.
+	FISSION_API void* load_entire_file(path const& _File_Path, u64* out_file_size);
+
+	// returns true on failure
+	FISSION_API bool dump_to_file(path const& _File_Path, void* data, u64 size);
+
 	FISSION_API bool open_url(path const& _URL);
 	FISSION_API bool open_file_location(path const& _File);
 }
