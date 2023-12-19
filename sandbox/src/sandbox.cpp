@@ -10,6 +10,7 @@
 #include <Fission/Core/Font.hh>
 #include <Fission/Core/Console.hh>
 #include <Fission/Platform/utils.h>
+#include "miniaudio.h"
 //#include "stdio.h"
 //#include <random>
 //#include <freetype/freetype.h>
@@ -26,6 +27,9 @@ extern void tetris_update(Tetris* t, float dt, std::vector<fs::Event> const& eve
 extern void tetris_uninit(Tetris* t);
 
 extern fs::Engine engine;
+
+static float freq_delta = 0.0f;
+static float frequency = 400.0f;
 
 namespace blend_vs {
 #include "../shaders/blend.vert.inl"
@@ -220,7 +224,7 @@ struct Tetris_Scene : public fs::Scene {
 #	define PASS_COUNT 2
 #endif
 
-#if 1
+#if 0
 static constexpr auto     image_format = VK_FORMAT_B10G11R11_UFLOAT_PACK32;
 static constexpr auto src_image_format = VK_FORMAT_A2R10G10B10_UNORM_PACK32;
 #else
@@ -461,6 +465,22 @@ struct Scene_OK : public fs::Scene {
 				rect_pos.x += 0.25f * (fs::f32)e.mouse_move_relative.delta.x;
 				rect_pos.y += 0.25f * (fs::f32)e.mouse_move_relative.delta.y;
 			}
+			break; case Event_Key_Down: {
+				if (e.key_down.key_id == fs::keys::Up) {
+					freq_delta = 1.0f;
+				}
+				else if (e.key_down.key_id == fs::keys::Down) {
+					freq_delta = -1.0f;
+				}
+			}
+			break; case Event_Key_Up: {
+				if (e.key_down.key_id == fs::keys::Up) {
+					freq_delta = 0.0f;
+				}
+				else if (e.key_down.key_id == fs::keys::Down) {
+					freq_delta = 0.0f;
+				}
+			}
 			break;
 			}
 		}
@@ -544,9 +564,10 @@ struct Scene_OK : public fs::Scene {
 		vkCmdEndRenderPass(cmd);
 
 		engine.debug_layer.add("mouse position: %d %d", engine.window.mouse_position.x, engine.window.mouse_position.y);
+		engine.debug_layer.add("freq: %.3f", frequency);
 	}
 	virtual void on_resize() override {
-	
+		engine.flags &=~ engine.fRunning;
 	}
 	Scene_OK() {
 		{
@@ -672,7 +693,7 @@ struct Scene_OK : public fs::Scene {
 			pipelineInfo.vertex_shader = engine.renderer_2d.vert;
 			pipelineInfo.fragment_shader = engine.renderer_2d.frag;
 			pipelineInfo.vertex_input = &vertex_input;
-			pipelineInfo.blend_mode = fs::Blending_Mode::Blend_Mode_Add;
+			pipelineInfo.blend_mode = fs::Blend_Mode_Add;
 			fs::create_pipeline(pipelineInfo, &pipeline);
 		}
 		{
@@ -746,8 +767,47 @@ bool operator==(fs::string Left, char const* Right) {
 	return Left.count == strlen(Right);
 }
 
+void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
+{
+	auto output = reinterpret_cast<fs::v2f32*>(pOutput);
+
+	static float t = 0.0f;
+
+	FS_FOR(frameCount) {
+		output[i] = fs::v2f32(sinf(t*frequency)) * 0.5f;
+		t += 1.f / 48000.f;
+		frequency += freq_delta * 0.001f;
+	}
+}
+
+struct Auto_Stop_Audio_Device {
+	ma_device device = {};
+
+	~Auto_Stop_Audio_Device() {
+		ma_device_stop(&device);
+	}
+};
+
 fs::Scene* on_create_scene(fs::Scene_Key const& key) {
 	using namespace fs;
+
+	ma_device_config config = ma_device_config_init(ma_device_type_playback);
+	config.playback.format = ma_format_f32;   // Set to ma_format_unknown to use the device's native format.
+	config.playback.channels = 2;               // Set to 0 to use the device's native channel count.
+	config.sampleRate = 48000;           // Set to 0 to use the device's native sample rate.
+	config.dataCallback = data_callback;   // This function will be called when miniaudio needs more data.
+	config.pUserData = nullptr;   // Can be accessed from the device object (device.pUserData).
+
+	static Auto_Stop_Audio_Device device;
+	if (ma_device_init(NULL, &config, &device.device) != MA_SUCCESS) {
+		FS_debug_print("you are a failure :(");
+	}
+
+	ma_device_start(&device.device);     // The device is sleeping by default so you'll need to start it manually.
+
+	// Do something here. Probably your program's main loop.
+
+
 	// Default:
 	if (key.name().is_empty()) {
 		return new Scene_OK;
