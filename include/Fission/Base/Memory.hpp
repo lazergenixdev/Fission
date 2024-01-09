@@ -12,12 +12,13 @@
  */
 #pragma once
 #include <Fission/config.hpp>
-#include <memory.h>
+#include <cstdlib>
+#include <memory>
 
 __FISSION_BEGIN__
 
-#define FISSION_DEFAULT_ALLOC(Size) _aligned_malloc(Size, 64)
-#define FISSION_DEFAULT_FREE(Ptr)   _aligned_free(Ptr)
+#define FISSION_DEFAULT_ALLOC(Size) ::_aligned_malloc(Size, 64)
+#define FISSION_DEFAULT_FREE(Ptr)   ::_aligned_free(Ptr)
 
 //! @brief Default Bump Allocator
 struct bump_allocator

@@ -29,7 +29,7 @@ extern void tetris_uninit(Tetris* t);
 extern fs::Engine engine;
 
 static float freq_delta = 0.0f;
-static float frequency = 400.0f;
+static float frequency = 4000.0f;
 
 namespace blend_vs {
 #include "../shaders/blend.vert.inl"
@@ -450,6 +450,7 @@ struct Scene_OK : public fs::Scene {
 		static char buffer[256];
 		static string text = FS_str_make(buffer, 0);
 
+		static bool _ax, _bx;
 		for (auto&& e: events) {
 			switch (e.type)
 			{
@@ -467,23 +468,25 @@ struct Scene_OK : public fs::Scene {
 			}
 			break; case Event_Key_Down: {
 				if (e.key_down.key_id == fs::keys::Up) {
-					freq_delta = 1.0f;
+					_ax = true;
 				}
 				else if (e.key_down.key_id == fs::keys::Down) {
-					freq_delta = -1.0f;
+					_bx = true;
 				}
 			}
 			break; case Event_Key_Up: {
 				if (e.key_down.key_id == fs::keys::Up) {
-					freq_delta = 0.0f;
+					_ax = false;
 				}
 				else if (e.key_down.key_id == fs::keys::Down) {
-					freq_delta = 0.0f;
+					_bx = false;
 				}
 			}
 			break;
 			}
 		}
+
+		freq_delta = (_ax ? 1.0f : 0.0f) - (_bx ? 1.0f : 0.0f);
 
 		auto size = 100.0f;
 		float rad = float(engine.graphics.sc_extent.height/2) - size*0.75f;
@@ -773,10 +776,25 @@ void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uin
 
 	static float t = 0.0f;
 
+	auto f = [](float x) {
+		auto a = x * (0.5f/float(FS_PI));
+		return 2.0f * (a - floorf(a)) - 1.0f;
+	};
+
 	FS_FOR(frameCount) {
-		output[i] = fs::v2f32(sinf(t*frequency)) * 0.5f;
-		t += 1.f / 48000.f;
-		frequency += freq_delta * 0.001f;
+		float const dt = 1.f / 48000.f;
+
+		auto value = f(t);
+	//	FS_FOR(10) {
+	//		auto k = float(i + 2);
+	//		value += f(k*t) / k;
+	//	}
+		output[i] = fs::v2f32(value) * 0.01f;
+		
+		t += dt*frequency;
+		frequency += freq_delta * 0.4f;
+
+		t = std::fmodf(t, float(FS_TAU));
 	}
 }
 
@@ -793,10 +811,10 @@ fs::Scene* on_create_scene(fs::Scene_Key const& key) {
 
 	ma_device_config config = ma_device_config_init(ma_device_type_playback);
 	config.playback.format = ma_format_f32;   // Set to ma_format_unknown to use the device's native format.
-	config.playback.channels = 2;               // Set to 0 to use the device's native channel count.
-	config.sampleRate = 48000;           // Set to 0 to use the device's native sample rate.
+	config.playback.channels = 2;            // Set to 0 to use the device's native channel count.
+	config.sampleRate = 48000;              // Set to 0 to use the device's native sample rate.
 	config.dataCallback = data_callback;   // This function will be called when miniaudio needs more data.
-	config.pUserData = nullptr;   // Can be accessed from the device object (device.pUserData).
+	config.pUserData = nullptr;           // Can be accessed from the device object (device.pUserData).
 
 	static Auto_Stop_Audio_Device device;
 	if (ma_device_init(NULL, &config, &device.device) != MA_SUCCESS) {
@@ -805,8 +823,10 @@ fs::Scene* on_create_scene(fs::Scene_Key const& key) {
 
 	ma_device_start(&device.device);     // The device is sleeping by default so you'll need to start it manually.
 
-	// Do something here. Probably your program's main loop.
-
+	fs::console::println(FS_str("************************************************************"));
+	auto path = platform::open_file_dialog("Audio", "*.mp3;*.flac").string();
+	fs::console::println(FS_str_std(path));
+	fs::console::println(FS_str("************************************************************"));
 
 	// Default:
 	if (key.name().is_empty()) {
@@ -822,7 +842,6 @@ fs::Scene* on_create_scene(fs::Scene_Key const& key) {
 }
 
 fs::Defaults on_create() {
-
 	engine.app_version = {0, 1, 7};
 #ifdef DEBUG
 	engine.app_version_info = FS_str("vanilla/dev");

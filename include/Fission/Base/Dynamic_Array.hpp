@@ -31,7 +31,7 @@ struct dynamic_array
 	dynamic_array(u32 initial_capacity)
 	:	allocated(initial_capacity), count(0), data(nullptr)
 	{
-		data = FISSION_DEFAULT_ALLOC(initial_capacity * sizeof(type));
+		data = reinterpret_cast<type*>(FISSION_DEFAULT_ALLOC(initial_capacity * sizeof(type)));
 	}
 	
 	void push_back(type const& value) {
@@ -47,7 +47,7 @@ struct dynamic_array
 			memcpy(ptr, data, count * sizeof(type));
 			FISSION_DEFAULT_FREE(data);
 		}
-		data = ptr;
+		data = reinterpret_cast<type*>(ptr);
 	}
 
 	constexpr type const* begin() const { return data; }

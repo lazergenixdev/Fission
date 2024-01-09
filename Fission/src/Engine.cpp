@@ -32,7 +32,7 @@ string Engine::get_version_string() {
 
 void* talloc(u64 size) {
 	auto ptr = (byte*)engine._ts_base + engine._ts_allocated;
-	engine._ts_allocated += size;
+	engine._ts_allocated += u32(size);
 #if defined(FISSION_DEBUG)
 	if (ptr > ((byte*)engine._ts_base + engine._ts_size)) {
 		display_fatal_error("Error", "Allocated past end of temparary storage!");
@@ -398,9 +398,9 @@ void Engine::resize() {
 	graphics.upload_buffer(transform_2d.buffer, &transform, sizeof(fs::Transform_2D_Data));
 	
 	// Recreate framebuffers
-	FS_FOR(graphics.sc_image_count) {
+	FS_FOR(graphics.sc_image_count)
 		vkDestroyFramebuffer(graphics.device, framebuffers[i], nullptr);
-	}
+	
 	{
 		VkFramebufferCreateInfo framebufferInfo{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
 		framebufferInfo.renderPass = overlay_render_pass;

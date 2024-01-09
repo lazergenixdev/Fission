@@ -12,6 +12,7 @@
  */
 #pragma once
 #include <Fission/config.hpp>
+#include <Fission/Base/Dynamic_Array.hpp>
 #include <string>
 __FISSION_BEGIN__
 
@@ -92,6 +93,7 @@ void convert_utf8_to_utf16(string_utf16* output_buffer, string       source);
 // out_size = in_size * 3
 void convert_utf16_to_utf8(string*       output_buffer, string_utf16 source);
 
+
 // std library is crying rn 😭😭😭
 // -> it's really this simple..
 struct string_view {
@@ -101,6 +103,31 @@ struct string_view {
 	inline constexpr string absolute(c8* base) const {
 		return string{.count = (u64)this->count, .data = base + offset};
 	}
+};
+
+
+struct string_array {
+	dynamic_array<c8> buffer;
+
+	string_array() : buffer(64) {}
+
+	void insert_string(string s) {
+		buffer.reserve(u32(buffer.count) + u32(s.count) + 1);
+		FS_FOR(s.count) buffer.data[buffer.count++] = s.data[i];
+		buffer.data[buffer.count++] = 0; // null terminator
+	//	memcpy(buffer.data + buffer.count, s.data, s.count); // better to do a memcpy?
+	}
+
+	struct string_array_iterator {
+		c8* value;
+
+		constexpr auto operator!=(string_array_iterator const& iter) const { return value < iter.value; };
+		constexpr c8* operator*() const { return value; }
+		constexpr string_array_iterator& operator++() { do { ++value; } while (*value != 0); ++value; return*this; }
+	};
+
+	inline constexpr auto begin()const { return string_array_iterator{ buffer.data }; }
+	inline constexpr auto end()const { return string_array_iterator{ buffer.data + (buffer.count? buffer.count - 1 : 0)}; }
 };
 
 __FISSION_END__
