@@ -5,7 +5,12 @@
 #include <Fission/Core/Console.hh>
 #include <Fission/Platform/utils.h>
 #include <algorithm>
+#include <shellapi.h>
+#include <commdlg.h>
 #include "../../Scene_Key_Parser.hpp"
+
+#pragma comment (lib, "Shell32.lib")
+#pragma comment (lib, "Comdlg32.lib")
 
 fs::string platform_version;
 extern fs::Engine engine;
@@ -310,6 +315,46 @@ FISSION_API bool platform::dump_to_file(path const& filepath, void* data, u64 si
 	}
 
 	return false;
+}
+
+void win32_str_copy(WCHAR* dst, int& offset, char const* src) {
+	while (*src != 0) dst[offset++] = *src++;
+}
+
+platform::path platform::open_file_dialog(char const* _Name, char const* _Extensions)
+{
+	WCHAR opened_path[MAX_PATH] = {};
+
+	OPENFILENAMEW of = {};
+	of.lStructSize = sizeof(of);
+	of.hwndOwner = NULL;
+	of.lpstrFile = opened_path;
+	of.nMaxFile = sizeof(opened_path);
+
+	WCHAR filter[128] = L"All (*.*)\0*.*\0";
+	int count = 14;
+	win32_str_copy(filter, count, _Name);
+	filter[count++] = L' ';
+	filter[count++] = L'(';
+	win32_str_copy(filter, count, _Extensions);
+	filter[count++] = L')';
+	filter[count++] = L'\0';
+	win32_str_copy(filter, count, _Extensions);
+	filter[count++] = L'\0';
+	filter[count++] = L'\0';
+
+	of.lpstrFilter = filter;
+	of.nFilterIndex = 2;
+
+	of.lpstrFileTitle = NULL;
+	of.nMaxFileTitle = 0;
+	
+	of.lpstrInitialDir = NULL;
+	of.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+	GetOpenFileNameW(&of);
+
+	return platform::path(opened_path);
 }
 
 __FISSION_END__

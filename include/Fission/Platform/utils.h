@@ -28,6 +28,8 @@ namespace platform
 
 	FISSION_API bool open_url(path const& _URL);
 	FISSION_API bool open_file_location(path const& _File);
+
+	FISSION_API path open_file_dialog(char const* _Name, char const* _Extensions);
 }
 
 __FISSION_END__
