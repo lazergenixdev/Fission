@@ -611,11 +611,12 @@ void Graphics::upload_buffer(VkBuffer dstBuffer, void const* inData, VkDeviceSiz
 	vkFreeCommandBuffers(device, transfer_command_pool, 1, &cmd);
 }
 
-void Graphics::upload_image(VkImage dstImage, void* inData, VkExtent3D extent, VkFormat format, VkImageLayout outLayout) {
+void Graphics::upload_image(VkImage dstImage, void* inData, VkExtent3D extent, VkFormat format, VkImageLayout outLayout, int layer) {
 	VkDeviceSize  data_size = extent.width * extent.height * extent.depth * vk::size_of(format);
 	VkBuffer      stagingBuffer;
 	VmaAllocation stagingAllocation;
 
+	// 1. Create Staging Buffer
 	VmaAllocationCreateInfo allocInfo{
 		.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
 		.usage = VMA_MEMORY_USAGE_AUTO,
@@ -625,16 +626,18 @@ void Graphics::upload_image(VkImage dstImage, void* inData, VkExtent3D extent, V
 		.size = data_size,
 		.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 	};
-	::vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &stagingBuffer, &stagingAllocation, nullptr);
+	vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &stagingBuffer, &stagingAllocation, nullptr);
 
+	// 2. Copy Image Data to Staging Buffer
 	{
 		void* dst;
-		::vmaMapMemory(allocator, stagingAllocation, &dst);
+		vmaMapMemory(allocator, stagingAllocation, &dst);
 		memcpy(dst, inData, data_size);
 		vmaUnmapMemory(allocator, stagingAllocation);
 		vmaFlushAllocation(allocator, stagingAllocation, 0, VK_WHOLE_SIZE);
 	}
 
+	// 3. Allocate and Begin writing to a Command Buffer for Transfer operations
 	VkCommandBuffer cmd;
 	VkCommandBufferAllocateInfo commandBufferInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
 	commandBufferInfo.commandBufferCount = 1;
@@ -646,14 +649,14 @@ void Graphics::upload_image(VkImage dstImage, void* inData, VkExtent3D extent, V
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 		vkBeginCommandBuffer(cmd, &beginInfo);
 
+		// 4. Set Image Layout for transfer
 		VkImageSubresourceRange range;
 		range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		range.baseMipLevel = 0;
 		range.levelCount = 1;
-		range.baseArrayLayer = 0;
+		range.baseArrayLayer = layer;
 		range.layerCount = 1;
-		VkImageMemoryBarrier imageBarrier_toTransfer = {};
-		imageBarrier_toTransfer.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		VkImageMemoryBarrier imageBarrier_toTransfer = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
 		imageBarrier_toTransfer.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		imageBarrier_toTransfer.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		imageBarrier_toTransfer.image = dstImage;
@@ -662,17 +665,19 @@ void Graphics::upload_image(VkImage dstImage, void* inData, VkExtent3D extent, V
 		imageBarrier_toTransfer.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toTransfer);
 
+		// 5. Copy from Staging Buffer to Destination Image
 		VkBufferImageCopy copyRegion{};
 		copyRegion.bufferOffset = 0;
 		copyRegion.bufferRowLength = 0;
 		copyRegion.bufferImageHeight = 0;
 		copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		copyRegion.imageSubresource.mipLevel = 0;
-		copyRegion.imageSubresource.baseArrayLayer = 0;
+		copyRegion.imageSubresource.baseArrayLayer = layer;
 		copyRegion.imageSubresource.layerCount = 1;
 		copyRegion.imageExtent = extent;
 		vkCmdCopyBufferToImage(cmd, stagingBuffer, dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
+		// 6. Set Image Layout to the Output Layout
 		VkImageMemoryBarrier imageBarrier_toReadable{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
 		imageBarrier_toReadable.image = dstImage;
 		imageBarrier_toReadable.subresourceRange = range;
@@ -683,12 +688,12 @@ void Graphics::upload_image(VkImage dstImage, void* inData, VkExtent3D extent, V
 		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toReadable);
 		vkEndCommandBuffer(cmd);
 
+		// 7. Sumbit commands to GPU and wait for them to complete
 		VkSubmitInfo submitInfo{ VK_STRUCTURE_TYPE_SUBMIT_INFO };
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &cmd;
-		::vkQueueSubmit(transfer_queue, 1, &submitInfo, VK_NULL_HANDLE);
-
-		::vkQueueWaitIdle(transfer_queue);
+		vkQueueSubmit(transfer_queue, 1, &submitInfo, VK_NULL_HANDLE);
+		vkQueueWaitIdle(transfer_queue);
 		vmaDestroyBuffer(allocator, stagingBuffer, stagingAllocation);
 	}
 	vkFreeCommandBuffers(device, transfer_command_pool, 1, &cmd);
