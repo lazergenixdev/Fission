@@ -20,7 +20,7 @@
 #include <vma/vk_mem_alloc.h>
 
 #define FISSION_DEFAULT_SWAP_CHAIN_USAGE \
-VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT
+VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
 
 __FISSION_BEGIN__
 
@@ -221,6 +221,9 @@ namespace vk {
 	template <>	struct _format_of<fs::u32>   { static constexpr VkFormat value = VK_FORMAT_R32_UINT; };
 
 	template <typename T> static constexpr VkFormat format_of = _format_of<T>::value;
+
+	template <typename T, size_t Count>
+	static constexpr uint32_t count(T const(&_)[Count]) { return (uint32_t)Count; }
 
 	static constexpr uint32_t size_of(VkFormat format) {
 		switch (format)

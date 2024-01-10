@@ -233,6 +233,19 @@ public:
 		d.vtx_count += 3;
 	}
 
+	void add_triangle(v2f32 p0, v2f32 p1, v2f32 p2, color color1, color color2) {
+		index_data[d.total_idx_count++] = d.vtx_count;
+		index_data[d.total_idx_count++] = d.vtx_count + 1;
+		index_data[d.total_idx_count++] = d.vtx_count + 2;
+
+		vertex_data[d.total_vtx_count++] = { p0, color1 };
+		vertex_data[d.total_vtx_count++] = { p1, color2 };
+		vertex_data[d.total_vtx_count++] = { p2, color2 };
+
+		d.idx_count += 3;
+		d.vtx_count += 3;
+	}
+
 	void add_line(v2f32 start, v2f32 end, float stroke, color startColor, color endColor)
 	{
 		const auto edge_vector = (end - start).perp().norm() * stroke / 2.0f;
@@ -271,7 +284,7 @@ public:
 	}
 
 	void add_circle(v2f32 position, float radius, color color) {
-		int vtx_count = min(max(int(radius), 16), 128);
+		int vtx_count = min(max(int(radius), 10), 128);
 
 		FS_FOR(vtx_count-2) {
 			index_data[d.total_idx_count++] = d.vtx_count;

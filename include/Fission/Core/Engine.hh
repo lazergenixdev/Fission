@@ -62,6 +62,8 @@ struct FISSION_API Engine {
 
 		fChange_Scene                  = 1 << 4,
 		fFPS_Limiter_Enable            = 1 << 5,
+
+		fSave_Currect_Frame            = 1 << 6,
 	};
 
 	string get_version_string();

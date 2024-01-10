@@ -19,13 +19,15 @@
 
 __FISSION_BEGIN__
 
+// @note: this is better than using stupid `enum class`;
+//         cannot do `using` with enum classes!
 namespace layer {
 	enum Flags: u32 {
 		show   = 1 << 0,
 		enable = 1 << 1,
 
 		debug_show_verbose    = 1 << 2,
-		console_end_of_buffer = 1 << 2,
+		console_end_of_buffer = 1 << 2, // flag set if cannot scroll up any further
 	};
 }
 
@@ -50,7 +52,7 @@ struct Debug_Layer {
 		add(FS_str_make(buffer, count));
 	}
 
-	u32 flags = layer::enable;
+	u32 flags = layer::enable | layer::debug_show_verbose;
 
 	float* frame_times;
 	int frame_count;
@@ -72,6 +74,7 @@ struct Debug_Layer {
 
 private:
 	float draw_frame_time_graph(v2f32 top_left);
+	bool visible() const;
 };
 
 // ESCXXXhelloESC

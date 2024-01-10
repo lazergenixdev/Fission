@@ -117,12 +117,16 @@ void Debug_Layer::handle_events(std::vector<Event>& events) {
 	for (auto it = events.begin(); it != events.end(); ) {
 		if (it->type == Event_Key_Down) {
 			if (it->key_down.key_id == keys::F3) {
-				if (flags& layer::enable) flags ^= layer::show;
+				if ((flags& layer::enable) && !(engine.console_layer.flags& layer::show))
+					flags ^= layer::show;
 				it = events.erase(it);
 				continue;
 			}
 			else if (it->key_down.key_id == fs::keys::F4) {
 				if (flags & layer::show) engine.debug_layer.flags ^= fs::layer::debug_show_verbose;
+			}
+			else if (it->key_down.key_id == fs::keys::F10) {
+				engine.flags |= engine.fSave_Currect_Frame;
 			}
 		}
 		else if (it->type == Event_Key_Up) {
@@ -186,11 +190,15 @@ float Debug_Layer::draw_frame_time_graph(v2f32 top_left) {
 #endif
 }
 
+bool Debug_Layer::visible() const {
+	return (flags & layer::show) && !(engine.console_layer.flags & layer::show);
+}
+
 void Debug_Layer::on_update(double dt, Render_Context* ctx) {
 	if (++frame_time_index >= frame_count) frame_time_index = 0;
 	frame_times[frame_time_index] = (float)dt;
 
-	if (!(flags & layer::show)) return reset(*this);
+	if (!visible()) return reset(*this);
 
 	engine.textured_renderer_2d.set_font(&engine.fonts.debug);
 

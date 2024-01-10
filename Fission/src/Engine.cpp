@@ -7,6 +7,9 @@
 #include <Fission/Base/Memory.hpp>
 #include <filesystem>
 #include <freetype/freetype.h>
+// @TODO: maybe put in separate file?
+#define STB_IMAGE_WRITE_IMPLEMENTATION 1
+#include <stb_image_write.h>
 
 struct Debug_Font {
 #include <BinaryFonts/IBMPlexMono-Medium.inl>
@@ -19,6 +22,28 @@ extern fs::Engine engine;
 
 void display_fatal_error(const char* title, const char* what);
 void display_fatal_graphics_error(VkResult result, const char* what);
+
+inline VkBuffer      screenshot_buffer{};
+inline VmaAllocation screenshot_allocation{};
+#include <iostream>
+
+// "Certified Chat-Gippty Classic"
+void* convert_to_rgb(void* data, int pixel_count) {
+	// Assuming input data is an array of BGRA values (4 bytes per pixel)
+	unsigned char* input_data = static_cast<unsigned char*>(data);
+
+	// Allocate memory for the output RGB data (3 bytes per pixel)
+	unsigned char* output_data = new unsigned char[pixel_count * 3];
+
+	for (int i = 0, j = 0; i < pixel_count * 4; i += 4, j += 3) {
+		// Copy RGB values (skipping the alpha channel)
+		output_data[j] = input_data[i + 2];  // Blue
+		output_data[j + 1] = input_data[i + 1];  // Green
+		output_data[j + 2] = input_data[i];      // Red
+	}
+
+	return static_cast<void*>(output_data);
+}
 
 __FISSION_BEGIN__
 
@@ -84,6 +109,19 @@ int Engine::create(platform::Instance const& instance, Defaults const& defaults)
 		Graphics_Create_Info info;
 		info.window = &window;
 		if (graphics.create(&info)) return 1;
+	}
+
+	{
+		VmaAllocationCreateInfo allocInfo{
+			.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+			.usage = VMA_MEMORY_USAGE_AUTO,
+		};
+		VkBufferCreateInfo bufferInfo{
+			.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+			.size = 1920 * 1920 * sizeof(fs::rgba8),
+			.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+		};
+		vmaCreateBuffer(graphics.allocator, &bufferInfo, &allocInfo, &screenshot_buffer, &screenshot_allocation, nullptr);
 	}
 
 	if (create_layers()) {
@@ -201,6 +239,7 @@ int Engine::destroy() {
 	if (graphics.device) {
 		vkDeviceWaitIdle(graphics.device);
 	}
+	vmaDestroyBuffer(graphics.allocator, screenshot_buffer, screenshot_allocation);
 	delete current_scene;
 	debug_layer.destroy();
 	console_layer.destroy();
@@ -234,7 +273,6 @@ void Engine::run() {
 
 	auto last_timestamp = fs::timestamp();
 	u64 frame_index = 0;
-	uint32_t imageIndex;
 
 	std::vector<fs::Event> events;
 	events.reserve(64);
@@ -289,7 +327,7 @@ void Engine::run() {
 
 		VkResult vk_result = VK_ERROR_UNKNOWN;
 		while (vk_result != VK_SUCCESS) {
-			vk_result = vkAcquireNextImageKHR(graphics.device, graphics.swap_chain, UINT64_MAX, write_semaphore, VK_NULL_HANDLE, &imageIndex);
+			vk_result = vkAcquireNextImageKHR(graphics.device, graphics.swap_chain, UINT64_MAX, write_semaphore, VK_NULL_HANDLE, &render_context.image_index);
 
 			if (vk_result == VK_SUBOPTIMAL_KHR) break;
 			else if (vk_result == VK_ERROR_OUT_OF_DATE_KHR) {
@@ -309,9 +347,8 @@ void Engine::run() {
 
 		auto cpu_start = timestamp();
 
-		render_context.frame_buffer   = framebuffers[imageIndex];
+		render_context.frame_buffer   = framebuffers[render_context.image_index];
 		render_context.command_buffer = graphics.command_buffers[render_context.frame];
-		render_context.image_index    = imageIndex;
 
 		VkCommandBufferBeginInfo beginInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
 		vkBeginCommandBuffer(render_context.command_buffer, &beginInfo);
@@ -337,6 +374,42 @@ void Engine::run() {
 		}
 		overlay_render_pass.end(&render_context);
 		//-------------------------------------------------------------------------------------
+
+		if (flags & fSave_Currect_Frame) {
+			auto cmd = render_context.command_buffer;
+			auto image = graphics.sc_images[render_context.image_index];
+
+			VkImageSubresourceRange range;
+			range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			range.baseMipLevel = 0;
+			range.levelCount = 1;
+			range.baseArrayLayer = 0;
+			range.layerCount = 1;
+			VkImageMemoryBarrier imageBarrier = {};
+			imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			imageBarrier.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+			imageBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			imageBarrier.image = image;
+			imageBarrier.subresourceRange = range;
+			imageBarrier.srcAccessMask = 0;
+			imageBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
+
+			VkBufferImageCopy copy = {};
+			copy.imageExtent = { .width = graphics.sc_extent.width, .height = graphics.sc_extent.height, .depth = 1 };
+			copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			copy.imageSubresource.layerCount = 1;
+			vkCmdCopyImageToBuffer(cmd, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, screenshot_buffer, 1, &copy);
+
+			VkImageMemoryBarrier imageBarrier_toReadable{ VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
+			imageBarrier_toReadable.image = image;
+			imageBarrier_toReadable.subresourceRange = range;
+			imageBarrier_toReadable.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			imageBarrier_toReadable.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+			imageBarrier_toReadable.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			imageBarrier_toReadable.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toReadable);
+		}
 
 		vkEndCommandBuffer(render_context.command_buffer);
 
@@ -365,7 +438,7 @@ void Engine::run() {
 		presentInfo.pWaitSemaphores = &read_semaphore;
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = &graphics.swap_chain;
-		presentInfo.pImageIndices = &imageIndex;
+		presentInfo.pImageIndices = &render_context.image_index;
 		vk_result = vkQueuePresentKHR(graphics.present_queue, &presentInfo);
 		if (vk_result == VK_ERROR_OUT_OF_DATE_KHR) {
 			if (!(flags& fRunning)) break; // ok, we head out
@@ -374,6 +447,28 @@ void Engine::run() {
 		else if (vk_result != VK_SUCCESS && vk_result != VK_SUBOPTIMAL_KHR) {
 			display_fatal_graphics_error(vk_result, "[vkQueuePresentKHR] failed");
 			return;
+		}
+
+		if (flags & fSave_Currect_Frame) {
+			vkWaitForFences(graphics.device, 1, &fence, VK_TRUE, UINT64_MAX);
+			void* gpu_memory = nullptr;
+			vmaMapMemory(graphics.allocator, screenshot_allocation, &gpu_memory);
+			void* data = convert_to_rgb(gpu_memory, graphics.sc_extent.width*graphics.sc_extent.height);
+			vmaUnmapMemory(graphics.allocator, screenshot_allocation);
+
+			time_t rawtime;
+			time(&rawtime);
+			auto timeinfo = localtime(&rawtime);
+
+			char filename[48];
+			"screenshot_%04d-%02d-%02d_%02d-%02d-%02d.png"_fmt(filename,
+				timeinfo->tm_year+1900, timeinfo->tm_mon+1, timeinfo->tm_mday,
+				timeinfo->tm_hour,      timeinfo->tm_min,   timeinfo->tm_sec
+			);
+
+			stbi_write_png(filename, graphics.sc_extent.width, graphics.sc_extent.height, 3, data, 3 * graphics.sc_extent.width);
+			delete [] data;
+			flags &=~ fSave_Currect_Frame;
 		}
 
 		//-------------------------------------------------------------------------------------
@@ -425,12 +520,12 @@ void add_engine_console_commands() {
 		if (args == "on") {
 			engine.graphics.sc_present_mode = VK_PRESENT_MODE_FIFO_KHR;
 			engine.flags |= engine.fGraphics_Recreate_Swap_Chain;
-			console::println(FS_str("vsync enabled"));
+			console::println(FS_str("vsync enabled"), fs::colors::Green);
 		}
 		else if (args == "off") {
 			engine.graphics.sc_present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
 			engine.flags |= engine.fGraphics_Recreate_Swap_Chain;
-			console::println(FS_str("vsync disabled"));
+			console::println(FS_str("vsync disabled"), fs::colors::Red);
 		}
 	});
 

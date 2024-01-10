@@ -158,9 +158,7 @@ struct rect
 
 	//! @brief flips the X and Y ranges
 	constexpr rect & flip() { 
-		auto _Temp = std::move(this->x);
-		this->x    = std::move(this->y);
-		this->y    = std::move(_Temp);
+		std::swap(this->x,this->y);
 		return *this;
 	}
 
@@ -197,6 +195,8 @@ struct rect
 
 	constexpr bool operator()(const vector&_Position)const{return x(_Position.x)&&y(_Position.y);}
 	constexpr bool operator[](const vector&_Position)const{return x[_Position.x]&&y[_Position.y];}
+	
+	constexpr bool operator[](const rect&_Rect)const{return x[_Rect.x.low]&&x[_Rect.x.high]&&y[_Rect.y.low]&&y[_Rect.y.high];}
 
 	//! @brief Check if position is within [xmin,xmax) and [ymin,ymax).
 	constexpr bool closed_lower(const vector&_Position)const{return x.closed_lower(_Position.x)&&y.closed_lower(_Position.y);}

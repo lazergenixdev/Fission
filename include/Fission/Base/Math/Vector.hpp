@@ -218,10 +218,6 @@ __FISSION_BASE_ALIASES__(math::vector2, v2);
 __FISSION_BASE_ALIASES__(math::vector3, v3);
 __FISSION_BASE_ALIASES__(math::vector4, v4);
 
-template <typename T> _FISSION_DEFINE_OPERATOR_MULTIPLY_2(math::vector2<T>, T, x, y)
-template <typename T> _FISSION_DEFINE_OPERATOR_MULTIPLY_3(math::vector3<T>, T, x, y, z)
-template <typename T> _FISSION_DEFINE_OPERATOR_MULTIPLY_4(math::vector4<T>, T, x, y, z, w)
-
 template<typename _Ty>inline constexpr auto operator/(const _Ty&_Left,const v2<_Ty>&_Right){return v2{_Left/_Right.x,_Left/_Right.y};}
 template<typename _Ty>inline constexpr auto operator/(const _Ty&_Left,const v3<_Ty>&_Right){return v3{_Left/_Right.x,_Left/_Right.y,_Left/_Right.z};}
 template<typename _Ty>inline constexpr auto operator/(const _Ty&_Left,const v4<_Ty>&_Right){return v4{_Left/_Right.x,_Left/_Right.y,_Left/_Right.z,_Left/_Right.w};}
@@ -231,6 +227,10 @@ template<typename _Ty>inline constexpr _Ty dot(const v3<_Ty>&_A,const v3<_Ty>&_B
 template<typename _Ty>inline constexpr _Ty dot(const v4<_Ty>&_A,const v4<_Ty>&_B){return _A.x*_B.x+_A.y*_B.y+_A.z*_B.z+_A.w*_B.w;}
 
 __FISSION_END__
+
+template <typename T> _FISSION_DEFINE_OPERATOR_MULTIPLY_2(fs::math::vector2<T>, T, x, y)
+template <typename T> _FISSION_DEFINE_OPERATOR_MULTIPLY_3(fs::math::vector3<T>, T, x, y, z)
+template <typename T> _FISSION_DEFINE_OPERATOR_MULTIPLY_4(fs::math::vector4<T>, T, x, y, z, w)
 
 /**
  *	MIT License

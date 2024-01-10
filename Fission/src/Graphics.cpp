@@ -253,7 +253,7 @@ bool Graphics::create(Graphics_Create_Info* info)
 		VkApplicationInfo appInfo{VK_STRUCTURE_TYPE_APPLICATION_INFO};
 		appInfo.apiVersion = VK_API_VERSION_1_3;
 		appInfo.pApplicationName = "How did you find this?";
-		appInfo.applicationVersion = VK_MAKE_API_VERSION(0, 0, 1, 69);
+		appInfo.applicationVersion = VK_MAKE_API_VERSION(1, 0, 0, 69);
 		appInfo.pEngineName = "Fission";
 		appInfo.engineVersion = VK_MAKE_API_VERSION(0, FISSION_VERSION_MAJ, FISSION_VERSION_MIN, FISSION_VERSION_PAT);
 		info.pApplicationInfo = &appInfo;
@@ -413,9 +413,10 @@ bool Graphics::create(Graphics_Create_Info* info)
 #endif
 
 		VkPhysicalDeviceFeatures deviceFeatures{};
-		deviceFeatures.fillModeNonSolid = VK_TRUE;
+		deviceFeatures.fillModeNonSolid  = VK_TRUE;
 		deviceFeatures.sampleRateShading = VK_TRUE;
 		deviceFeatures.samplerAnisotropy = VK_TRUE;
+		deviceFeatures.geometryShader    = VK_TRUE;
 		deviceInfo.pEnabledFeatures = &deviceFeatures;
 
 		check_result(vkCreateDevice(physical_device, &deviceInfo, nullptr, &device), "Failed to create device");

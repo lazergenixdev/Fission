@@ -490,7 +490,7 @@ void Window::set_mode(Window_Mode mode) {
     default: // windowed right?
     case fs::Windowed: {
         auto size = _get_size();
-        SetWindowPos(_handle, NULL, position.x, position.y, size.x, size.y, SWP_ASYNCWINDOWPOS|SWP_FRAMECHANGED);
+        SetWindowPos(_handle, NULL, position.x, position.y, size.x, size.y, SWP_FRAMECHANGED);
         _flags &=~ platform::Window_Disable_Position_Update;
         break;
     }

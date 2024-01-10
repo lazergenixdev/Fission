@@ -71,6 +71,7 @@
 #define FS_PI  (3.1415926535897932384626433)
 #define FS_TAU (6.2831853071795864769252867)
 
+// @TODO: this should not be here
 #if defined(FISSION_DEBUG) && defined(FISSION_PLATFORM_WINDOWS)
 #	define FS_debug_print(STRING) OutputDebugStringA(STRING)
 #	define FS_debug_printf(FORMAT, ...) \
@@ -110,13 +111,15 @@ inline constexpr T lerp(T const& left, T const& right, F x) {
 // min/max from std are kinda trash ngl
 template <typename _Type, typename _Convertable_To_Type>
 inline constexpr _Type max(_Type a, _Convertable_To_Type b) noexcept {
-	if (a > static_cast<_Type>(b)) return a;
-	return b;
+	auto _b = static_cast<_Type>(b);
+	if (a > _b) return a;
+	return _b;
 }
 template <typename _Type, typename _Convertable_To_Type>
 inline constexpr _Type min(_Type a, _Convertable_To_Type b) noexcept {
-	if (a < static_cast<_Type>(b)) return a;
-	return static_cast<_Type>(b);
+	auto _b = static_cast<_Type>(b);
+	if (a < _b) return a;
+	return _b;
 }
 
 #define FS_KILOBYTES(x) (            (x) * (::fs::u64)(1024))
@@ -153,7 +156,7 @@ using if_t = _if_t<b, L, R>::type;
 
 // Base
 template <size_t, typename...>
-struct _type_at {};
+struct _type_at { using type = void; };
 
 // Two or more Types
 template <size_t i, typename T, typename...Rest>
@@ -169,7 +172,9 @@ using type_at = _type_at<i, T...>::type;
 
 // Base
 template <size_t, typename...>
-struct _size_of_n {};
+struct _size_of_n {
+	static constexpr uint32_t value = 0u;
+};
 
 // Two or more Types
 template <size_t i, typename T, typename...Rest>
