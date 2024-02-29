@@ -8,10 +8,10 @@ if VULKAN_SDK == nil then
 end
 
 function prebuild_shader_compile(location)
-	prebuildcommands {
-		"cd " .. FISSION_LOCATION .. "/scripts",
-		"python compile_shaders.py " .. location
-	}
+--	prebuildcommands {
+--		"cd " .. FISSION_LOCATION .. "/scripts",
+--		"python compile_shaders.py " .. location
+--	}
 	prebuildmessage "Compiling Shaders..."
 end
 
@@ -75,8 +75,10 @@ else
 	architecture "x86_64"
 	configurations { 'Debug', 'Release', 'Dist' }
 	
-	flags { 'MultiProcessorCompile', 'MFC' }
-	defines '_CRT_SECURE_NO_WARNINGS'
+    if _TARGET_OS == "windows" then
+        flags { 'MultiProcessorCompile', 'MFC' }
+        defines '_CRT_SECURE_NO_WARNINGS'
+    end
 
 	FISSION_LOCATION = '%{wks.location}'
 	startproject 'sandbox'

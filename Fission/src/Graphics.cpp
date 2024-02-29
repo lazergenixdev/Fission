@@ -1,6 +1,8 @@
 #include <Fission/PlatformConfig.hpp>
 #if defined(FISSION_PLATFORM_WINDOWS)
-#define VK_USE_PLATFORM_WIN32_KHR
+#   define VK_USE_PLATFORM_WIN32_KHR 1
+#elif defined(FISSION_PLATFORM_LINUX)
+#   define VK_USE_PLATFORM_XCB_KHR 1
 #endif
 #define VMA_IMPLEMENTATION
 #include <Fission/Core/Engine.hh>
@@ -262,6 +264,8 @@ bool Graphics::create(Graphics_Create_Info* info)
 			VK_KHR_SURFACE_EXTENSION_NAME,
 #if defined(FISSION_PLATFORM_WINDOWS)
 			VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+#elif defined(FISSION_PLATFORM_LINUX)
+            VK_KHR_XCB_SURFACE_EXTENSION_NAME,
 #endif
 #ifdef FISSION_DEBUG
 			VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
@@ -309,6 +313,13 @@ bool Graphics::create(Graphics_Create_Info* info)
 		surfaceInfo.hwnd = info->window->_handle;
 		surfaceInfo.hinstance = GetModuleHandleW(nullptr);
 		check_result(vkCreateWin32SurfaceKHR(instance, &surfaceInfo, nullptr, &surface), "Failed to create Win32 surface");
+#elif defined(FISSION_PLATFORM_LINUX)
+        SCOPED_TRACE("vkCreateXcbSurfaceKHR");
+        FS_debug_printf("win:%u conn:%p\n", info->window->_id, info->window->_connection);
+        VkXcbSurfaceCreateInfoKHR surfaceInfo{VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR};
+        surfaceInfo.connection = info->window->_connection;
+        surfaceInfo.window     = info->window->_id;
+        check_result(vkCreateXcbSurfaceKHR(instance, &surfaceInfo, nullptr, &surface), "Failed to create xcb surface");
 #endif
 	}
 
@@ -539,9 +550,7 @@ void Graphics::recreate_swap_chain(Window* wnd) {
 //	vkDestroySwapchainKHR(device, old, nullptr); // cannot just destroy it here, must present image if called aquire_image previously
 
 	if (r) display_fatal_graphics_error("this is not supposed to happen");
-#ifdef FISSION_DEBUG
-	OutputDebugStringA("recreated swap chain\n");
-#endif
+	FS_debug_print("recreated swap chain\n");
 
 	sc_extent = extent;
 	sc_format = format;

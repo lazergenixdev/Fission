@@ -16,6 +16,7 @@
 
 __FISSION_BEGIN__
 
+//! @TODO: remove this garbage that never gets used
 // so many ways to represent a rectangle,
 // just pick one you little shit!
 typedef enum rect_layout_ {
@@ -25,14 +26,13 @@ typedef enum rect_layout_ {
 } rect_Layout;
 
 //! @brief Structure defining a rectangle containing min and mox for X and Y.
-template <typename _Ty>
+template <typename T>
 struct rect
 {
-	using type = _Ty;
-	using range = range<_Ty>;
-	using vector = math::vector2<_Ty>;
+	using type = T;
+	using vector = math::vector2<T>;
 
-	range x, y;
+	range<T> x, y;
 
 
 	constexpr rect(const rect&src) = default;
@@ -44,14 +44,14 @@ struct rect
 	constexpr rect(const type&_Low_X,const type&_High_X,const type&_Low_Y,const type&_High_Y):x(_Low_X,_High_X),y(_Low_Y,_High_Y){}
 		
 	//! @brief Create rect from two ranges, for the X range and Y range.
-	constexpr rect(const range&_X_Range,const range&_Y_Range):x(_X_Range),y(_Y_Range){}
+	constexpr rect(const range<T>&_X_Range,const range<T>&_Y_Range):x(_X_Range),y(_Y_Range){}
 
 	//! @brief Create a valid rect from two vectors.
-	constexpr rect(const vector&_A,const vector&_B):x(range::create(_A.x,_B.x)),y(range::create(_A.y,_B.y)){}
+	constexpr rect(const vector&_A,const vector&_B):x(range<T>::create(_A.x,_B.x)),y(range<T>::create(_A.y,_B.y)){}
 
 	//! @brief Create rect from another rect with a different type.
 	template <typename _From> explicit
-	constexpr rect(const rect<_From>&_Src):x(static_cast<range>(_Src.x)),y(static_cast<range>(_Src.y)){}
+	constexpr rect(const rect<_From>&_Src):x(static_cast<range<T>>(_Src.x)),y(static_cast<range<T>>(_Src.y)){}
 
 
 	//! @brief Create a rect from a top-left position and a size.
@@ -115,22 +115,22 @@ struct rect
 
 
 	//! @brief Create a rect from a Windows RECT.
-	template <typename _Win_Rect_Type>
-	static inline constexpr rect from_win32(const _Win_Rect_Type &_Win_Rect)
+	template <typename _Win_RectTpe>
+	static inline constexpr rect from_win32(const _Win_RectTpe &_Win_Rect)
 	{
 		return rect(_Win_Rect.left, _Win_Rect.right, _Win_Rect.top, _Win_Rect.bottom);
 	}
 
 	//! @brief Convert a rect to another rect type.
-	template <typename _Rect_Type, rect_Layout _Layout = rect_layout_LTRB>
-	inline constexpr _Rect_Type as()
+	template <typename _RectTpe, rect_Layout _Layout = rect_layout_LTRB>
+	inline constexpr _RectTpe as()
 	{
 		if constexpr (_Layout == rect_layout_LRTB)
-			return _Rect_Type{this->x.low,this->x.high,this->y.low,this->y.high};
+			return _RectTpe{this->x.low,this->x.high,this->y.low,this->y.high};
 		if constexpr (_Layout == rect_layout_LTRB)
-			return _Rect_Type{this->x.low,this->y.low,this->x.high,this->y.high};
+			return _RectTpe{this->x.low,this->y.low,this->x.high,this->y.high};
 		if constexpr (_Layout == rect_layout_LTWH)
-			return _Rect_Type{this->x.low,this->y.low,this->x.high-this->x.low,this->y.high-this->y.high};
+			return _RectTpe{this->x.low,this->y.low,this->x.high-this->x.low,this->y.high-this->y.high};
 	}
 
 	// Getters

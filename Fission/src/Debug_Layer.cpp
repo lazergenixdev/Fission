@@ -4,7 +4,9 @@
 #include "Version.h"
 #include <format>
 #include <random>
+#if defined(FISSION_PLATFORM_WINDOWS)
 #include <intrin.h>
+#endif
 
 #define FS_DEBUG_LAYER_SHOW_HARDWARE    1 //FISSION_DEBUG
 #define FS_DEBUG_FRAME_GRAPH_HEART_BEAT 0
@@ -14,6 +16,7 @@ extern fs::string platform_version;
 
 using namespace fs;
 
+#if defined(FISSION_PLATFORM_WINDOWS)
 void get_cpu_string(string& buffer) {
 	int CPUInfo[4] = { -1 };
 	unsigned   nExIds, i = 0;
@@ -48,6 +51,7 @@ struct ::std::formatter<fs::compressed_version> {
 		return std::format_to(ctx.out(), "{}.{}.{}", v.Major, v.Minor, v.Patch);
 	}
 };
+#endif
 
 void copy_to(string s, std::vector<c8>& out) {
 	FS_FOR(s.count) out.emplace_back(s.data[i]);
@@ -55,7 +59,7 @@ void copy_to(string s, std::vector<c8>& out) {
 
 void Debug_Layer::create() {
 	frame_count = 128; // wha?
-	frame_times = (float*)_aligned_malloc(frame_count * sizeof(float), 32);
+	frame_times = (float*)FISSION_DEFAULT_ALLOC(frame_count * sizeof(float));
 	FS_FOR(frame_count) frame_times[i] = 0.001f;
 
 	character_buffer.reserve(512);
@@ -65,8 +69,13 @@ void Debug_Layer::create() {
 #define next_view string_view{.offset = (u32)offset, .count = u32(character_buffer.size() - offset)}
 
 	size_t offset = 0;
-	std::format_to(std::back_inserter(character_buffer), "{} ({}/{})",
-		engine.app_name.str(), engine.app_version, engine.app_version_info.str());
+	std::format_to(std::back_inserter(character_buffer), "{} ({}.{}.{}/{})",
+		engine.app_name.str(),
+        engine.app_version.uncompress().Major,
+        engine.app_version.uncompress().Minor,
+        engine.app_version.uncompress().Patch,
+        engine.app_version_info.str()
+    );
 	app_info_string = next_view;
 
 	offset = character_buffer.size();
@@ -85,12 +94,14 @@ void Debug_Layer::create() {
 
 #if FS_DEBUG_LAYER_SHOW_HARDWARE
 	right_strings.emplace_back();
+#if defined(FISSION_PLATFORM_WINDOWS)
 	char CPUBrandString[0x40];
 	string cpu_string = FS_str_buffer(CPUBrandString);
 	get_cpu_string(cpu_string);
 	offset = character_buffer.size();
 	std::format_to(std::back_inserter(character_buffer), "CPU: {}", cpu_string.str());
 	right_strings.emplace_back(next_view);
+#endif
 	
 	VkPhysicalDeviceProperties props;
 	vkGetPhysicalDeviceProperties(engine.graphics.physical_device, &props);
@@ -103,7 +114,7 @@ void Debug_Layer::create() {
 }
 
 void Debug_Layer::destroy() {
-	_aligned_free(frame_times);
+	FISSION_DEFAULT_FREE(frame_times);
 }
 
 void Debug_Layer::add(string s) {

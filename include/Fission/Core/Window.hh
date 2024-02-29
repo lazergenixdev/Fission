@@ -17,6 +17,7 @@
 #include <Fission/Core/Input/Event.hh>
 #include <Fission/Core/Display.hh>
 #include <iterator>
+#include <mutex>
 #include <vector>
 
 __FISSION_BEGIN__
@@ -72,7 +73,7 @@ public:
 	void set_mode(Window_Mode mode);
 
 	bool is_using_mouse_deltas();
-	void set_using_mouse_detlas(bool use);
+	void set_using_mouse_deltas(bool use);
 
 	Window() = default;
 	~Window();
@@ -83,6 +84,7 @@ private:
 	void sleep_until_not_minimized();
 
 #if defined(FISSION_PLATFORM_WINDOWS)
+    //! @TODO: rename these functions
 	friend int window_main(struct Window_Thread_Info* info);
 	static LRESULT Callback_Setup(HWND, UINT, WPARAM, LPARAM);
 	static LRESULT Message_Callback(HWND, UINT, WPARAM, LPARAM);
@@ -90,6 +92,9 @@ private:
 	v2s32 _get_size();
 	struct _Style { DWORD ex, value; };
 	_Style _get_style();
+#elif defined(FISSION_PLATFORM_LINUX)
+    static void _linux_thread_main(struct Window* window);
+    int         _linux_handle_event(xcb_generic_event_t* event); // 1 if we should exit
 #endif
 }; // struct fs::Window
 

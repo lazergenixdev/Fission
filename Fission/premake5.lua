@@ -3,14 +3,24 @@ project 'Fission'
     language 'C++'
     cppdialect "c++20"
 
-	function add_link(name)
-		FISSION_LINKS[name] = ""
-	end
+    os_links = {
+        windows = function ()
+            FISSION_LINKS["user32"] = ""
+            FISSION_LINKS["gdi32"] = ""
+        end;
+
+        linux = function ()
+            FISSION_LINKS["xcb"] = ""
+            FISSION_LINKS["xcb-keysyms"] = ""
+        end;
+    }
+
+    os_links[_TARGET_OS]()
 
     targetdir ("%{wks.location}/bin/" .. output_location)
 	objdir ("%{wks.location}/bin-int/" .. output_location .. "/%{prj.name}")
 
-    files { "%{prj.location}/src/**.cpp", "%{prj.location}/src/**.h", "%{prj.location}/src/**.hh" }
+    files { "%{prj.location}/src/*.cpp", "%{prj.location}/src/*.h" }
 
     -- public headers
     files '../include/**'
@@ -31,15 +41,19 @@ project 'Fission'
     
     filter "system:windows"
         files { "resource.h", "Fission.rc" }
-
-		add_link("user32")
-		add_link("gdi32")
+        files { "%{prj.location}/src/Platform/Windows/**.cpp" }
 
         -- HRESULT translation to readable strings
         includedirs '%{prj.location}/vendor/windows/DXErr'
     
         -- Texture processing library for windows
         includedirs '%{prj.location}/vendor/windows/DirectXTex/include'
+
+    filter "system:linux"
+        files { "%{prj.location}/src/Platform/Linux/**.cpp" }
+
+    filter { "system:linux", "action:gmake" }
+        buildoptions { "-march=native" }
 
     filter "configurations:Debug"
         defines { "FISSION_DEBUG" }

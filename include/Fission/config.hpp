@@ -12,6 +12,8 @@
  */
 #pragma once
 #include <Fission/PlatformConfig.hpp> /*!< Determine Target Platform */
+#include <utility>
+#include <cstring>
 
 // Fission namespace (fs) will be used a lot, no need 
 //	for extra indentation.
@@ -44,8 +46,12 @@
 #	define FISSION_BUILD_STRING ""          /* Distribution build of the engine. */
 #endif
 
-#if _MSC_VER
-#	define FISSION_COMPILER_MSVC 1
+#if defined(__clang__)
+#	define FISSION_COMPILER_CLANG 1
+#elif defined(__GNUC__) || defined(__GNUG__)
+#   define FISSION_COMPILER_GNU 1
+#elif defined(_MSC_VER)
+#   define FISSION_COMPILER_MSVC 1
 #else
 #	error "Compiler not recognized!"
 #endif
@@ -76,6 +82,9 @@
 #	define FS_debug_print(STRING) OutputDebugStringA(STRING)
 #	define FS_debug_printf(FORMAT, ...) \
 { char b[128] = {}; snprintf(b, sizeof(b), FORMAT, __VA_ARGS__); OutputDebugStringA(b); } (void)0
+#elif defined(FISSION_PLATFORM_LINUX)
+#   define FS_debug_print(STRING) printf("%s", STRING)
+#   define FS_debug_printf(FORMAT, ...) printf(FORMAT, __VA_ARGS__)
 #else
 #	define FS_debug_print(STRING)       (void)0
 #	define FS_debug_printf(FORMAT, ...) (void)0
@@ -155,41 +164,41 @@ using if_t = _if_t<b, L, R>::type;
 
 
 // Base
-template <size_t, typename...>
+template <int, typename...>
 struct _type_at { using type = void; };
 
 // Two or more Types
-template <size_t i, typename T, typename...Rest>
+template <int i, typename T, typename...Rest>
 struct _type_at<i, T, Rest...> { using type = if_t<i <= 0, T, typename _type_at<i - 1, Rest...>::type>; };
 
 // Single Type
-template <size_t i, typename T>
+template <int i, typename T>
 struct _type_at<i, T> { using type = T; };
 
-template <size_t i, typename...T>
+template <int i, typename...T>
 using type_at = _type_at<i, T...>::type;
 
 
 // Base
-template <size_t, typename...>
+template <int, typename...>
 struct _size_of_n {
-	static constexpr uint32_t value = 0u;
+	static constexpr u32 value = 0u;
 };
 
 // Two or more Types
-template <size_t i, typename T, typename...Rest>
+template <int i, typename T, typename...Rest>
 struct _size_of_n<i, T, Rest...> {
-	static constexpr uint32_t value = (i > 0) ? (sizeof(T) + _size_of_n<i - 1, Rest...>::value) : 0u;
+	static constexpr u32 value = (i > 0) ? (sizeof(T) + _size_of_n<i - 1, Rest...>::value) : 0u;
 };
 
 // Single Type
-template <size_t i, typename T>
+template <int i, typename T>
 struct _size_of_n<i, T> {
-	static constexpr uint32_t value = (i > 0) ? sizeof(T) : 0u;
+	static constexpr u32 value = (i > 0) ? sizeof(T) : 0u;
 };
 
-template <size_t i, typename...T>
-static constexpr uint32_t size_of_n = _size_of_n<i, T...>::value;
+template <int i, typename...T>
+static constexpr u32 size_of_n = _size_of_n<i, T...>::value;
 
 //*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
 //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*

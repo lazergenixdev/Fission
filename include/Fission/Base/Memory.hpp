@@ -17,8 +17,13 @@
 
 __FISSION_BEGIN__
 
+#if defined(FISSION_PLATFORM_WINDOWS)
 #define FISSION_DEFAULT_ALLOC(Size) ::_aligned_malloc(Size, 64)
 #define FISSION_DEFAULT_FREE(Ptr)   ::_aligned_free(Ptr)
+#elif defined(FISSION_PLATFORM_LINUX)
+#define FISSION_DEFAULT_ALLOC(Size) ::aligned_alloc(64, Size)
+#define FISSION_DEFAULT_FREE(Ptr)   ::free(Ptr)
+#endif
 
 //! @brief Default Bump Allocator
 struct bump_allocator

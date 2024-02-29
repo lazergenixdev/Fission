@@ -48,7 +48,6 @@
 	#error "Android is not supported!"
 #elif defined(__linux__)
 	#define FISSION_PLATFORM_LINUX 1
-	#error "Linux is not supported!"
 #else
 	/* Unknown compiler/platform */
 	#error "Unknown platform!"
@@ -67,6 +66,12 @@ _In_ int nShowCmd                                    \
 #define FISSION_MAIN_ARGS
 #define FISSION_SHARED_EXPORT __declspec(dllexport)
 #define FISSION_SHARED_IMPORT __declspec(dllimport)
+#elif defined(FISSION_PLATFORM_LINUX)
+#define FISSION_MAIN main
+#define FISSION_MAIN_FUNCTION() int main(int argc, char* argv[])
+#define FISSION_MAIN_ARGS argc, argv
+#define FISSION_SHARED_EXPORT extern
+#define FISSION_SHARED_IMPORT extern
 #endif
 
 /**

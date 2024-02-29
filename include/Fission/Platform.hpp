@@ -91,6 +91,28 @@ namespace platform {
 	};
 }
 __FISSION_END__
+#elif defined(FISSION_PLATFORM_LINUX)
+#include <xcb/xcb.h>
+#include <xcb/xcb_keysyms.h>
+#include <thread>
+#include <vector>
+__FISSION_BEGIN__
+namespace platform {
+    struct Instance {
+        Instance(int argc, char* argv[]):
+            argv(argv+0, argv+argc)
+        {}
+        std::vector<const char*> argv;
+    };
+    struct Window_Impl {
+        std::thread       _thread;
+        xcb_connection_t* _connection;
+        xcb_screen_t*     _screen;
+        xcb_window_t      _id;
+    };
+    struct Display_Impl {};
+}
+__FISSION_END__
 #endif
 
 /**

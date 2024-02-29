@@ -214,7 +214,7 @@ static constexpr u32 _r2d_max_count = 1 << 16;
 struct Renderer_2D
 {
 	using vertex = solid_color_vertex;
-	using Frame_Data = Frame_Data<vertex, u16>;
+	using FD = Frame_Data<vertex, u16>;
 public:
 	Renderer_2D() = default;
 
@@ -396,7 +396,7 @@ public:
 	u32 max_vertex_count;
 	u32 max_index_count;
 
-	Frame_Data frame_data[2];
+	FD frame_data[2];
 
 	vertex* vertex_data;
 	u16*    index_data;
@@ -410,7 +410,7 @@ public:
 struct Textured_Renderer_2D
 {
 	using vertex = textured_vertex;
-	using Frame_Data = Frame_Data<vertex, u16>;
+	using FD = Frame_Data<vertex, u16>;
 public:
 	Textured_Renderer_2D() = default;
 
@@ -582,7 +582,7 @@ public:
 	u32 max_vertex_count;
 	u32 max_index_count;
 
-	Frame_Data frame_data[2];
+	FD frame_data[2];
 
 	Font* current_font;
 

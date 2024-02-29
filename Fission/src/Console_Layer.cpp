@@ -131,7 +131,7 @@ void Console_Layer::setup_console_api() {
 	input_buffer[1] = ' ';
 
 	buffer_capacity = default_buffer_size;
-	buffer_view.data = (c8*)_aligned_malloc(buffer_capacity, 32);
+	buffer_view.data = (c8*)FISSION_DEFAULT_ALLOC(buffer_capacity);
 	buffer_view.count = 0;
 
 	command_history_buffer.reserve(256);
@@ -149,7 +149,7 @@ void Console_Layer::setup_console_api() {
 }
 
 void Console_Layer::destroy() {
-	_aligned_free(buffer_view.data);
+	FISSION_DEFAULT_FREE(buffer_view.data);
 }
 
 string find_command_action(string s) {

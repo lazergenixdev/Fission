@@ -22,9 +22,10 @@ sandbox/etc/
 # get tf outta here "Visual Studio Code"
 **.vscode
 
-# Build Binaries
+# Build Stuff
 bin/
 bin-int/
+**/Makefile
 
 # copyright lol
 **.mp3

@@ -29,8 +29,8 @@ void Renderer_2D::create(Graphics* gfx, VkRenderPass render_pass, Transform_2D_L
 	index_data  = allocator.alloc<u16>(max_index_count);
 	allocator.release();
 
-	frame_data[0] = Frame_Data(gfx->allocator, max_vertex_count, max_index_count);
-	frame_data[1] = Frame_Data(gfx->allocator, max_vertex_count, max_index_count);
+	frame_data[0] = FD(gfx->allocator, max_vertex_count, max_index_count);
+	frame_data[1] = FD(gfx->allocator, max_vertex_count, max_index_count);
 	{
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
 		pipelineLayoutInfo.pSetLayouts = &layout;
@@ -87,8 +87,8 @@ void Textured_Renderer_2D::create(
 	index_data  = allocator.alloc<u16>(max_index_count);
 	allocator.release();
 
-	frame_data[0] = Frame_Data(gfx->allocator, max_vertex_count, max_index_count);
-	frame_data[1] = Frame_Data(gfx->allocator, max_vertex_count, max_index_count);
+	frame_data[0] = FD(gfx->allocator, max_vertex_count, max_index_count);
+	frame_data[1] = FD(gfx->allocator, max_vertex_count, max_index_count);
 
 	{
 		VkDescriptorSetLayout layouts[2] = {transform_layout, texture_layout};

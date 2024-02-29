@@ -16,7 +16,7 @@ using uint = unsigned int;
 
 using Shape = fs::u32;
 
-static constexpr int   shape_count = 5;
+static constexpr int   shape_count = 6;
 static constexpr Shape shape_data[] = {
 // // // // // // // // // // // // // // //
 	make_shape(
@@ -111,6 +111,36 @@ static constexpr Shape shape_data[] = {
 // // // // // // // // // // // // // // //
 	make_shape(
 		0b00000,
+		0b00110,
+		0b00100,
+		0b00100,
+		0b00000
+	),
+	make_shape(
+		0b00000,
+		0b01000,
+		0b01110,
+		0b00000,
+		0b00000
+	),
+	make_shape(
+		0b00000,
+		0b00100,
+		0b00100,
+		0b01100,
+		0b00000
+	),
+	make_shape(
+		0b00000,
+		0b00000,
+		0b01110,
+		0b00010,
+		0b00000
+	),
+
+// // // // // // // // // // // // // // //
+	make_shape(
+		0b00000,
 		0b00100,
 		0b00100,
 		0b00110,
@@ -195,10 +225,11 @@ struct Tetris {
 	std::uniform_int_distribution<fs::u32> shape_dist{0, shape_count-1};
 
 	void init_piece(Piece& piece) {
+        unsigned int col = rng();
 		piece.shape_index = shape_dist(rng)*4;
 		piece.rotation    = 0;
 		piece.position    = { size.x / 2 - 3, 0 };
-		piece.color       = std::bit_cast<fs::rgba8>(rng());
+		piece.color       = std::bit_cast<fs::rgba8>(col);
 		piece.color.a = 255;
 	}
 

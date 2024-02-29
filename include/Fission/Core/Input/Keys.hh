@@ -26,16 +26,22 @@ X(21)X(22)X(23)X(24)
 
 namespace keys
 {
-	enum Key_Id : u8
+	enum Key_Id : u32
 	{
 		Unknown = 0,
 
-#ifdef FISSION_PLATFORM_WINDOWS
-		Mouse_Left      = VK_LBUTTON,
-		Mouse_Right     = VK_RBUTTON,
-		Mouse_Middle    = VK_MBUTTON,
-		Mouse_WheelUp   = 0xF9,
-		Mouse_WheelDown = 0xFF,
+#if defined(FISSION_PLATFORM_WINDOWS)
+#   define KEY(WIN32_KEY,_0) WIN32_KEY
+#elif defined(FISSION_PLATFORM_LINUX)
+#   define KEY(_0,LINUX_KEY) LINUX_KEY
+#else
+#   error "Don't know the keys for this platform"
+#endif
+		Mouse_Left      = KEY(VK_LBUTTON, 0),
+		Mouse_Right     = KEY(VK_RBUTTON, 1),
+		Mouse_Middle    = KEY(VK_MBUTTON, 2),
+		Mouse_WheelUp   = KEY(0xF9, 3),
+		Mouse_WheelDown = KEY(0xFF, 4),
 
 		/* Gamepad */
 	//	Gamepad_Y,
@@ -51,35 +57,35 @@ namespace keys
 	//	Gamepad_RBumper,
 	//	Gamepad_LBumper,
 
-#define X(N) F ## N = VK_F ## N,
+#define X(N) F ## N = KEY(VK_F ## N, 65469+N),
 		FISSION_X_24
 #undef X
 #define X(N) \
-Num    ## N = #N[0], \
-Numpad ## N = VK_NUMPAD ## N,
+Num    ## N = KEY(#N[0], 33+N), \
+Numpad ## N = KEY(VK_NUMPAD ## N, 43+N),
 		FISSION_X_BASE10
 #undef X
-#define X(L) L = #L[0],
+#define X(L) L = KEY(#L[0], 32+#L[0]),
 		FISSION_X_LETTERS
 #undef X
 
-		Up    = VK_UP,
-		Down  = VK_DOWN,
-		Left  = VK_LEFT,
-		Right = VK_RIGHT,
+		Up       = KEY(VK_UP     , 65362),
+		Down     = KEY(VK_DOWN   , 65364),
+		Left     = KEY(VK_LEFT   , 65361),
+		Right    = KEY(VK_RIGHT  , 65363),
 
-		Space    = VK_SPACE,
-		Escape   = VK_ESCAPE,
-		Shift    = VK_SHIFT,
-		Control  = VK_CONTROL,
-		Alt      = VK_MENU,
-		Tab      = VK_TAB,
-		Capital  = VK_CAPITAL,
-		Back     = VK_BACK,
-		Delete   = VK_DELETE,
-		Enter    = VK_RETURN,
+		Space    = KEY(VK_SPACE  , 32),
+		Escape   = KEY(VK_ESCAPE , 75),
+		Shift    = KEY(VK_SHIFT  , 76),
+		Control  = KEY(VK_CONTROL, 77),
+		Alt      = KEY(VK_MENU   , 78),
+		Tab      = KEY(VK_TAB    , 79),
+		Capital  = KEY(VK_CAPITAL, 80),
+		Back     = KEY(VK_BACK   , 81),
+		Delete   = KEY(VK_DELETE , 82),
+		Enter    = KEY(VK_RETURN , 83),
 
-		Accent     = VK_OEM_3, // `
+		Accent     = KEY(VK_OEM_3, 84), // `
 		Comma,			       // ,
 		Period,			       // .
 		FSlash,			       // /
@@ -90,7 +96,7 @@ Numpad ## N = VK_NUMPAD ## N,
 		RBracket,		       // ]
 		Minus,			       // -
 		Equal,			       // =
-#endif
+                               //
 	}; // Fission::Keys::Key
 
 	enum Modifier : u64 {

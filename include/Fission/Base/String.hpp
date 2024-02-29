@@ -34,7 +34,7 @@ struct string {
 	u64 count = 0; //! note: u32 is probably good enough for all string counts
 	c8* data  = nullptr;
 
-	inline constexpr std::string_view str() const noexcept {
+	inline std::string_view str() const noexcept {
 		return std::string_view((char*)data, count);
 	}
 

@@ -81,7 +81,7 @@ namespace math
 	struct vector3
 	{
 		using type = _Ty;
-		using vector2 = vector2<_Ty>;
+		using vec2 = vector2<_Ty>;
 
 		type x, y, z;
 
@@ -97,10 +97,10 @@ namespace math
 		constexpr vector3(type _X,type _Y,type _Z):x(_X),y(_Y),z(_Z){}
 
 		/*! @brief Create vector from an XY vector and Z value. */
-		constexpr vector3(vector2 _XY,type _Z):x(_XY.x),y(_XY.y),z(_Z){}
+		constexpr vector3(vec2 _XY,type _Z):x(_XY.x),y(_XY.y),z(_Z){}
 
 		/*! @brief Create vector from an X value and YZ vector. */
-		constexpr vector3(type _X,vector2 _YZ):x(_X),y(_YZ.x),z(_YZ.y){}
+		constexpr vector3(type _X,vec2 _YZ):x(_X),y(_YZ.x),z(_YZ.y){}
 
 		/*! @brief Create vector from another vector with different component type. */
 		template <typename _From> explicit
@@ -140,8 +140,8 @@ namespace math
 	struct vector4
 	{
 		using type = _Ty;
-		using vector2 = vector2<_Ty>;
-		using vector3 = vector3<_Ty>;
+		using vec2 = vector2<_Ty>;
+		using vec3 = vector3<_Ty>;
 
 		type x, y, z, w;
 
@@ -157,22 +157,22 @@ namespace math
 		constexpr vector4(type _X,type _Y,type _Z,type _W):x(_X),y(_Y),z(_Z),w(_W){}
 
 		/*! @brief Create vector from an XY vector, Z value, and W value. */
-		constexpr vector4(vector2 _XY,type _Z,type _W):x(_XY.x),y(_XY.y),z(_Z),w(_W){}
+		constexpr vector4(vec2 _XY,type _Z,type _W):x(_XY.x),y(_XY.y),z(_Z),w(_W){}
 		
 		/*! @brief Create vector from an X value, YZ vector, and W value. */
-		constexpr vector4(type _X,vector2 _YZ,type _W):x(_X),y(_YZ.x),z(_YZ.y),w(_W){}
+		constexpr vector4(type _X,vec2 _YZ,type _W):x(_X),y(_YZ.x),z(_YZ.y),w(_W){}
 
 		/*! @brief Create vector from an X value, Y value, and ZW vector. */
-		constexpr vector4(type _X,type _Y,vector2 _ZW):x(_X),y(_Y),z(_ZW.x),w(_ZW.y){}
+		constexpr vector4(type _X,type _Y,vec2 _ZW):x(_X),y(_Y),z(_ZW.x),w(_ZW.y){}
 
 		/*! @brief Create vector from an XY vector and ZW vector. */
-		constexpr vector4(vector2 _XY,vector2 _ZW):x(_XY.x),y(_XY.y),z(_ZW.x),w(_ZW.y){}
+		constexpr vector4(vec2 _XY,vec2 _ZW):x(_XY.x),y(_XY.y),z(_ZW.x),w(_ZW.y){}
 
 		/*! @brief Create vector from an XYZ vector and W value. */
-		constexpr vector4(vector3 _XYZ,type _W):x(_XYZ.x),y(_XYZ.y),z(_XYZ.z),w(_W){}
+		constexpr vector4(vec3 _XYZ,type _W):x(_XYZ.x),y(_XYZ.y),z(_XYZ.z),w(_W){}
 
 		/*! @brief Create vector from an X value and YZW vector. */
-		constexpr vector4(type _X,vector3 _YZW):x(_X),y(_YZW.x),z(_YZW.y),w(_YZW.z){}
+		constexpr vector4(type _X,vec3 _YZW):x(_X),y(_YZW.x),z(_YZW.y),w(_YZW.z){}
 
 		/*! @brief Create vector from another vector with different component type. */
 		template <typename _From> explicit

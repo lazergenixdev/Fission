@@ -22,6 +22,9 @@
 #include <condition_variable>
 #include <chrono>
 
+#if defined(FISSION_PLATFORM_LINUX)
+int main(int, char**);
+#endif
 typedef struct FT_LibraryRec_* FT_Library;
 namespace fs { struct Defaults; }
 
@@ -139,6 +142,8 @@ struct FISSION_API Engine {
 private:
 #if defined(FISSION_PLATFORM_WINDOWS)
 	friend int WINAPI ::wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int);
+#elif defined(FISSION_PLATFORM_LINUX)
+    friend int ::main(int, char**);
 #endif
 	void run();
 	int create(platform::Instance const& instance, Defaults const& defaults);

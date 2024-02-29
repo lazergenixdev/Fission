@@ -11,6 +11,7 @@
 #include <Fission/Core/Console.hh>
 #include <Fission/Platform/utils.h>
 #include "miniaudio.h"
+#include <cmath>
 //#include "stdio.h"
 //#include <random>
 //#include <freetype/freetype.h>
@@ -550,7 +551,7 @@ struct Scene_OK : public fs::Scene {
 		// Blend src Image with dst Image
 		FS_VK_BIND_DESCRIPTOR_SETS(cmd, blend_pipeline_layout, 1, &blend_descriptor_set);
 		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, blend_pipeline);
-		float blend = std::powf(0.9f, (float)dt * 120.0f);
+		float blend = std::pow(0.9f, (float)dt * 120.0f);
 		engine.debug_layer.add("blend = %.2f", blend);
 		float blend_constants[4] = {0.0f, 0.0f, 0.0f, blend};
 		vkCmdSetBlendConstants(cmd, blend_constants);
@@ -618,14 +619,14 @@ struct Scene_OK : public fs::Scene {
 			vkCreateImageView(gfx.device, &viewInfo, nullptr, &dst_view);
 
 			auto const stride = vk::size_of(format);
-			auto data = _aligned_malloc(imageInfo.extent.width * imageInfo.extent.height * stride, 1024);
+			auto data = FISSION_DEFAULT_ALLOC(imageInfo.extent.width * imageInfo.extent.height * stride);
 			memset(data, 0, imageInfo.extent.width * imageInfo.extent.height * stride);
 #ifdef THIRD_PASS
 			gfx.upload_image(dst_image, data, imageInfo.extent, format);
 #else
 			gfx.upload_image(dst_image, data, imageInfo.extent, format, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 #endif
-			_aligned_free(data);
+			FISSION_DEFAULT_FREE(data);
 		}
 		
 		{
@@ -713,7 +714,7 @@ struct Scene_OK : public fs::Scene {
 
 		tetris = tetris_init(GAME_WIDTH, GAME_HEIGHT);
 
-		engine.window.set_using_mouse_detlas(true);
+		engine.window.set_using_mouse_deltas(true);
 	}
 	virtual ~Scene_OK() override {
 		auto& gfx = engine.graphics;
@@ -794,7 +795,7 @@ void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uin
 		t += dt*frequency;
 		frequency += freq_delta * 0.4f;
 
-		t = std::fmodf(t, float(FS_TAU));
+		t = fmodf(t, float(FS_TAU));
 	}
 }
 

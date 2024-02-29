@@ -506,7 +506,7 @@ bool Window::is_using_mouse_deltas() {
     return _flags & platform::Window_Enable_Mouse_Deltas;
 }
 
-void Window::set_using_mouse_detlas(bool use) {
+void Window::set_using_mouse_deltas(bool use) {
     if (use) {
         _flags |=  platform::Window_Enable_Mouse_Deltas;
 

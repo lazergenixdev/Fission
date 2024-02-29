@@ -47,7 +47,7 @@ void* convert_to_rgb(void* data, int pixel_count) {
 
 __FISSION_BEGIN__
 
-Scene_Key cmdline_to_scene_key(platform::Instance);
+Scene_Key cmdline_to_scene_key(platform::Instance const&);
 void enumerate_displays(std::vector<struct Display>& out);
 void add_engine_console_commands();
 
@@ -448,6 +448,7 @@ void Engine::run() {
 			display_fatal_graphics_error(vk_result, "[vkQueuePresentKHR] failed");
 			return;
 		}
+        if (vk_result == VK_SUBOPTIMAL_KHR) resize();
 
 		if (flags & fSave_Currect_Frame) {
 			vkWaitForFences(graphics.device, 1, &fence, VK_TRUE, UINT64_MAX);
@@ -467,7 +468,7 @@ void Engine::run() {
 			);
 
 			stbi_write_png(filename, graphics.sc_extent.width, graphics.sc_extent.height, 3, data, 3 * graphics.sc_extent.width);
-			delete [] data;
+			delete [] reinterpret_cast<byte*>(data);
 			flags &=~ fSave_Currect_Frame;
 		}
 
@@ -477,16 +478,21 @@ void Engine::run() {
 		frame_index += 1;
 	}
 
+#if defined(FISSION_PLATFORM_WINDOWS)
 	CloseHandle(timer);
+#endif
 }
 
 void Engine::resize() {
+    FS_debug_print("> inside resize()\n");
 	if (window.is_minimized())
 		window.sleep_until_not_minimized();
 
+    FS_debug_print("> calling recreate_swap_chain()\n");
 	graphics.recreate_swap_chain(&window);
 
 	// Update 2D transform
+    FS_debug_print("> updating graphics stuff\n");
 	fs::Transform_2D_Data transform;
 	transform.offset = {-1.0f,-1.0f};
 	transform.scale = {2.0f / (float)graphics.sc_extent.width, 2.0f / (float)graphics.sc_extent.height};
@@ -510,7 +516,9 @@ void Engine::resize() {
 		}
 	}
 
+    FS_debug_print("> calling resize scene\n");
 	current_scene->on_resize();
+    FS_debug_print("> done resizeing!\n");
 }
 
 #define ADD_COMMAND(Name, Body) console::register_command(FS_str(#Name), [](string args) Body)
