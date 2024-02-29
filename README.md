@@ -5,7 +5,7 @@
 | Platform | Is Supported ? |
 | --- | --- |
 | Windows | ✔ Yes |
-| Linux | ❌ WIP |
+| Linux | ✔ Yes (only X11) |
 | Andriod | ❌ No |
 | MacOS | ❌ No |
 | IOS | ❌ No |
