@@ -21,6 +21,7 @@
 #include <Fission/config.hpp>
 #include <Fission/Base/Math/Library.hpp>   // math constants & fp_mod
 #include <Fission/Base/util/Operators.hpp> // math operators for `rgb` & `rgba`
+#include <limits>
 
 #define _FISSION_DEFINE_BASIC_COLOR(TYPE, X1, X2, X3) \
 type X1, X2, X3; \
@@ -251,7 +252,7 @@ namespace impl
 {
 	template <typename T> requires std::is_arithmetic_v<T>
 	static constexpr T max_color_value = std::is_integral_v<T> ?
-		std::numeric_limits<T>::max() : static_cast<T>( 1 );
+		std::numeric_limits<T>::max() : static_cast<T>(1);
 }
 
 
@@ -343,7 +344,7 @@ struct hsv
 {
 	using type = float;
 
-	_FISSION_DEFINE_BASIC_COLOR( hsv, h, s, v );
+	_FISSION_DEFINE_BASIC_COLOR(hsv, h, s, v);
 
 	constexpr operator rgb() const noexcept;
 };
@@ -352,7 +353,7 @@ struct hsva
 {
 	using type = float;
 
-	_FISSION_DEFINE_BASIC_COLORA( hsva, h, s, v, a );
+	_FISSION_DEFINE_BASIC_COLORA(hsva, h, s, v, a);
 	
 	constexpr hsva( hsv const& _Color, type const& _Alpha = impl::max_color_value<type> )noexcept:
 		h(_Color.h), s(_Color.s), v(_Color.v), a(_Alpha)
@@ -365,7 +366,7 @@ struct hsl
 {
 	using type = float;
 
-	_FISSION_DEFINE_BASIC_COLOR( hsl, h, s, l );
+	_FISSION_DEFINE_BASIC_COLOR(hsl, h, s, l);
 
 	constexpr operator rgb() const noexcept;
 };
@@ -374,7 +375,7 @@ struct hsla
 {
 	using type = float;
 
-	_FISSION_DEFINE_BASIC_COLORA( hsla, h, s, l, a );
+	_FISSION_DEFINE_BASIC_COLORA(hsla, h, s, l, a);
 	
 	constexpr hsla( hsl const& _Color, type const& _Alpha = impl::max_color_value<type> )noexcept:
 		h(_Color.h), s(_Color.s), l(_Color.l), a(_Alpha)
@@ -387,14 +388,14 @@ struct lab
 {
 	using type = float;
 
-	_FISSION_DEFINE_BASIC_COLOR( lab, l, a, b );
+	_FISSION_DEFINE_BASIC_COLOR(lab, l, a, b);
 };
 
 struct laba
 {
 	using type = float;
 
-	_FISSION_DEFINE_BASIC_COLORA( laba, l, a, b, alpha );
+	_FISSION_DEFINE_BASIC_COLORA(laba, l, a, b, alpha);
 	
 	constexpr laba( lab const& _Color, type const& _Alpha = impl::max_color_value<type> )noexcept:
 		l(_Color.l), a(_Color.a), b(_Color.b), alpha(_Alpha)
@@ -428,7 +429,7 @@ inline constexpr rgb::operator hsv() const noexcept
 		if( r > b ) {
 			x_max = r;
 			c = x_max - x_min;
-			out.h = c == 0.0f ? 0.0f : ( g - b ) / ( 6.0f * c );
+			out.h = c == 0.0f ? 0.0f : (g - b) / ( 6.0f * c );
 		} else {
 			x_max = b;
 			c = x_max - x_min;
@@ -467,12 +468,12 @@ inline constexpr rgb::operator hsl() const noexcept
 		if( r > b ) {
 			x_max = r;
 			c = x_max - x_min;
-			out.h = c == 0.0f ? 0.0f : ( g - b ) / ( 6.0f * c );
+			out.h = c == 0.0f ? 0.0f : (g - b) / (6.0f * c);
 		}
 		else {
 			x_max = b;
 			c = x_max - x_min;
-			out.h = c == 0.0f ? 0.0f : type(2.0/3.0) +( r - g ) / ( 6.0f * c );
+			out.h = c == 0.0f ? 0.0f : type(2.0/3.0) + (r - g) / (6.0f * c);
 		}
 	}
 	else // G > R
@@ -481,12 +482,12 @@ inline constexpr rgb::operator hsl() const noexcept
 		if( g > b ) {
 			x_max = g;
 			c = x_max - x_min;
-			out.h = c == 0.0f ? 0.0f : type(1.0/3.0) +( b - r ) / ( 6.0f * c );
+			out.h = c == 0.0f ? 0.0f : type(1.0/3.0) + (b - r) / (6.0f * c);
 		}
 		else {
 			x_max = b;
 			c = x_max - x_min;
-			out.h = c == 0.0f ? 0.0f : type(2.0/3.0) +( r - g ) / ( 6.0f * c );
+			out.h = c == 0.0f ? 0.0f : type(2.0/3.0) + (r - g) / (6.0f * c);
 		}
 	}
 
@@ -501,15 +502,14 @@ inline constexpr hsv::operator rgb() const noexcept
 {
 	struct rgb out {};
 
-	auto f = [&]( float n )
-	{
-		auto k = experimental::fp_mod( n + h * 6.0f, 6.0f );
-		return v * ( 1.0f - s * std::max( 0.0f, std::min( std::min( k, 4.0f - k ), 1.0f ) ) );
+	auto f = [&](float n) {
+		auto k = experimental::fp_mod(n + h * 6.0f, 6.0f);
+		return v * (1.0f - s * std::max(0.0f, std::min(std::min(k, 4.0f - k), 1.0f)));
 	};
 
-	out.r = f( 5.0f );
-	out.g = f( 3.0f );
-	out.b = f( 1.0f );
+	out.r = f(5.0f);
+	out.g = f(3.0f);
+	out.b = f(1.0f);
 
 	return out;
 }
@@ -518,15 +518,14 @@ inline constexpr hsl::operator rgb() const noexcept
 {
 	struct rgb out {};
 
-	auto f = [&]( float n )
-	{
-		const type k = experimental::fp_mod( n + h * 12.0f, 12.0f );
-		return l - s * std::min( l, 1.0f - l ) * std::max(-1.0f, std::min(std::min(k - 3.0f, 9.0f - k), 1.0f));
+	auto f = [&](float n) {
+		const type k = experimental::fp_mod(n + h * 12.0f, 12.0f);
+		return l - s * std::min(l, 1.0f - l) * std::max(-1.0f, std::min(std::min(k - 3.0f, 9.0f - k), 1.0f));
 	};
 
-	out.r = f( 0.0f );
-	out.g = f( 8.0f );
-	out.b = f( 4.0f );
+	out.r = f(0.0f);
+	out.g = f(8.0f);
+	out.b = f(4.0f);
 
 	return out;
 }
@@ -537,20 +536,20 @@ inline constexpr hsl::operator rgb() const noexcept
 
 inline constexpr rgba::operator hsva() const noexcept
 {
-	return hsva{ static_cast<hsv>( rgb{r, g, b} ), a };
+	return hsva{ static_cast<hsv>(rgb{r, g, b}), a };
 }
 inline constexpr rgba::operator hsla() const noexcept
 {
-	return hsla{ static_cast<hsl>( rgb{r, g, b} ), a };
+	return hsla{ static_cast<hsl>(rgb{r, g, b}), a };
 }
 
 inline constexpr hsva::operator rgba() const noexcept
 {
-	return rgba{ static_cast<rgb>( hsv{h, s, v} ), a };
+	return rgba{ static_cast<rgb>(hsv{h, s, v}), a };
 }
 inline constexpr hsla::operator rgba() const noexcept
 {
-	return rgba{ static_cast<rgb>( hsl{h, s, l} ), a };
+	return rgba{ static_cast<rgb>(hsl{h, s, l}), a };
 }
 
 inline constexpr rgb8::operator rgb() const noexcept
@@ -593,8 +592,8 @@ inline constexpr rgba::operator rgba8() const noexcept
 
 namespace colors
 {
-	static constexpr rgb  gray( float _Light ) { return{ _Light, _Light, _Light }; };
-	static constexpr rgba gray( float _Light, float _Alpha ) { return{ _Light, _Light, _Light, _Alpha }; };
+	static constexpr rgb  gray(float _Light) { return { _Light, _Light, _Light }; };
+	static constexpr rgba gray(float _Light, float _Alpha) { return { _Light, _Light, _Light, _Alpha }; };
 }
 
 __FISSION_END__

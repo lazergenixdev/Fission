@@ -108,6 +108,7 @@ int Engine::create(platform::Instance const& instance, Defaults const& defaults)
 	{
 		Graphics_Create_Info info;
 		info.window = &window;
+		info.debug  = bool(defaults.flags & Defaults::fEnable_Graphics_Debugging);
 		if (graphics.create(&info)) return 1;
 	}
 

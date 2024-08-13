@@ -250,7 +250,7 @@ bool Graphics::create(Graphics_Create_Info* info)
 {
 	{
 		SCOPED_TRACE("vkCreateInstance");
-		VkInstanceCreateInfo info{VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
+		VkInstanceCreateInfo instance_info{VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
 
 		VkApplicationInfo appInfo{VK_STRUCTURE_TYPE_APPLICATION_INFO};
 		appInfo.apiVersion = VK_API_VERSION_1_3;
@@ -258,7 +258,7 @@ bool Graphics::create(Graphics_Create_Info* info)
 		appInfo.applicationVersion = VK_MAKE_API_VERSION(1, 0, 0, 69);
 		appInfo.pEngineName = "Fission";
 		appInfo.engineVersion = VK_MAKE_API_VERSION(0, FISSION_VERSION_MAJ, FISSION_VERSION_MIN, FISSION_VERSION_PAT);
-		info.pApplicationInfo = &appInfo;
+		instance_info.pApplicationInfo = &appInfo;
 
 		const char* Extensions[] = {
 			VK_KHR_SURFACE_EXTENSION_NAME,
@@ -267,44 +267,38 @@ bool Graphics::create(Graphics_Create_Info* info)
 #elif defined(FISSION_PLATFORM_LINUX)
             VK_KHR_XCB_SURFACE_EXTENSION_NAME,
 #endif
-#ifdef FISSION_DEBUG
 			VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
-#endif
 		};
 
-		info.enabledExtensionCount = count32(Extensions);
-		info.ppEnabledExtensionNames = Extensions;
+		instance_info.enabledExtensionCount = info->debug? 3 : 2;
+		instance_info.ppEnabledExtensionNames = Extensions;
 
-#ifdef FISSION_DEBUG
 		const char* Layers[] = {
 			"VK_LAYER_KHRONOS_validation",
 		};
-		info.enabledLayerCount = count32(Layers);
-		info.ppEnabledLayerNames = Layers;
+		instance_info.enabledLayerCount = info->debug? 1 : 0;
+		instance_info.ppEnabledLayerNames = Layers;
 
-		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT};
-		debugCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-		debugCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-		debugCreateInfo.pfnUserCallback = on_graphics_vaidation_error;
-		debugCreateInfo.pUserData;
-		info.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
-		check_result(vkCreateInstance(&info, nullptr, &instance), "Vulkan SDK must be installed to enable validation layer [vkCreateInstance]");
-#else
-		check_result(vkCreateInstance(&info, nullptr, &instance), "Failed to create instance");
-#endif
+		if (info->debug) {
+			VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT};
+			debugCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+			debugCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+			debugCreateInfo.pfnUserCallback = on_graphics_vaidation_error;
+			debugCreateInfo.pUserData;
+			instance_info.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
+		}
+		check_result(vkCreateInstance(&instance_info, nullptr, &instance), "Failed to create instance");
 	}
 
-#ifdef FISSION_DEBUG
+	if (info->debug)
 	{
 		VkDebugUtilsMessengerCreateInfoEXT createInfo{VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT};
 		createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 		createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 		createInfo.pfnUserCallback = on_graphics_vaidation_error;
-		createInfo.pUserData;
-
+		createInfo.pUserData = nullptr;
 		check_result(CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger), "Failed to create debug messenger");
 	}
-#endif
 
 	{
 #if defined(FISSION_PLATFORM_WINDOWS)

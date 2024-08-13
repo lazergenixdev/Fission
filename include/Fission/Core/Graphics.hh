@@ -27,6 +27,7 @@ __FISSION_BEGIN__
 struct Graphics_Create_Info {
 	struct Window*   window;
 	VkPresentModeKHR present_mode;
+	bool             debug;
 };
 
 struct MSAA_Info {

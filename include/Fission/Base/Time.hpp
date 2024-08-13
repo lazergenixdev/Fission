@@ -16,9 +16,9 @@
 
 __FISSION_BEGIN__
 
-extern s64 timestamp();
-extern double seconds_elasped(s64 start, s64 end);
-extern double seconds_elasped_and_reset(s64& last);
+extern auto timestamp() -> s64;
+extern auto seconds_elasped(s64 start, s64 end) -> double;
+extern auto seconds_elasped_and_reset(s64& last) -> double;
 
 namespace base
 {

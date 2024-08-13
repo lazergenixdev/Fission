@@ -20,7 +20,11 @@ project 'Fission'
     targetdir ("%{wks.location}/bin/" .. output_location)
 	objdir ("%{wks.location}/bin-int/" .. output_location .. "/%{prj.name}")
 
-    files { "%{prj.location}/src/*.cpp", "%{prj.location}/src/*.h" }
+    files {
+        "%{prj.location}/src/*.cpp",
+        "%{prj.location}/src/Platform/*.cpp",
+        "%{prj.location}/src/*.h"
+    }
 
     -- public headers
     files '../include/**'

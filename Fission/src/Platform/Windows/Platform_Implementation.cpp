@@ -120,7 +120,7 @@ void skip_application_path(string& s) {
 	s = s.substr(idx);
 }
 
-Scene_Key cmdline_to_scene_key(platform::Instance) {
+Scene_Key cmdline_to_scene_key(platform::Instance const&) {
 	Scene_Key key;
 	string_utf16 win32_command_line;
 	win32_command_line.data = (c16*)GetCommandLineW();

@@ -32,15 +32,15 @@ namespace fs { struct Defaults; }
 // user defined functions
 
 // called before engine/graphics/window creation
-extern fs::Defaults on_create();
+extern auto on_create() -> fs::Defaults;
 
 // called after engine/graphics/window creation to load a new scene
-extern fs::Scene* on_create_scene(fs::Scene_Key const& key);
+extern auto on_create_scene(fs::Scene_Key const& key) -> fs::Scene*;
 
 __FISSION_BEGIN__
 
 // Temparary Alloc
-extern void* talloc(u64 size);
+extern auto talloc(u64 size) -> void*;
 
 // ONLY meant for HARD-CODED defaults
 // (engine will handle saving/loading settings to/from file)
@@ -51,6 +51,11 @@ struct Defaults {
 	Window_Mode window_mode      = Windowed;
 	int         display_index    = Display_Index_Automatic;
 	string      config_location  = FS_str(".Fission"); // "app_name"
+	u32         flags            = 0;
+
+	enum Flag: u32 {
+		fEnable_Graphics_Debugging = 1 << 0,
+	};
 };
 
 struct FISSION_API Engine {
@@ -69,7 +74,7 @@ struct FISSION_API Engine {
 		fSave_Currect_Frame            = 1 << 6,
 	};
 
-	string get_version_string();
+	auto get_version_string() -> string;
 
 	inline void bind_font(VkCommandBuffer cmd, Font_Static* font) {
 		VkDescriptorSet sets[] = { transform_2d.set, font->texture };

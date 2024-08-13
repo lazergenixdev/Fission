@@ -284,7 +284,7 @@ public:
 	}
 
 	void add_circle(v2f32 position, float radius, color color) {
-		int vtx_count = min(max(int(radius), 10), 128);
+		int vtx_count = min(max(int(radius)*2, 10), 128);
 
 		FS_FOR(vtx_count-2) {
 			index_data[d.total_idx_count++] = d.vtx_count;

@@ -50,7 +50,7 @@ struct version
 	constexpr auto operator<=>(version const&) const noexcept = default;
 	constexpr bool operator ==(version const&) const noexcept = default;
 
-}; // Fission::version
+};
 
 /*! @brief Compact Version Number */
 struct compressed_version
@@ -61,36 +61,34 @@ struct compressed_version
 	// 
 	//          6 bits + 13 bits       + 13 bits       = 32 bit
 	//          High Bits <--          --> Low Bits
-	u32 value;
+	u32 Major  :  6;
+	u32 Minor  : 13;
+	u32 Patch  : 13;
 
-	static constexpr u32 _Mask_Major = 0xFC00'0000;
-	static constexpr u32 _Mask_Minor = 0x03FF'E000;
-	static constexpr u32 _Mask_Patch = 0x0000'1FFF;
-
-	constexpr compressed_version() noexcept: value(0) {}
+	constexpr compressed_version() noexcept: Major(0), Minor(0), Patch(0) {}
 
 	constexpr compressed_version( int major, int minor, int patch ) noexcept:
-		value( (major << 26) | (minor << 13) | patch )
+		Major(major), Minor(minor), Patch(patch)
 	{
-		assert(major > 0 && major < 64);
-		assert(minor > 0 && minor < 8192);
-		assert(patch > 0 && patch < 8192);
+		assert(major >= 0 && major < 64);
+		assert(minor >= 0 && minor < 8192);
+		assert(patch >= 0 && patch < 8192);
 	}
 
 	// assume all numbers are within limits
 	constexpr compressed_version( const version& v ) noexcept:
-		value( (v.Major << 26) | (v.Minor << 13) | v.Patch )
+		Major(v.Major), Minor(v.Minor), Patch(v.Patch)
 	{
-		assert(v.Major > 0 && v.Major < 64);
-		assert(v.Minor > 0 && v.Minor < 8192);
-		assert(v.Patch > 0 && v.Patch < 8192);
+		assert(v.Major >= 0 && v.Major < 64);
+		assert(v.Minor >= 0 && v.Minor < 8192);
+		assert(v.Patch >= 0 && v.Patch < 8192);
 	}
 
 	constexpr version uncompress() const {
-		return version( (value) >> 26, (value & _Mask_Minor) >> 13, value & _Mask_Patch );
+		return version(Major, Minor, Patch);
 	}
 
-}; // Fission::compressed_version
+};
 
 __FISSION_END__
 
