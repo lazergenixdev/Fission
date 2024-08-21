@@ -849,4 +849,92 @@ void Render_Pass::end(Render_Context* ctx) {
 	vkCmdEndRenderPass(ctx->command_buffer);
 }
 
+void set_viewport_and_scissor(VkCommandBuffer cmd, rf32 rect) {
+	VkViewport viewport{
+		.x = rect.x.low,
+		.y = rect.y.low,
+		.width = rect.width(),
+		.height = rect.height(),
+		.minDepth = 0.0f,
+		.maxDepth = 1.0f,
+	};
+	vkCmdSetViewport(cmd, 0, 1, &viewport);
+
+	v2u32 size = (v2u32)rect.size();
+	VkRect2D scissor{
+		.offset = {(s32)rect.x.low, (s32)rect.y.low},
+		.extent = {.width = size.x, .height = size.y},
+	};
+	vkCmdSetScissor(cmd, 0, 1, &scissor);
+}
+
 __FISSION_END__
+
+namespace vk {
+	VkShaderModule create_shader(size_t size, void const* data) {
+		VkShaderModule module;
+		VkShaderModuleCreateInfo createInfo{ VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
+		createInfo.codeSize = size;
+		createInfo.pCode = reinterpret_cast<const uint32_t*>(data);
+		vkCreateShaderModule(engine.graphics.device, &createInfo, nullptr, &module);
+		return module;
+	}
+
+	VkResult Pipeline_Creator::create_and_destroy_shaders(VkPipeline* pipeline) {
+		auto result = create(pipeline);
+		for (auto&& [sType, pNext, flags, stage, module, pName, pSpecializationInfo] : shaders)
+			vkDestroyShaderModule(engine.graphics.device, module, nullptr);
+		return result;
+	}
+	VkResult Pipeline_Creator::create(VkPipeline* pipeline) {
+		dynamic_state.dynamicStateCount = (fs::u32)dynamic_states.size();
+		dynamic_state.pDynamicStates = dynamic_states.data();
+		color_blend_state.pAttachments = &blend_attachment;
+
+		VkGraphicsPipelineCreateInfo pipelineInfo{ VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
+		pipelineInfo.stageCount = (fs::u32)shaders.size();
+		pipelineInfo.pStages = shaders.data();
+		pipelineInfo.pVertexInputState = vertex_input_state;
+		pipelineInfo.pInputAssemblyState = &input_assembly_state;
+		pipelineInfo.pViewportState = &viewport_state;
+		pipelineInfo.pRasterizationState = &rasterization_state;
+		pipelineInfo.pMultisampleState = &multisample_state;
+		pipelineInfo.pDepthStencilState = &depth_stencil_state;
+		pipelineInfo.pColorBlendState = &color_blend_state;
+		pipelineInfo.pDynamicState = &dynamic_state;
+		pipelineInfo.layout = layout;
+		pipelineInfo.renderPass = render_pass;
+		pipelineInfo.subpass = subpass;
+		return vkCreateGraphicsPipelines(engine.graphics.device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, pipeline);
+	}
+	VkResult Pipeline_Creator::create_no_fragment(VkPipeline* pipeline) {
+		dynamic_state.dynamicStateCount = (fs::u32)dynamic_states.size();
+		dynamic_state.pDynamicStates = dynamic_states.data();
+		color_blend_state.pAttachments = &blend_attachment;
+
+		VkGraphicsPipelineCreateInfo pipelineInfo{ VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
+		pipelineInfo.stageCount = 1;
+		pipelineInfo.pStages = shaders.data();
+		pipelineInfo.pVertexInputState = vertex_input_state;
+		pipelineInfo.pInputAssemblyState = &input_assembly_state;
+		pipelineInfo.pViewportState = &viewport_state;
+		pipelineInfo.pRasterizationState = &rasterization_state;
+		pipelineInfo.pMultisampleState = &multisample_state;
+		pipelineInfo.pDepthStencilState = &depth_stencil_state;
+		pipelineInfo.pColorBlendState = &color_blend_state;
+		pipelineInfo.pDynamicState = &dynamic_state;
+		pipelineInfo.layout = layout;
+		pipelineInfo.renderPass = render_pass;
+		pipelineInfo.subpass = subpass;
+		return vkCreateGraphicsPipelines(engine.graphics.device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, pipeline);
+	}
+
+	VkResult Pipeline_Layout_Creator::create(VkPipelineLayout* pLayout) {
+		VkPipelineLayoutCreateInfo ci{ VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
+		ci.pSetLayouts = layouts.data();
+		ci.setLayoutCount = (fs::u32)layouts.size();
+		ci.pPushConstantRanges = push_ranges.data();
+		ci.pushConstantRangeCount = (fs::u32)push_ranges.size();
+		return vkCreatePipelineLayout(engine.graphics.device, &ci, nullptr, pLayout);
+	}
+}

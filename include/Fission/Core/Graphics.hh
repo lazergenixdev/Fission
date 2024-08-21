@@ -15,9 +15,10 @@
 #include <Fission/Base/Color.hpp>
 #include <Fission/Base/Version.hpp>
 #include <Fission/Base/Array.hpp>
-#include <Fission/Base/Math/Vector.hpp>
+#include <Fission/Base/Rect.hpp>
 #include <vulkan/vulkan.h>
 #include <vma/vk_mem_alloc.h>
+#include <vector>
 
 #define FISSION_DEFAULT_SWAP_CHAIN_USAGE \
 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
@@ -74,6 +75,12 @@ struct FISSION_API Graphics
 
 	version get_api_version();
 
+	inline constexpr v2f32 render_size() const {
+		auto x = float(sc_extent.width);
+		auto y = float(sc_extent.height);
+		return { x, y };
+	}
+
 	static constexpr int max_sc_images = 4;
 
 	VkInstance       instance;
@@ -119,6 +126,8 @@ private:
 	bool create(Graphics_Create_Info* info); // SUCCESS == false
 	void recreate_swap_chain(struct Window* wnd);
 };
+
+extern void set_viewport_and_scissor(VkCommandBuffer cmd, rf32 rect);
 
 struct Render_Pass {
 	VkRenderPass handle;
@@ -212,6 +221,7 @@ namespace vk {
 		static constexpr VkFormat value = VK_FORMAT_UNDEFINED;
 	};
 
+	template <>	struct _format_of<fs::rgba8> { static constexpr VkFormat value = VK_FORMAT_R8G8B8A8_UNORM; };
 	template <>	struct _format_of<fs::rgba>  { static constexpr VkFormat value = VK_FORMAT_R32G32B32A32_SFLOAT; };
 	template <>	struct _format_of<fs::rgb>   { static constexpr VkFormat value = VK_FORMAT_R32G32B32_SFLOAT; };
 	template <>	struct _format_of<fs::v4f32> { static constexpr VkFormat value = VK_FORMAT_R32G32B32A32_SFLOAT; };
@@ -346,8 +356,14 @@ namespace vk {
 		}
 	}
 
+	enum Shader_Stage {
+		Vertex = VK_SHADER_STAGE_VERTEX_BIT,
+		Fragment = VK_SHADER_STAGE_FRAGMENT_BIT,
+		Geometry = VK_SHADER_STAGE_GEOMETRY_BIT,
+	};
+
 	static constexpr VkExtent3D extent3d(VkExtent2D extent) {
-		return VkExtent3D{.width = extent.width, .height = extent.height, .depth = 1};
+		return VkExtent3D{ .width = extent.width, .height = extent.height, .depth = 1 };
 	}
 
 	template <typename...Attributes>
@@ -387,6 +403,120 @@ namespace vk {
 		inline constexpr void set_offset() {
 			attributes[n].offset = fs::size_of_n<(int)n, Attributes...>;
 		}
+	};
+
+	FISSION_API VkShaderModule create_shader(size_t size, void const* data);
+
+	struct Pipeline_Creator {
+		std::vector<VkDynamicState>                  dynamic_states;
+		std::vector<VkPipelineShaderStageCreateInfo> shaders;
+		VkPipelineColorBlendAttachmentState          blend_attachment = {
+			.colorWriteMask = 0b1111,
+		};
+		VkPipelineVertexInputStateCreateInfo const* vertex_input_state;
+		VkPipelineInputAssemblyStateCreateInfo      input_assembly_state{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+			.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+			.primitiveRestartEnable = VK_FALSE,
+		};
+		VkPipelineViewportStateCreateInfo           viewport_state = {
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+			.viewportCount = 1,
+			.scissorCount = 1,
+		};
+		VkPipelineRasterizationStateCreateInfo      rasterization_state{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+			.depthClampEnable = VK_FALSE,
+			.rasterizerDiscardEnable = VK_FALSE,
+			.polygonMode = VK_POLYGON_MODE_FILL,
+			.cullMode = VK_CULL_MODE_NONE,
+			.frontFace = VK_FRONT_FACE_CLOCKWISE,
+			.depthBiasEnable = VK_FALSE,
+			.lineWidth = 1.0f,
+		};
+		VkPipelineMultisampleStateCreateInfo        multisample_state = {
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+			.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+			.sampleShadingEnable = VK_FALSE,
+		};
+		VkPipelineDepthStencilStateCreateInfo       depth_stencil_state = {
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+			.depthTestEnable = VK_TRUE,
+			.depthWriteEnable = VK_TRUE,
+			.depthCompareOp = VK_COMPARE_OP_LESS,
+			.depthBoundsTestEnable = VK_FALSE,
+			.stencilTestEnable = VK_FALSE,
+			.minDepthBounds = 0.0f,
+			.maxDepthBounds = 1.0f,
+		};
+		VkPipelineColorBlendStateCreateInfo         color_blend_state = {
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+			.logicOpEnable = VK_FALSE,
+			.attachmentCount = 1,
+			.pAttachments = nullptr,
+		};
+		VkPipelineDynamicStateCreateInfo            dynamic_state{ VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO };
+		VkPipelineLayout                            layout;
+		VkRenderPass                                render_pass;
+		uint32_t                                    subpass;
+
+		Pipeline_Creator(VkRenderPass render_pass, VkPipelineLayout layout, uint32_t subpass = 0u) {
+			this->layout = layout;
+			this->render_pass = render_pass;
+			this->subpass = subpass;
+		}
+
+		Pipeline_Creator& vertex_input(VkPipelineVertexInputStateCreateInfo const* vi) {
+			vertex_input_state = vi;
+			return *this;
+		}
+
+		Pipeline_Creator& sample_count(VkSampleCountFlagBits sample_count) {
+			multisample_state.rasterizationSamples = sample_count;
+			return *this;
+		}
+		Pipeline_Creator& topology(VkPrimitiveTopology topology) {
+			input_assembly_state.topology = topology;
+			return *this;
+		}
+
+		Pipeline_Creator& add_dynamic_state(VkDynamicState state) {
+			dynamic_states.emplace_back(state);
+			return *this;
+		}
+
+		template <typename Shader>
+		Pipeline_Creator& add_shader() {
+			VkPipelineShaderStageCreateInfo info{ VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
+			info.module = create_shader(Shader::size, Shader::data);
+			info.stage = static_cast<VkShaderStageFlagBits>(Shader::stage);
+			info.pName = "main";
+			shaders.emplace_back(info);
+			return *this;
+		}
+
+		VkResult create_and_destroy_shaders(VkPipeline* pipeline);
+		VkResult create(VkPipeline* pipeline);
+		VkResult create_no_fragment(VkPipeline* pipeline);
+	};
+
+	struct Pipeline_Layout_Creator {
+		std::vector<VkDescriptorSetLayout> layouts;
+		std::vector<VkPushConstantRange> push_ranges;
+
+		Pipeline_Layout_Creator& add_layout(VkDescriptorSetLayout layout) {
+			layouts.emplace_back(layout);
+			return *this;
+		}
+		Pipeline_Layout_Creator& add_push_range(VkShaderStageFlags stage, fs::u32 size, fs::u32 offset = 0u) {
+			VkPushConstantRange range;
+			range.offset = offset;
+			range.size = size;
+			range.stageFlags = stage;
+			push_ranges.emplace_back(range);
+			return *this;
+		}
+		VkResult create(VkPipelineLayout* pLayout);
 	};
 }
 

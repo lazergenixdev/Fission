@@ -246,6 +246,15 @@ namespace colors
 	template <color_t HEX>
 	static constexpr known make = static_cast<known>( (HEX << 8) | 0xFF );
 
+	static known random() {
+		float r = float(rand()) / float(RAND_MAX);
+		float g = float(rand()) / float(RAND_MAX);
+		float b = float(rand()) / float(RAND_MAX);
+		auto value =                color_t(r * 255.0f);
+			 value = (value << 8) | color_t(g * 255.0f);
+			 value = (value << 8) | color_t(b * 255.0f);
+		return static_cast<known>( (value << 8) | 0xFF );
+	}
 } // namespace Fission::colors
 
 namespace impl
