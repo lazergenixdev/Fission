@@ -11,7 +11,7 @@
  * @License:      MIT (see end of file)
  */
 #pragma once
-#include <Fission/Base/Math/Vector.hpp>
+#include <Fission/base/math/vector.hpp>
 
 __FISSION_BEGIN__
 

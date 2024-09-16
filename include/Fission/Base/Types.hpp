@@ -13,7 +13,7 @@
 #pragma once
 #include <Fission/config.hpp>
 
-#define __FISSION_BASE_ALIASES__(BASE,NAME) \
+#define _FISSION_BASE_ALIASES(BASE,NAME) \
 using NAME ## s8  = BASE<s8>; \
 using NAME ## u8  = BASE<u8>; \
 using NAME ## s16 = BASE<s16>; \
@@ -41,7 +41,7 @@ __FISSION_END__
 /**
  *	MIT License
  *
- *	Copyright (c) 2021-2023 lazergenixdev
+ *	Copyright (c) 2021-2025 lazergenixdev
  *
  *	Permission is hereby granted, free of charge, to any person obtaining a copy
  *	of this software and associated documentation files (the "Software"), to deal

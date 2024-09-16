@@ -11,8 +11,8 @@
  * @License:      MIT (see end of file)
  */
 #pragma once
-#include <Fission/Base/Math/Vector.hpp>
-#include <Fission/Base/Range.hpp>
+#include <Fission/base/math/vector.hpp>
+#include <Fission/base/range.hpp>
 
 __FISSION_BEGIN__
 
@@ -218,14 +218,14 @@ struct rect
 
 }; // struct Fission::rect
 
-__FISSION_BASE_ALIASES__(rect, r);
+_FISSION_BASE_ALIASES(rect, r);
 
 __FISSION_END__
 
 /**
  *	MIT License
  *
- *	Copyright (c) 2021-2023 lazergenixdev
+ *	Copyright (c) 2021-2025 lazergenixdev
  *
  *	Permission is hereby granted, free of charge, to any person obtaining a copy
  *	of this software and associated documentation files (the "Software"), to deal

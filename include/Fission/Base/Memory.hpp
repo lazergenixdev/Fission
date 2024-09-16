@@ -17,7 +17,7 @@
 
 __FISSION_BEGIN__
 
-#if defined(FISSION_PLATFORM_WINDOWS)
+#if   defined(FISSION_PLATFORM_WINDOWS)
 #define FISSION_DEFAULT_ALLOC(Size) ::_aligned_malloc(Size, 64)
 #define FISSION_DEFAULT_FREE(Ptr)   ::_aligned_free(Ptr)
 #elif defined(FISSION_PLATFORM_LINUX)
@@ -25,7 +25,7 @@ __FISSION_BEGIN__
 #define FISSION_DEFAULT_FREE(Ptr)   ::free(Ptr)
 #endif
 
-//! @brief Default Bump Allocator
+/// Default Bump Allocator
 struct bump_allocator
 {
 	u8* base            = nullptr;
@@ -53,15 +53,19 @@ struct bump_allocator
 
 	bump_allocator() = default;
 	bump_allocator(u64 capacity)
-	:	base((u8*)FISSION_DEFAULT_ALLOC(capacity)), capacity(capacity)
+	:	base(reinterpret_cast<u8*>(FISSION_DEFAULT_ALLOC(capacity))),
+		capacity(capacity)
 	{}
 
-	void create(u64 capacity) {
-		this->capacity = capacity;
+	/// @note Only call create() or contructor once,
+	///         otherwise you will leak memory
+	void create(u64 initial_capacity) {
+        capacity = initial_capacity;
 		bytes_allocated = 0;
-		base = (u8*)FISSION_DEFAULT_ALLOC(capacity);
+		base = reinterpret_cast<u8*>(FISSION_DEFAULT_ALLOC(capacity));
 	}
 
+	/// @brief Release memory ownership
 	void* release() {
 		auto ptr = base;
 		base = nullptr;
@@ -69,7 +73,7 @@ struct bump_allocator
 	}
 
 	~bump_allocator() {
-		if(base) FISSION_DEFAULT_FREE(base);
+		if (base) FISSION_DEFAULT_FREE(base);
 	}
 };
 
@@ -78,7 +82,7 @@ __FISSION_END__
 /**
  *	MIT License
  *
- *	Copyright (c) 2023 lazergenixdev
+ *	Copyright (c) 2023-2025 lazergenixdev
  *
  *	Permission is hereby granted, free of charge, to any person obtaining a copy
  *	of this software and associated documentation files (the "Software"), to deal

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    android:versionCode="0.1"
+    android:versionName="v0.1 (dev)"
+    android:installLocation="preferExternal">
+
+    <!-- Indicate that the app requires Vulkan support (version 1.1) -->
+    <uses-feature android:name="android.hardware.vulkan.version" android:version="4198400" android:required="true" />
+    
+    <!-- Indicate that the app doesn't require OpenGL ES -->
+    <uses-feature android:name="android.hardware.opengles.aep" android:required="false" />
+
+    <application
+        android:allowBackup="true"
+        android:label="@string/title"
+        android:supportsRtl="true"
+        android:theme="@style/Fullscreen">
+		
+        <activity
+            android:exported="true"
+            android:name=".MainActivity"
+            android:configChanges="orientation|screenSize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

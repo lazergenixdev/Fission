@@ -1,38 +1,17 @@
 /**
- * @file Range.hpp
- * @author lazergenixdev@gmail.com
+ *	______________              _____
+ *	___  ____/__(_)________________(_)____________
+ *	__  /_   __  /__  ___/_  ___/_  /_  __ \_  __ \
+ *	_  __/   _  / _(__  )_(__  )_  / / /_/ /  / / /
+ *	/_/      /_/  /____/ /____/ /_/  \____//_/ /_/
+ *
  * 
- *	 _______   _   _____   _____   _   _____   __    _  
- *	|  _____| | | |  ___| |  ___| | | |  _  | |  \  | | 
- *	| |___    | |  \ \     \ \    | | | | | | |   \ | | 
- *	|  ___|   | |   \ \     \ \   | | | | | | | |\ \| | 
- *	| |       | |  __\ \   __\ \  | | | |_| | | | \   | 
- *	|_|       |_| |_____| |_____| |_| |_____| |_|  \__| 
- * 
- *	MIT License
- *	
- *	Copyright (c) 2021-2022 Lazergenix
- *	
- *	Permission is hereby granted, free of charge, to any person obtaining a copy
- *	of this software and associated documentation files (the "Software"), to deal
- *	in the Software without restriction, including without limitation the rights
- *	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *	copies of the Software, and to permit persons to whom the Software is
- *	furnished to do so, subject to the following conditions:
- *	
- *	The above copyright notice and this permission notice shall be included in all
- *	copies or substantial portions of the Software.
- *	
- *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *	SOFTWARE.
+ * @Author:       lazergenixdev@gmail.com
+ * @Development:  (https://github.com/lazergenixdev/Fission)
+ * @License:      MIT (see end of file)
  */
 #pragma once
-#include <Fission/Base/Types.hpp>
+#include <Fission/base/types.hpp>
 
 __FISSION_BEGIN__
 
@@ -178,7 +157,7 @@ public:
 
 }; // struct Fission::range
 
-__FISSION_BASE_ALIASES__(range, range);
+_FISSION_BASE_ALIASES(range, range);
 
 //! @return The minimum distance between two ranges.
 //! @note: Returns a negative value for ranges that contain a subset of each other.
@@ -190,6 +169,7 @@ inline constexpr auto intersect(const range<T>&_A, const range<T>&_B)
 }
 
 
+/// TODO: measure performance of this VS keeping an index locally
 template <typename _Range>
 struct enumerate
 {
@@ -202,7 +182,7 @@ private:
 	template <typename _Iterator>
 	struct iter
 	{
-		constexpr iter( _Iterator const& it ): it( it ){}
+		constexpr iter(_Iterator const& it): it( it ){}
 
 		template <typename T>
 		constexpr bool operator!=( T r ) const { return it != r; }
@@ -214,7 +194,7 @@ private:
 	};
 
 public:
-	enumerate( _Range const& object ): obj( object ) {}
+	enumerate(_Range const& object): obj( object ) {}
 
 	constexpr auto begin() { return iter{ obj.begin() }; }
 	constexpr auto end() { return obj.end(); }
@@ -224,3 +204,27 @@ private:
 };
 
 __FISSION_END__
+
+/**
+ *	MIT License
+ *
+ *	Copyright (c) 2021-2025 lazergenixdev
+ *
+ *	Permission is hereby granted, free of charge, to any person obtaining a copy
+ *	of this software and associated documentation files (the "Software"), to deal
+ *	in the Software without restriction, including without limitation the rights
+ *	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *	copies of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
+ *
+ *	The above copyright notice and this permission notice shall be included in all
+ *	copies or substantial portions of the Software.
+ *
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
+ */

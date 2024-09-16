@@ -16,10 +16,6 @@
 
 __FISSION_BEGIN__
 
-extern auto timestamp() -> s64;
-extern auto seconds_elasped(s64 start, s64 end) -> double;
-extern auto seconds_elasped_and_reset(s64& last) -> double;
-
 namespace base
 {
 	//! @brief Wrapper for a std::chrono clock to measure duration between points in time.

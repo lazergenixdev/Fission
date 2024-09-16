@@ -10,115 +10,67 @@
  * @Development:  (https://github.com/lazergenixdev/Fission)
  * @License:      MIT (see end of file)
  */
+
+// DOCUMENTATION
+//
+// ----------------------- Mutexes ------------------------
+// 
+// Type: `os::Mutex`
+// 
+// Functions (macros):
+//  - os_mutex_create(p_mutex)
+//  - os_mutex_destroy(mutex)
+//  - os_mutex_lock(mutex)
+//  - os_mutex_unlock(mutex)
+//
+// ----------------------- Threads ------------------------
+// 
+// Type: `os::Thread`
+// 
+// Thread Function: (*void) -> os::Thread_Result
+// note:
+//      When returning from a thread function,
+//      just do `return {}`.
+// 
+// Functions (macros):
+//  - os_thread_start(function, p_arg, p_thread)
+//  - os_thread_join(thread)
+//
+// ----------------------- Logging ------------------------
+// 
+// Functions:
+//  - os::log(level, message)
+// 
+// see "core/log.hpp" for more detail
+//
+// -------------------- Dialog Boxes ----------------------
+// 
+// Functions:
+//  - os::show_error_dialog(title, message)
+//  - os::show_file_dialog(...) NOT IMPLEMENTED
+//
+
 #pragma once
 #include <Fission/config.hpp>
 
-#if defined(FISSION_PLATFORM_WINDOWS)
-#include <Fission/Platform/Windows/winapi.h>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-__FISSION_BEGIN__
-
-#ifndef FS_utf16_codepoint_builder_error
-#define FS_utf16_codepoint_builder_error(EXPR, MSG) (void)0
-#endif
-
-struct UTF_16_Codepoint_Builder {
-public:
-    c32 codepoint = 0;
-
-    // returns true iff codepoint is now built.
-    // note: garbage in -> garbage out
-    bool append(c16 utf16) {
-        // boring case
-        if (utf16 < 0xD800) {
-            FS_utf16_codepoint_builder_error(bytes_occupied != 0, "Invalid continuation character");
-
-            codepoint = utf16;
-            return true;
-        }
-
-        switch (slots_occupied)
-        {
-        case 0:
-            // store first half of codepoint.
-            codepoint = (utf16 - 0xD800) * 0x400;
-            break;
-        case 1:
-            // store the second half of codepoint.
-            codepoint = ((utf16 - 0xDC00) + codepoint + 0x10000);
-            break;
-        default:
-            FS_utf16_codepoint_builder_error(true, "Slots Occupied cannot be any value other than 0 or 1");
-            break;
-        }
-
-        ++slots_occupied;
-
-        if (slots_occupied == 2) {
-            slots_occupied = 0;
-            return true;
-        }
-
-        return false;
-    }
-
-private:
-    // every "slot" is two bytes
-    int slots_occupied = 0;
-};
-
-namespace platform {
-	struct Instance {}; // useless on windows
-    enum Window_ {
-        Window_Disable_Position_Update = 1 << 0,
-        Window_Minimized               = 1 << 1,
-        Window_Init_Completed          = 1 << 2,
-        Window_Enable_Mouse_Deltas     = 1 << 3,
-    };
-	struct Window_Impl {
-		HWND                     _handle = NULL;
-		std::thread              _thread;
-		std::mutex               _mutex;
-		std::condition_variable  _cv;
-		short                    _mouse_wheel_delta;
-		UTF_16_Codepoint_Builder _codepoint_builder;
-        u32                      _flags = 0;
-	};
-	struct Display_Impl {
-		HMONITOR _handle;
-	};
-}
-__FISSION_END__
+#if   defined(FISSION_PLATFORM_HEADLESS)
+#   include "platform/headless.hpp"
+#elif defined(FISSION_PLATFORM_WINDOWS)
+#   include "platform/windows.hpp"
 #elif defined(FISSION_PLATFORM_LINUX)
-#include <xcb/xcb.h>
-#include <xcb/xcb_keysyms.h>
-#include <thread>
-#include <vector>
-__FISSION_BEGIN__
-namespace platform {
-    struct Instance {
-        Instance(int argc, char* argv[]):
-            argv(argv+0, argv+argc)
-        {}
-        std::vector<const char*> argv;
-    };
-    struct Window_Impl {
-        std::thread       _thread;
-        xcb_connection_t* _connection;
-        xcb_screen_t*     _screen;
-        xcb_window_t      _id;
-    };
-    struct Display_Impl {};
-}
-__FISSION_END__
+#   include "platform/linux.hpp"
+#elif defined(FISSION_PLATFORM_ANDROID)
+#   include "platform/android.hpp"
+#elif defined(FISSION_PLATFORM_MACOS)
+#   include "platform/macos.hpp"
+#elif defined(FISSION_PLATFORM_IOS)
+#   include "platform/ios.hpp"
 #endif
 
 /**
  *	MIT License
  *
- *	Copyright (c) 2021-2023 lazergenixdev
+ *	Copyright (c) 2021-2025 lazergenixdev
  *
  *	Permission is hereby granted, free of charge, to any person obtaining a copy
  *	of this software and associated documentation files (the "Software"), to deal

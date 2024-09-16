@@ -11,9 +11,9 @@
  * @License:      MIT (see end of file)
  */
 #pragma once
-#include <Fission/Base/Types.hpp>
-#include <Fission/Base/util/Operators.hpp>
-#include <Fission/Base/Math/Library.hpp>
+#include <Fission/base/types.hpp>
+#include <Fission/base/math/library.hpp>
+#include <Fission/base/impl/operators.hpp>
 #include <compare>
 
 __FISSION_BEGIN__
@@ -73,7 +73,7 @@ namespace math
 		inline constexpr bool operator==(vector2 const&) const = default;
 		inline constexpr auto operator<=>(vector2 const&) const = default;
 
-		_FISSION_DEFINE_OPERATORS_2(vector2, type, x, y);
+		_FISSION_IMPLEMENT_OPERATORS_2(vector2, type, x, y);
 
 	}; // Fission::base::vector2
 
@@ -132,7 +132,7 @@ namespace math
 		inline constexpr bool operator==(vector3 const&) const = default;
 		inline constexpr auto operator<=>(vector3 const&) const = default;
 
-		_FISSION_DEFINE_OPERATORS_3(vector3, type, x, y, z);
+		_FISSION_IMPLEMENT_OPERATORS_3(vector3, type, x, y, z);
 
 	}; // Fission::base::vector3
 
@@ -204,7 +204,7 @@ namespace math
 		constexpr bool operator==(vector4 const&) const = default;
 		constexpr auto operator<=>(vector4 const&) const = default;
 
-		_FISSION_DEFINE_OPERATORS_4(vector4, type, x, y, z, w);
+		_FISSION_IMPLEMENT_OPERATORS_4(vector4, type, x, y, z, w);
 
 	}; // Fission::base::vector4
 
@@ -214,23 +214,26 @@ template<typename _Ty> using v2 = math::vector2<_Ty>;
 template<typename _Ty> using v3 = math::vector3<_Ty>;
 template<typename _Ty> using v4 = math::vector4<_Ty>;
 
-__FISSION_BASE_ALIASES__(math::vector2, v2);
-__FISSION_BASE_ALIASES__(math::vector3, v3);
-__FISSION_BASE_ALIASES__(math::vector4, v4);
+_FISSION_BASE_ALIASES(math::vector2, v2);
+_FISSION_BASE_ALIASES(math::vector3, v3);
+_FISSION_BASE_ALIASES(math::vector4, v4);
 
-template<typename _Ty>inline constexpr auto operator/(const _Ty&_Left,const v2<_Ty>&_Right){return v2{_Left/_Right.x,_Left/_Right.y};}
-template<typename _Ty>inline constexpr auto operator/(const _Ty&_Left,const v3<_Ty>&_Right){return v3{_Left/_Right.x,_Left/_Right.y,_Left/_Right.z};}
-template<typename _Ty>inline constexpr auto operator/(const _Ty&_Left,const v4<_Ty>&_Right){return v4{_Left/_Right.x,_Left/_Right.y,_Left/_Right.z,_Left/_Right.w};}
-
-template<typename _Ty>inline constexpr _Ty dot(const v2<_Ty>&_A,const v2<_Ty>&_B){return _A.x*_B.x+_A.y*_B.y;}
-template<typename _Ty>inline constexpr _Ty dot(const v3<_Ty>&_A,const v3<_Ty>&_B){return _A.x*_B.x+_A.y*_B.y+_A.z*_B.z;}
-template<typename _Ty>inline constexpr _Ty dot(const v4<_Ty>&_A,const v4<_Ty>&_B){return _A.x*_B.x+_A.y*_B.y+_A.z*_B.z+_A.w*_B.w;}
+#if 0
+#endif
 
 __FISSION_END__
 
-template <typename T> _FISSION_DEFINE_OPERATOR_MULTIPLY_2(fs::math::vector2<T>, T, x, y)
-template <typename T> _FISSION_DEFINE_OPERATOR_MULTIPLY_3(fs::math::vector3<T>, T, x, y, z)
-template <typename T> _FISSION_DEFINE_OPERATOR_MULTIPLY_4(fs::math::vector4<T>, T, x, y, z, w)
+template <typename T> _FISSION_IMPLEMENT_OPERATOR_MULTIPLY_2(fs::math::vector2<T>, T, x, y)
+template <typename T> _FISSION_IMPLEMENT_OPERATOR_MULTIPLY_3(fs::math::vector3<T>, T, x, y, z)
+template <typename T> _FISSION_IMPLEMENT_OPERATOR_MULTIPLY_4(fs::math::vector4<T>, T, x, y, z, w)
+
+template <typename T> _FISSION_IMPLEMENT_OPERATOR_DIVISION_2(fs::math::vector2<T>, T, x, y)
+template <typename T> _FISSION_IMPLEMENT_OPERATOR_DIVISION_3(fs::math::vector3<T>, T, x, y, z)
+template <typename T> _FISSION_IMPLEMENT_OPERATOR_DIVISION_4(fs::math::vector4<T>, T, x, y, z, w)
+
+template <typename T> _FISSION_IMPLEMENT_OPERATOR_DOT_2(fs::math::vector2<T>, x, y)
+template <typename T> _FISSION_IMPLEMENT_OPERATOR_DOT_3(fs::math::vector3<T>, x, y, z)
+template <typename T> _FISSION_IMPLEMENT_OPERATOR_DOT_4(fs::math::vector4<T>, x, y, z, w)
 
 /**
  *	MIT License

@@ -16,21 +16,35 @@
 
 __FISSION_BEGIN__
 
-namespace math {
+namespace math
+{
+	template <typename T, typename _Convertable_To_T>
+	inline constexpr T max(T a, _Convertable_To_T b) {
+        auto const _b = static_cast<T>(b);
+        return (a > _b) ? a : _b;
+	}
 
-    template <std::floating_point T>
+	template <typename T, typename _Convertable_To_T>
+	inline constexpr T min(T a, _Convertable_To_T b) {
+        auto const _b = static_cast<T>(b);
+        return (a < _b) ? a : _b;
+	}
+	
+	template <typename T, typename F>
+	inline constexpr T lerp(T const& left, T const& right, F x) {
+		return left * ((F)1 - x) + right * x;
+	}
+
+    template <typename T>
     static inline constexpr T lerp_speed(T dt, T speed) {
         return T(1.0) - std::pow(T(0.5), dt * speed);
     }
 
-    template <std::floating_point T>
+    template <typename T>
     static inline constexpr T exp_update(T current, T target, T dt, T speed) {
-        return fs::lerp(current, target, lerp_speed(dt, speed));
+        return lerp(current, target, lerp_speed(dt, speed));
     }
 
-    // this serves no purpose, I think this is funny.
-    enum { _537895 = 537895 };
-    
     struct noop_library
     {
         template <typename T>
@@ -51,7 +65,7 @@ namespace math {
         template <typename T>
         static inline constexpr auto cos(const T &_X) { return ::std::cos(_X); }
 
-        template <typename T> requires std::is_floating_point_v<T>
+        template <typename T>
         static inline constexpr auto sqrt(const T &_X) {
             if constexpr (std::is_same_v<T, float>) {
                 return::sqrtf(_X);
@@ -79,12 +93,11 @@ namespace math {
 
 namespace experimental
 {
-	template <typename T> requires std::is_floating_point_v<T>
+	template <typename T>
 	static constexpr T fp_mod( T const& x, T const& y )
 	{
 		const T t = x / y;
 		const T n = (T)static_cast<int>( t );
-
 		return x - n * y;
 	}
 }
