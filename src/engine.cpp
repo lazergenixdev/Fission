@@ -1,31 +1,26 @@
 #include "internal.hpp"
 #include <Fission/core/engine.hpp>
-#include <Fission/core/log.hpp>
+#include <format.hpp>
 
-#define FISSION_VERSION_MAJOR 2
-#define FISSION_VERSION_MINOR 3
-#define FISSION_VERSION_PATCH 0
+using fmt::format;
+using namespace fs;
 
 fs::Engine engine {
     .version = {
-        FISSION_VERSION_MAJOR,
-        FISSION_VERSION_MINOR,
-        FISSION_VERSION_PATCH
+        version_major,
+        version_minor,
+        version_patch
     }
 };
-
-using namespace fs;
 
 auto Engine::create(Defaults const& defaults) -> bool
 {
     (void)defaults;
-    log::verbose("Creating Fission Engine...");
+    log::info("Creating Fission Engine...");
 
     if (window.create({
-        .title = "Fission Example App",
+        .title = __TITLE__,
     })) return true;
-
-    engine.flags |= engine.fRunning;
 
 	if (graphics.create({
 		.window = &window,
@@ -37,18 +32,29 @@ auto Engine::create(Defaults const& defaults) -> bool
     if (create_layers()) return true;
 
 	engine.current_scene = on_create_scene({});
+    engine.flags |= Engine::Running;
 
-    os_thread_start(fs::render_main, nullptr, &engine.render_thread);
-    return 0;
+    log::debug("Creating render thread...");
+	if (os_thread_start(fs::render_main, nullptr, &engine.render_thread)) {
+		log::error("Failed to start render thread!");
+		return true;
+	}
+
+    log::verbose(format("logger is_open() => {}", FS_BTF(engine.logger.file.is_open())));
+
+    return false;
 }
+
+#define check(VK, MSG) if (VK < VK_SUCCESS) { log::error(MSG); return true; } (void)0
 
 auto Engine::create_layers() -> bool
 {
-    vk::Render_Pass_Creator{4}
+    check(vk::Render_Pass_Creator{4}
         .add_attachment(graphics.sc_format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
         .add_subpass({ {0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} })
         .add_external_subpass_dependency(0)
-        .create(&overlay_render_pass);
+        .create(&overlay_render_pass),
+        "Failed to create render pass");
 
     VkFramebufferCreateInfo frame_buffer_info {
         .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -61,16 +67,26 @@ auto Engine::create_layers() -> bool
 
     for_n (graphics.sc_image_count) {
         frame_buffer_info.pAttachments = graphics.sc_image_views + i;
-        vkCreateFramebuffer(graphics.device, &frame_buffer_info, nullptr, frame_buffers + i);
+        check(vkCreateFramebuffer(graphics.device, &frame_buffer_info, nullptr, frame_buffers + i),
+              "Failed to create frame buffer");
     }
 
     return false;
 }
 
+#undef check
+
 void Engine::destroy()
 {
+    log::info("Destroying Fission Engine...");
+    engine.flags &=~ Engine::Running; // Ensure render thread will terminate
     if (engine.render_thread) os_thread_join(engine.render_thread);
-    log::verbose("Destroying Fission Engine...");
+	vkDeviceWaitIdle(graphics.device);
+	current_scene->~Scene();
+	for (auto& frame_buffer: frame_buffers)
+		vkDestroyFramebuffer(graphics.device, frame_buffer, nullptr);
+	vkDestroyRenderPass(graphics.device, overlay_render_pass, nullptr);
+    graphics.destroy();
 }
 
 auto Engine::setup() -> bool
@@ -84,12 +100,20 @@ void Engine::shutdown()
 	window.close();
 }
 
-#define check(Result, What) if (Result != VK_SUCCESS) { log::error(What); return false; } (void)0
+bool stop() {
+    engine.flags &=~ Engine::Running;
+    return false;
+}
+
+#define check(Result, What) if (Result < VK_SUCCESS) { log::error(What); return stop(); } (void)0
+#define checkf(Result, What, ...) if ((result = (Result)) < VK_SUCCESS) { log::error(format(What, __VA_ARGS__)); return stop(); } (void)0
 #define unlikely [[unlikely]] // pretty sure this does nothing, but it's a nice thought
 
-auto Engine::render_frame() -> bool {
+auto Engine::render_frame() -> bool
+{
 	std::vector<fs::Event> events;
 
+    VkResult result { VK_SUCCESS };
 	Render_Context render_context { .frame = frame_count & 1 };
 	VkSemaphore write_semaphore = graphics.sc_image_write_semaphore[render_context.frame];
 	VkSemaphore read_semaphore  = graphics.sc_image_read_semaphore[render_context.frame];
@@ -140,11 +164,14 @@ auto Engine::render_frame() -> bool {
 
 //=====================================================================================
 
-	VkResult result = VK_ERROR_UNKNOWN;
+	//	https://github.com/google/vulkan-pre-rotation-demo
+    checkf(vkWaitForFences(graphics.device, 1, &fence, VK_TRUE, UINT64_MAX), "[vkWaitForFences] failed with {}", (int)result);
+    check(vkResetFences(graphics.device, 1, &fence), "[vkResetFences] failed");
+
+	result = VK_ERROR_UNKNOWN;
 	while (result != VK_SUCCESS) {
-		result = vkAcquireNextImageKHR(graphics.device,
-			graphics.swap_chain, UINT64_MAX, write_semaphore,
-			VK_NULL_HANDLE, &render_context.image_index);
+		result = vkAcquireNextImageKHR(graphics.device, graphics.swap_chain,
+			UINT64_MAX, write_semaphore, VK_NULL_HANDLE, &render_context.image_index);
 
 		if (result == VK_SUBOPTIMAL_KHR) break;
 		else if (result == VK_ERROR_OUT_OF_DATE_KHR) {
@@ -152,13 +179,10 @@ auto Engine::render_frame() -> bool {
 			continue;
 		}
 		else if (result != VK_SUCCESS) {
-			log::error("Failed to get swap chain image [vkAcquireNextImageKHR]");
-			return false; // TODO: should try to recover here
+			log::error(format("Failed to get swap chain image [vkAcquireNextImageKHR => {}]", (int)result));
+			return stop(); // should try to recover here?
 		}
 	}
-
-	check(vkWaitForFences(graphics.device, 1, &fence, VK_TRUE, UINT64_MAX), "[vkWaitForFences] failed");
-	check(vkResetFences(graphics.device, 1, &fence), "[vkResetFences] failed");
 
 //-------------------------------------------------------------------------------------
 
@@ -176,18 +200,19 @@ auto Engine::render_frame() -> bool {
 	//console_layer.handle_events(events);
 	//-------------------------------------------------------------------------------------
 
-	VkRenderPassBeginInfo renderPassInfo{};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = overlay_render_pass;
-	renderPassInfo.framebuffer = frame_buffers[render_context.image_index];
-	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = graphics.sc_extent;
-	VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
-	renderPassInfo.clearValueCount = 1;
-	renderPassInfo.pClearValues = &clearColor;
-	vkCmdBeginRenderPass(render_context.command_buffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-	//vk::begin(render_context.command_buffer, overlay_render_pass);
+	VkClearValue clear_color = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
+	VkRenderPassBeginInfo begin_info {
+		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+		.renderPass = overlay_render_pass,
+		.framebuffer = frame_buffers[render_context.image_index],
+		.renderArea = {
+			.offset = {0, 0},
+			.extent = graphics.sc_extent,
+		},
+		.clearValueCount = 1,
+		.pClearValues = &clear_color,
+	};
+	vkCmdBeginRenderPass(render_context.command_buffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
 	current_scene->on_update(delta_time, events, render_context);
 	vkCmdEndRenderPass(render_context.command_buffer);
 
@@ -280,12 +305,12 @@ auto Engine::render_frame() -> bool {
 
 	if (result != VK_SUCCESS) {
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-			if (!(flags & fRunning)) return false; // ok, we head out
+			if (!(flags & Running)) return stop(); // ok, we head out
 			resize();
 		}
 		else {
-			log::error(std::format("[vkQueuePresentKHR] failed with {}", (u32)result));
-			return false;
+			log::error(format("[vkQueuePresentKHR] failed with {}", (u32)result));
+			return stop();
 		}
 	}
 
@@ -318,9 +343,34 @@ auto Engine::render_frame() -> bool {
 	delta_time = fs::seconds_elasped_and_reset(last_timestamp);
 	frame_count += 1;
 
-	return engine.flags & engine.fRunning;
+	return flags & Running;
 }
 
+// TODO: error handling
 void Engine::resize() {
-	log::error("WANT RESIZE");
+    auto& g = graphics;
+    vkDeviceWaitIdle(g.device);
+
+    // Destroy
+    vkDestroySwapchainKHR(g.device, g.swap_chain, nullptr);
+    for_n (g.sc_image_count) vkDestroyImageView(g.device, g.sc_image_views[i], nullptr);
+    for_n (g.sc_image_count) vkDestroyFramebuffer(g.device, frame_buffers[i], nullptr);
+
+    // Create
+    g.create_swap_chain();
+    g.create_sc_image_views();
+
+    VkFramebufferCreateInfo frame_buffer_info {
+            .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+            .renderPass = overlay_render_pass,
+            .attachmentCount = 1,
+            .width = g.sc_extent.width,
+            .height = g.sc_extent.height,
+            .layers = 1,
+    };
+
+    for_n (g.sc_image_count) {
+        frame_buffer_info.pAttachments = g.sc_image_views + i;
+        vkCreateFramebuffer(g.device, &frame_buffer_info, nullptr, frame_buffers + i);
+    }
 }

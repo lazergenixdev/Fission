@@ -11,11 +11,28 @@
  * @License:      MIT (see end of file)
  */
 #pragma once
-#include <Fission/Base/String.hpp>
+#include <Fission/platform.hpp>
 #include <filesystem>
 
-__FISSION_BEGIN__
+namespace os
+{
+    struct scoped_lock
+    {
+        Mutex mutex;
 
+        scoped_lock(Mutex in_mutex): mutex(in_mutex) {
+            if (os_mutex_lock(mutex))
+                fs::log::error("(scoped_lock) Failed to lock mutex!");
+        }
+
+        ~scoped_lock() {
+            if (os_mutex_unlock(mutex))
+                fs::log::error("(scoped_lock) Failed to unlock mutex!");
+        }
+    };
+}
+
+#if 0
 namespace platform
 {
 	using namespace std::filesystem;
@@ -31,13 +48,12 @@ namespace platform
 
 	FISSION_API path open_file_dialog(char const* _Name, char const* _Extensions);
 }
-
-__FISSION_END__
+#endif
 
 /**
  *	MIT License
  *
- *	Copyright (c) 2021-2023 lazergenixdev
+ *	Copyright (c) 2021-2025 lazergenixdev
  *
  *	Permission is hereby granted, free of charge, to any person obtaining a copy
  *	of this software and associated documentation files (the "Software"), to deal

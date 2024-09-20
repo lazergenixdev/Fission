@@ -14,7 +14,7 @@
 
 #pragma once
 #include <Fission/config.hpp>
-#include <Fission/Platform.hpp>
+#include <Fission/platform.hpp>
 
 __FISSION_BEGIN__
 
@@ -31,17 +31,17 @@ namespace keys
 		Unknown = 0,
 
 #if defined(FISSION_PLATFORM_WINDOWS)
-#   define KEY(WIN32_KEY,_0) WIN32_KEY
+#   define KEY(WIN32_KEY,_0,_1) WIN32_KEY
 #elif defined(FISSION_PLATFORM_LINUX)
-#   define KEY(_0,LINUX_KEY) LINUX_KEY
+#   define KEY(_0,LINUX_KEY,_1) LINUX_KEY
 #else
-#   error "Don't know the keys for this platform"
+#   define KEY(_0,_1,ANDROID_KEY) ANDROID_KEY
 #endif
-		Mouse_Left      = KEY(VK_LBUTTON, 0),
-		Mouse_Right     = KEY(VK_RBUTTON, 1),
-		Mouse_Middle    = KEY(VK_MBUTTON, 2),
-		Mouse_WheelUp   = KEY(0xF9, 3),
-		Mouse_WheelDown = KEY(0xFF, 4),
+		Mouse_Left      = KEY(VK_LBUTTON, 0, 0),
+		Mouse_Right     = KEY(VK_RBUTTON, 1, 1),
+		Mouse_Middle    = KEY(VK_MBUTTON, 2, 2),
+		Mouse_WheelUp   = KEY(0xF9, 3, 3),
+		Mouse_WheelDown = KEY(0xFF, 4, 4),
 
 		/* Gamepad */
 	//	Gamepad_Y,
@@ -57,35 +57,35 @@ namespace keys
 	//	Gamepad_RBumper,
 	//	Gamepad_LBumper,
 
-#define X(N) F ## N = KEY(VK_F ## N, 65469+N),
+#define X(N) F ## N = KEY(VK_F ## N, 65469+N, 5+N),
 		FISSION_X_24
 #undef X
 #define X(N) \
-Num    ## N = KEY(#N[0], 33+N), \
-Numpad ## N = KEY(VK_NUMPAD ## N, 43+N),
+Num    ## N = KEY(#N[0], 33+N, 40+N), \
+Numpad ## N = KEY(VK_NUMPAD ## N, 43+N, 50+N),
 		FISSION_X_BASE10
 #undef X
-#define X(L) L = KEY(#L[0], 32+#L[0]),
+#define X(L) L = KEY(#L[0], 32+#L[0], 100+#L[0]),
 		FISSION_X_LETTERS
 #undef X
 
-		Up       = KEY(VK_UP     , 65362),
-		Down     = KEY(VK_DOWN   , 65364),
-		Left     = KEY(VK_LEFT   , 65361),
-		Right    = KEY(VK_RIGHT  , 65363),
+		Up       = KEY(VK_UP     , 65362, 401),
+		Down     = KEY(VK_DOWN   , 65364, 402),
+		Left     = KEY(VK_LEFT   , 65361, 403),
+		Right    = KEY(VK_RIGHT  , 65363, 404),
 
-		Space    = KEY(VK_SPACE  , 32),
-		Escape   = KEY(VK_ESCAPE , 75),
-		Shift    = KEY(VK_SHIFT  , 76),
-		Control  = KEY(VK_CONTROL, 77),
-		Alt      = KEY(VK_MENU   , 78),
-		Tab      = KEY(VK_TAB    , 79),
-		Capital  = KEY(VK_CAPITAL, 80),
-		Back     = KEY(VK_BACK   , 81),
-		Delete   = KEY(VK_DELETE , 82),
-		Enter    = KEY(VK_RETURN , 83),
+		Space    = KEY(VK_SPACE  , 32, 405),
+		Escape   = KEY(VK_ESCAPE , 75, 406),
+		Shift    = KEY(VK_SHIFT  , 76, 407),
+		Control  = KEY(VK_CONTROL, 77, 408),
+		Alt      = KEY(VK_MENU   , 78, 409),
+		Tab      = KEY(VK_TAB    , 79, 410),
+		Capital  = KEY(VK_CAPITAL, 80, 411),
+		Back     = KEY(VK_BACK   , 81, 412),
+		Delete   = KEY(VK_DELETE , 82, 413),
+		Enter    = KEY(VK_RETURN , 83, 414),
 
-		Accent     = KEY(VK_OEM_3, 84), // `
+		Accent     = KEY(VK_OEM_3, 84, 415), // `
 		Comma,			       // ,
 		Period,			       // .
 		FSlash,			       // /
@@ -113,7 +113,7 @@ Numpad ## N = KEY(VK_NUMPAD ## N, 43+N),
 	};
 
 	//! @warning NOT IMPLEMENTED
-	static constexpr Key_Id string_to_key( const char * _str )
+	static constexpr Key_Id string_to_key( const char * )
 	{
 		return Key_Id::Unknown;
 	}

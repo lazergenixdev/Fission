@@ -58,11 +58,9 @@ static constexpr array<T> make_array(void* ptr, u64 count) {
 
 //! @note: DO NOT use with types that have a move constructor,
 //!          only does a shallow copy when reallocating buffer
-template <typename _Ty>
+template <typename type>
 struct dynamic_array
 {
-	using type = _Ty;
-	
 	type* data = nullptr;
 	u32   count = 0; // no need for u64, arrays will never get that big (hopefully, or we have a bigger problem)
 	u32   allocated = 0;
@@ -97,29 +95,6 @@ struct dynamic_array
 	constexpr type      * begin()       { return data; }
 	constexpr type const* end  () const { return data + count; }
 	constexpr type      * end  ()       { return data + count; }
-};
-
-// TODO: better name?
-template <typename T>
-struct iterable {
-private:
-	struct iterator {
-		u8* _ptr;
-		u32 _stride;
-
-		constexpr T&       operator*()       { return *reinterpret_cast<T*>(_ptr); }
-		constexpr T const& operator*() const { return *reinterpret_cast<T*>(_ptr); }
-		constexpr iterator& operator++() { _ptr += _stride; return *this; }
-		constexpr bool operator==(iterator const& _Right) const { return this->_ptr == _Right._ptr; };
-	};
-
-public:
-	void* data = nullptr;
-	u32 count = 0;
-	u32 stride = 0;
-
-	constexpr iterator begin() const { return iterator{ (u8*)data, stride }; }
-	constexpr iterator end()   const { return iterator{ (u8*)data + count*stride, stride }; }
 };
 
 __FISSION_END__

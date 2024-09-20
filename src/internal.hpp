@@ -1,6 +1,12 @@
 #include <Fission/core/engine.hpp>
 #include <inttypes.h>
 
+#if defined(FISSION_PLATFORM_WINDOWS)
+#define PLATFORM_ "(Win32) "
+#elif defined(FISSION_PLATFORM_ANDROID)
+#define PLATFORM_ "(Android) "
+#endif
+
 __FISSION_BEGIN__
 
 #define MAJOR(X)       static constexpr u32  version_major      = X;
@@ -19,9 +25,9 @@ __FISSION_BEGIN__
 
 struct Window_Create_Info {
     int width, height;
-    string title;
     Window_Mode mode;
-    u32 display_index;
+    int display_index;
+    string title;
 };
 
 struct Graphics_Create_Info {

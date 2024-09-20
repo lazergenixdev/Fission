@@ -20,8 +20,10 @@
 // Functions (macros):
 //  - os_mutex_create(p_mutex)
 //  - os_mutex_destroy(mutex)
-//  - os_mutex_lock(mutex)
-//  - os_mutex_unlock(mutex)
+//  - os_mutex_lock(mutex) -> bool
+//       returns true on failure
+//  - os_mutex_unlock(mutex) -> bool
+//       returns true on failure
 //
 // ----------------------- Threads ------------------------
 // 
@@ -34,7 +36,9 @@
 // 
 // Functions (macros):
 //  - os_thread_start(function, p_arg, p_thread)
+//       returns true on failure
 //  - os_thread_join(thread)
+//       returns true on failure
 //
 // ----------------------- Logging ------------------------
 // 
@@ -52,6 +56,43 @@
 
 #pragma once
 #include <Fission/config.hpp>
+#include <fstream>
+
+namespace fs { struct string; }
+
+namespace os
+{
+    void log(int level, fs::string const& message);
+    void show_error_dialog(fs::string const& title, fs::string const& message);
+}
+
+__FISSION_BEGIN__
+
+namespace log
+{
+    enum {
+        Verbose = 0,
+        Debug   = 1,
+        Info    = 2,
+        Warn    = 3,
+        Error   = 4,
+        LEVEL_COUNT
+    };
+
+    inline void verbose (string const& message) { os::log(Verbose, message); }
+    inline void debug   (string const& message) { os::log(Debug  , message); }
+    inline void info    (string const& message) { os::log(Info   , message); }
+    inline void warn    (string const& message) { os::log(Warn   , message); }
+    inline void error   (string const& message) { os::log(Error  , message); }
+}
+
+// TODO: what is this?
+struct Logger
+{
+    std::ofstream file {"log.txt"};
+};
+
+__FISSION_END__
 
 #if   defined(FISSION_PLATFORM_HEADLESS)
 #   include "platform/headless.hpp"

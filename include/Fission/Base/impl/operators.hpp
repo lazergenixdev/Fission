@@ -13,78 +13,78 @@
 #pragma once
 
 #define _FISSION_IMPLEMENT_OPERATORS_2(BASE, TYPE, X, Y) \
-constexpr BASE  operator- (                    )const { return BASE{ -this->X, -this->Y }; } \
-constexpr BASE  operator+ ( BASE const& _Right )const { return BASE{ this->X + _Right.X, this->Y + _Right.Y }; } \
-constexpr BASE  operator- ( BASE const& _Right )const { return BASE{ this->X - _Right.X, this->Y - _Right.Y }; } \
-constexpr BASE  operator* ( BASE const& _Right )const { return BASE{ this->X * _Right.X, this->Y * _Right.Y }; } \
-constexpr BASE  operator/ ( BASE const& _Right )const { return BASE{ this->X / _Right.X, this->Y / _Right.Y }; } \
-constexpr BASE& operator+=( BASE const& _Right )      { this->X += _Right.X, this->Y += _Right.Y; return*this; } \
-constexpr BASE& operator-=( BASE const& _Right )      { this->X -= _Right.X, this->Y -= _Right.Y; return*this; } \
-constexpr BASE& operator*=( BASE const& _Right )      { this->X *= _Right.X, this->Y *= _Right.Y; return*this; } \
-constexpr BASE& operator/=( BASE const& _Right )      { this->X /= _Right.X, this->Y /= _Right.Y; return*this; } \
-constexpr BASE  operator* ( const TYPE& _Right )const { return BASE{ this->X * _Right, this->Y * _Right }; } \
-constexpr BASE  operator/ ( const TYPE& _Right )const { return BASE{ this->X / _Right, this->Y / _Right }; } \
-constexpr BASE& operator*=( const TYPE& _Right )      { this->X *= _Right, this->Y *= _Right; return*this; } \
-constexpr BASE& operator/=( const TYPE& _Right )      { this->X /= _Right, this->Y /= _Right; return*this; }
+constexpr BASE operator- (                 )const{return{-this->X,-this->Y };} \
+constexpr BASE operator+ (BASE const& right)const{return{this->X+right.X,this->Y+right.Y};} \
+constexpr BASE operator- (BASE const& right)const{return{this->X-right.X,this->Y-right.Y};} \
+constexpr BASE operator* (BASE const& right)const{return{this->X*right.X,this->Y*right.Y};} \
+constexpr BASE operator/ (BASE const& right)const{return{this->X/right.X,this->Y/right.Y};} \
+constexpr BASE&operator+=(BASE const& right)     {this->X+=right.X,this->Y+=right.Y;return*this;} \
+constexpr BASE&operator-=(BASE const& right)     {this->X-=right.X,this->Y-=right.Y;return*this;} \
+constexpr BASE&operator*=(BASE const& right)     {this->X*=right.X,this->Y*=right.Y;return*this;} \
+constexpr BASE&operator/=(BASE const& right)     {this->X/=right.X,this->Y/=right.Y;return*this;} \
+constexpr BASE operator* (const TYPE& right)const{return{this->X*right,this->Y*right};} \
+constexpr BASE operator/ (const TYPE& right)const{return{this->X/right,this->Y/right};} \
+constexpr BASE&operator*=(const TYPE& right)     {this->X*=right,this->Y*=right;return*this;} \
+constexpr BASE&operator/=(const TYPE& right)     {this->X/=right,this->Y/=right;return*this;}
 
 #define _FISSION_IMPLEMENT_OPERATOR_MULTIPLY_2(BASE, TYPE, X, Y) \
-inline constexpr auto operator*(TYPE const&_Left,BASE const&_Right){return BASE{_Left*_Right.X,_Left*_Right.Y};}
+inline constexpr auto operator*(TYPE const&left,BASE const&right){return BASE{left*right.X,left*right.Y};}
 
 #define _FISSION_IMPLEMENT_OPERATOR_DIVISION_2(BASE, TYPE, X, Y) \
-inline constexpr auto operator/(TYPE const&_Left,BASE const&_Right){return BASE{_Left/_Right.X,_Left/_Right.Y};}
+inline constexpr auto operator/(TYPE const&left,BASE const&right){return BASE{left/right.X,left/right.Y};}
 
 #define _FISSION_IMPLEMENT_OPERATOR_DOT_2(BASE, X, Y) \
-inline constexpr auto dot(BASE const&_Left,BASE const&_Right){return _Left.X*_Right.X+_Left.Y*_Right.Y;}
+inline constexpr auto dot(BASE const&left,BASE const&right){return left.X*right.X+left.Y*right.Y;}
 
 
 #define _FISSION_IMPLEMENT_OPERATORS_3(BASE, TYPE, X, Y, Z) \
-constexpr BASE  operator- (                    )const { return BASE{ -this->X, -this->Y, -this->Z }; } \
-constexpr BASE  operator+ ( BASE const& _Right )const { return BASE{ this->X + _Right.X, this->Y + _Right.Y, this->Z + _Right.Z }; } \
-constexpr BASE  operator- ( BASE const& _Right )const { return BASE{ this->X - _Right.X, this->Y - _Right.Y, this->Z - _Right.Z }; } \
-constexpr BASE  operator* ( BASE const& _Right )const { return BASE{ this->X * _Right.X, this->Y * _Right.Y, this->Z * _Right.Z }; } \
-constexpr BASE  operator/ ( BASE const& _Right )const { return BASE{ this->X / _Right.X, this->Y / _Right.Y, this->Z / _Right.Z }; } \
-constexpr BASE& operator+=( BASE const& _Right )      { this->X += _Right.X, this->Y += _Right.Y, this->Z += _Right.Z; return*this; } \
-constexpr BASE& operator-=( BASE const& _Right )      { this->X -= _Right.X, this->Y -= _Right.Y, this->Z -= _Right.Z; return*this; } \
-constexpr BASE& operator*=( BASE const& _Right )      { this->X *= _Right.X, this->Y *= _Right.Y, this->Z *= _Right.Z; return*this; } \
-constexpr BASE& operator/=( BASE const& _Right )      { this->X /= _Right.X, this->Y /= _Right.Y, this->Z /= _Right.Z; return*this; } \
-constexpr BASE  operator* ( const TYPE& _Right )const { return BASE{ this->X * _Right, this->Y * _Right, this->Z * _Right }; } \
-constexpr BASE  operator/ ( const TYPE& _Right )const { return BASE{ this->X / _Right, this->Y / _Right, this->Z / _Right }; } \
-constexpr BASE& operator*=( const TYPE& _Right )      { this->X *= _Right, this->Y *= _Right, this->Z *= _Right; return*this; } \
-constexpr BASE& operator/=( const TYPE& _Right )      { this->X /= _Right, this->Y /= _Right, this->Z /= _Right; return*this; }
+constexpr BASE  operator- (                   )const { return { -this->X, -this->Y, -this->Z }; } \
+constexpr BASE  operator+ ( BASE const& right )const { return { this->X + right.X, this->Y + right.Y, this->Z + right.Z }; } \
+constexpr BASE  operator- ( BASE const& right )const { return { this->X - right.X, this->Y - right.Y, this->Z - right.Z }; } \
+constexpr BASE  operator* ( BASE const& right )const { return { this->X * right.X, this->Y * right.Y, this->Z * right.Z }; } \
+constexpr BASE  operator/ ( BASE const& right )const { return { this->X / right.X, this->Y / right.Y, this->Z / right.Z }; } \
+constexpr BASE& operator+=( BASE const& right )      { this->X += right.X, this->Y += right.Y, this->Z += right.Z; return*this; } \
+constexpr BASE& operator-=( BASE const& right )      { this->X -= right.X, this->Y -= right.Y, this->Z -= right.Z; return*this; } \
+constexpr BASE& operator*=( BASE const& right )      { this->X *= right.X, this->Y *= right.Y, this->Z *= right.Z; return*this; } \
+constexpr BASE& operator/=( BASE const& right )      { this->X /= right.X, this->Y /= right.Y, this->Z /= right.Z; return*this; } \
+constexpr BASE  operator* ( const TYPE& right )const { return { this->X * right, this->Y * right, this->Z * right }; } \
+constexpr BASE  operator/ ( const TYPE& right )const { return { this->X / right, this->Y / right, this->Z / right }; } \
+constexpr BASE& operator*=( const TYPE& right )      { this->X *= right, this->Y *= right, this->Z *= right; return*this; } \
+constexpr BASE& operator/=( const TYPE& right )      { this->X /= right, this->Y /= right, this->Z /= right; return*this; }
 
 #define _FISSION_IMPLEMENT_OPERATOR_MULTIPLY_3(BASE, TYPE, X, Y, Z) \
-inline constexpr auto operator*(TYPE const&_Left,BASE const&_Right){return BASE{_Left*_Right.X,_Left*_Right.Y,_Left*_Right.Z};}
+inline constexpr auto operator*(TYPE const&left,BASE const&right){return BASE{left*right.X,left*right.Y,left*right.Z};}
 
 #define _FISSION_IMPLEMENT_OPERATOR_DIVISION_3(BASE, TYPE, X, Y, Z) \
-inline constexpr auto operator/(TYPE const&_Left,BASE const&_Right){return BASE{_Left/_Right.X,_Left/_Right.Y,_Left/_Right.Z};}
+inline constexpr auto operator/(TYPE const&left,BASE const&right){return BASE{left/right.X,left/right.Y,left/right.Z};}
 
 #define _FISSION_IMPLEMENT_OPERATOR_DOT_3(BASE, X, Y, Z) \
-inline constexpr auto dot(BASE const&_Left,BASE const&_Right){return _Left.X*_Right.X+_Left.Y*_Right.Y+_Left.Z*_Right.Z;}
+inline constexpr auto dot(BASE const&left,BASE const&right){return left.X*right.X+left.Y*right.Y+left.Z*right.Z;}
 
 
 #define _FISSION_IMPLEMENT_OPERATORS_4(BASE, TYPE, X, Y, Z, W) \
-constexpr BASE  operator- (                    )const { return BASE{ -this->X, -this->Y, -this->Z, -this->W }; } \
-constexpr BASE  operator+ ( BASE const& _Right )const { return BASE{ this->X + _Right.X, this->Y + _Right.Y, this->Z + _Right.Z, this->W + _Right.W }; } \
-constexpr BASE  operator- ( BASE const& _Right )const { return BASE{ this->X - _Right.X, this->Y - _Right.Y, this->Z - _Right.Z, this->W - _Right.W }; } \
-constexpr BASE  operator* ( BASE const& _Right )const { return BASE{ this->X * _Right.X, this->Y * _Right.Y, this->Z * _Right.Z, this->W * _Right.W }; } \
-constexpr BASE  operator/ ( BASE const& _Right )const { return BASE{ this->X / _Right.X, this->Y / _Right.Y, this->Z / _Right.Z, this->W / _Right.W }; } \
-constexpr BASE& operator+=( BASE const& _Right )      { this->X += _Right.X, this->Y += _Right.Y, this->Z += _Right.Z, this->W += _Right.W; return*this; } \
-constexpr BASE& operator-=( BASE const& _Right )      { this->X -= _Right.X, this->Y -= _Right.Y, this->Z -= _Right.Z, this->W -= _Right.W; return*this; } \
-constexpr BASE& operator*=( BASE const& _Right )      { this->X *= _Right.X, this->Y *= _Right.Y, this->Z *= _Right.Z, this->W *= _Right.W; return*this; } \
-constexpr BASE& operator/=( BASE const& _Right )      { this->X /= _Right.X, this->Y /= _Right.Y, this->Z /= _Right.Z, this->W /= _Right.W; return*this; } \
-constexpr BASE  operator* ( const TYPE& _Right )const { return BASE{ this->X * _Right, this->Y * _Right, this->Z * _Right, this->W * _Right }; } \
-constexpr BASE  operator/ ( const TYPE& _Right )const { return BASE{ this->X / _Right, this->Y / _Right, this->Z / _Right, this->W / _Right }; } \
-constexpr BASE& operator*=( const TYPE& _Right )      { this->X *= _Right, this->Y *= _Right, this->Z *= _Right, this->W *= _Right; return*this; } \
-constexpr BASE& operator/=( const TYPE& _Right )      { this->X /= _Right, this->Y /= _Right, this->Z /= _Right, this->W /= _Right; return*this; }
+constexpr BASE  operator- (                   )const { return { -this->X, -this->Y, -this->Z, -this->W }; } \
+constexpr BASE  operator+ ( BASE const& right )const { return { this->X + right.X, this->Y + right.Y, this->Z + right.Z, this->W + right.W }; } \
+constexpr BASE  operator- ( BASE const& right )const { return { this->X - right.X, this->Y - right.Y, this->Z - right.Z, this->W - right.W }; } \
+constexpr BASE  operator* ( BASE const& right )const { return { this->X * right.X, this->Y * right.Y, this->Z * right.Z, this->W * right.W }; } \
+constexpr BASE  operator/ ( BASE const& right )const { return { this->X / right.X, this->Y / right.Y, this->Z / right.Z, this->W / right.W }; } \
+constexpr BASE& operator+=( BASE const& right )      { this->X += right.X, this->Y += right.Y, this->Z += right.Z, this->W += right.W; return*this; } \
+constexpr BASE& operator-=( BASE const& right )      { this->X -= right.X, this->Y -= right.Y, this->Z -= right.Z, this->W -= right.W; return*this; } \
+constexpr BASE& operator*=( BASE const& right )      { this->X *= right.X, this->Y *= right.Y, this->Z *= right.Z, this->W *= right.W; return*this; } \
+constexpr BASE& operator/=( BASE const& right )      { this->X /= right.X, this->Y /= right.Y, this->Z /= right.Z, this->W /= right.W; return*this; } \
+constexpr BASE  operator* ( const TYPE& right )const { return { this->X * right, this->Y * right, this->Z * right, this->W * right }; } \
+constexpr BASE  operator/ ( const TYPE& right )const { return { this->X / right, this->Y / right, this->Z / right, this->W / right }; } \
+constexpr BASE& operator*=( const TYPE& right )      { this->X *= right, this->Y *= right, this->Z *= right, this->W *= right; return*this; } \
+constexpr BASE& operator/=( const TYPE& right )      { this->X /= right, this->Y /= right, this->Z /= right, this->W /= right; return*this; }
 
 #define _FISSION_IMPLEMENT_OPERATOR_MULTIPLY_4(BASE, TYPE, X, Y, Z, W) \
-inline constexpr auto operator*(TYPE const&_Left,BASE const&_Right){return BASE{_Left*_Right.X,_Left*_Right.Y,_Left*_Right.Z,_Left*_Right.W};}
+inline constexpr BASE operator*(TYPE const&left,BASE const&right){return {left*right.X,left*right.Y,left*right.Z,left*right.W};}
 
 #define _FISSION_IMPLEMENT_OPERATOR_DIVISION_4(BASE, TYPE, X, Y, Z, W) \
-inline constexpr auto operator/(TYPE const&_Left,BASE const&_Right){return BASE{_Left/_Right.X,_Left/_Right.Y,_Left/_Right.Z,_Left/_Right.W};}
+inline constexpr BASE operator/(TYPE const&left,BASE const&right){return {left/right.X,left/right.Y,left/right.Z,left/right.W};}
 
 #define _FISSION_IMPLEMENT_OPERATOR_DOT_4(BASE, X, Y, Z, W) \
-inline constexpr auto dot(BASE const&_Left,BASE const&_Right){return _Left.X*_Right.X+_Left.Y*_Right.Y+_Left.Z*_Right.Z+_Left.W*_Right.W;}
+inline constexpr auto dot(BASE const&left,BASE const&right){return left.X*right.X+left.Y*right.Y+left.Z*right.Z+left.W*right.W;}
 
 /**
  *	MIT License

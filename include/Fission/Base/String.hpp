@@ -17,71 +17,57 @@
 __FISSION_BEGIN__
 
 struct string {
-    u64 count = 0; //! note: u32 is probably good enough for all string counts
+    size_t count = 0;
     c8* data  = nullptr;
 
     inline constexpr string() = default;
 
-    template <size_t _Literal_Size>
-    inline constexpr string(char const(&_Literal)[_Literal_Size])
-    :	count(_Literal_Size-1),
-        data((c8*)_Literal)
+    template <size_t literal_size>
+    inline constexpr string(char const(&literal)[literal_size])
+    :	count(literal_size-1),
+        data((c8*)literal)
     {}
 
-    template <size_t _Buffer_Size>
-    inline constexpr string(char (&_Buffer)[_Buffer_Size])
-    :	count(_Buffer_Size),
-        data((c8*)_Buffer)
+    template <size_t buffer_size>
+    inline constexpr string(char (&buffer)[buffer_size])
+    :	count(buffer_size),
+        data((c8*)buffer)
     {}
 
-    template <typename _String_Type>
-    inline constexpr string(_String_Type const& _String)
-    :   count(_String.size()),
-        data((c8*)_String.data())
+    template <typename string_type>
+    inline constexpr string(string_type const& s)
+    :   count(s.size()),
+        data((c8*)s.data())
     {}
 
-    inline constexpr string(void const* _Data, u64 _Count)
-    :	count(_Count),
-        data((c8*)_Data)
+    inline constexpr string(void const* ptr, u64 size)
+    :	count(size),
+        data((c8*)ptr)
     {}
 
-    template <size_t _Buffer_Size>
-    inline constexpr string from_buffer(char (&_Buffer)[_Buffer_Size]) {
-        return string{_Buffer, _Buffer_Size};
+    template <size_t buffer_size>
+    inline constexpr string from_buffer(char (&buffer)[buffer_size]) {
+        return {buffer, buffer_size};
     }
     
-    inline std::string      str () const { return std::string     ((char*)data, count); }
-    inline std::string_view view() const { return std::string_view((char*)data, count); }
+    NO_DISCARD inline std::string str() const {
+        return {(char*)data, count};
+    }
+    NO_DISCARD inline std::string_view view() const {
+        return {(char*)data, count};
+    }
 
-    inline constexpr string substr(u64 _Offset, u64 _Count = 0xFFFFFFFF) const {
-        return string{data + _Offset, std::min(_Count - _Offset, _Count)};
+    inline constexpr string substr(u64 offset, u64 max_count = 0xFFFFFFFF) const {
+        return {data + offset, std::min(max_count - offset, max_count)};
     }
 
     inline constexpr bool is_empty() const {
         return count == 0;
     }
 
-    inline constexpr c8* begin() const { return data; }
-    inline constexpr c8* end  () const { return data + count; }
+    NO_DISCARD inline constexpr c8* begin() const { return data; }
+    NO_DISCARD inline constexpr c8* end  () const { return data + count; }
 };
-
-////////////////////////////////////////////////////////////////////
-// EXAMPLE USAGE:
-//	char buffer[128];
-//	console::print("I am %i and my name is %s"_fmt(buffer, age, name));
-struct _Formattable_String {
-    const char* format;
-
-    template <size_t buffer_size, typename...T>
-    string operator()(char (&buffer)[buffer_size], T&&...args) const {
-        auto count = (u64)snprintf(buffer, buffer_size, format, std::forward<T>(args)...);
-        return string{reinterpret_cast<c8*>(buffer), count};
-    }
-};
-static _Formattable_String constexpr operator""_fmt(const char* str, std::size_t) {
-    return {str};
-}
-////////////////////////////////////////////////////////////////////
 
 // str == "string"
 template <size_t Right_Size>
@@ -93,13 +79,6 @@ static constexpr bool operator==(string const& left, char const(&right)[Right_Si
         }
     }
     return true;
-}
-
-template <typename C>
-u64 strlen (C const* c_string) {
-    u64 count = 0;
-    while (c_string[count] != 0) ++count;
-    return count;
 }
 
 struct string_utf16 {
@@ -136,7 +115,7 @@ struct string_array {
     struct string_array_iterator {
         c8* value;
 
-        constexpr auto operator!=(string_array_iterator const& iter) const { return value < iter.value; };
+        constexpr auto operator!=(string_array_iterator const& iter) const { return value < iter.value; }
         constexpr c8* operator*() const { return value; }
         constexpr string_array_iterator& operator++() { do { ++value; } while (*value != 0); ++value; return*this; }
     };

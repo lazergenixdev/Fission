@@ -16,6 +16,7 @@
 #include <Fission/base/math/vector.hpp>
 #include <Fission/core/input/event.hpp>
 #include <Fission/core/display.hpp>
+#include <Fission/platform/utils.hpp>
 #include <mutex>
 #include <vector>
 #include <iterator>
@@ -23,10 +24,10 @@
 __FISSION_BEGIN__
 
 enum Window_Mode: u32 {
-	Windowed             = 0,
-	Windowed_Fullscreen  = 1,
-	Exclusive_Fullscreen = 2,
-	Windowed_Resizeable  = 3,
+	Windowed             = 0x01,
+	Windowed_Fullscreen  = 0x02,
+	Exclusive_Fullscreen = 0x04,
+	Windowed_Resizeable  = 0x08,
 };
 
 template <typename T, size_t S>
@@ -34,20 +35,27 @@ struct thread_safe_queue {
 	// S is ignored for now, but I want to use this to
 	//    limit the number events that can be queued.
 
-	template <typename...A>
-	inline void append(A&&... t) {
-//		std::scoped_lock lock(access_mutex);
-		array.emplace_back(std::forward<A>(t)...);
+	thread_safe_queue() {
+		os_mutex_create(&access_mutex);
+	}
+
+	~thread_safe_queue() {
+		os_mutex_destroy(access_mutex);
+	}
+
+	inline void append(Event const& event) {
+		os::scoped_lock lock {access_mutex};
+		array.emplace_back(event);
 	}
 
 	inline void pop_all(std::vector<T>& out_array) {
 		out_array.clear();
-	//	std::scoped_lock lock(access_mutex);
+        os::scoped_lock lock {access_mutex};
 		std::copy(array.begin(), array.end(), std::back_inserter(out_array));
 		array.clear();
 	}
 
-//	std::mutex access_mutex;
+	os::Mutex access_mutex;
 	std::vector<T> array;
 };
 
@@ -55,18 +63,20 @@ using Event_Queue = thread_safe_queue<Event, 64>;
 
 struct Window : public platform::Window
 {
-	Event_Queue  event_queue {};
+	Event_Queue  event_queue    {};
 	v2s32        mouse_position {};
-	int          width {}, height {};
-	v2s32        position {}; // position when in Windowed mode only
-	Window_Mode  mode {};
-	int          display_index = Display_Index_Automatic;
+	Window_Mode  mode           {Windowed_Fullscreen};
+	int          display_index  {Display_Index_Automatic}; // NOT IMPLEMENTED
+//	int          width {}, height {};
+//	v2s32        position {}; // position when in Windowed mode only
 
 public:
 	auto create(struct Window_Create_Info const& info) -> bool;
 
     void show();
 	void close(); // If window is open, close
+
+	auto supported_modes() -> u32;
 
 	//void set_title(string const& title);
 	//bool is_minimized();
@@ -82,10 +92,10 @@ public:
 
 private:
 	friend struct Engine;
+	friend struct Window_Proxy;
 
 #if   defined(FISSION_PLATFORM_WINDOWS)
-    friend LRESULT platform::Window::_message_callback(HWND, UINT, WPARAM, LPARAM) noexcept;
-    auto handle_message(HWND, UINT, WPARAM, LPARAM) noexcept -> LRESULT;
+    auto process_message(HWND, UINT, WPARAM, LPARAM) noexcept -> LRESULT;
 #endif
 
 }; // struct fs::Window

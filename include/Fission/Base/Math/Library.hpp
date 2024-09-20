@@ -18,17 +18,17 @@ __FISSION_BEGIN__
 
 namespace math
 {
-	template <typename T, typename _Convertable_To_T>
-	inline constexpr T max(T a, _Convertable_To_T b) {
-        auto const _b = static_cast<T>(b);
+	template <typename type, typename from>
+	inline constexpr type max(type a, from b) {
+        auto const _b = static_cast<type>(b);
         return (a > _b) ? a : _b;
 	}
 
-	template <typename T, typename _Convertable_To_T>
-	inline constexpr T min(T a, _Convertable_To_T b) {
-        auto const _b = static_cast<T>(b);
+    template <typename type, typename from>
+    inline constexpr type min(type a, from b) {
+        auto const _b = static_cast<type>(b);
         return (a < _b) ? a : _b;
-	}
+    }
 	
 	template <typename T, typename F>
 	inline constexpr T lerp(T const& left, T const& right, F x) {
@@ -45,35 +45,52 @@ namespace math
         return lerp(current, target, lerp_speed(dt, speed));
     }
 
+    template <typename T>
+    static constexpr T floor(T const& x) {
+        static_assert(std::is_floating_point_v<T>);
+        T const q = static_cast<T>(static_cast<int>(x));
+        return q - static_cast<T>(x < 0);
+    }
+
+    template <typename T>
+    static constexpr T mod(T const& x, T const& y)
+    {
+        // This is slightly faster than glm::mod's `a - b * floor(a / b)`
+        // Tested with clang -O2 and with clang -O3
+        if constexpr (std::is_floating_point_v<T>) {
+            T const q = static_cast<T>(static_cast<int>(x / y));
+            T const f = static_cast<T>((y < 0)^(x < 0)); // fix for q
+            // x = q * y + r   with  0 <= r < y (generally)
+            return x - (q - f) * y;
+        }
+
+        if constexpr (std::is_integral_v<T>) {
+            static_assert(false, "Integer mod is not implemented");
+        }
+    }
+
     struct noop_library
     {
         template <typename T>
-        static inline constexpr auto sin(const T &_X) { return static_cast<T>(0); }
+        static inline constexpr auto sin(T const&) { return static_cast<T>(0); }
 
         template <typename T>
-        static inline constexpr auto cos(const T &_X) { return static_cast<T>(0); }
+        static inline constexpr auto cos(T const&) { return static_cast<T>(0); }
 
         template <typename T>
-        static inline constexpr auto sqrt(const T& _X) { return static_cast<T>(0); }
+        static inline constexpr auto sqrt(T const&) { return static_cast<T>(0); }
     };
 
     struct std_library
     {
         template <typename T>
-        static inline constexpr auto sin(const T &_X) { return ::std::sin(_X); }
+        static inline constexpr auto sin(T const&x) { return ::std::sin(x); }
 
         template <typename T>
-        static inline constexpr auto cos(const T &_X) { return ::std::cos(_X); }
+        static inline constexpr auto cos(T const&x) { return ::std::cos(x); }
 
         template <typename T>
-        static inline constexpr auto sqrt(const T &_X) {
-            if constexpr (std::is_same_v<T, float>) {
-                return::sqrtf(_X);
-            }
-            if constexpr (std::is_same_v<T, double>) {
-                return::sqrt(_X);
-            }
-        }
+        static inline constexpr auto sqrt(T const&x) { return std::sqrt(x); }
     };
 
 /* ========================================= [Constants] ========================================= */
@@ -88,19 +105,7 @@ namespace math
 	static constexpr float one_third  = static_cast<float>(1.0/3.0);
 	static constexpr float two_thirds = static_cast<float>(2.0/3.0);
 
-
 } // namespace Fission::math
-
-namespace experimental
-{
-	template <typename T>
-	static constexpr T fp_mod( T const& x, T const& y )
-	{
-		const T t = x / y;
-		const T n = (T)static_cast<int>( t );
-		return x - n * y;
-	}
-}
 
 __FISSION_END__
 

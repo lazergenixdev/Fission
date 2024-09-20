@@ -24,17 +24,11 @@
 #include "impl/operators.hpp"            // math operators for `rgb` & `rgba`
 #include <cstdlib>
 
-#define _FISSION_IMPLEMENT_BASIC_COLOR(TYPE, X1, X2, X3) \
-type X1, X2, X3; \
-constexpr TYPE():X1(static_cast<type>(0)),X2(static_cast<type>(0)),X3(static_cast<type>(0)){} \
-constexpr TYPE(type const& X1,type const& X2,type const& X3):X1(X1),X2(X2),X3(X3){} \
-constexpr bool operator==(TYPE const& _Right)const{return(X1==_Right.X1)&&(X2==_Right.X2)&&(X3==_Right.X3);}
-
 #define _FISSION_IMPLEMENT_BASIC_COLORA(TYPE, X1, X2, X3, X4) \
 type X1, X2, X3, X4; \
 constexpr TYPE():X1(static_cast<type>(0)),X2(static_cast<type>(0)),X3(static_cast<type>(0)),X4(static_cast<type>(0)){} \
 constexpr TYPE(type const& X1,type const& X2,type const& X3,type const& X4 = impl::max_color_value<type>):X1(X1),X2(X2),X3(X3),X4(X4){} \
-constexpr bool operator==(TYPE const& _Right)const{return(X1==_Right.X1)&&(X2==_Right.X2)&&(X3==_Right.X3)&&(X4==_Right.X4);}
+constexpr bool operator==(TYPE const& right)const{return(X1==right.X1)&&(X2==right.X2)&&(X3==right.X3)&&(X4==right.X4);}
 
 __FISSION_BEGIN__
 
@@ -81,6 +75,7 @@ namespace colors
 	template <color_t HEX>
 	static constexpr known make = static_cast<known>( (HEX << 8) | 0xFF );
 
+#if 0
 	// Generate a random color, meant only for development
 	inline known random() {
 		float r = float(rand()) / float(RAND_MAX);
@@ -91,6 +86,7 @@ namespace colors
 			 value = (value << 8) | color_t(b * 255.0f);
 		return static_cast<known>( (value << 8) | 0xFF );
 	}
+#endif
 }
 
 namespace impl
@@ -119,7 +115,11 @@ struct rgb8
 {
 	using type = u8;
 
-	_FISSION_IMPLEMENT_BASIC_COLOR(rgb8, r, g, b);
+    type r, g, b;
+
+    constexpr rgb8():r(static_cast<type>(0)),g(static_cast<type>(0)),b(static_cast<type>(0)){}
+    constexpr rgb8(type const& R,type const& G,type const& B):r(R),g(G),b(B){}
+    constexpr bool operator==(rgb8 const&) const = default;
 
 	constexpr rgb8(colors::known const& c):
 		r(static_cast<type>(c >> 24)),
@@ -134,13 +134,17 @@ struct rgba8
 {
 	using type = u8;
 
-	_FISSION_IMPLEMENT_BASIC_COLORA(rgba8, r, g, b, a);
+    type r, g, b, a;
+
+    constexpr rgba8():r(static_cast<type>(0)),g(static_cast<type>(0)),b(static_cast<type>(0)),a(static_cast<type>(255)){}
+    constexpr rgba8(type const& R,type const& G,type const& B,type const& A):r(R),g(G),b(B),a(A){}
+    constexpr bool operator==(rgba8 const&) const = default;
 	
 	constexpr rgba8(
-		rgb8 const& _Color,
-		type const& _Alpha = impl::max_color_value<type>
+		rgb8 const& color,
+		type const& alpha = impl::max_color_value<type>
 	):
-		r(_Color.r), g(_Color.g), b(_Color.b), a(_Alpha)
+		r(color.r), g(color.g), b(color.b), a(alpha)
 	{}
 
 	constexpr rgba8(colors::known const& c):
@@ -157,8 +161,12 @@ struct rgb
 {
 	using type = float;
 
-	_FISSION_IMPLEMENT_BASIC_COLOR(rgb, r, g, b);
-	
+    type r, g, b;
+
+    constexpr rgb():r(static_cast<type>(0)),g(static_cast<type>(0)),b(static_cast<type>(0)){}
+    constexpr rgb(type const& R,type const& G,type const& B):r(R),g(G),b(B){}
+    constexpr bool operator==(rgb const&) const = default;
+
 	constexpr rgb(colors::known const& c):
 		r(static_cast<type>((c >> 24) & 0xFF) / 0xFFp0f),
 		g(static_cast<type>((c >> 16) & 0xFF) / 0xFFp0f),
@@ -169,7 +177,7 @@ struct rgb
 	constexpr operator hsv() const;
 	constexpr operator hsl() const;
 
-	_FISSION_IMPLEMENT_OPERATORS_3(rgb, type, r, g, b);
+	_FISSION_IMPLEMENT_OPERATORS_3(rgb, type, r, g, b)
 };
 _FISSION_IMPLEMENT_OPERATOR_MULTIPLY_3(rgb, rgb::type, r, g, b)
 
@@ -177,13 +185,17 @@ struct rgba
 {
 	using type = float;
 
-	_FISSION_IMPLEMENT_BASIC_COLORA(rgba, r, g, b, a);
+    type r, g, b, a;
+
+    constexpr rgba():r(static_cast<type>(0)),g(static_cast<type>(0)),b(static_cast<type>(0)),a(static_cast<type>(1)){}
+    constexpr rgba(type const& R,type const& G,type const& B,type const& A):r(R),g(G),b(B),a(A){}
+    constexpr bool operator==(rgba const&) const = default;
 	
 	constexpr rgba(
-		rgb  const& _Color,
-		type const& _Alpha = impl::max_color_value<type>
+		rgb  const& color,
+		type const& alpha = impl::max_color_value<type>
 	):
-		r(_Color.r), g(_Color.g), b(_Color.b), a(_Alpha)
+		r(color.r), g(color.g), b(color.b), a(alpha)
 	{}
 	
 	constexpr rgba(colors::known const& c):
@@ -197,7 +209,7 @@ struct rgba
 	constexpr operator hsva() const;
 	constexpr operator hsla() const;
 
-	_FISSION_IMPLEMENT_OPERATORS_4(rgba, type, r, g, b, a);
+	_FISSION_IMPLEMENT_OPERATORS_4(rgba, type, r, g, b, a)
 };
 _FISSION_IMPLEMENT_OPERATOR_MULTIPLY_4(rgba, rgba::type, r, g, b, a)
 
@@ -205,7 +217,11 @@ struct hsv
 {
 	using type = float;
 
-	_FISSION_IMPLEMENT_BASIC_COLOR(hsv, h, s, v);
+    type h, s, v;
+
+    constexpr hsv():h(static_cast<type>(0)),s(static_cast<type>(0)),v(static_cast<type>(0)){}
+    constexpr hsv(type const& H,type const& S,type const& V):h(H),s(S),v(V){}
+    constexpr bool operator==(hsv const&) const = default;
 
 	constexpr operator rgb() const;
 };
@@ -214,13 +230,17 @@ struct hsva
 {
 	using type = float;
 
-	_FISSION_IMPLEMENT_BASIC_COLORA(hsva, h, s, v, a);
+    type h, s, v, a;
+
+    constexpr hsva():h(static_cast<type>(0)),s(static_cast<type>(0)),v(static_cast<type>(0)),a(static_cast<type>(0)){}
+    constexpr hsva(type const& H,type const& S,type const& V,type const& A):h(H),s(S),v(V),a(A){}
+    constexpr bool operator==(hsva const&) const = default;
 	
 	constexpr hsva(
-		hsv  const& _Color,
-		type const& _Alpha = impl::max_color_value<type>
+		hsv  const& color,
+		type const& alpha = impl::max_color_value<type>
 	):
-		h(_Color.h), s(_Color.s), v(_Color.v), a(_Alpha)
+		h(color.h), s(color.s), v(color.v), a(alpha)
 	{}
 
 	constexpr operator rgba() const;
@@ -230,7 +250,11 @@ struct hsl
 {
 	using type = float;
 
-	_FISSION_IMPLEMENT_BASIC_COLOR(hsl, h, s, l);
+    type h, s, l;
+
+    constexpr hsl():h(static_cast<type>(0)),s(static_cast<type>(0)),l(static_cast<type>(0)){}
+    constexpr hsl(type const& H,type const& S,type const& L):h(H),s(S),l(L){}
+    constexpr bool operator==(hsl const&) const = default;
 
 	constexpr operator rgb() const;
 };
@@ -239,13 +263,17 @@ struct hsla
 {
 	using type = float;
 
-	_FISSION_IMPLEMENT_BASIC_COLORA(hsla, h, s, l, a);
+    type h, s, l, a;
+
+    constexpr hsla():h(static_cast<type>(0)),s(static_cast<type>(0)),l(static_cast<type>(0)),a(static_cast<type>(0)){}
+    constexpr hsla(type const& H,type const& S,type const& L,type const& A):h(H),s(S),l(L),a(A){}
+    constexpr bool operator==(hsla const&) const = default;
 	
 	constexpr hsla(
-		hsl  const& _Color,
-		type const& _Alpha = impl::max_color_value<type>
+		hsl  const& color,
+		type const& alpha = impl::max_color_value<type>
 	):
-		h(_Color.h), s(_Color.s), l(_Color.l), a(_Alpha)
+		h(color.h), s(color.s), l(color.l), a(alpha)
 	{}
 	
 	constexpr operator rgba() const;
@@ -255,20 +283,28 @@ struct lab
 {
 	using type = float;
 
-	_FISSION_IMPLEMENT_BASIC_COLOR(lab, l, a, b);
+    type l, a, b;
+
+    constexpr lab():l(static_cast<type>(0)),a(static_cast<type>(0)),b(static_cast<type>(0)){}
+    constexpr lab(type const& L,type const& A,type const& B):l(L),a(A),b(B){}
+    constexpr bool operator==(lab const&) const = default;
 };
 
 struct laba
 {
 	using type = float;
 
-	_FISSION_IMPLEMENT_BASIC_COLORA(laba, l, a, b, alpha);
+    type l, a, b, alpha;
+
+    constexpr laba():l(static_cast<type>(0)),a(static_cast<type>(0)),b(static_cast<type>(0)),alpha(static_cast<type>(0)){}
+    constexpr laba(type const& L,type const& A,type const& B,type const& Alpha):l(L),a(A),b(B),alpha(Alpha){}
+    constexpr bool operator==(laba const&) const = default;
 	
 	constexpr laba(
-		lab  const& _Color,
-		type const& _Alpha = impl::max_color_value<type>
+		lab  const& color,
+		type const& Alpha = impl::max_color_value<type>
 	):
-		l(_Color.l), a(_Color.a), b(_Color.b), alpha(_Alpha)
+		l(color.l), a(color.a), b(color.b), alpha(Alpha)
 	{}
 };
 
@@ -281,9 +317,7 @@ struct cmyk
 	type y = 0;
 	type k = 0;
 
-	constexpr bool operator==(cmyk const& _Right) const {
-		return(c==_Right.c)&&(m==_Right.m)&&(y==_Right.y)&&(k==_Right.k);
-	}
+	constexpr bool operator==(cmyk const&) const = default;
 };
 
 
@@ -377,12 +411,11 @@ inline constexpr rgb::operator hsl() const
 
 inline constexpr hsv::operator rgb() const
 {
-	using math::min;
-	using math::max;
+	using namespace math;
 	struct rgb out {};
 
 	auto f = [&] (float n) constexpr {
-		auto k = experimental::fp_mod(n + h * 6.0f, 6.0f);
+		auto k = mod(n + h * 6.0f, 6.0f);
 		return v * (1.0f - s * max(0.0f, min(min(k, 4.0f - k), 1.0f)));
 	};
 
@@ -395,12 +428,11 @@ inline constexpr hsv::operator rgb() const
 
 inline constexpr hsl::operator rgb() const
 {
-	using math::min;
-	using math::max;
+	using namespace math;
 	struct rgb out {};
 
 	auto f = [&] (float n) constexpr {
-		const type k = experimental::fp_mod(n + h * 12.0f, 12.0f);
+		const type k = mod(n + h * 12.0f, 12.0f);
 		const type f1 = min(l, 1.0f - l);
 		const type f2 = max(-1.0f, min(min(k - 3.0f, 9.0f - k), 1.0f));
 		return l - s * f1 * f2;
@@ -472,11 +504,11 @@ inline constexpr rgba::operator rgba8() const
 
 namespace colors
 {
-	static constexpr rgb  gray(float _Light) {
-		return { _Light, _Light, _Light };
+	static constexpr rgb  gray(float value) {
+		return { value, value, value };
 	};
-	static constexpr rgba gray(float _Light, float _Alpha) {
-		return { _Light, _Light, _Light, _Alpha };
+	static constexpr rgba gray(float value, float a) {
+		return { value, value, value, a };
 	};
 }
 

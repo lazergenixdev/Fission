@@ -14,7 +14,6 @@
  */
 #pragma once
 #include <Fission/config.hpp>
-#include <compare>
 #include <optional>
 
 __FISSION_BEGIN__
@@ -38,7 +37,6 @@ struct version
 		Patch(static_cast<u32>(patch))
 	{}
 
-	constexpr auto operator<=>(version const&) const = default;
 	constexpr bool operator ==(version const&) const = default;
 
 	//constexpr std::optional<compressed_version> compress();
@@ -70,16 +68,19 @@ struct compressed_version
 		Major(v.Major), Minor(v.Minor), Patch(v.Patch)
 	{}
 
-	constexpr version uncompress() const {
-		return version(Major, Minor, Patch);
+	NO_DISCARD constexpr version uncompress() const {
+		return {Major, Minor, Patch};
 	}
 
-	template <u32 major, u32 minor, u32 patch>
-	static constexpr compressed_version make =
-		std::conditional_t<major < 256 && minor < 2048 && patch < 8192,
-						   compressed_version, void>(major, minor, patch);
+    constexpr bool operator ==(compressed_version const&) const = default;
 
 };
+
+
+template <u32 major, u32 minor, u32 patch>
+static constexpr compressed_version make_compressed_version =
+        std::conditional_t<major < 256 && minor < 2048 && patch < 8192,
+                compressed_version, void>(major, minor, patch);
 
 __FISSION_END__
 

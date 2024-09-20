@@ -2,7 +2,7 @@
 
 __FISSION_BEGIN__
 
-auto render_main(void*) noexcept -> os::Thread_Result
+auto OS_CALL render_main(void*) noexcept -> os::Thread_Result
 {
     engine.setup();
 

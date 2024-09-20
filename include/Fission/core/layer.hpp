@@ -110,7 +110,7 @@ struct Console_Layer {
 	void _reserve_space_for(u64 added_count);
 private:
 	void draw_console_buffer(struct Textured_Renderer_2D& r, float top, float ystride);
-	void handle_character_input(Event::Character_Input in);
+	void handle_character_input(c32 codepoint);
 	string command_from_history();
 
 	static constexpr u64 minimum_buffer_delete_count = FS_KILOBYTES(1);

@@ -13,11 +13,41 @@
 #pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
+// Macro Helpers
 
-// Fission namespace (fs) will be used a lot, no need 
-//	for extra indentation.
-#define __FISSION_BEGIN__ namespace fs {
-#define __FISSION_END__ }
+#define MACRO_EXPAND(X) X
+#define MACRO_STRING(X) #X
+#define MACRO_STRING_EXPAND(X) MACRO_STRING(X)
+#define MACRO_JOIN(A,B) A ## B
+#define MACRO_JOIN_EXPAND(A,B) MACRO_JOIN(A,B)
+#define MACRO_PRAGMA(X) _Pragma(#X)
+#define NO_DISCARD [[nodiscard]]
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+// FISSION_COMPILER_XX
+#if defined(__clang__)
+#	define FISSION_COMPILER_CLANG
+#elif defined(__GNUC__) || defined(__GNUG__)
+#   define FISSION_COMPILER_GNU
+#elif defined(_MSC_VER)
+#   define FISSION_COMPILER_MSVC
+#else
+#	error "Compiler not recognized!"
+#endif
+
+// FISSION_DISABLE_WARNING(WARNING)
+#if defined(FISSION_COMPILER_MSVC)
+#   define FISSION_DISABLE_WARNING(WARNINGS) MACRO_PRAGMA(warning(disable: WARNINGS))
+#   define FISSION_DISABLE_ALL_WARNINGS_BEGIN MACRO_PRAGMA(warning(push, 0))
+#   define FISSION_DISABLE_ALL_WARNINGS_END   MACRO_PRAGMA(warning(pop))
+#elif defined(FISSION_COMPILER_CLANG) || defined(FISSION_COMPILER_GCC)
+#   define FISSION_DISABLE_WARNING(WARNING) MACRO_PRAGMA(GCC diagnostic ignored WARNING)
+#   define FISSION_DISABLE_ALL_WARNINGS_BEGIN \
+    MACRO_PRAGMA(GCC diagnostic push) FISSION_DISABLE_WARNING("-Weverything")
+#   define FISSION_DISABLE_ALL_WARNINGS_END   MACRO_PRAGMA(GCC diagnostic pop)
+#endif
 
 // FISSION_API
 #define FISSION_SHARED 0
@@ -31,17 +61,6 @@
 #    define FISSION_API extern
 #endif
 
-// FISSION_COMPILER_XX
-#if defined(__clang__)
-#	define FISSION_COMPILER_CLANG
-#elif defined(__GNUC__) || defined(__GNUG__)
-#   define FISSION_COMPILER_GNU
-#elif defined(_MSC_VER)
-#   define FISSION_COMPILER_MSVC
-#else
-#	error "Compiler not recognized!"
-#endif
-
 #include "detect_platform.hpp"
 #include <stdint.h> // Vulkan includes also this
 #include <type_traits>
@@ -52,46 +71,71 @@
 #if   defined(FISSION_COMPILER_MSVC)
 
 // 'bytes' bytes padding added after construct 'member_name'
-#   pragma warning(disable: 4820)
+	FISSION_DISABLE_WARNING(4820)
 
 // enumerator 'identifier' in switch of enum 'enumeration'
 // is not explicitly handled by a case label
-#   pragma warning(disable: 4061)
+	FISSION_DISABLE_WARNING(4061)
 
 // 4625 => copy constructor
 // 5026 => move constructor
 // 4626 => copy operator
 // 5027 => move operator    ... was implicitly deleted
-#   pragma warning(disable: 4625 5026 4626 5027)
+	FISSION_DISABLE_WARNING(4625 5026 4626 5027)
 
 // 'function' : unreferenced inline function has been removed
-#   pragma warning(disable: 4514)
+	FISSION_DISABLE_WARNING(4514)
 
 // Compiler will insert Spectre mitigation for memory load
 // if /Qspectre switch specified
-#	pragma warning(disable: 5045)
+	FISSION_DISABLE_WARNING(5045)
+
+// 'operation': unsafe conversion from 'type_of_expression'
+// to 'type_required'
+	FISSION_DISABLE_WARNING(4191)
+
+// 'derived class' : default constructor was implicitly defined as deleted
+	FISSION_DISABLE_WARNING(4623)
+
+// nameless struct/union
+	FISSION_DISABLE_WARNING(4201)
+
+#elif defined(FISSION_COMPILER_CLANG)
+
+// It's reserved??.. Who asked??????
+	FISSION_DISABLE_WARNING("-Wreserved-macro-identifier")
+
+	FISSION_DISABLE_WARNING("-Wc++98-compat")
+	FISSION_DISABLE_WARNING("-Wc++98-compat-pedantic")
+
+// Nearly impossible to silence this warning,
+// great job GCC, I'm so proud of you.
+	FISSION_DISABLE_WARNING("-Wunsafe-buffer-usage")
+
+// It's called "C-style cast", go fuck yourself
+	FISSION_DISABLE_WARNING("-Wold-style-cast")
+
+// ????
+	FISSION_DISABLE_WARNING("-Wc++20-extensions")
+
+	FISSION_DISABLE_WARNING("-Wnested-anon-types")
 
 #endif
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// Macro Helpers
-
-#define MACRO_EXPAND(X) X
-#define MACRO_STRING(X) #X
-#define MACRO_STRING_EXPAND(X) MACRO_STRING(X)
-#define MACRO_JOIN(A,B) A ## B
-#define MACRO_JOIN_EXPAND(A,B) MACRO_JOIN(A,B)
-
-
-///////////////////////////////////////////////////////////////////////////////
 // Miscellaneous
+
+// Fission namespace (fs) will be used a lot, no need
+//	for extra indentation.
+#define __FISSION_BEGIN__ namespace fs {
+#define __FISSION_END__ }
 
 /// Convert bool value to "True" or "False"
 #define FS_BTF(B) ((B)?"True":"False")
 
 /// Convert bool value to "Yes" or "No"
-#define FS_BYN(B) (B)?"Yes":"No")
+#define FS_BYN(B) ((B)?"Yes":"No")
 
 /// Very important web address
 #define FS_IMPORTANT_LINK "https://youtu.be/dQw4w9WgXcQ"
@@ -112,6 +156,8 @@ X(Y)X(Z)
 
 #define FISSION_X_BASE10 \
 X(0)X(1)X(2)X(3)X(4)X(5)X(6)X(7)X(8)X(9)
+
+#define FMT_HEADER_ONLY 1
 
 
 __FISSION_BEGIN__

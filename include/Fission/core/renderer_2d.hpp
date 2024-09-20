@@ -11,7 +11,6 @@
  * @License:      MIT (see end of file)
  */
 #pragma once
-#include <Fission/base/math/matrix.hpp>
 #include <Fission/base/rect.hpp>
 #include <Fission/base/color.hpp>
 #include <Fission/base/string.hpp>

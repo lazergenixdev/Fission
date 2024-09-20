@@ -39,35 +39,32 @@ enum EventType {
 	Event_Mouse_Move_Relative,
 };
 
+// TODO: try linked list for events (no pointers, only offsets)
 struct Event {
-	s64 timestamp;
-	u8 type;
-
-	struct Key_Down {
-		u32 key_id;
-	};
-	struct Key_Up {
-		u32 key_id;
-	};
-	struct Character_Input {
-		c32 codepoint;
-	};
-	struct Mouse_Move_Absolute {
-		v2s32 position;
-	};
-	struct Mouse_Move_Relative {
-		v2s32 delta;
-	};
+    u64 type;
+    s64 timestamp;
 
 	union {
-		Key_Down            key_down;
-		Key_Up              key_up;
-		Character_Input     character_input;
-		Mouse_Move_Absolute mouse_move_absolute;
-		Mouse_Move_Relative mouse_move_relative;
-	};
+        struct {
+            u32 key_id;
+        } key_down {};
 
-    Event() = delete;
+        struct {
+            u32 key_id;
+        } key_up;
+
+        struct {
+            c32 codepoint;
+        } character_input;
+
+        struct {
+            v2s32 position;
+        } mouse_move_absolute;
+
+        struct {
+            v2s32 delta;
+        } mouse_move_relative;
+	};
 };
 
 __FISSION_END__

@@ -20,7 +20,7 @@ __FISSION_BEGIN__
 #if   defined(FISSION_PLATFORM_WINDOWS)
 #define FISSION_DEFAULT_ALLOC(Size) ::_aligned_malloc(Size, 64)
 #define FISSION_DEFAULT_FREE(Ptr)   ::_aligned_free(Ptr)
-#elif defined(FISSION_PLATFORM_LINUX)
+#else
 #define FISSION_DEFAULT_ALLOC(Size) ::aligned_alloc(64, Size)
 #define FISSION_DEFAULT_FREE(Ptr)   ::free(Ptr)
 #endif
@@ -52,9 +52,9 @@ struct bump_allocator
 	}
 
 	bump_allocator() = default;
-	bump_allocator(u64 capacity)
-	:	base(reinterpret_cast<u8*>(FISSION_DEFAULT_ALLOC(capacity))),
-		capacity(capacity)
+	bump_allocator(u64 initial_capacity)
+	:	base(reinterpret_cast<u8*>(FISSION_DEFAULT_ALLOC(initial_capacity))),
+		capacity(initial_capacity)
 	{}
 
 	/// @note Only call create() or contructor once,

@@ -18,7 +18,6 @@
 #include <Fission/core/scene.hpp>
 #include <Fission/base/version.hpp>
 #include <Fission/core/renderer_2d.hpp>
-#include <Fission/core/log.hpp>
 #include <chrono>
 
 typedef struct FT_LibraryRec_* FT_Library;
@@ -32,6 +31,14 @@ extern fs::Engine engine;
 // ******************************************************************
 // user defined functions
 
+struct App_Info {
+	fs::compressed_version version      = fs::make_compressed_version<0,1,0>;
+	fs::string             version_info = "dev";
+	fs::string             name         = "app name";
+
+	App_Info();
+};
+
 // called before engine/graphics/window creation
 extern auto on_create() -> fs::Defaults;
 
@@ -40,7 +47,7 @@ extern auto on_create_scene(fs::Scene_Key const& key) -> fs::Scene*;
 
 __FISSION_BEGIN__
 
-extern auto render_main(void*) noexcept -> os::Thread_Result;
+extern auto OS_CALL render_main(void*) noexcept -> os::Thread_Result;
 
 FISSION_API auto timestamp() -> s64;
 FISSION_API auto seconds_elasped(s64 start, s64 end) -> double;
@@ -73,23 +80,19 @@ struct Defaults {
 struct Engine
 {
 	enum Flag: u64 {
-		fRunning                       = 1 << 0,
-		fGraphics_Recreate_Swap_Chain  = 1 << 1,
-
-		// Do NOT edit these:
-	//	fWindow_Resized                = 1 << 2,
-		fWindow_Destroy_Enable         = 1 << 3,
-
-		fChange_Scene                  = 1 << 4,
-		fFPS_Limiter_Enable            = 1 << 5,
-
-		fSave_Currect_Frame            = 1 << 6,
+		Running                       = 1 << 0,
+		Graphics_Recreate_Swap_Chain  = 1 << 1,
+		Window_Resized                = 1 << 2,
+		Window_Destroy_Enable         = 1 << 3,
+		Change_Scene                  = 1 << 4,
+		FPS_Limiter_Enable            = 1 << 5,
+		Save_Current_Frame            = 1 << 6,
 	};
 
 	auto get_version_string() -> string;
 
-	inline void bind_font(VkCommandBuffer cmd, Font_Static* font) {
-		VkDescriptorSet sets[] = { transform_2d.set, font->texture };
+	inline void bind_font(VkCommandBuffer cmd, Font_Static const* p_font) {
+		VkDescriptorSet sets[] = { transform_2d.set, p_font->texture };
 		FS_VK_BIND_DESCRIPTOR_SETS(cmd, textured_renderer_2d.pipeline_layout, 2, sets);
 	}
 
@@ -119,13 +122,9 @@ struct Engine
 	u64                  modifier_keys;
 	float                fps_limit = 60.0f;
 
-	// Version stuffs
+	App_Info app_info;
+	
 	compressed_version const version;
-
-	// Version stuff for app
-	compressed_version   app_version      = compressed_version::make<0,1,0>;
-	string               app_version_info = "dev";
-	string               app_name         = "app name";
 
 	struct {
 		FT_Library library;
@@ -136,7 +135,7 @@ struct Engine
 	//	std::unordered_map<std::string_view, Font*> table;
 
 		VkSampler sampler;
-	} fonts;
+	} font;
 
 	struct {
 		VkDescriptorSet     set;
@@ -157,24 +156,25 @@ struct Engine
 
 	Scene_Key next_scene_key;
 
-	std::vector<Display> displays;
+	array<Display> displays;
 
     os::Thread render_thread;
     int exit_code = EXIT_SUCCESS;
+
+public:
+    auto create (Defaults const& defaults) -> bool;
+    void run ();
+    void destroy ();
 
 private:
 #ifdef _os_main
     friend _os_main();
 #endif
-    friend os::Thread_Result render_main(void*) noexcept;
+    friend auto OS_CALL render_main(void*) noexcept -> os::Thread_Result;
 	
 	auto setup () -> bool;
     auto render_frame () -> bool;
 	void shutdown ();
-
-	auto create (Defaults const& defaults) -> bool;
-    void run ();
-    void destroy ();
 
 	void resize ();
 	auto create_layers () -> bool;

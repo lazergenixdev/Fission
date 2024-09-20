@@ -1,10 +1,10 @@
 package $namespace;
 
-import android.app.Activity;
-import android.content.DialogInterface;
 import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -13,8 +13,6 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 
-import android.view.View;
-
 public class MainActivity extends AppCompatActivity {
 
 	private SurfaceView surfaceView;
@@ -22,9 +20,21 @@ public class MainActivity extends AppCompatActivity {
 
 	public native int create();
 	public native int destroy();
+
 	public static native void createGraphics(Surface surface);
 	public static native void resizeGraphics(Surface surface, int format, int width, int height);
 	public static native void destroyGraphics();
+
+	public static native void addTouchEvent(int action, float x, float y);
+	
+	static {
+		try {
+			System.loadLibrary("$name");
+		}
+		catch (Exception e) {
+			LOGE("Error: " + e.getMessage());
+		}
+	}
 
 	public void showDialog(String title, String message) {
 		final MainActivity activity = this;
@@ -46,19 +56,10 @@ public class MainActivity extends AppCompatActivity {
 							LOGI(String.format("onClick Got %d", i));
 						}
 					})
-					.setCancellable(false)
+					.setCancelable(false)
 					.show();
 			}
 		});
-	}
-
-	static {
-		try {
-			System.loadLibrary("$name");
-		}
-		catch (Exception e) {
-			LOGE("Error: " + e.getMessage());
-		}
 	}
 
 	private void hideSystemUI() {
@@ -67,6 +68,22 @@ public class MainActivity extends AppCompatActivity {
 		insetsController.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
 		insetsController.hide(WindowInsetsCompat.Type.statusBars());
 		insetsController.hide(WindowInsetsCompat.Type.navigationBars());
+	}
+
+	@Override
+	public boolean onTouchEvent(MotionEvent event) {
+		super.onTouchEvent(event);
+		String action = "Unknown";
+		switch (event.getAction()) {
+			case MotionEvent.ACTION_DOWN:         action = "DOWN";         break;
+			case MotionEvent.ACTION_UP:           action = "UP";           break;
+			case MotionEvent.ACTION_POINTER_DOWN: action = "POINTER_DOWN"; break;
+			case MotionEvent.ACTION_POINTER_UP:   action = "POINTER_UP";   break;
+			case MotionEvent.ACTION_MOVE:         action = "MOVE";         break;
+		}
+		//Log.v(TAG, String.format("Got Touch Event (%.2f,%.2f) action=%s", event.getX(), event.getY(), action));
+		addTouchEvent(event.getAction(), event.getX(), event.getY());
+		return true;
 	}
 
 	@Override
@@ -106,12 +123,12 @@ public class MainActivity extends AppCompatActivity {
 			}
 		});
 
-        LOGI("[onCreate] Hello from Java!");
+        LOGI("Hello from Java!");
 	}
 
 	@Override
 	protected void onDestroy() {
-        LOGI("[onDestroy] BYE! from Java!");
+        LOGI("BYE! from Java!");
 		destroy();
 		super.onDestroy();
 	}

@@ -16,23 +16,29 @@
 #include <Fission/base/array.hpp>
 #include <Fission/base/rect.hpp>
 #include <Fission/platform.hpp>
-#include <vulkan/vulkan.h>
 
 // reduce warning level, bc vk_mem_alloc has lots of warnings...
 #if defined(FISSION_COMPILER_MSVC)
 #	pragma warning (push, 0)
+#elif defined(FISSION_COMPILER_GCC) || defined(FISSION_COMPILER_CLANG)
+#   pragma GCC diagnostic push
+    FISSION_DISABLE_WARNING("-Weverything")
 #endif
 
 #include <vma/vk_mem_alloc.h>
+#include <glm/mat2x2.hpp>
 
 #if defined(FISSION_COMPILER_MSVC)
 #	pragma warning (pop)
+#elif defined(FISSION_COMPILER_GCC) || defined(FFISSION_COMPILER_CLANG)
+#   pragma GCC diagnostic pop
 #endif
 
 #include <vector>
 
+// Must have VK_IMAGE_USAGE_TRANSFER_SRC_BIT for screenshots (for now)
 #define FISSION_DEFAULT_SWAP_CHAIN_USAGE \
-VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
 
 __FISSION_BEGIN__
 
@@ -71,12 +77,29 @@ enum Graphics_Present_Mode {
 
 struct Graphics
 {
-	void upload_buffer(VkBuffer dstBuffer, void const* data, VkDeviceSize size);
-	void upload_image(VkImage dstImage, void* data, VkExtent3D extent, VkFormat format, VkImageLayout outLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, int layer = 0);
+	void upload (VkBuffer destination, void const* data, VkDeviceSize size);
+
+	void upload (
+		VkImage       destination,
+		void const*   image_data,
+		VkExtent3D    extent,
+		VkFormat      format,
+		VkImageLayout final_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		u32           layer = 0
+	);
 
 	array<VkPresentModeKHR> supported_present_modes() { return {}; }
 
-	version get_api_version();
+	version vulkan_version();
+
+	auto pre_rotation () -> glm::mat2;
+
+	inline constexpr v2u32 size() const {
+		u32 w = sc_extent.width;
+		u32 h = sc_extent.height;
+		return (sc_transform & (VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR|VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR))?
+			v2u32{h, w} : v2u32{w, h};
+	}
 
 	inline constexpr v2f32 render_size() const {
 		auto x = float(sc_extent.width);
@@ -84,7 +107,11 @@ struct Graphics
 		return { x, y };
 	}
 
+#if defined(FISSION_PLATFORM_WINDOWS) || defined(FISSION_PLATFORM_LINUX)
 	static constexpr int max_sc_images = 4;
+#elif defined(FISSION_PLATFORM_ANDROID)
+	static constexpr int max_sc_images = 16;
+#endif
 
 	VkInstance       instance         {};
 	VkPhysicalDevice physical_device  {};
@@ -98,9 +125,10 @@ struct Graphics
 	VkExtent2D        sc_extent       {};
 	VkFormat          sc_format       {};
 	VkImageUsageFlags sc_image_usage  {};
-	u32               sc_image_count  {};
-	VkPresentModeKHR  sc_present_mode {};
-	VkImage           sc_images       [max_sc_images] {};
+    u32               sc_image_count  {};
+    VkPresentModeKHR  sc_present_mode {};
+    VkSurfaceTransformFlagBitsKHR sc_transform {};
+    VkImage           sc_images       [max_sc_images] {};
 	VkImageView       sc_image_views  [max_sc_images] {};
 
 	// Main graphics command pool
@@ -124,13 +152,14 @@ struct Graphics
 
 	Graphics() = default;
 	Graphics(Graphics const&) = delete;
-	~Graphics();
 
 private:
 	friend struct Engine;
 
 	auto create(struct Graphics_Create_Info const& info) -> bool; // SUCCESS == false
-	void recreate_swap_chain(struct Window* window);
+	void destroy();
+
+	//void recreate_swap_chain(struct Window* window);
 
 private:
     // SUCCESS == false
@@ -138,7 +167,7 @@ private:
     bool create_surface         (struct Window* window);
     bool pick_physical_device   ();
     bool pick_queue_families    ();
-    bool create_device          ();
+    bool create_device          (bool debug);
     bool create_allocator       ();
     bool create_swap_chain      ();
     bool create_sc_image_views  ();
@@ -262,21 +291,18 @@ namespace vk
 	template <typename T, size_t Count>
 	static constexpr uint32_t count(T const(&)[Count]) { return (uint32_t)Count; }
 
-	struct Command_Buffer_Begin_Info {
-		VkCommandBufferUsageFlags             flags;
-		const VkCommandBufferInheritanceInfo* pInheritanceInfo;
-		const void*                           pNext;
-	};
-
-	inline VkResult begin(VkCommandBuffer command_buffer)
+	inline VkResult begin(VkCommandBuffer command_buffer, VkCommandBufferUsageFlags flags = 0)
 	{
 		VkCommandBufferBeginInfo begin_info {
 			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		//	.pNext = info.pNext,
-		//	.flags = info.flags,
-		//	.pInheritanceInfo = info.pInheritanceInfo,
+			.flags = flags,
 		};
 		return vkBeginCommandBuffer(command_buffer, &begin_info);
+	}
+
+	inline VkResult end(VkCommandBuffer command_buffer)
+	{
+		return vkEndCommandBuffer(command_buffer);
 	}
 	
 	//inline void begin(VkCommandBuffer command_buffer, VkRenderPass render_pass)
@@ -410,6 +436,15 @@ namespace vk
 		Fragment = VK_SHADER_STAGE_FRAGMENT_BIT,
 		Geometry = VK_SHADER_STAGE_GEOMETRY_BIT,
 	};
+
+    namespace embed {
+        struct Vertex_Shader {
+            static constexpr auto stage = Shader_Stage::Vertex;
+        };
+        struct Fragment_Shader {
+            static constexpr auto stage = Shader_Stage::Fragment;
+        };
+    }
 
 	static constexpr VkExtent3D extent3d(VkExtent2D extent) {
 		return VkExtent3D{ .width = extent.width, .height = extent.height, .depth = 1 };

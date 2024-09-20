@@ -16,52 +16,50 @@
 __FISSION_BEGIN__
 
 
-template <typename _Ty>
+template <typename type>
 struct range
 {
-	using type = _Ty;
-
 	type low;  // lower bound of the range
 	type high; // upper bound of the range
 
-	constexpr range(const range&src) = default;
+	constexpr range(range const&) = default;
 
 	//! @brief Create null range: {0,0}.
 	constexpr range():low(static_cast<type>(0)),high(static_cast<type>(0)){}
 
-	//! @brief Create range from a 'stop' value.
-	constexpr explicit range(type const& _Stop):low(static_cast<type>(0)),high(_Stop){}
+	//! @brief Create range from a single value. [0, n]
+	constexpr explicit range(type const& n):low(static_cast<type>(0)),high(n){}
 
-	//! @brief Create range from a low and high value, where _Low < _High.
-	constexpr range(const type&_Low,const type&_High):low(_Low),high(_High){}
+	//! @brief Create range from a low and high value, where lo < hi.
+	constexpr range(type const& lo,type const& hi):low(lo),high(hi){}
 
 	//! @brief Converts range from another type.
-	template <typename _From> explicit
-	constexpr range(const range<_From>&_Src):low(static_cast<type>(_Src.low)),high(static_cast<type>(_Src.high)){}
+	template <typename from> explicit
+	constexpr range(range<from> const& r):low(static_cast<type>(r.low)),high(static_cast<type>(r.high)){}
 
 	//! @brief Creates valid range from two values A and B.
-	static inline constexpr range create(const type&_A,const type&_B){return(_A>_B)?range(_B,_A):range(_A,_B);}
+	static inline constexpr range create(type const& A,type const& B){return(A>B)?range(B,A):range(A,B);}
 
 	//! @brief Creates valid range from center and span.
-	static inline constexpr range from_center(const type&_Center,const type&_Span){type d=_Span/static_cast<type>(2);return range(_Center-d, _Center+d);}
+	static inline constexpr range from_center(type const&center,type const&span){type d=span/static_cast<type>(2);return range(center-d, center+d);}
 
 
 	// Range Functions
 
 	//!! @brief Clamps a value to this range.
-	inline constexpr type clamp(const type&_X)const{if(_X<this->low)return this->low;if(_X>this->high)return this->high;return _X;}
+	inline constexpr type clamp(type const&x)const{if(x<this->low)return this->low;if(x>this->high)return this->high;return x;}
 
 	//! @brief Checks whether value is contained within open range: ( low, high ).
-	inline constexpr bool operator()(const type&_X)const{return(_X>this->low)&&(_X<this->high);}
+	inline constexpr bool operator()(type const&x)const{return(x>this->low)&&(x<this->high);}
 
 	//! @brief Checks whether value is contained within closed range: [ low, high ].
-	inline constexpr bool operator[](const type&_X)const{return(_X>=this->low)&&(_X<=this->high);}
+	inline constexpr bool operator[](type const&x)const{return(x>=this->low)&&(x<=this->high);}
 
 	//! @brief Checks whether value is contained within ( low, high ].
-	inline constexpr bool closed_upper(const type&_X)const{return(_X>this->low)&&(_X<=this->high);}
+	inline constexpr bool closed_upper(type const&x)const{return(x>this->low)&&(x<=this->high);}
 	
 	//! @brief Checks whether value is contained within [ low, high ).
-	inline constexpr bool closed_lower(const type&_X)const{return(_X>=this->low)&&(_X<this->high);}
+	inline constexpr bool closed_lower(type const&x)const{return(x>=this->low)&&(x<this->high);}
 
 	//! @brief Get the distance between the two end points of this range.
 	inline constexpr type distance()const{return this->high-this->low;}
@@ -73,29 +71,29 @@ struct range
 
 	//! @brief Determine whether the high value is greater than or equal to the low value.
 	//! @note foreach loops will only function when high >= low (unless a negative step value is used)
-	inline constexpr bool valid()const{return this->high>=this->low;}
+	NO_DISCARD inline constexpr bool valid()const{return this->high>=this->low;}
 
 
 	// Modification Functions
 	
 	//! @brief Get an Expanded range.
-	inline constexpr auto expanded(const type&_dx)const{return range(this->low-_dx,this->high+_dx);}
+	inline constexpr auto expanded(type const&_dx)const{return range(this->low-_dx,this->high+_dx);}
 
 	//! @brief Expands this range
-	inline constexpr auto&expand(const type&_dx){this->low-=_dx,this->high+=_dx;return*this;}
+	inline constexpr auto&expand(type const&_dx){this->low-=_dx,this->high+=_dx;return*this;}
 
 	//! @brief Get a Scaled range from center.
-	inline constexpr auto scaled(const type&_Scale)const{
-		auto _Center=      (this->high+this->low)/static_cast<type>(2),
-			_Delta=_Scale*(this->high-this->low)/static_cast<type>(2); 
-		return range(_Center-_Delta,_Center+_Delta);
+	inline constexpr auto scaled(type const&scale)const{
+		auto center=      (this->high+this->low)/static_cast<type>(2),
+			d=scale*(this->high-this->low)/static_cast<type>(2); 
+		return range(center-d,center+d);
 	}
 
 	//! @brief Scales this range from center.
-	inline constexpr auto&scale(const type&_Scale){
-		auto _Center=      (this->high+this->low)/static_cast<type>(2),
-			_Delta=_Scale*(this->high-this->low)/static_cast<type>(2); 
-		this->low=_Center-_Delta,this->high=_Center+_Delta;return*this;
+	inline constexpr auto&scale(type const&scale){
+		auto center=      (this->high+this->low)/static_cast<type>(2),
+			d=scale*(this->high-this->low)/static_cast<type>(2); 
+		this->low=center-d,this->high=center+d;return*this;
 	}
 
 	// Extras
@@ -129,7 +127,7 @@ private:
 
 public:
 
-	inline constexpr auto step(type const& _Step)const{return stepped_range{this->low, this->high, _Step};}
+	inline constexpr auto step(type const& step)const{return stepped_range{this->low, this->high, step};}
 
 	inline constexpr auto begin()const{return range_iterator{this->low};}
 	inline constexpr auto end()const{return range_iterator{this->high};}
@@ -141,19 +139,19 @@ public:
 	constexpr bool operator==(range const&) const = default;
 
 	//! @brief Get a range scaled from zero.
-	constexpr auto operator*(const type&_Scale)const{return range(this->low*_Scale,this->high*_Scale);}
+	constexpr auto operator*(type const&scale)const{return range(this->low*scale,this->high*scale);}
 
 	//! @brief Scale this range from zero.
-	constexpr auto&operator*=(const type&_Scale){this->low*=_Scale,this->high*=_Scale;return*this;}
-	constexpr auto&operator/=(const type&_Scale){this->low/=_Scale,this->high/=_Scale;return*this;}
+	constexpr auto&operator*=(type const&scale){this->low*=scale,this->high*=scale;return*this;}
+	constexpr auto&operator/=(type const&scale){this->low/=scale,this->high/=scale;return*this;}
 
 	// vvv Shift Operators vvv
 
-	constexpr auto operator+(const type&_Shift)const{return range(this->low+_Shift,this->high+_Shift);}
-	constexpr auto operator-(const type&_Shift)const{return range(this->low-_Shift,this->high-_Shift);}
+	constexpr auto operator+(type const&shift)const{return range(this->low+shift,this->high+shift);}
+	constexpr auto operator-(type const&shift)const{return range(this->low-shift,this->high-shift);}
 
-	constexpr auto&operator+=(const type&_Shift){this->low+=_Shift,this->high+=_Shift;return*this;}
-	constexpr auto&operator-=(const type&_Shift){this->low-=_Shift,this->high-=_Shift;return*this;}
+	constexpr auto&operator+=(type const&shift){this->low+=shift,this->high+=shift;return*this;}
+	constexpr auto&operator-=(type const&shift){this->low-=shift,this->high-=shift;return*this;}
 
 }; // struct Fission::range
 
@@ -162,15 +160,15 @@ _FISSION_BASE_ALIASES(range, range);
 //! @return The minimum distance between two ranges.
 //! @note: Returns a negative value for ranges that contain a subset of each other.
 template <typename T>
-inline constexpr auto intersect(const range<T>&_A, const range<T>&_B)
+inline constexpr auto intersect(range<T> const& a, range<T> const& b)
 {
-    auto _P = _B.low - _A.high, _K = _A.low - _B.high;
-    return (_P>_K)?_P:_K;
+    auto p = b.low - a.high, k = a.low - b.high;
+    return (p>k)? p:k;
 }
 
 
 /// TODO: measure performance of this VS keeping an index locally
-template <typename _Range>
+template <typename iterable>
 struct enumerate
 {
 	template <typename T>
@@ -179,28 +177,28 @@ struct enumerate
 		T value;
 	};
 private:
-	template <typename _Iterator>
-	struct iter
+	template <typename parent>
+	struct iterator
 	{
-		constexpr iter(_Iterator const& it): it( it ){}
+		explicit constexpr iterator(parent const& p): it(p){}
 
-		template <typename T>
-		constexpr bool operator!=( T r ) const { return it != r; }
+		constexpr bool operator!=(iterator r) const { return it != r.it; }
 		constexpr auto operator++() { ++i; return ++it; }
-		constexpr auto operator*() const { return indexed_value{i, *it}; }
+		constexpr auto operator*() const { return indexed_value<decltype(*it)>{i, *it}; }
 
-		_Iterator it;
+        parent it;
 		size_t i = 0;
 	};
 
 public:
-	enumerate(_Range const& object): obj( object ) {}
+	enumerate() = delete;
+	explicit enumerate(iterable const& object): obj(object) {}
 
-	constexpr auto begin() { return iter{ obj.begin() }; }
-	constexpr auto end() { return obj.end(); }
+	constexpr auto begin() { return iterator<decltype(obj.begin())>{obj.begin()}; }
+	constexpr auto end()   { return iterator<decltype(obj.end())>  {obj.end()}; }
 
 private:
-	_Range obj;
+    iterable obj;
 };
 
 __FISSION_END__

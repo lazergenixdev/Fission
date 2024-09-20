@@ -52,10 +52,11 @@
 #define NOPROFILER          // - Profiler interface.
 #define NOMCX               // - Modem Configuration Extensions
 
+// TODO: I hope to replace <Windows.h> with raw function definitions
 #include <Windows.h>
 
 // STOP DOING THIS WINDOWS, I DON'T WANT YOUR STUPID MACROS
-#undef CreateWindow
+#undef CreateWindow // <- this is the worst
 #undef LoadLibrary
 #undef LoadCursor
 #undef MessageBox
@@ -70,11 +71,11 @@
 #undef SetWindowLongPtr
 #undef GetMonitorInfo
 
-#define FISSION_PLATFORM_VULKAN_EXTENSION_NAMES \
-VK_KHR_WIN32_SURFACE_EXTENSION_NAME
 #define VK_USE_PLATFORM_WIN32_KHR 1
+#define FISSION_PLATFORM_VULKAN_EXTENSION_NAMES \
+    VK_KHR_WIN32_SURFACE_EXTENSION_NAME
 
-namespace fs { struct string; }
+#define OS_CALL WINAPI
 
 namespace os
 {
@@ -83,8 +84,8 @@ namespace os
 using Mutex = HANDLE;
 #define os_mutex_create(p_mutex) *(p_mutex) = CreateMutexW(nullptr, FALSE, nullptr)
 #define os_mutex_destroy(mutex)  CloseHandle(mutex)
-#define os_mutex_lock(mutex)     WaitForSingleObject(mutex, INFINITE)
-#define os_mutex_unlock(mutex)   ReleaseMutex(mutex)
+#define os_mutex_lock(mutex)     (WaitForSingleObject(mutex, INFINITE) == WAIT_FAILED)
+#define os_mutex_unlock(mutex)   (ReleaseMutex(mutex) == 0)
 
 
 // ----------------------- Threads ------------------------
@@ -92,19 +93,10 @@ using Mutex = HANDLE;
 using Thread = HANDLE;
 using Thread_Result = DWORD;
 #define os_thread_start(function, p_arg, p_thread) \
-    *(p_thread) = CreateThread(nullptr, 0, function, p_arg, 0, nullptr)
+    ((*(p_thread) = CreateThread(nullptr, 0, function, p_arg, 0, nullptr)) == NULL)
 #define os_thread_join(thread) \
 	WaitForSingleObject(thread, INFINITE); \
     CloseHandle(thread);
-
-
-// ----------------------- Logging ------------------------
-
-void log(int level, fs::string const& message);
-
-// --------------------- Dialog Boxes ---------------------
-
-void show_error_dialog(fs::string const& title, fs::string const& message);
 
 }
 
@@ -129,10 +121,11 @@ namespace platform {
         u32  _flags {};
 
     protected:
-        static LRESULT _setup_callback(HWND, UINT, WPARAM, LPARAM) noexcept;
-        static LRESULT _message_callback(HWND, UINT, WPARAM, LPARAM) noexcept;
+        static LRESULT CALLBACK _setup_callback(HWND, UINT, WPARAM, LPARAM) noexcept;
 	};
-	struct Display {
+
+	struct Display
+    {
 		HMONITOR _handle {};
 	};
 }

@@ -16,15 +16,6 @@
 
 __FISSION_BEGIN__
 
-//! @TODO: remove this garbage that never gets used
-// so many ways to represent a rectangle,
-// just pick one you little shit!
-typedef enum rect_layout_ {
-	rect_layout_LRTB, // {left,right,top,bottom}
-	rect_layout_LTRB, // {left,top,right,bottom}
-	rect_layout_LTWH, // {left,top,width,height}
-} rect_Layout;
-
 //! @brief Structure defining a rectangle containing min and mox for X and Y.
 template <typename T>
 struct rect
@@ -35,102 +26,90 @@ struct rect
 	range<T> x, y;
 
 
-	constexpr rect(const rect&src) = default;
+	constexpr rect(rect const&) = default;
 
 	//! @brief Create a null rect.
 	constexpr rect()noexcept:x(),y(){}
 
 	//! @brief Create rect from 4 values: left, right, top, and bottom.
-	constexpr rect(const type&_Low_X,const type&_High_X,const type&_Low_Y,const type&_High_Y):x(_Low_X,_High_X),y(_Low_Y,_High_Y){}
+	constexpr rect(type const&x_low,type const&x_high,type const&y_low,type const&y_high):x(x_low,x_high),y(y_low,y_high){}
 		
 	//! @brief Create rect from two ranges, for the X range and Y range.
-	constexpr rect(const range<T>&_X_Range,const range<T>&_Y_Range):x(_X_Range),y(_Y_Range){}
+	constexpr rect(const range<T>&X,const range<T>&Y):x(X),y(Y){}
 
 	//! @brief Create a valid rect from two vectors.
-	constexpr rect(const vector&_A,const vector&_B):x(range<T>::create(_A.x,_B.x)),y(range<T>::create(_A.y,_B.y)){}
+	constexpr rect(vector const&a,vector const&b):x(range<T>::create(a.x,b.x)),y(range<T>::create(a.y,b.y)){}
 
 	//! @brief Create rect from another rect with a different type.
-	template <typename _From> explicit
-	constexpr rect(const rect<_From>&_Src):x(static_cast<range<T>>(_Src.x)),y(static_cast<range<T>>(_Src.y)){}
+	template <typename from> explicit
+	constexpr rect(rect<from> const& r):x(static_cast<range<T>>(r.x)),y(static_cast<range<T>>(r.y)){}
 
 
 	//! @brief Create a rect from a top-left position and a size.
-	static inline constexpr rect from_topleft(const type&_Left,const type&_Top,const type&_Width,const type&_Height)
+	static inline constexpr rect from_topleft(type const&left,type const&top,type const&width,type const&height)
 	{
-		return rect(_Left,_Left+_Width,_Top,_Top+_Height);
+		return rect(left,left+width,top,top+height);
 	}
-	static inline constexpr rect from_topleft(const type&_Left,const type&_Top,const vector&_Size_Vector)
+	static inline constexpr rect from_topleft(type const&left,type const&top,vector const&size)
 	{
-		return rect(_Left,_Left+_Size_Vector.x,_Top,_Top+_Size_Vector.y);
+		return rect(left,left+size.x,top,top+size.y);
 	}
-	static inline constexpr rect from_topleft(const vector&_TopLeft_Vector,const type&_Width,const type&_Height)
+	static inline constexpr rect from_topleft(vector const&topleft,type const&width,type const&height)
 	{
-		return rect(_TopLeft_Vector.x,_TopLeft_Vector.x+_Width,_TopLeft_Vector.y,_TopLeft_Vector.y+_Height);
+		return rect(topleft.x,topleft.x+width,topleft.y,topleft.y+height);
 	}
-	static inline constexpr rect from_topleft(const vector&_TopLeft_Vector,const vector&_Size_Vector)
+	static inline constexpr rect from_topleft(vector const&topleft,vector const&size)
 	{
-		return rect(_TopLeft_Vector.x,_TopLeft_Vector.x+_Size_Vector.x,_TopLeft_Vector.y,_TopLeft_Vector.y+_Size_Vector.y);
+		return rect(topleft.x,topleft.x+size.x,topleft.y,topleft.y+size.y);
 	}
-	static inline constexpr rect from_topleft(const type&_Width,const type&_Height)
+	static inline constexpr rect from_topleft(type const&width,type const&height)
 	{
-		return rect(static_cast<type>(0),_Width,static_cast<type>(0),_Height);
+		return rect(static_cast<type>(0),width,static_cast<type>(0),height);
 	}
-	static inline constexpr rect from_topleft(const vector&_Size_Vector)
+	static inline constexpr rect from_topleft(vector const&size)
 	{
-		return rect(static_cast<type>(0),_Size_Vector.x,static_cast<type>(0),_Size_Vector.y);
+		return rect(static_cast<type>(0),size.x,static_cast<type>(0),size.y);
 	}
 
 
 	//! @brief Create a rect from an center position and a size.
-	static inline constexpr rect from_center(const type&_Center_X,const type&_Center_Y,const type&_Width,const type&_Height)
+	static inline constexpr rect from_center(type const&center_x,type const&center_y,type const&width,type const&height)
 	{
-		const auto dx = _Width / static_cast<type>(2), dy = _Height / static_cast<type>(2);
-		return rect(_Center_X-dx,_Center_X+dx,_Center_Y-dy,_Center_Y+dy);
+		const auto dx = width / static_cast<type>(2), dy = height / static_cast<type>(2);
+		return rect(center_x-dx,center_x+dx,center_y-dy,center_y+dy);
 	}
-	static inline constexpr rect from_center(const type&_Center_X,const type&_Center_Y,const vector&_Size_Vector)
+	static inline constexpr rect from_center(type const&center_x,type const&center_y,vector const&size)
 	{
-		const auto dx = _Size_Vector.x / static_cast<type>(2), dy = _Size_Vector.y / static_cast<type>(2);
-		return rect(_Center_X-dx,_Center_X+dx,_Center_Y-dy,_Center_Y+dy);
+		const auto dx = size.x / static_cast<type>(2), dy = size.y / static_cast<type>(2);
+		return rect(center_x-dx,center_x+dx,center_y-dy,center_y+dy);
 	}
-	static inline constexpr rect from_center(const vector&_Center_Vector,const type&_Width,const type&_Height)
+	static inline constexpr rect from_center(vector const&center,type const&width,type const&height)
 	{
-		const auto dx = _Width / static_cast<type>(2), dy = _Height / static_cast<type>(2);
-		return rect(_Center_Vector.x-dx,_Center_Vector.x+dx,_Center_Vector.y-dy,_Center_Vector.y+dy);
+		const auto dx = width / static_cast<type>(2), dy = height / static_cast<type>(2);
+		return rect(center.x-dx,center.x+dx,center.y-dy,center.y+dy);
 	}
-	static inline constexpr rect from_center(const vector&_Center_Vector,const vector&_Size_Vector)
+	static inline constexpr rect from_center(vector const&center,vector const&size)
 	{
-		const auto dx = _Size_Vector.x / static_cast<type>(2), dy = _Size_Vector.y / static_cast<type>(2);
-		return rect(_Center_Vector.x-dx,_Center_Vector.x+dx,_Center_Vector.y-dy,_Center_Vector.y+dy);
+		const auto dx = size.x / static_cast<type>(2), dy = size.y / static_cast<type>(2);
+		return rect(center.x-dx,center.x+dx,center.y-dy,center.y+dy);
 	}
-	static inline constexpr rect from_center(const type&_Width,const type&_Height)
+	static inline constexpr rect from_center(type const& width,type const& height)
 	{
-		const auto dx = _Width / static_cast<type>(2), dy = _Height / static_cast<type>(2);
+		const auto dx = width / static_cast<type>(2), dy = height / static_cast<type>(2);
 		return rect(-dx,dx,-dy,+dy);
 	}
-	static inline constexpr rect from_center(const vector&_Size_Vector)
+	static inline constexpr rect fromcenter(vector const&size)
 	{
-		const auto dx = _Size_Vector.x / static_cast<type>(2), dy = _Size_Vector.y / static_cast<type>(2);
+		const auto dx = size.x / static_cast<type>(2), dy = size.y / static_cast<type>(2);
 		return rect(-dx,dx,-dy,+dy);
 	}
 
 
 	//! @brief Create a rect from a Windows RECT.
-	template <typename _Win_RectTpe>
-	static inline constexpr rect from_win32(const _Win_RectTpe &_Win_Rect)
+	template <typename win32_rect>
+	static inline constexpr rect from_win32(win32_rect const& r)
 	{
-		return rect(_Win_Rect.left, _Win_Rect.right, _Win_Rect.top, _Win_Rect.bottom);
-	}
-
-	//! @brief Convert a rect to another rect type.
-	template <typename _RectTpe, rect_Layout _Layout = rect_layout_LTRB>
-	inline constexpr _RectTpe as()
-	{
-		if constexpr (_Layout == rect_layout_LRTB)
-			return _RectTpe{this->x.low,this->x.high,this->y.low,this->y.high};
-		if constexpr (_Layout == rect_layout_LTRB)
-			return _RectTpe{this->x.low,this->y.low,this->x.high,this->y.high};
-		if constexpr (_Layout == rect_layout_LTWH)
-			return _RectTpe{this->x.low,this->y.low,this->x.high-this->x.low,this->y.high-this->y.high};
+		return {r.left, r.right, r.top, r.bottom};
 	}
 
 	// Getters
@@ -140,10 +119,10 @@ struct rect
 	inline constexpr auto top()   const{return this->y.low ;}
 	inline constexpr auto bottom()const{return this->y.high;}
 
-	inline constexpr auto topLeft() const{return vector(this->x.low, this->y.low );}
-	inline constexpr auto topRight()const{return vector(this->x.high,this->y.low );}
-	inline constexpr auto botLeft() const{return vector(this->x.low, this->y.high);}
-	inline constexpr auto botRight()const{return vector(this->x.high,this->y.high);}
+	inline constexpr auto top_left() const{return vector(this->x.low, this->y.low );}
+	inline constexpr auto top_right()const{return vector(this->x.high,this->y.low );}
+	inline constexpr auto bot_left() const{return vector(this->x.low, this->y.high);}
+	inline constexpr auto bot_right()const{return vector(this->x.high,this->y.high);}
 
 	inline constexpr auto width()const{return this->x.high-this->x.low;}
 	inline constexpr auto height()const{return this->y.high-this->y.low;}
@@ -163,56 +142,56 @@ struct rect
 	}
 
 	//! @brief Get a rect that is expanded in all directions
-	constexpr rect expanded(const type&_Expand)const{return rect(
-		this->x.low-_Expand,this->x.high+_Expand,this->y.low-_Expand,this->y.high+_Expand
+	constexpr rect expanded(type const&expand)const{return rect(
+		this->x.low-expand,this->x.high+expand,this->y.low-expand,this->y.high+expand
 	);}
 
 	//! @brief Expand this rect in all directions
-	constexpr rect expand(const type&_Expand){
-		this->x.low-=_Expand,this->y.low-=_Expand;
-		this->x.high+=_Expand,this->y.high+=_Expand;
+	constexpr rect expand(type const&expand){
+		this->x.low-=expand,this->y.low-=expand;
+		this->x.high+=expand,this->y.high+=expand;
 		return *this;
 	}
 
 	//! @brief Get a rect that is Scaled from the center
-	constexpr rect scaled(const type&_Scale)const{
-		return rect(this->y.scaled(_Scale),this->y.scaled(_Scale));
+	constexpr rect scaled(type const& scale)const{
+		return rect(this->y.scaled(scale),this->y.scaled(scale));
 	}
 
 	//! @brief Scale this rect from the center
-	constexpr rect scale(const type&_Scale){
-		auto _Center=center(),
-				_Delta=_Scale*vector(this->x.high-this->x.low,this->y.high-this->y.low)/static_cast<type>(2); 
-		this->x.low =_Center.x-_Delta.x,this->y.low =_Center.y-_Delta.y;
-		this->x.high=_Center.x+_Delta.x,this->y.high=_Center.y+_Delta.y;
+	constexpr rect scale(type const& scale){
+		auto c=center(),
+             d=scale*vector(this->x.high-this->x.low,this->y.high-this->y.low)/static_cast<type>(2);
+		this->x.low =c.x-d.x,this->y.low =c.y-d.y;
+		this->x.high=c.x+d.x,this->y.high=c.y+d.y;
 		return *this;
 	}
 
 	//! @brief Shift by an offset vector
-	inline constexpr auto operator+(const vector& _Offset)const{return rect(this->x.low+_Offset.x,this->x.high+_Offset.x,this->y.low+_Offset.y,this->y.high+_Offset.y); }
+	inline constexpr rect operator+(vector const& offset)const{return {this->x.low+offset.x,this->x.high+offset.x,this->y.low+offset.y,this->y.high+offset.y}; }
 
 	// Rect Functions
 
-	constexpr bool operator()(const vector&_Position)const{return x(_Position.x)&&y(_Position.y);}
-	constexpr bool operator[](const vector&_Position)const{return x[_Position.x]&&y[_Position.y];}
+	constexpr bool operator()(vector const&p)const{return x(p.x)&&y(p.y);}
+	constexpr bool operator[](vector const&p)const{return x[p.x]&&y[p.y];}
 	
-	constexpr bool operator[](const rect&_Rect)const{return x[_Rect.x.low]&&x[_Rect.x.high]&&y[_Rect.y.low]&&y[_Rect.y.high];}
+	constexpr bool operator[](rect const& r)const{return x[r.x.low]&&x[r.x.high]&&y[r.y.low]&&y[r.y.high];}
 
 	//! @brief Check if position is within [xmin,xmax) and [ymin,ymax).
-	constexpr bool closed_lower(const vector&_Position)const{return x.closed_lower(_Position.x)&&y.closed_lower(_Position.y);}
+	constexpr bool closed_lower(vector const&p)const{return x.closed_lower(p.x)&&y.closed_lower(p.y);}
 
 	//! @brief Check if position is within (xmin,xmax] and (ymin,ymax].
-	constexpr bool closed_upper(const vector&_Position)const{return x.closed_upper(_Position.x)&&y.closed_upper(_Position.y);}
+	constexpr bool closed_upper(vector const&p)const{return x.closed_upper(p.x)&&y.closed_upper(p.y);}
 
-	inline constexpr auto clamp(const vector&_Vector)const{return vector(x.clamp(_Vector.x),y.clamp(_Vector.y));}
+	inline constexpr auto clamp(vector const& p)const{return vector(x.clamp(p.x),y.clamp(p.y));}
 
-	inline constexpr auto operator*(const type&_Right)const{return rect(this->x.low*_Right,this->x.high*_Right,this->y.low*_Right,this->y.high*_Right);}
-	inline constexpr auto operator*(const vector&_Right)const{return rect(this->x.low*_Right.x,this->x.high*_Right.x,this->y.low*_Right.y,this->y.high*_Right.y);}
+	inline constexpr rect operator*(type   const& r)const{return {this->x.low*r,this->x.high*r,this->y.low*r,this->y.high*r};}
+	inline constexpr rect operator*(vector const& r)const{return {this->x.low*r.x,this->x.high*r.x,this->y.low*r.y,this->y.high*r.y};}
 
-	inline constexpr auto operator/(const type&_Right)const{return rect(this->x.low/_Right,this->x.high/_Right,this->y.low/_Right,this->y.high/_Right);}
-	inline constexpr auto operator/(const vector&_Right)const{return rect(this->x.low/_Right.x,this->x.high/_Right.x,this->y.low/_Right.y,this->y.high/_Right.y);}
+	inline constexpr rect operator/(type   const& r)const{return {this->x.low/r,this->x.high/r,this->y.low/r,this->y.high/r};}
+	inline constexpr rect operator/(vector const& r)const{return {this->x.low/r.x,this->x.high/r.x,this->y.low/r.y,this->y.high/r.y};}
 
-	inline constexpr bool valid()const{return x.valid()&&y.valid();}
+	NO_DISCARD inline constexpr bool valid()const{return x.valid()&&y.valid();}
 
 	constexpr bool operator==(rect const&) const = default;
 

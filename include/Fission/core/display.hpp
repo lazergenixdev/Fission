@@ -26,10 +26,7 @@ struct Display_Mode {
 
 enum Display_Index_: int
 {
-	Display_Index_Primary = 0,
-
-	//! @brief Set in a window's properties for it to determine
-	//!        it's monitor automatically based on where the window is.
+	Display_Index_Primary   = 0,
 	Display_Index_Automatic = -1,
 };
 
@@ -40,15 +37,15 @@ struct Display : public platform::Display
 	int name_count;
 	rs32 rect;
 
-	string name() const noexcept { return {name_buffer, (u64)name_count}; }
+	string name() const noexcept { return {name_buffer, (size_t)name_count}; }
 
-	Display_Mode current_mode() const;
+	auto current_mode() const -> Display_Mode;
 
-	/*
-	std::vector<Display_Mode> supported_display_modes();
-	bool set_display_mode(const Display_Mode *);
-	bool revert_display_mode();
-	*/
+	auto supported_display_modes() const -> array<Display_Mode>;
+
+	auto set_display_mode(const Display_Mode *) -> bool; // TODO: Move to Window?
+	
+	auto revert_display_mode() -> bool;
 };
 
 __FISSION_END__

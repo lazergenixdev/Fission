@@ -39,7 +39,7 @@ def main():
 				if is_shader_ext(ext):
 					shader_file_path = os.path.join(root, f);
 					print(f)
-					r = os.system(f"{COMPILER} {shader_file_path}")
+					r = os.system(f"{COMPILER} -O {shader_file_path}")
 					if  r == 0:
 						os.system(f"{FILE_TO_CPP} a.spv {shader_file_path}.inl")
 					else:

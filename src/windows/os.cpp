@@ -1,7 +1,30 @@
 #include <Fission/core/engine.hpp>
-#include <Fission/core/log.hpp>
+#include <format.hpp>
 
 using namespace fs;
+
+struct Console_Window {
+    HANDLE output;
+    Console_Window() {
+        AllocConsole();
+        FILE* new_stream;
+        freopen_s(&new_stream, "CONOUT$", "w", stdout);
+        output = GetStdHandle(STD_OUTPUT_HANDLE);
+    }
+    static Console_Window get() {
+        static Console_Window console;
+        return console;
+    }
+    void write(int level, std::string const& message) {
+        WORD attr = FOREGROUND_INTENSITY;
+        if (level == log::Info)  attr |= FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+        if (level == log::Debug) attr  = FOREGROUND_BLUE | FOREGROUND_INTENSITY;
+        if (level == log::Warn)  attr  = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY;
+        if (level == log::Error) attr  = FOREGROUND_RED | FOREGROUND_INTENSITY;
+        SetConsoleTextAttribute(output, attr);
+        printf("%s", message.c_str());
+    }
+};
 
 void os::log(int level, string const& message)
 {
@@ -12,13 +35,17 @@ void os::log(int level, string const& message)
     SYSTEMTIME lt;
     GetLocalTime(&lt);
 
-    auto buffer = std::format("{:02}:{:02}:{:02}.{:03}   {:>9}   {}\n",
+    auto buffer = format("{:02}:{:02}:{:02}.{:03}   {:>9}   {}\n",
         lt.wHour, lt.wDay, lt.wSecond, lt.wMilliseconds,
         level_strings[level], message.view()
     );
 
-    OutputDebugStringA(buffer.c_str());
     engine.logger.file << buffer;
+#if 0
+#else
+    OutputDebugStringA(buffer.c_str());
+    Console_Window::get().write(level, buffer);
+#endif
 }
 
 void os::show_error_dialog(fs::string const& title, fs::string const& message)

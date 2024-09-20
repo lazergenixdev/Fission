@@ -1,4 +1,40 @@
---include 'scripts/premake-android.lua'
+
+VULKAN_SDK = os.getenv("VULKAN_SDK")
+if VULKAN_SDK == nil then
+    error("Must have Vulkan SDK installed")
+end
+
+if _ACTION == 'android-studio' then
+	gradleversion 'com.android.tools.build:gradle:8.6.0'
+	gradlewrapper {
+		'distributionUrl=https://services.gradle.org/distributions/gradle-8.10.1-bin.zip'
+	}
+    gradleproperties {
+        'android.useAndroidX=true',
+    }
+	assetpacks { ['pack'] = 'install-time', }
+	androidnamespace (settings.namespace)
+	androidminsdkversion '34'
+	androidsdkversion '34'
+    -- fuck you android!
+    androidbuildsettings {
+        [[configurations.all {
+            resolutionStrategy {
+                force 'org.jetbrains.kotlin:kotlin-stdlib:1.8.22'
+                force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22'
+                force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22'
+            }
+        }]],
+    }
+    --androidabis {
+    --    'armeabi-v7a',
+    --    'arm64-v8a',
+    --    'x86',
+    --    'x86_64'
+    --}
+elseif _ACTION == 'vs2022' then
+    architecture 'x86_64'
+end
 
 -- Example:
 --   settings = {
@@ -26,6 +62,7 @@ end
 settings.fission_location = path.translate(path.getdirectory(_SCRIPT), '/')
 printf ('Fission location "%s"', settings.fission_location)
 
+location (settings.build_location)
 
 defines { ('__TITLE__=\"%s\"'):format(settings.title) }
 
@@ -36,54 +73,46 @@ kind 'StaticLib'
 targetdir (settings.target_location)
 
 includedirs { 'include', 'src' }
+includedirs { VULKAN_SDK .. '/Include' }
 files { 'include/**' }
 files { 'src/*.cpp', 'src/*.hpp' }
 
 if _ACTION == 'android-studio' then
 
-    files { 'src/android/activity.cpp', }
+    files { 'src/android/*.cpp', }
     links { 'log', 'android', 'vulkan' }
 
 	-- #define __ANDROID_NAMESPACE__  some.given.namespace
     defines { ('__ANDROID_NAMESPACE__=%s'):format(settings.namespace:gsub('%.', '_')) }
 
 else -- Windows
-    VULKAN_SDK = os.getenv("VULKAN_SDK")
-    if VULKAN_SDK == nil then
-        error("Must have Vulkan SDK installed")
-    end
-
-    includedirs { 'include', VULKAN_SDK .. '/Include' }
+    buildoptions { '/utf-8' }
     files { 'src/windows/**' }
 	libdirs { '%{VULKAN_SDK}/Lib' }
 	links {
-		'vulkan-1',
+        'vulkan-1',
 	}
 end
 
 fission = function ()
 	links { 'Fission' }
     includedirs { '%{settings.fission_location}/include' }
-    if VULKAN_SDK then
-        includedirs { VULKAN_SDK .. '/Include' }
-    --  libdirs { '%{VULKAN_SDK}/Lib' }
-    end
-	--links (fission_links)
+    includedirs { VULKAN_SDK .. '/Include' }
+    buildoptions { '/utf-8' }
 end
 
 android = function (info)
     if _ACTION ~= 'android-studio' then return end;
 
     -- Vulkan Validation Layers
-    local cmd = os.translateCommands (
-		'{COPYDIR} '
-	..	settings.fission_location
-	..	'/src/android/jniLibs/ '
-	..	settings.build_location
-	..	'/%{prj.name}/src/main/jniLibs'
-	)
     term.pushColor (term.blue)
     print 'Copying Vulkan Validation Layers...'
+    local src = '%[' .. settings.fission_location .. '/src/android/jniLibs/]'
+    local dst = '%[' .. settings.build_location .. '/%{prj.name}/src/main/jniLibs]'
+    local cmd = '{COPYDIR} ' .. src .. ' ' .. dst
+    --prebuildcommands (cmd)
+    
+    local cmd = os.translateCommands ( '{COPYDIR} ' .. settings.fission_location .. '/src/android/jniLibs/ ../' .. settings.build_location .. '/' .. info.name .. '/src/main/jniLibs' )
     os.execute (cmd)
     term.popColor ()
 
@@ -92,10 +121,12 @@ android = function (info)
     print 'Generating Activity.java...'
     os.execute (
         string.format (
-            "python ../Engine/scripts/template.py ../Engine/android/MainActivity.template.java \"{'name': '%s', 'namespace': '%s'}\" -O \"%s\"",
+            "python %s/scripts/template.py %s/src/android/MainActivity.template.java \"{'name': '%s', 'namespace': '%s'}\" -O \"%s\"",
+            settings.fission_location,
+            settings.fission_location,
             info.name,
             settings.namespace,
-            '../' .. settings.build_location .. '/%{prj.name}/src/java/'
+            '../' .. settings.build_location .. '/' .. info.name .. '/src/java/'
         )
     )
     term.popColor ()
@@ -115,9 +146,13 @@ android = function (info)
     files { settings.fission_location .. '/src/android/AndroidManifest.xml' }
     files { settings.fission_location .. '/src/android/res/**' }
 
-    buildoptions { '-std=c++17' }
+    --buildoptions { '-std=c++17' }
     androiddependencies {
         'androidx.appcompat:appcompat:1.7.0'
     }
     assetpackdependencies { 'pack' }
+    
+    assetdirs {
+        settings.fission_location .. "/resources",    
+    }
 end
