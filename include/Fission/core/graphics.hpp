@@ -97,8 +97,9 @@ struct Graphics
 	inline constexpr v2u32 size() const {
 		u32 w = sc_extent.width;
 		u32 h = sc_extent.height;
-		return (sc_transform & (VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR|VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR))?
-			v2u32{h, w} : v2u32{w, h};
+		return sc_transform
+		& (VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR|VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR)
+		? v2u32{h, w} : v2u32{w, h};
 	}
 
 	inline constexpr v2f32 render_size() const {
@@ -106,12 +107,6 @@ struct Graphics
 		auto y = float(sc_extent.height);
 		return { x, y };
 	}
-
-#if defined(FISSION_PLATFORM_WINDOWS) || defined(FISSION_PLATFORM_LINUX)
-	static constexpr int max_sc_images = 4;
-#elif defined(FISSION_PLATFORM_ANDROID)
-	static constexpr int max_sc_images = 16;
-#endif
 
 	VkInstance       instance         {};
 	VkPhysicalDevice physical_device  {};
@@ -125,11 +120,11 @@ struct Graphics
 	VkExtent2D        sc_extent       {};
 	VkFormat          sc_format       {};
 	VkImageUsageFlags sc_image_usage  {};
-    u32               sc_image_count  {};
+    u32               sc_image_count  {0};
     VkPresentModeKHR  sc_present_mode {};
     VkSurfaceTransformFlagBitsKHR sc_transform {};
-    VkImage           sc_images       [max_sc_images] {};
-	VkImageView       sc_image_views  [max_sc_images] {};
+    VkImage*          sc_images       {};
+	VkImageView*      sc_image_views  {};
 
 	// Main graphics command pool
 	VkCommandPool    command_pool {};

@@ -524,14 +524,23 @@ bool Graphics::create_sc_image_views()
 {
 	log::debug("Creating Vulkan swap chain image views...");
 
+	u32 old_image_count = sc_image_count;
+
 	check(vkGetSwapchainImagesKHR(device, swap_chain, &sc_image_count, nullptr),
 		  "vkGetSwapchainImagesKHR failed");
 
 	log::debug(format(" - Number of swap chain images: {}", sc_image_count));
 
-	if (sc_image_count > max_sc_images) {
-		log::error(format("Swap chain image count {} > {}", sc_image_count, max_sc_images));
-		return true;
+	// Allocate space for swap chain images
+	if (sc_image_count > old_image_count) {
+		if (sc_images) FISSION_DEFAULT_FREE(sc_images);
+
+		bump_allocator bump {sc_image_count * size_of<VkImage,VkImageView>};
+	
+		sc_images      = bump.alloc<VkImage>    (sc_image_count);
+		sc_image_views = bump.alloc<VkImageView>(sc_image_count);
+
+		bump.release(); // we will track the memory
 	}
 
 	check(vkGetSwapchainImagesKHR(device, swap_chain, &sc_image_count, sc_images),

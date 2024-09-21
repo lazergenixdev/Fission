@@ -42,7 +42,7 @@ auto Window::create (Window_Create_Info const& info) -> bool
     else log::verbose(PLATFORM_"Registered window class");
 
     Window_Style style {
-        WS_MINIMIZEBOX | WS_SYSMENU | WS_CAPTION,
+        WS_MINIMIZEBOX | WS_SYSMENU | WS_CAPTION | WS_THICKFRAME,
         0
     };
 

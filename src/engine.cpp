@@ -56,22 +56,34 @@ auto Engine::create_layers() -> bool
         .create(&overlay_render_pass),
         "Failed to create render pass");
 
-    VkFramebufferCreateInfo frame_buffer_info {
-        .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-        .renderPass = overlay_render_pass,
-        .attachmentCount = 1,
-        .width = graphics.sc_extent.width,
-        .height = graphics.sc_extent.height,
-        .layers = 1,
-    };
-
-    for_n (graphics.sc_image_count) {
-        frame_buffer_info.pAttachments = graphics.sc_image_views + i;
-        check(vkCreateFramebuffer(graphics.device, &frame_buffer_info, nullptr, frame_buffers + i),
-              "Failed to create frame buffer");
-    }
+	create_frame_buffers(0);
 
     return false;
+}
+
+auto Engine::create_frame_buffers(u32 old_count) -> bool
+{
+	if (graphics.sc_image_count > old_count) {
+		bump_allocator {graphics.sc_image_count * sizeof(VkFramebuffer)}
+			.alloc_to(frame_buffers, graphics.sc_image_count)
+			.release();
+	}
+
+	VkFramebufferCreateInfo frame_buffer_info {
+		.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+		.renderPass = overlay_render_pass,
+		.attachmentCount = 1,
+		.width  = graphics.sc_extent.width,
+		.height = graphics.sc_extent.height,
+		.layers = 1,
+	};
+
+	for_n (graphics.sc_image_count) {
+		frame_buffer_info.pAttachments = graphics.sc_image_views + i;
+		vkCreateFramebuffer(graphics.device, &frame_buffer_info, nullptr, frame_buffers + i);
+	}
+
+	return false;
 }
 
 #undef check
@@ -83,8 +95,9 @@ void Engine::destroy()
     if (engine.render_thread) os_thread_join(engine.render_thread);
 	vkDeviceWaitIdle(graphics.device);
 	current_scene->~Scene();
-	for (auto& frame_buffer: frame_buffers)
-		vkDestroyFramebuffer(graphics.device, frame_buffer, nullptr);
+	for_n (graphics.sc_image_count)
+		vkDestroyFramebuffer(graphics.device, frame_buffers[i], nullptr);
+	FISSION_DEFAULT_FREE(frame_buffers);
 	vkDestroyRenderPass(graphics.device, overlay_render_pass, nullptr);
     graphics.destroy();
 }
@@ -358,19 +371,9 @@ void Engine::resize() {
 
     // Create
     g.create_swap_chain();
+
+	u32 old_image_count = g.sc_image_count;
     g.create_sc_image_views();
 
-    VkFramebufferCreateInfo frame_buffer_info {
-            .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-            .renderPass = overlay_render_pass,
-            .attachmentCount = 1,
-            .width = g.sc_extent.width,
-            .height = g.sc_extent.height,
-            .layers = 1,
-    };
-
-    for_n (g.sc_image_count) {
-        frame_buffer_info.pAttachments = g.sc_image_views + i;
-        vkCreateFramebuffer(g.device, &frame_buffer_info, nullptr, frame_buffers + i);
-    }
+	create_frame_buffers(old_image_count);
 }

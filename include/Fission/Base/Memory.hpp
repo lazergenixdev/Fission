@@ -51,6 +51,12 @@ struct bump_allocator
 		return reinterpret_cast<T*>(ptr);
 	}
 
+	template <typename T>
+	bump_allocator& alloc_to(T*& destination, u64 count) {
+		destination = alloc<T>(count);
+		return *this;
+	}
+
 	bump_allocator() = default;
 	bump_allocator(u64 initial_capacity)
 	:	base(reinterpret_cast<u8*>(FISSION_DEFAULT_ALLOC(initial_capacity))),

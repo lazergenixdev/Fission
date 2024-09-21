@@ -105,7 +105,7 @@ struct Engine
 	// Engine overlay's render pass, expects current
 	//	swap chain image to be in layout: COLOR_ATTACHMENT_OPTIMAL
 	VkRenderPass         overlay_render_pass;
-	VkFramebuffer        frame_buffers[Graphics::max_sc_images];
+	VkFramebuffer*       frame_buffers;
 
 	Renderer_2D          renderer_2d;
 	Textured_Renderer_2D textured_renderer_2d;
@@ -178,6 +178,7 @@ private:
 
 	void resize ();
 	auto create_layers () -> bool;
+	auto create_frame_buffers (u32 old_count) -> bool;
 };
 
 __FISSION_END__

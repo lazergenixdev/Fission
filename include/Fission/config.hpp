@@ -236,6 +236,9 @@ struct _size_of_n<i, T> {
 template <int i, typename...T>
 static constexpr u32 size_of_n = _size_of_n<i, T...>::value;
 
+template <typename...T>
+static constexpr u32 size_of = _size_of_n<sizeof...(T), T...>::value;
+
 __FISSION_END__
 
 /**
