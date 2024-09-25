@@ -14,15 +14,13 @@ Fission uses the following dependencies:
 Most of which are header only and do not need any setup.
 
 # Building from Source
-| Platform | Is Supported ?  |
-| -------- | --------------- |
-| Windows  | ✔ Yes           |
-| Linux    | ❌ No WIP       |
-| Andriod  | ✔ Yes           |
-| MacOS    | ❌ No time soon |
-| IOS      | ❌ No time soon |
-
-note: There will very likely not be another platform supported until my game is mostly done
+| Platform | Is Supported ?        |
+| -------- | --------------------- |
+| Windows  | ✔ Yes                 |
+| Linux    | ✔ Yes (needs testing) |
+| Andriod  | ✔ Yes                 |
+| MacOS    | ❌ No time soon       |
+| IOS      | ❌ No time soon       |
 
 ## 0. Prerequisite programs/libs to have already installed
 | Program/Lib | Target Platform | Why |
