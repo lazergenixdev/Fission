@@ -146,12 +146,10 @@ auto Engine::render_frame() -> bool
 		flags &= ~fChange_Scene;
 	}
 #endif
-#if 0
-	unlikely if (flags & fGraphics_Recreate_Swap_Chain) {
+	unlikely if (flags & Graphics_Recreate_Swap_Chain) {
 		resize();
-		flags &= ~fGraphics_Recreate_Swap_Chain;
+		flags &=~ Graphics_Recreate_Swap_Chain;
 	}
-#endif
 #if 0
 #if defined(FISSION_PLATFORM_WINDOWS)
 		auto timer = CreateWaitableTimerExW(NULL, NULL, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);

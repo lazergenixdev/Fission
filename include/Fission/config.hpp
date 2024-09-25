@@ -16,7 +16,7 @@
 // Macro Helpers
 
 #define MACRO_EXPAND(X) X
-#define MACRO_STRING(X) #X
+#define MACRO_STRING(...) #__VA_ARGS__
 #define MACRO_STRING_EXPAND(X) MACRO_STRING(X)
 #define MACRO_JOIN(A,B) A ## B
 #define MACRO_JOIN_EXPAND(A,B) MACRO_JOIN(A,B)

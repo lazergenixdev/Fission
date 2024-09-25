@@ -19,27 +19,40 @@ namespace os {
     pthread_join(thread, nullptr)
 /////////////////////////////////////////////////////
 
+#define OS_CALL
 
-#if 0
-#include <xcb/xcb.h>
-#include <xcb/xcb_keysyms.h>
+#define FISSION_PLATFORM_VULKAN_EXTENSION_NAMES \
+    "VK_KHR_wayland_surface"
+//    "VK_KHR_xcb_surface", \
+//    "VK_KHR_xlib_surface"
+
+#define _os_main() \
+int main(int argc, char* argv[])
+
 #include <thread>
 #include <vector>
+
+struct GLFWwindow;
+
 __FISSION_BEGIN__
-namespace platform {
+
+namespace platform
+{
     struct Instance {
-        Instance(int argc, char* argv[]):
-            argv(argv+0, argv+argc)
-        {}
-        std::vector<const char*> argv;
+    //    Instance(int argc, char* argv[]):
+    //        argv(argv+0, argv+argc)
+    //    {}
+    //    std::vector<const char*> argv;
     };
-    struct Window_Impl {
-        std::thread       _thread;
-        xcb_connection_t* _connection;
-        xcb_screen_t*     _screen;
-        xcb_window_t      _id;
+
+    struct Window {
+        GLFWwindow* _glfw_window;
     };
-    struct Display_Impl {};
+
+    struct Display {
+
+    };
 }
+
 __FISSION_END__
-#endif
+

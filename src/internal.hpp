@@ -1,4 +1,5 @@
 #include <Fission/core/engine.hpp>
+#include <format.hpp>
 #include <inttypes.h>
 
 #if defined(FISSION_PLATFORM_WINDOWS)

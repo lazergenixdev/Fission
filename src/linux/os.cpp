@@ -1,41 +1,67 @@
-#include "common.hpp"
-#include <engine.hpp>
+#include <Fission/core/engine.hpp>
+#include <ctime>
+#include <format.hpp>
 #include <GLFW/glfw3.h>
+#include <internal.hpp>
+#include <time.h>
 
-namespace os
-{
-	void initialize() {
-		gfx.create();
-	}
+using namespace fs;
 
-	void shutdown() {
-		gfx.destroy();
-	}
+void os::log(int level, string const& message) {
+    static constexpr char const * level_strings [] {
+        "VERBOSE", "DEBUG", "INFO", "WARN", "ERROR"
+    };
 
-	void show_dialog(char const* title, char const* message) {
-        // not implemented
-	}
+    static constexpr char const * level_colors [] {
+        "\033[90m", "\033[96m", "\033[0m", "\033[93m", "\033[91m"
+    };
+
+    time_t rawtime;
+    time(&rawtime);
+
+    struct tm* lt = localtime(&rawtime);
+
+    auto buffer = fmt::format("{}{:02}:{:02}:{:02}.{:03}   {:>9}   {}{}\n",
+            level_colors[level],
+            lt->tm_hour, lt->tm_min, lt->tm_sec, 0,
+            level_strings[level], message.view(), "\033[0m"
+            );
+
+    printf("%s", buffer.c_str());
 }
 
-void create_window()
-{
-    engine.window = glfwCreateWindow(1600, 900, __TITLE__, nullptr, nullptr);
+void os::show_error_dialog(string const&, string const&) {
+    // not implemented
 }
 
-int main(int argc, char* argv[])
-{
-    glfwInit();
-    create_window();
+__FISSION_BEGIN__
+    
+inline struct timespec temp;
+#define nb 1'000'000'000
 
-	os_create_mutex(engine.render_lock);
-    pthread_create(&engine.main_thread, nullptr, linux_main, nullptr);
-
-    if (!glfwWindowShouldClose(engine.window))
-        glfwPollEvents();
-
-    pthread_join(engine.main_thread, nullptr);
-	os_destroy_mutex(engine.render_lock);
-
-    glfwTerminate();
+auto timestamp() -> s64 {
+    clock_gettime(CLOCK_MONOTONIC, &temp);
+    return temp.tv_sec * nb + temp.tv_nsec; // <- this is fucking garbage
 }
+
+auto seconds_elasped_and_reset(s64& last) -> f64 {
+    auto current = timestamp();
+    auto duration = double(current - last) / 1e9;
+    last = current;
+    return duration;
+}
+
+void Engine::run() {
+    log::verbose("(Linux) starting message loop...");
+
+    log::verbose(fmt::format("window = {}", (void*)engine.window._glfw_window));
+
+    while (!glfwWindowShouldClose(engine.window._glfw_window))
+        glfwWaitEvents();
+
+    // invalidate main window
+    //engine.window._handle = NULL;
+}
+
+__FISSION_END__
 

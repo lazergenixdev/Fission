@@ -1,7 +1,9 @@
 
-VULKAN_SDK = os.getenv("VULKAN_SDK")
-if VULKAN_SDK == nil then
-    error("Must have Vulkan SDK installed")
+if os.target() == 'windows' then
+    VULKAN_SDK = os.getenv("VULKAN_SDK")
+    if VULKAN_SDK == nil then
+        error("Must have Vulkan SDK installed")
+    end
 end
 
 if _ACTION == 'android-studio' then
@@ -63,6 +65,7 @@ settings.fission_location = path.translate(path.getdirectory(_SCRIPT), '/')
 printf ('Fission location "%s"', settings.fission_location)
 
 location (settings.build_location)
+targetdir (settings.build_location .. '/' .. settings.target_location)
 
 defines { ('__TITLE__=\"%s\"'):format(settings.title) }
 
@@ -70,10 +73,10 @@ project 'Fission'
 
 kind 'StaticLib'
 
-targetdir (settings.target_location)
-
 includedirs { 'include', 'src' }
-includedirs { VULKAN_SDK .. '/Include' }
+if VULKAN_SDK then
+    includedirs { VULKAN_SDK .. '/Include' }
+end
 files { 'include/**' }
 files { 'src/*.cpp', 'src/*.hpp' }
 
@@ -85,20 +88,27 @@ if _ACTION == 'android-studio' then
 	-- #define __ANDROID_NAMESPACE__  some.given.namespace
     defines { ('__ANDROID_NAMESPACE__=%s'):format(settings.namespace:gsub('%.', '_')) }
 
-else -- Windows
+elseif os.target() == 'windows' then
     buildoptions { '/utf-8' }
     files { 'src/windows/**' }
 	libdirs { '%{VULKAN_SDK}/Lib' }
 	links {
         'vulkan-1',
 	}
+else
+    files { 'src/linux/**' }
 end
 
 fission = function ()
 	links { 'Fission' }
     includedirs { '%{settings.fission_location}/include' }
-    includedirs { VULKAN_SDK .. '/Include' }
-    buildoptions { '/utf-8' }
+    if os.target() == 'windows' then
+        buildoptions { '/utf-8' }
+        includedirs { VULKAN_SDK .. '/Include' }
+    else
+        defines { 'GLFW_INCLUDE_NONE' }
+        links { 'vulkan', 'glfw' }
+    end
 end
 
 android = function (info)

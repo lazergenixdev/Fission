@@ -1,5 +1,5 @@
 MAJOR(0)
-MINOR(9)
+MINOR(10)
 PATCH(0)
 COPYRIGHT("2021-2025")
 COMPANY("Lazergenix Software")

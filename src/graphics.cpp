@@ -3,7 +3,9 @@
 #include <Fission/graphics/util.hpp>
 #include <format.hpp>
 #include <numeric>
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/rotate_normalized_axis.hpp>
+#include <GLFW/glfw3.h>
 
 using fmt::format;
 using namespace fs;
@@ -204,6 +206,8 @@ auto Graphics::create_instance(bool debug) -> bool
     return false;
 }
 
+GLFWwindow* wnd = nullptr;
+
 auto Graphics::create_surface(Window* window) -> bool
 {
     log::debug("Creating Vulkan surface...");
@@ -229,8 +233,13 @@ auto Graphics::create_surface(Window* window) -> bool
           "Failed to create surface!");
 
 #elif defined(FISSION_PLATFORM_LINUX)
+    
+    check(glfwCreateWindowSurface(instance, window->_glfw_window, nullptr, &surface),
+          "Failed to create surface!");
 
 #endif
+
+    wnd = window->_glfw_window;
 
     return false;
 }
@@ -274,6 +283,7 @@ auto Graphics::pick_physical_device() -> bool
 			max_score = score;
 		}
 	}
+    physical_device = physical_devices[1];
 
 	for (auto&& [i, d]: enumerate(physical_devices)) {
 		VkPhysicalDeviceProperties properties;
@@ -335,7 +345,12 @@ bool Graphics::pick_queue_families()
 		}
 
 		VkBool32 supports_surface = false;
+#if 1
 		vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, i, surface, &supports_surface);
+#else
+        supports_surface = glfwGetPhysicalDevicePresentationSupport(instance, physical_device, i);
+#endif
+        log::verbose(format("supports {}", supports_surface));
 
 		if ((extra.queue_family.present == ~0u) && supports_surface)
 			extra.queue_family.present = i;
@@ -348,6 +363,14 @@ bool Graphics::pick_queue_families()
 		log::error("Failed to find suitable queue families");
 		return true;
 	}
+
+    log::verbose(format("Graphics: {}", q.graphics));
+    log::verbose(format("Transfer: {}", q.transfer));
+    log::verbose(format("Present: {}", q.present));
+
+    VkBool32 supported = VK_FALSE;
+    vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, q.present, surface, &supported);
+    log::verbose(format("present supported? {}", (bool)supported));
 
 	return false;
 }
@@ -382,6 +405,11 @@ bool Graphics::create_device(bool debug)
 	queue_family_set.add(extra.queue_family.graphics);
     queue_family_set.add(extra.queue_family.transfer);
 	queue_family_set.add(extra.queue_family.present);
+
+    log::verbose(format("Count = {}", queue_family_set.count));
+    for_n (queue_family_set.count) {
+        log::verbose(format("Queue {}: index = {}", i, queue_family_set.data[i].queueFamilyIndex));
+    }
 
 	const char* device_extensions[] = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
@@ -469,6 +497,8 @@ bool Graphics::create_swap_chain()
 	check(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &capabilities),
 		  "Failed to get Vulkan surface capabilities");
 
+    log::verbose(format("min, max = {}, {}", capabilities.minImageCount, capabilities.maxImageCount));
+
     u32 surface_format_count;
     check(vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &surface_format_count, nullptr),
           "Failed to enumerate surface formats");
@@ -499,6 +529,11 @@ bool Graphics::create_swap_chain()
         std::swap(sc_extent.width, sc_extent.height);
     }
 
+#ifdef FISSION_PLATFORM_LINUX
+    glfwGetFramebufferSize(wnd, (int*)&sc_extent.width, (int*)&sc_extent.height);
+#endif
+    log::debug(format(" - size: {}x{}", sc_extent.width, sc_extent.height));
+
 	VkSwapchainCreateInfoKHR swap_chain_info {
 		.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
 		.surface = surface,
@@ -509,7 +544,7 @@ bool Graphics::create_swap_chain()
 		.imageArrayLayers = 1, /* For non-stereoscopic-3D applications, this value is 1 */
 		.imageUsage = FISSION_DEFAULT_SWAP_CHAIN_USAGE,
 		.preTransform = sc_transform,
-		.compositeAlpha = (VkCompositeAlphaFlagBitsKHR)capabilities.supportedCompositeAlpha,
+		.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR, // <-- TODO: fix this
 		.presentMode = VK_PRESENT_MODE_FIFO_KHR, // TODO: this needs to be configurable
 		.clipped = VK_TRUE, /* "... allows more efficient presentation methods to be used on some platforms." */
 	};
