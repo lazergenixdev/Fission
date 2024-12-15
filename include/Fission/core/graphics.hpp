@@ -164,7 +164,7 @@ private:
     bool pick_queue_families    ();
     bool create_device          (bool debug);
     bool create_allocator       ();
-    bool create_swap_chain      ();
+    bool create_swap_chain      (struct Window* window);
     bool create_sc_image_views  ();
     bool create_command_buffers ();
     bool create_sync_objects    ();

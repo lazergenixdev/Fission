@@ -63,10 +63,6 @@ namespace math
             // x = q * y + r   with  0 <= r < y (generally)
             return x - (q - f) * y;
         }
-
-        if constexpr (std::is_integral_v<T>) {
-            static_assert(false, "Integer mod is not implemented");
-        }
     }
 
     struct noop_library

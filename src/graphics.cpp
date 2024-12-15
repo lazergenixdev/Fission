@@ -1,11 +1,13 @@
 #define VMA_IMPLEMENTATION
-#include <internal.hpp>
+#include "internal.hpp"
 #include <Fission/graphics/util.hpp>
 #include <format.hpp>
 #include <numeric>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/rotate_normalized_axis.hpp>
+#if defined(FISSION_PLATFORM_LINUX)
 #include <GLFW/glfw3.h>
+#endif
 
 using fmt::format;
 using namespace fs;
@@ -82,16 +84,16 @@ auto Graphics::create (Graphics_Create_Info const& info) -> bool
 {
 	log::verbose("Creating Graphics...");
 
-    if (create_instance(info.debug)) return true;
-    if (create_surface(info.window)) return true;
-    if (pick_physical_device())      return true;
-    if (pick_queue_families())       return true;
-    if (create_device(info.debug))   return true;
-    if (create_allocator())          return true;
-    if (create_swap_chain())         return true;
-    if (create_sc_image_views())     return true;
-    if (create_command_buffers())    return true;
-    if (create_sync_objects())       return true;
+    if (create_instance(info.debug))    return true;
+    if (create_surface(info.window))    return true;
+    if (pick_physical_device())         return true;
+    if (pick_queue_families())          return true;
+    if (create_device(info.debug))      return true;
+    if (create_allocator())             return true;
+    if (create_swap_chain(info.window)) return true;
+    if (create_sc_image_views())        return true;
+    if (create_command_buffers())       return true;
+    if (create_sync_objects())          return true;
 
     return false;
 }
@@ -206,8 +208,6 @@ auto Graphics::create_instance(bool debug) -> bool
     return false;
 }
 
-GLFWwindow* wnd = nullptr;
-
 auto Graphics::create_surface(Window* window) -> bool
 {
     log::debug("Creating Vulkan surface...");
@@ -238,8 +238,6 @@ auto Graphics::create_surface(Window* window) -> bool
           "Failed to create surface!");
 
 #endif
-
-    wnd = window->_glfw_window;
 
     return false;
 }
@@ -283,7 +281,7 @@ auto Graphics::pick_physical_device() -> bool
 			max_score = score;
 		}
 	}
-    physical_device = physical_devices[1];
+    physical_device = physical_devices[0];
 
 	for (auto&& [i, d]: enumerate(physical_devices)) {
 		VkPhysicalDeviceProperties properties;
@@ -489,7 +487,7 @@ size_t pick_surface_format(std::vector<VkSurfaceFormatKHR> const& formats) {
 	return index;
 }
 
-bool Graphics::create_swap_chain()
+bool Graphics::create_swap_chain(Window* window)
 {
 	log::debug("Creating Vulkan swap chain...");
 
@@ -530,7 +528,7 @@ bool Graphics::create_swap_chain()
     }
 
 #ifdef FISSION_PLATFORM_LINUX
-    glfwGetFramebufferSize(wnd, (int*)&sc_extent.width, (int*)&sc_extent.height);
+    glfwGetFramebufferSize(window->_glfw_window, (int*)&sc_extent.width, (int*)&sc_extent.height);
 #endif
     log::debug(format(" - size: {}x{}", sc_extent.width, sc_extent.height));
 
