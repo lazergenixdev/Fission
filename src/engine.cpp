@@ -368,7 +368,7 @@ void Engine::resize() {
     for_n (g.sc_image_count) vkDestroyFramebuffer(g.device, frame_buffers[i], nullptr);
 
     // Create
-    g.create_swap_chain();
+    g.create_swap_chain(&window);
 
 	u32 old_image_count = g.sc_image_count;
     g.create_sc_image_views();

@@ -42,7 +42,7 @@ inline auto win32_error_string(DWORD error_code) -> WCHAR* {
         FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL, error_code,
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPTSTR) &w_error_string,
+        (LPWSTR) &w_error_string,
         0, NULL );
 
     return w_error_string;
@@ -55,7 +55,7 @@ inline void report_error(fs::string const& function_name, fs::string const& mess
   auto w_description = win32_error_string(error_code);
   auto w_function_name = win32_to_wide_string(function_name);
   WCHAR* w_buffer =
-      (WCHAR*)LocalAlloc(0, (lstrlen(w_description) + 128) * sizeof(WCHAR));
+      (WCHAR*)LocalAlloc(0, (lstrlenW(w_description) + 128) * sizeof(WCHAR));
 
   {
       auto description =
