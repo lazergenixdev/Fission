@@ -5,9 +5,11 @@
 #include <numeric>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/rotate_normalized_axis.hpp>
-#if defined(FISSION_PLATFORM_LINUX)
+#if defined(FISSION_PLATFORM_LINUX) || defined(FISSION_PLATFORM_MACOS)
 #include <GLFW/glfw3.h>
 #endif
+
+// TODO: only do portability stuff when on MACOS
 
 using fmt::format;
 using namespace fs;
@@ -162,6 +164,7 @@ auto Graphics::create_instance(bool debug) -> bool
 	));
 
 	const char* extension_names[] = {
+        VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
 		VK_KHR_SURFACE_EXTENSION_NAME,
 		FISSION_PLATFORM_VULKAN_EXTENSION_NAMES,
 		VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
@@ -182,6 +185,7 @@ auto Graphics::create_instance(bool debug) -> bool
 	VkInstanceCreateInfo instance_info {
 		.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
 		.pNext = debug? &debug_utils_info:nullptr,
+        .flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR,
 		.pApplicationInfo = &application_info,
 		.enabledLayerCount = debug? 1u:0u,
 		.ppEnabledLayerNames = layer_names,
@@ -232,7 +236,7 @@ auto Graphics::create_surface(Window* window) -> bool
     check(vkCreateAndroidSurfaceKHR(instance, &surface_info, nullptr, &surface),
           "Failed to create surface!");
 
-#elif defined(FISSION_PLATFORM_LINUX)
+#elif defined(FISSION_PLATFORM_LINUX) || defined(FISSION_PLATFORM_MACOS)
     
     check(glfwCreateWindowSurface(instance, window->_glfw_window, nullptr, &surface),
           "Failed to create surface!");
@@ -410,6 +414,7 @@ bool Graphics::create_device(bool debug)
     }
 
 	const char* device_extensions[] = {
+        "VK_KHR_portability_subset",
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 	};
 

@@ -6,6 +6,8 @@
 #define PLATFORM_ "(Win32) "
 #elif defined(FISSION_PLATFORM_ANDROID)
 #define PLATFORM_ "(Android) "
+#elif defined(FISSION_PLATFORM_MACOS)
+#define PLATFORM_ "(MacOS) "
 #endif
 
 __FISSION_BEGIN__
