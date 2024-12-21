@@ -112,7 +112,7 @@
 // great job GCC, I'm so proud of you.
 	FISSION_DISABLE_WARNING("-Wunsafe-buffer-usage")
 
-// It's called "C-style cast", go fuck yourself
+// It's called "C-style cast", go fuck yourself <- I did not write this
 	FISSION_DISABLE_WARNING("-Wold-style-cast")
 
 // ????

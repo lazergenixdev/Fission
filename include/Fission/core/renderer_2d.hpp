@@ -10,6 +10,7 @@
  * @Development:  (https://github.com/lazergenixdev/Fission)
  * @License:      MIT (see end of file)
  */
+#if 0
 #pragma once
 #include <Fission/base/rect.hpp>
 #include <Fission/base/color.hpp>
@@ -628,3 +629,4 @@ __FISSION_END__
  *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *	SOFTWARE.
  */
+#endif

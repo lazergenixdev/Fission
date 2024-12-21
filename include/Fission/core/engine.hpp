@@ -17,7 +17,7 @@
 #include <Fission/core/layer.hpp>
 #include <Fission/core/scene.hpp>
 #include <Fission/base/version.hpp>
-#include <Fission/core/renderer_2d.hpp>
+#include <Fission/graphics/renderer_2d.hpp>
 #include <chrono>
 
 typedef struct FT_LibraryRec_* FT_Library;
@@ -29,7 +29,10 @@ namespace fs {
 extern fs::Engine engine;
 
 // ******************************************************************
-// user defined functions
+// user implemented functions
+// - App_Info()
+// - on_create()
+// - on_create_scene()
 
 struct App_Info {
 	fs::compressed_version version      = fs::make_compressed_version<0,1,0>;
@@ -45,6 +48,8 @@ extern auto on_create() -> fs::Defaults;
 // called after engine/graphics/window creation to load a new scene
 extern auto on_create_scene(fs::Scene_Key const& key) -> fs::Scene*;
 
+// ******************************************************************
+
 __FISSION_BEGIN__
 
 extern auto OS_CALL render_main(void*) noexcept -> os::Thread_Result;
@@ -53,6 +58,7 @@ FISSION_API auto timestamp() -> s64;
 FISSION_API auto seconds_elasped(s64 start, s64 end) -> double;
 FISSION_API auto seconds_elasped_and_reset(s64& last) -> double;
 
+// TODO: WHY IS THIS HERE?
 // out_size = in_size
 FISSION_API void convert_utf8_to_utf16(string_utf16* output_buffer, string source);
 // out_size = in_size * 3

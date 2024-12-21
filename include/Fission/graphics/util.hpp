@@ -1,4 +1,31 @@
+#pragma once
 #include <Fission/core/graphics.hpp>
+
+__FISSION_BEGIN__
+
+struct Draw_Data {
+	u32 total_vtx_count {0};
+	u32 total_idx_count {0};
+
+	u32 vtx_offset {0};
+	u32 idx_offset {0};
+	u32 vtx_count  {0};
+	u32 idx_count  {0};
+
+public:
+    // Call reset() before each submit
+	inline void reset() { *this = Draw_Data {}; }
+
+    // Call start_new_draw() after each draw call
+	inline void start_new_draw() {
+		vtx_offset = total_vtx_count;
+		idx_offset = total_idx_count;
+		vtx_count = 0;
+		idx_count = 0;
+	}
+};
+
+__FISSION_END__
 
 namespace vk
 {

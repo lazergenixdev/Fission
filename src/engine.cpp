@@ -1,9 +1,17 @@
 #include "internal.hpp"
 #include <Fission/core/engine.hpp>
 #include <format.hpp>
+#include <freetype/freetype.h>
 
 using fmt::format;
 using namespace fs;
+
+struct Debug_Font {
+#	include "../resources/BinaryFonts/IBMPlexMono-Medium.inl"
+};
+struct Console_Font {
+#	include "../resources/BinaryFonts/JetBrainsMono-Regular.inl"
+};
 
 fs::Engine engine {
     .version = {
@@ -50,19 +58,110 @@ auto Engine::create(Defaults const& defaults) -> bool
 auto Engine::create_layers() -> bool
 {
     check(vk::Render_Pass_Creator{4}
-        .add_attachment(graphics.sc_format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+        .add_attachment(graphics.sc_format, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
         .add_subpass({ {0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} })
         .add_external_subpass_dependency(0)
         .create(&overlay_render_pass),
         "Failed to create render pass");
 
+	check(texture_layout.create(graphics), "Failed to create texture descriptor set layout");
+	check(transform_2d.layout.create(graphics), "Failed to create 2d transform descriptor set layout");
+
 	create_frame_buffers(0);
+
+	// Descriptor Sets:
+	// 0 = transform_2d, 1 = debug font, 2 = console font
+	VkDescriptorSet sets[3] = {};
+	{
+		VkDescriptorPoolSize pool_sizes[] = {
+			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         32},
+			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 64},
+		};
+		VkDescriptorPoolCreateInfo descPoolInfo {
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			.maxSets = (32 + 64),
+			.poolSizeCount = (fs::u32)std::size(pool_sizes),
+			.pPoolSizes = pool_sizes,
+		};
+		check(vkCreateDescriptorPool(graphics.device, &descPoolInfo, nullptr, &descriptor_pool),
+			"Failed to create descriptor pool");
+
+		VkDescriptorSetLayout layouts[3] = { transform_2d.layout, texture_layout, texture_layout };
+		VkDescriptorSetAllocateInfo descSetAllocInfo {
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			.descriptorPool = descriptor_pool,
+			.pSetLayouts = layouts,
+			.descriptorSetCount = 3,
+		};
+		check(vkAllocateDescriptorSets(graphics.device, &descSetAllocInfo, sets),
+			"Failed to allocate descriptor sets");
+	}
+
+	// Create buffer for the 2d transform
+	{
+		VmaAllocationCreateInfo allocInfo { .usage = VMA_MEMORY_USAGE_AUTO };
+		VkBufferCreateInfo bufferInfo {
+			.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+			.size = sizeof(fs::Transform_2D_Data),
+			.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+		};
+		check(vmaCreateBuffer(graphics.allocator, &bufferInfo, &allocInfo, &transform_2d.buffer, &transform_2d.allocation, nullptr),
+			"Failed to create buffer for 2d transform");
+
+		fs::Transform_2D_Data transform {
+			.offset = { -1.0f, -1.0f },
+			.scale = { 2.0f / (float)graphics.sc_extent.width, 2.0f / (float)graphics.sc_extent.height },
+		};
+		graphics.upload(transform_2d.buffer, &transform, sizeof(fs::Transform_2D_Data));
+	}
+
+	// Create Descriptor Set for the transform
+	{
+		transform_2d.set = sets[0];
+		VkDescriptorBufferInfo bufferInfo {
+			.buffer = transform_2d.buffer,
+			.offset = 0,
+			.range = sizeof(fs::Transform_2D_Data),
+		};
+		VkWriteDescriptorSet write {
+			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			.descriptorCount = 1,
+			.dstBinding = 0,
+			.dstSet = transform_2d.set,
+			.pBufferInfo = &bufferInfo,
+		};
+		vkUpdateDescriptorSets(graphics.device, 1, &write, 0, nullptr);
+	}
+
+	{
+		auto sampler_info = vk::sampler(VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+		check(vkCreateSampler(graphics.device, &sampler_info, nullptr, &font.sampler),
+			"Failed to create sampler");
+	}
+
+	if (FT_Init_FreeType(&font.library) != 0) {
+		log::error("Failed to create FreeType library");
+		return true;
+	}
+
+	font.debug  .create(  Debug_Font::data,   Debug_Font::size, 18.0f, sets[1], font.sampler);
+	font.console.create(Console_Font::data, Console_Font::size, 16.0f, sets[2], font.sampler);
+
+	renderer_2d         .create(&graphics, overlay_render_pass, transform_2d.layout);
+	textured_renderer_2d.create(&graphics, overlay_render_pass, transform_2d.layout, texture_layout);
+
+	debug_layer.create();
+
+	// Initialize console position (wtf is this???)
+	console_layer.position = -(font.console.height + 1);
 
     return false;
 }
 
 auto Engine::create_frame_buffers(u32 old_count) -> bool
 {
+	// Allocate more space for frame buffers if image count changed
 	if (graphics.sc_image_count > old_count) {
 		bump_allocator {graphics.sc_image_count * sizeof(VkFramebuffer)}
 			.alloc_to(frame_buffers, graphics.sc_image_count)
@@ -91,12 +190,28 @@ auto Engine::create_frame_buffers(u32 old_count) -> bool
 void Engine::destroy()
 {
     log::info("Destroying Fission Engine...");
+
+	// TODO:
+	// Before doing anything that might crash the engine,
+	//    save persistant data to files...
+
     engine.flags &=~ Engine::Running; // Ensure render thread will terminate
     if (engine.render_thread) os_thread_join(engine.render_thread);
 	vkDeviceWaitIdle(graphics.device);
 	current_scene->~Scene();
-	for_n (graphics.sc_image_count)
-		vkDestroyFramebuffer(graphics.device, frame_buffers[i], nullptr);
+	debug_layer.destroy();
+	//console_layer.destroy();
+	renderer_2d.destroy();
+	textured_renderer_2d.destroy();
+	vkDestroySampler(graphics.device, font.sampler, nullptr);
+	vmaDestroyBuffer(graphics.allocator, transform_2d.buffer, transform_2d.allocation);
+	font.debug.destroy();
+	font.console.destroy();
+	vkDestroyDescriptorPool(graphics.device, descriptor_pool, nullptr);
+	vkDestroyDescriptorSetLayout(engine.graphics.device, transform_2d.layout, nullptr);
+	vkDestroyDescriptorSetLayout(graphics.device, texture_layout, nullptr);
+	FT_Done_FreeType(font.library);
+	for_n (graphics.sc_image_count) vkDestroyFramebuffer(graphics.device, frame_buffers[i], nullptr);
 	FISSION_DEFAULT_FREE(frame_buffers);
 	vkDestroyRenderPass(graphics.device, overlay_render_pass, nullptr);
     graphics.destroy();
@@ -110,10 +225,12 @@ auto Engine::setup() -> bool
 
 void Engine::shutdown()
 {
+	log::verbose("engine.shutdown()...");
 	window.close();
 }
 
-bool stop() {
+bool stop()
+{
     engine.flags &=~ Engine::Running;
     return false;
 }
@@ -207,39 +324,23 @@ auto Engine::render_frame() -> bool
 	//-------------------------------------------------------------------------------------
 	// Eat any events handled by debug and console layers
 	window.event_queue.pop_all(events);
-	//debug_layer.handle_events(events);
+	debug_layer.handle_events(events);
 	//console_layer.handle_events(events);
 	//-------------------------------------------------------------------------------------
 
-	VkClearValue clear_color = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
-	VkRenderPassBeginInfo begin_info {
-		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-		.renderPass = overlay_render_pass,
-		.framebuffer = frame_buffers[render_context.image_index],
-		.renderArea = {
-			.offset = {0, 0},
-			.extent = graphics.sc_extent,
-		},
-		.clearValueCount = 1,
-		.pClearValues = &clear_color,
-	};
-	vkCmdBeginRenderPass(render_context.command_buffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
 	current_scene->on_update(delta_time, events, render_context);
-	vkCmdEndRenderPass(render_context.command_buffer);
 
 	//-------------------------------------------------------------------------------------
 	// Render console and debug overlay
-#if 0
-	vk::begin(render_context.command_buffer, overlay_render_pass);
+	vk::begin(render_context.command_buffer, overlay_render_pass, render_context.frame_buffer);
 	{
-		bind_font(render_context.command_buffer, &fonts.console);
-		console_layer.on_update(dt, &render_context);
+	//	bind_font(render_context.command_buffer, &font.console);
+	//	console_layer.on_update(delta_time, &render_context);
 
-		bind_font(render_context.command_buffer, &fonts.debug);
-		debug_layer.on_update(dt, &render_context);
+		bind_font(render_context.command_buffer, &font.debug);
+		debug_layer.on_update(delta_time, &render_context);
 	}
 	vkCmdEndRenderPass(render_context.command_buffer);
-#endif
 	//-------------------------------------------------------------------------------------
 
 #if 0
@@ -282,8 +383,8 @@ auto Engine::render_frame() -> bool
 
 	vkEndCommandBuffer(render_context.command_buffer);
 
-	//renderer_2d.end_render(&render_context);
-	//textured_renderer_2d.end_render(&render_context);
+	renderer_2d.end_render(render_context);
+	textured_renderer_2d.end_render(render_context);
 
 	//-------------------------------------------------------------------------------------
 
@@ -374,4 +475,11 @@ void Engine::resize() {
     g.create_sc_image_views();
 
 	create_frame_buffers(old_image_count);
+
+	// Update screen transform
+	Transform_2D_Data transform {
+		.offset = {-1.0f, -1.0f},
+		.scale  = {2.0f / (float)graphics.sc_extent.width, 2.0f / (float)graphics.sc_extent.height},
+	};
+	graphics.upload(transform_2d.buffer, &transform, sizeof(transform));
 }

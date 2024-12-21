@@ -4,6 +4,62 @@
 #include <GLFW/glfw3.h>
 #include "../internal.hpp"
 #include <time.h>
+#include <sys/sysctl.h> // --> sysctl
+
+char _platform_version_string_buffer[64];
+
+fs::string platform_version = []() {
+    
+    // https://stackoverflow.com/a/65649178
+    char    os_temp [20] = "";
+    char   *os_temp_ptr  = os_temp;
+    size_t  os_temp_len  = sizeof(os_temp);
+    size_t  os_temp_left = 0;
+    int     rslt         = 0;
+
+    int major = 0;
+    int minor = 0;
+    int point = 0;
+    
+    rslt = sysctlbyname ( "kern.osproductversion", os_temp, &os_temp_len, NULL, 0 );
+    if (rslt != 0) {
+        // just silently fail, who cares
+        goto format;
+    }
+    
+    os_temp_left = os_temp_len; /* length of string returned */
+    {
+        int temp = atoi ( os_temp_ptr );
+        major = temp;
+    }
+    major = atoi ( os_temp_ptr );
+    
+    while ( os_temp_left > 0 && *os_temp_ptr != '.' )
+    {
+        os_temp_left--;
+        os_temp_ptr++;
+    }
+    os_temp_left--;
+    os_temp_ptr++;
+    minor = atoi ( os_temp_ptr );
+    
+    while ( os_temp_left > 0 && *os_temp_ptr != '.' )
+    {
+        os_temp_left--;
+        os_temp_ptr++;
+    }
+    os_temp_left--;
+    os_temp_ptr++;
+    point = atoi ( os_temp_ptr );
+    
+    format:
+    int len = snprintf(_platform_version_string_buffer,
+        sizeof(_platform_version_string_buffer),
+        "Mac OS X %d.%d.%d",
+        major, minor, point);
+    
+    return fs::string { _platform_version_string_buffer, len };
+}();
 
 using namespace fs;
 

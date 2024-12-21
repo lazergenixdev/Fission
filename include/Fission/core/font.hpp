@@ -64,7 +64,10 @@ struct Font_Static : public Font {
 	void create(void const* ttf_data, size_t size, float height, VkDescriptorSet set, VkSampler sampler);
 
 	virtual Glyph const* lookup(c32 codepoint) override;
-    virtual ~Font_Static() override;
+	
+	void destroy();
+	
+	virtual ~Font_Static() = default;
 };
 
 // Fonts where new characters can be added to the atlas at runtime

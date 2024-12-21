@@ -684,6 +684,66 @@ void check_layers_and_extensions()
 	}
 }
 
+// TODO: errors? they exist right??
+void Graphics::upload(VkBuffer dstBuffer, void const* inData, VkDeviceSize inSize)
+{
+	VkBuffer      stagingBuffer     {};
+	VmaAllocation stagingAllocation {};
+
+	VmaAllocationCreateInfo allocInfo {
+		.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+		.usage = VMA_MEMORY_USAGE_AUTO,
+	};
+	VkBufferCreateInfo bufferInfo {
+		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		.size = inSize,
+		.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+	};
+	vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &stagingBuffer, &stagingAllocation, nullptr);
+
+	{
+		void* dst;
+		vmaMapMemory(allocator, stagingAllocation, &dst);
+		memcpy(dst, inData, inSize);
+		vmaUnmapMemory(allocator, stagingAllocation);
+		vmaFlushAllocation(allocator, stagingAllocation, 0, VK_WHOLE_SIZE);
+	}
+
+	VkCommandBuffer cmd;
+	VkCommandBufferAllocateInfo commandBufferInfo {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+		.commandBufferCount = 1,
+		.commandPool = transfer_command_pool,
+		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+	};
+
+	vkAllocateCommandBuffers(device, &commandBufferInfo, &cmd);
+	{
+		VkCommandBufferBeginInfo beginInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		vkBeginCommandBuffer(cmd, &beginInfo);
+		VkBufferCopy region {
+			.srcOffset = 0,
+			.dstOffset = 0,
+			.size = inSize,
+		};
+		vkCmdCopyBuffer(cmd, stagingBuffer, dstBuffer, 1, &region);
+		vkEndCommandBuffer(cmd);
+
+		VkSubmitInfo submitInfo {
+			.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+			.commandBufferCount = 1,
+			.pCommandBuffers = &cmd,
+		};
+		vkQueueSubmit(transfer_queue, 1, &submitInfo, VK_NULL_HANDLE);
+
+		vkQueueWaitIdle(transfer_queue);
+		vmaDestroyBuffer(allocator, stagingBuffer, stagingAllocation);
+	}
+	vkFreeCommandBuffers(device, transfer_command_pool, 1, &cmd);
+}
+
+// TODO: errors? they exist right??
 void Graphics::upload
 (	VkImage       destination,
 	void const*   image_data,
@@ -791,9 +851,23 @@ void Graphics::upload
     vmaDestroyBuffer(allocator, buffer, allocation);
 }
 
-version Graphics::vulkan_version()
+version Graphics::api_version()
 {
-	return version(1, 0, 0);
+	uint32_t instanceVersion;
+	
+	// TODO: should I pass instance here?
+	auto enumerateInstanceVersion = (PFN_vkEnumerateInstanceVersion)vkGetInstanceProcAddr(nullptr, "vkEnumerateInstanceVersion");
+	if (enumerateInstanceVersion == nullptr)
+		return version(1,0,0);
+	
+	if (enumerateInstanceVersion(&instanceVersion) != VK_SUCCESS)
+		return version();
+
+	return {
+		VK_API_VERSION_MAJOR(instanceVersion),
+		VK_API_VERSION_MINOR(instanceVersion),
+		VK_API_VERSION_PATCH(instanceVersion),
+	};
 }
 
 auto Graphics::pre_rotation() -> glm::mat2
@@ -827,6 +901,23 @@ VkShaderModule vk::create_shader(size_t size, void const* data) {
 	return shader;
 }
 
+
+void vk::begin(VkCommandBuffer command_buffer, VkRenderPass render_pass, VkFramebuffer frame_buffer, VkClearColorValue color)
+{
+	VkClearValue clear_color = { color };
+	VkRenderPassBeginInfo begin_info {
+		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+		.renderPass = render_pass,
+		.framebuffer = frame_buffer,
+		.renderArea = {
+			.offset = {0, 0},
+			.extent = engine.graphics.sc_extent,
+		},
+		.clearValueCount = 1,
+		.pClearValues = &clear_color,
+	};
+	vkCmdBeginRenderPass(command_buffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
+}
 
 
 VkResult vk::Pipeline_Creator::create_and_destroy_shaders(VkPipeline * pipeline) {

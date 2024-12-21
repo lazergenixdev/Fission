@@ -90,7 +90,7 @@ struct Graphics
 
 	array<VkPresentModeKHR> supported_present_modes() { return {}; }
 
-	version vulkan_version();
+	version api_version();
 
 	auto pre_rotation () -> glm::mat2;
 
@@ -154,8 +154,6 @@ private:
 	auto create(struct Graphics_Create_Info const& info) -> bool; // SUCCESS == false
 	void destroy();
 
-	//void recreate_swap_chain(struct Window* window);
-
 private:
     // SUCCESS == false
     bool create_instance        (bool debug);
@@ -172,40 +170,25 @@ private:
 
 extern void set_viewport_and_scissor(VkCommandBuffer cmd, rf32 rect);
 
-struct Render_Pass {
-	VkRenderPass handle;
-	VkImage multisampled_image;
-
-	inline constexpr operator VkRenderPass() const { return handle; }
-
-	void create(VkSampleCountFlagBits samples, bool clear);
-	void destroy();
-
-	void begin(Render_Context* ctx, VkFramebuffer fb, color clear);
-	void begin(Render_Context* ctx, color clear);
-	void begin(Render_Context* ctx, VkFramebuffer fb);
-	void begin(Render_Context* ctx);
-	void end(Render_Context* ctx);
-
-	Render_Pass() = default;
-	Render_Pass(Render_Pass const&) = delete;
-};
-
+// TODO: Templating this makes no sense, please refactor... anytime now!
 template <VkShaderStageFlags ShaderStage, VkDescriptorType DescriptorType>
 struct Single_Descriptor_Set_Layout {
 	Single_Descriptor_Set_Layout() = default;
 	Single_Descriptor_Set_Layout(Graphics& gfx) { create(gfx); }
-	inline void create(Graphics& gfx) {
-		VkDescriptorSetLayoutBinding binding;
-		binding.binding = 0;
-		binding.descriptorCount = 1;
-		binding.descriptorType = DescriptorType;
-		binding.stageFlags = ShaderStage;
-		binding.pImmutableSamplers = nullptr;
-		VkDescriptorSetLayoutCreateInfo descriptorInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
-		descriptorInfo.bindingCount = 1;
-		descriptorInfo.pBindings = &binding;
-		vkCreateDescriptorSetLayout(gfx.device, &descriptorInfo, nullptr, &handle);
+	inline VkResult create(Graphics& gfx) {
+		VkDescriptorSetLayoutBinding binding {
+			.binding = 0,
+			.descriptorCount = 1,
+			.descriptorType = DescriptorType,
+			.stageFlags = ShaderStage,
+			.pImmutableSamplers = nullptr,
+		};
+		VkDescriptorSetLayoutCreateInfo descriptorInfo {
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+			.bindingCount = 1,
+			.pBindings = &binding,
+		};
+		return vkCreateDescriptorSetLayout(gfx.device, &descriptorInfo, nullptr, &handle);
 	}
 	inline void destroy(Graphics& gfx) {
 		vkDestroyDescriptorSetLayout(gfx.device, handle, nullptr);
@@ -300,11 +283,7 @@ namespace vk
 		return vkEndCommandBuffer(command_buffer);
 	}
 	
-	//inline void begin(VkCommandBuffer command_buffer, VkRenderPass render_pass)
-	//{
-	//
-	//	vkCmdBeginRenderPass(command_buffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
-	//}
+	FISSION_API void begin(VkCommandBuffer command_buffer, VkRenderPass render_pass, VkFramebuffer frame_buffer, VkClearColorValue color = {});
 
 	static constexpr uint32_t size_of(VkFormat format) {
 		switch (format)
@@ -638,17 +617,24 @@ namespace vk
 			attachments.emplace_back(attachment);
 			return *this;
 		}
-		Render_Pass_Creator& add_attachment(VkFormat format, VkImageLayout initial_layout, VkImageLayout final_layout, VkSampleCountFlagBits sample_count = VK_SAMPLE_COUNT_1_BIT) {
-			VkAttachmentDescription attachment{};
-			attachment.format = format;
-			attachment.samples = sample_count;
-			attachment.loadOp = (initial_layout == VK_IMAGE_LAYOUT_UNDEFINED) ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-			attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			attachment.initialLayout = initial_layout;
-			attachment.finalLayout = final_layout;
-			attachments.emplace_back(attachment);
+
+		Render_Pass_Creator& add_attachment(
+			VkFormat format,
+			VkImageLayout initial_layout,
+			VkImageLayout final_layout,
+			VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
+			VkSampleCountFlagBits sample_count = VK_SAMPLE_COUNT_1_BIT
+		) {
+			attachments.emplace_back(VkAttachmentDescription {
+				.format = format,
+				.samples = sample_count,
+				.loadOp = loadOp,
+				.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+				.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+				.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+				.initialLayout = initial_layout,
+				.finalLayout = final_layout,
+			});
 			return *this;
 		}
 

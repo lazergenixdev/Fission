@@ -32,8 +32,8 @@ namespace keys
 
 #if defined(FISSION_PLATFORM_WINDOWS)
 #   define KEY(WIN32_KEY,_0,_1) WIN32_KEY
-#elif defined(FISSION_PLATFORM_LINUX)
-#   define KEY(_0,LINUX_KEY,_1) LINUX_KEY
+#elif defined(FISSION_PLATFORM_LINUX) || defined(FISSION_PLATFORM_MACOS)
+#   define KEY(_0,GLFW_KEY,_1) GLFW_KEY
 #else
 #   define KEY(_0,_1,ANDROID_KEY) ANDROID_KEY
 #endif
@@ -57,35 +57,38 @@ namespace keys
 	//	Gamepad_RBumper,
 	//	Gamepad_LBumper,
 
-#define X(N) F ## N = KEY(VK_F ## N, 65469+N, 5+N),
+#define X(N) F ## N = KEY(VK_F ## N, 289+N, 5+N),
 		FISSION_X_24
 #undef X
 #define X(N) \
-Num    ## N = KEY(#N[0], 33+N, 40+N), \
-Numpad ## N = KEY(VK_NUMPAD ## N, 43+N, 50+N),
+Num    ## N = KEY(#N[0], 48+N, 40+N), \
+Numpad ## N = KEY(VK_NUMPAD ## N, 320+N, 50+N),
 		FISSION_X_BASE10
 #undef X
-#define X(L) L = KEY(#L[0], 32+#L[0], 100+#L[0]),
+#define X(L) L = KEY(#L[0], 65+(#L[0] - 'A'), 100+#L[0]),
 		FISSION_X_LETTERS
 #undef X
 
-		Up       = KEY(VK_UP     , 65362, 401),
-		Down     = KEY(VK_DOWN   , 65364, 402),
-		Left     = KEY(VK_LEFT   , 65361, 403),
-		Right    = KEY(VK_RIGHT  , 65363, 404),
+		Up       = KEY(VK_UP     , 265, 401),
+		Down     = KEY(VK_DOWN   , 264, 402),
+		Left     = KEY(VK_LEFT   , 263, 403),
+		Right    = KEY(VK_RIGHT  , 262, 404),
 
-		Space    = KEY(VK_SPACE  , 32, 405),
-		Escape   = KEY(VK_ESCAPE , 75, 406),
-		Shift    = KEY(VK_SHIFT  , 76, 407),
-		Control  = KEY(VK_CONTROL, 77, 408),
-		Alt      = KEY(VK_MENU   , 78, 409),
-		Tab      = KEY(VK_TAB    , 79, 410),
-		Capital  = KEY(VK_CAPITAL, 80, 411),
-		Back     = KEY(VK_BACK   , 81, 412),
-		Delete   = KEY(VK_DELETE , 82, 413),
-		Enter    = KEY(VK_RETURN , 83, 414),
+		Space    = KEY(VK_SPACE  , 32,  405),
+		Escape   = KEY(VK_ESCAPE , 256, 406),
+		Shift    = KEY(VK_SHIFT  , 340, 407), // TODO: only left shift (GLFW)
+		Control  = KEY(VK_CONTROL, 341, 408),
+		Alt      = KEY(VK_MENU   , 348, 409),
+		Tab      = KEY(VK_TAB    , 258, 410),
+		Capital  = KEY(VK_CAPITAL, 280, 411),
+		Back     = KEY(VK_BACK   , 259, 412),
+		Delete   = KEY(VK_DELETE , 261, 413),
+		Enter    = KEY(VK_RETURN , 257, 414),
 
-		Accent     = KEY(VK_OEM_3, 84, 415), // `
+		Accent     = KEY(VK_OEM_3, 93, 415), // `
+
+		__not_set = 0xF0F0F0,
+
 		Comma,			       // ,
 		Period,			       // .
 		FSlash,			       // /
