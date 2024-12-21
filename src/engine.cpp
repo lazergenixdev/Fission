@@ -3,6 +3,7 @@
 #include <Fission/core/console.hpp>
 #include <format.hpp>
 #include <freetype/freetype.h>
+#include <stb/image_write.h>
 
 using fmt::format;
 using namespace fs;
@@ -44,7 +45,8 @@ auto Engine::create(Defaults const& defaults) -> bool
 
     window.show();
 
-    if (create_layers()) return true;
+	if (create_screenshot_buffer()) return true;
+    if (create_layers())            return true;
 
 	engine.current_scene = on_create_scene({});
     engine.flags |= Engine::Running;
@@ -192,6 +194,21 @@ auto Engine::create_frame_buffers(u32 old_count) -> bool
 	return false;
 }
 
+auto Engine::create_screenshot_buffer () -> bool
+{
+	VmaAllocationCreateInfo allocInfo{
+		.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+		.usage = VMA_MEMORY_USAGE_AUTO,
+	};
+	VkBufferCreateInfo bufferInfo{
+		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		.size = 1920 * 1920 * sizeof(fs::rgba8),
+		.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+	};
+	check(vmaCreateBuffer(graphics.allocator, &bufferInfo, &allocInfo, &screenshot_buffer, &screenshot_allocation, nullptr),
+		"Failed to create buffer for screenshots");
+}
+
 #undef check
 
 void Engine::destroy()
@@ -207,7 +224,7 @@ void Engine::destroy()
 	vkDeviceWaitIdle(graphics.device);
 	current_scene->~Scene();
 	debug_layer.destroy();
-	//console_layer.destroy();
+	console_layer.destroy();
 	renderer_2d.destroy();
 	textured_renderer_2d.destroy();
 	vkDestroySampler(graphics.device, font.sampler, nullptr);
@@ -218,6 +235,7 @@ void Engine::destroy()
 	vkDestroyDescriptorSetLayout(engine.graphics.device, transform_2d.layout, nullptr);
 	vkDestroyDescriptorSetLayout(graphics.device, texture_layout, nullptr);
 	FT_Done_FreeType(font.library);
+	vmaDestroyBuffer(engine.graphics.allocator, screenshot_buffer, screenshot_allocation);
 	for_n (graphics.sc_image_count) vkDestroyFramebuffer(graphics.device, frame_buffers[i], nullptr);
 	FISSION_DEFAULT_FREE(frame_buffers);
 	vkDestroyRenderPass(graphics.device, overlay_render_pass, nullptr);
@@ -248,9 +266,9 @@ bool stop()
 
 auto Engine::render_frame() -> bool
 {
-	std::vector<fs::Event> events;
+	std::vector<Event> events;
 
-    VkResult result { VK_SUCCESS };
+    VkResult result = VK_SUCCESS;
 	Render_Context render_context { .frame = frame_count & 1 };
 	VkSemaphore write_semaphore = graphics.sc_image_write_semaphore[render_context.frame];
 	VkSemaphore read_semaphore  = graphics.sc_image_read_semaphore[render_context.frame];
@@ -261,15 +279,13 @@ auto Engine::render_frame() -> bool
 		window.sleep_until_not_minimized();
 	}
 #endif
-#if 0
-	unlikely if (flags & fChange_Scene) {
+	unlikely if (flags & Change_Scene) {
 		auto next_scene = on_create_scene(next_scene_key);
 		vkDeviceWaitIdle(graphics.device);
-		delete current_scene;
+		current_scene->~Scene(); // TODO: call delete?
 		current_scene = next_scene;
-		flags &= ~fChange_Scene;
+		flags &=~ Change_Scene;
 	}
-#endif
 	unlikely if (flags & Graphics_Recreate_Swap_Chain) {
 		resize();
 		flags &=~ Graphics_Recreate_Swap_Chain;
@@ -350,43 +366,7 @@ auto Engine::render_frame() -> bool
 	vkCmdEndRenderPass(render_context.command_buffer);
 	//-------------------------------------------------------------------------------------
 
-#if 0
-	if (flags & fSave_Currect_Frame) {
-		auto cmd = render_context.command_buffer;
-		auto image = graphics.sc_images[render_context.image_index];
-
-		VkImageSubresourceRange range;
-		range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		range.baseMipLevel = 0;
-		range.levelCount = 1;
-		range.baseArrayLayer = 0;
-		range.layerCount = 1;
-		VkImageMemoryBarrier imageBarrier = {};
-		imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		imageBarrier.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-		imageBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-		imageBarrier.image = image;
-		imageBarrier.subresourceRange = range;
-		imageBarrier.srcAccessMask = 0;
-		imageBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
-
-		VkBufferImageCopy copy = {};
-		copy.imageExtent = { .width = graphics.sc_extent.width, .height = graphics.sc_extent.height, .depth = 1 };
-		copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		copy.imageSubresource.layerCount = 1;
-		vkCmdCopyImageToBuffer(cmd, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, screenshot_buffer, 1, &copy);
-
-		VkImageMemoryBarrier imageBarrier_toReadable{ VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
-		imageBarrier_toReadable.image = image;
-		imageBarrier_toReadable.subresourceRange = range;
-		imageBarrier_toReadable.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-		imageBarrier_toReadable.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-		imageBarrier_toReadable.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		imageBarrier_toReadable.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toReadable);
-	}
-#endif
+	if (flags & Save_Current_Frame) save_frame(render_context);
 
 	vkEndCommandBuffer(render_context.command_buffer);
 
@@ -433,29 +413,11 @@ auto Engine::render_frame() -> bool
 		}
 	}
 
-#if 0
-	if (flags & fSave_Currect_Frame) {
+	if (flags & Save_Current_Frame) {
+		// We must wait for the gpu to finish before we can read image data
 		vkWaitForFences(graphics.device, 1, &fence, VK_TRUE, UINT64_MAX);
-		void* gpu_memory = nullptr;
-		vmaMapMemory(graphics.allocator, screenshot_allocation, &gpu_memory);
-		void* data = convert_to_rgb(gpu_memory, graphics.sc_extent.width * graphics.sc_extent.height);
-		vmaUnmapMemory(graphics.allocator, screenshot_allocation);
-
-		time_t rawtime;
-		time(&rawtime);
-		auto timeinfo = localtime(&rawtime);
-
-		char filename[48];
-		"screenshot_%04d-%02d-%02d_%02d-%02d-%02d.png"_fmt(filename,
-			timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday,
-			timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec
-		);
-
-		stbi_write_png(filename, graphics.sc_extent.width, graphics.sc_extent.height, 3, data, 3 * graphics.sc_extent.width);
-		delete[] reinterpret_cast<byte*>(data);
-		flags &= ~fSave_Currect_Frame;
+		write_frame();
 	}
-#endif
 
 //=====================================================================================
 
@@ -496,6 +458,8 @@ void Engine::resize()
 
 void add_engine_console_commands()
 {
+	ADD_COMMAND(exit, { stop(); });
+
 	ADD_COMMAND(vsync, {
 		if (args == "on") {
 			engine.graphics.sc_present_mode = VK_PRESENT_MODE_FIFO_KHR;
@@ -532,4 +496,88 @@ void add_engine_console_commands()
 		}
 	});
 #endif
+}
+
+// "Certified Chat-Gippty Classic" // BGRA -> RGB
+void* convert_to_rgb(void* data, int pixel_count) {
+	// Assuming input data is an array of BGRA values (4 bytes per pixel)
+	unsigned char* input_data = static_cast<unsigned char*>(data);
+
+	// Allocate memory for the output RGB data (3 bytes per pixel)
+	unsigned char* output_data = new unsigned char[pixel_count * 3];
+
+	for (int i = 0, j = 0; i < pixel_count * 4; i += 4, j += 3) {
+		// Copy RGB values (skipping the alpha channel)
+		output_data[j] = input_data[i + 2];  // Blue
+		output_data[j + 1] = input_data[i + 1];  // Green
+		output_data[j + 2] = input_data[i];      // Red
+	}
+
+	return static_cast<void*>(output_data);
+}
+
+void Engine::save_frame(Render_Context& ctx)
+{
+	auto cmd = ctx.command_buffer;
+	auto image = graphics.sc_images[ctx.image_index];
+
+	VkImageSubresourceRange range {
+		.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+		.baseMipLevel = 0,
+		.levelCount = 1,
+		.baseArrayLayer = 0,
+		.layerCount = 1,
+	};
+
+	VkImageMemoryBarrier imageBarrier {
+		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+		.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+		.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		.image = image,
+		.subresourceRange = range,
+		.srcAccessMask = 0,
+		.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+	};
+	vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
+
+	VkBufferImageCopy copy {
+		.imageExtent = { .width = graphics.sc_extent.width, .height = graphics.sc_extent.height, .depth = 1 },
+		.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+		.imageSubresource.layerCount = 1,
+	};
+	vkCmdCopyImageToBuffer(cmd, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, screenshot_buffer, 1, &copy);
+
+	VkImageMemoryBarrier imageBarrier_toReadable {
+		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+		.image = image,
+		.subresourceRange = range,
+		.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+		.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+		.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT,
+	};
+	vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toReadable);
+}
+
+void Engine::write_frame()
+{
+	void* gpu_memory = nullptr;
+	vmaMapMemory(graphics.allocator, screenshot_allocation, &gpu_memory);
+	void* data = convert_to_rgb(gpu_memory, graphics.sc_extent.width * graphics.sc_extent.height);
+	vmaUnmapMemory(graphics.allocator, screenshot_allocation);
+
+	time_t rawtime;
+	time(&rawtime);
+	auto timeinfo = localtime(&rawtime);
+
+	char filename[48];
+	snprintf(filename, sizeof(filename),
+		"screenshot_%04d-%02d-%02d_%02d-%02d-%02d.png",
+		timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday,
+		timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec
+	);
+
+	stbi_write_png(filename, graphics.sc_extent.width, graphics.sc_extent.height, 3, data, 3 * graphics.sc_extent.width);
+	delete[] reinterpret_cast<byte*>(data);
+	flags &=~ Save_Current_Frame;
 }

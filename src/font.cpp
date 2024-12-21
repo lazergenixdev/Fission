@@ -96,11 +96,7 @@ void Font_Static::create(void const* ttf_data, size_t _size, float _height, VkDe
 		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		vmaCreateImage(engine.graphics.allocator, &imageInfo, &allocInfo, &atlas_image, &atlas_allocation, nullptr);
 
-		//memset(pixel_data, 0xFF, size.x * size.y * sizeof(rgba8));
 		engine.graphics.upload(atlas_image, pixel_data, imageInfo.extent, VK_FORMAT_R8G8B8A8_SRGB);
-
-		int r = stbi_write_png("whatisthis.png", size.x, size.y, 4, pixel_data, size.x * sizeof(rgba8));
-		log::info(fmt::format("got {} from write_png", r));
 
 		free(pixel_data);
 	}

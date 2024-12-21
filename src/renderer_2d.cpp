@@ -53,9 +53,6 @@ struct textured_2d_fs : public vk::embed::Fragment_Shader {
 #define MAX_COUNT 0xFFFF
 
 void set_normal_blending(VkPipelineColorBlendAttachmentState& attachment) {
-	//switch (createInfo.blend_mode)
-	//{
-	//default:
 	//break; case Blend_Mode_Disabled:
 	//	colorBlendAttachment.blendEnable = VK_FALSE;
 	//break; case Blend_Mode_Normal:
@@ -74,8 +71,6 @@ void set_normal_blending(VkPipelineColorBlendAttachmentState& attachment) {
 	//	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
 	//	colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 	//	colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-	//break;
-	//}
 }
 
 void Renderer_2D::create(Graphics* gfx, VkRenderPass render_pass, Transform_2D_Layout layout)

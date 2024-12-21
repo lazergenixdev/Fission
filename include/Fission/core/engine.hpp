@@ -188,6 +188,9 @@ private:
 	void resize ();
 	auto create_layers () -> bool;
 	auto create_frame_buffers (u32 old_count) -> bool;
+	auto create_screenshot_buffer () -> bool;
+	void save_frame (Render_Context& ctx);
+	void write_frame ();
 };
 
 __FISSION_END__
