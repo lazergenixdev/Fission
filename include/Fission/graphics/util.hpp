@@ -309,6 +309,14 @@ namespace vk
     X(VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR) \
     X(VK_SURFACE_TRANSFORM_INHERIT_BIT_KHR)
 
+#define X_VULKAN_PRESENT_MODES \
+    X(VK_PRESENT_MODE_IMMEDIATE_KHR) \
+    X(VK_PRESENT_MODE_MAILBOX_KHR) \
+    X(VK_PRESENT_MODE_FIFO_KHR) \
+    X(VK_PRESENT_MODE_FIFO_RELAXED_KHR) \
+    X(VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR) \
+    X(VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR)
+
 #define X_VULKAN_RESULTS \
     X(VK_SUCCESS) \
     X(VK_NOT_READY) \
@@ -379,6 +387,14 @@ char const* name(T t) {
         switch (t) {
             #define X(N) case N: return #N;
             X_VULKAN_TRANSFORMS
+            #undef X
+            default: return "(Unknown VkSurfaceTransformFlagBitsKHR)";
+        }
+    }
+    if constexpr (std::is_same_v<T,VkPresentModeKHR>) {
+        switch (t) {
+            #define X(N) case N: return #N;
+            X_VULKAN_PRESENT_MODES
             #undef X
             default: return "(Unknown VkSurfaceTransformFlagBitsKHR)";
         }

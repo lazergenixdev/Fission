@@ -156,6 +156,9 @@ struct Engine
 	//	(what the engine uses internally)
 	VkDescriptorPool descriptor_pool;
 
+	VkBuffer      screenshot_buffer     {};
+	VmaAllocation screenshot_allocation {};
+
 	void* _ts_base = nullptr;
 	u32   _ts_allocated = 0;
 	u32   _ts_size = 0;

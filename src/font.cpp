@@ -2,7 +2,6 @@
 #include <Fission/core/engine.hpp>
 #include <freetype/freetype.h>
 #include <MaxRectsBinPack.hpp>
-#define STB_IMAGE_WRITE_IMPLEMENTATION 1
 #include <stb/image_write.h>
 #include <format.hpp>
 

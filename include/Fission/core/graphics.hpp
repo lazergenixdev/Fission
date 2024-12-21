@@ -121,7 +121,7 @@ struct Graphics
 	VkFormat          sc_format       {};
 	VkImageUsageFlags sc_image_usage  {};
     u32               sc_image_count  {0};
-    VkPresentModeKHR  sc_present_mode {};
+    VkPresentModeKHR  sc_present_mode {VK_PRESENT_MODE_FIFO_KHR};
     VkSurfaceTransformFlagBitsKHR sc_transform {};
     VkImage*          sc_images       {};
 	VkImageView*      sc_image_views  {};

@@ -13,6 +13,7 @@
 #pragma once
 #include <Fission/config.hpp>
 #include <Fission/base/array.hpp>
+#include <Fission/base/math/library.hpp>
 #include <string>
 __FISSION_BEGIN__
 
@@ -58,12 +59,10 @@ struct string {
     }
 
     inline constexpr string substr(u64 offset, u64 max_count = 0xFFFFFFFF) const {
-        return {data + offset, std::min(max_count - offset, max_count)};
+        return {data + offset, math::min(count - offset, max_count)};
     }
 
-    inline constexpr bool is_empty() const {
-        return count == 0;
-    }
+    inline constexpr bool is_empty() const { return count == 0; }
 
     NO_DISCARD inline constexpr c8* begin() const { return data; }
     NO_DISCARD inline constexpr c8* end  () const { return data + count; }
@@ -95,7 +94,7 @@ struct string_view {
     u32 count;
 
     inline constexpr string absolute(c8* base) const {
-        return string{base + offset, (u64)this->count};
+        return string{base + offset, count};
     }
 };
 

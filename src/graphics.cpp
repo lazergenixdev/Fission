@@ -1,4 +1,3 @@
-#define VMA_IMPLEMENTATION
 #include "internal.hpp"
 #include <Fission/graphics/util.hpp>
 #include <format.hpp>
@@ -537,6 +536,8 @@ bool Graphics::create_swap_chain(Window* window)
 #endif
     log::debug(format(" - size: {}x{}", sc_extent.width, sc_extent.height));
 
+	log::debug(format(" - present mode: {}", vk::name(sc_present_mode)));
+
 	VkSwapchainCreateInfoKHR swap_chain_info {
 		.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
 		.surface = surface,
@@ -548,7 +549,7 @@ bool Graphics::create_swap_chain(Window* window)
 		.imageUsage = FISSION_DEFAULT_SWAP_CHAIN_USAGE,
 		.preTransform = sc_transform,
 		.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR, // <-- TODO: fix this
-		.presentMode = VK_PRESENT_MODE_FIFO_KHR, // TODO: this needs to be configurable
+		.presentMode = sc_present_mode, // TODO: this needs to be configurable
 		.clipped = VK_TRUE, /* "... allows more efficient presentation methods to be used on some platforms." */
 	};
 
@@ -588,7 +589,7 @@ bool Graphics::create_sc_image_views()
 	for (u32 i = 0; i < sc_image_count; ++i) {
 		view_info.image = sc_images[i];
 		check(vkCreateImageView(device, &view_info, nullptr, sc_image_views + i),
-				"Failed to create swap chain image view");
+			  "Failed to create swap chain image view");
 	}
 
 	return false;

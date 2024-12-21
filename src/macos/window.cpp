@@ -48,12 +48,22 @@ void on_glfw_key(GLFWwindow* glfw_window, int key, int scancode, int action, int
     });
 }
 
+void on_glfw_character(GLFWwindow* glfw_window, unsigned int codepoint) {
+    auto window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
+    window->event_queue.append({
+        .type = Event_Character_Input,
+        .character_input = {
+            .codepoint = codepoint,
+        }
+    });
+}
+
+
 auto Window::create(Window_Create_Info const& info) -> bool
 {
     log::verbose(fmt::format("GLFW version {}", glfwGetVersionString()));
-    
     glfwSetErrorCallback(on_glfw_error);
-    fs::log::verbose("Creating Window...");
+    log::verbose("Creating Window...");
     glfwInitVulkanLoader(&vkGetInstanceProcAddr);
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -63,6 +73,7 @@ auto Window::create(Window_Create_Info const& info) -> bool
     glfwSetCursorPosCallback(_glfw_window, on_glfw_cursor_position);
     glfwSetMouseButtonCallback(_glfw_window, on_glfw_mouse_button);
     glfwSetKeyCallback(_glfw_window, on_glfw_key);
+    glfwSetCharCallback(_glfw_window, on_glfw_character);
     log::verbose(fmt::format(PLATFORM_"window = {}", (void*)_glfw_window));
     return false;
 }

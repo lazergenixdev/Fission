@@ -1,10 +1,13 @@
 #include "internal.hpp"
 #include <Fission/core/engine.hpp>
+#include <Fission/core/console.hpp>
 #include <format.hpp>
 #include <freetype/freetype.h>
 
 using fmt::format;
 using namespace fs;
+
+void add_engine_console_commands();
 
 struct Debug_Font {
 #	include "../resources/BinaryFonts/IBMPlexMono-Medium.inl"
@@ -23,8 +26,12 @@ fs::Engine engine {
 
 auto Engine::create(Defaults const& defaults) -> bool
 {
-    (void)defaults;
+    (void)defaults; // TODO
     log::info("Creating Fission Engine...");
+
+	// setup the console early so we can use it as soon as possible
+	console_layer.setup_console_api();
+	add_engine_console_commands();
 
     if (window.create({
         .title = __TITLE__,
@@ -108,11 +115,11 @@ auto Engine::create_layers() -> bool
 		check(vmaCreateBuffer(graphics.allocator, &bufferInfo, &allocInfo, &transform_2d.buffer, &transform_2d.allocation, nullptr),
 			"Failed to create buffer for 2d transform");
 
-		fs::Transform_2D_Data transform {
+		Transform_2D_Data transform {
 			.offset = { -1.0f, -1.0f },
 			.scale = { 2.0f / (float)graphics.sc_extent.width, 2.0f / (float)graphics.sc_extent.height },
 		};
-		graphics.upload(transform_2d.buffer, &transform, sizeof(fs::Transform_2D_Data));
+		graphics.upload(transform_2d.buffer, &transform, sizeof(transform));
 	}
 
 	// Create Descriptor Set for the transform
@@ -121,7 +128,7 @@ auto Engine::create_layers() -> bool
 		VkDescriptorBufferInfo bufferInfo {
 			.buffer = transform_2d.buffer,
 			.offset = 0,
-			.range = sizeof(fs::Transform_2D_Data),
+			.range = sizeof(Transform_2D_Data),
 		};
 		VkWriteDescriptorSet write {
 			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -325,7 +332,7 @@ auto Engine::render_frame() -> bool
 	// Eat any events handled by debug and console layers
 	window.event_queue.pop_all(events);
 	debug_layer.handle_events(events);
-	//console_layer.handle_events(events);
+	console_layer.handle_events(events);
 	//-------------------------------------------------------------------------------------
 
 	current_scene->on_update(delta_time, events, render_context);
@@ -334,8 +341,8 @@ auto Engine::render_frame() -> bool
 	// Render console and debug overlay
 	vk::begin(render_context.command_buffer, overlay_render_pass, render_context.frame_buffer);
 	{
-	//	bind_font(render_context.command_buffer, &font.console);
-	//	console_layer.on_update(delta_time, &render_context);
+		bind_font(render_context.command_buffer, &font.console);
+		console_layer.on_update(delta_time, &render_context);
 
 		bind_font(render_context.command_buffer, &font.debug);
 		debug_layer.on_update(delta_time, &render_context);
@@ -459,7 +466,8 @@ auto Engine::render_frame() -> bool
 }
 
 // TODO: error handling
-void Engine::resize() {
+void Engine::resize()
+{
     auto& g = graphics;
     vkDeviceWaitIdle(g.device);
 
@@ -482,4 +490,46 @@ void Engine::resize() {
 		.scale  = {2.0f / (float)graphics.sc_extent.width, 2.0f / (float)graphics.sc_extent.height},
 	};
 	graphics.upload(transform_2d.buffer, &transform, sizeof(transform));
+}
+
+#define ADD_COMMAND(Name, Body) console::register_command(#Name, [](string args) Body)
+
+void add_engine_console_commands()
+{
+	ADD_COMMAND(vsync, {
+		if (args == "on") {
+			engine.graphics.sc_present_mode = VK_PRESENT_MODE_FIFO_KHR;
+			engine.flags |= Engine::Graphics_Recreate_Swap_Chain;
+			console::println("vsync enabled", colors::green);
+		}
+		else if (args == "off") {
+			engine.graphics.sc_present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+			engine.flags |= Engine::Graphics_Recreate_Swap_Chain;
+			console::println("vsync disabled", colors::red);
+		}
+	});
+
+#if 0 // TODO: get fps limiter working (Linux + Mac)
+	ADD_COMMAND(fps_limit, {
+		if (args == "on") {
+			fps_last = timestamp();
+			engine.flags |= Engine::FPS_Limiter_Enable;
+			console::println("fps limiter enabled");
+		}
+		else if (args == "off") {
+			engine.flags &=~ Engine::FPS_Limiter_Enable;
+			console::println("fps limiter disabled");
+		}
+	});
+
+	ADD_COMMAND(fps, {
+		args.data[args.count] = 0;
+		float fps = strtof((char*)args.data, nullptr);
+		if (fps != 0.0f) {
+			engine.fps_limit = fps;
+			char buffer[32];
+			console::println(format("set fps to: {:.1f}", fps));
+		}
+	});
+#endif
 }
