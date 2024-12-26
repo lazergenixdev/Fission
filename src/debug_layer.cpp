@@ -4,9 +4,6 @@
 #include "internal.hpp"
 #include <format>
 #include <random>
-#if defined(FISSION_PLATFORM_WINDOWS)
-#include <intrin.h>
-#endif
 
 #define FS_DEBUG_LAYER_SHOW_HARDWARE    1 //FISSION_DEBUG
 #define FS_DEBUG_FRAME_GRAPH_HEART_BEAT 0

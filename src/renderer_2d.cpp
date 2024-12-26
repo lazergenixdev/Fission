@@ -251,6 +251,32 @@ void Textured_Renderer_2D::end_render(Render_Context const& ctx) {
 	}
 }
 
+void Renderer_2D::add_triangle(v2f32 p0, v2f32 p1, v2f32 p2, color color) {
+    index_data[d.total_idx_count++] = u16(d.vtx_count);
+    index_data[d.total_idx_count++] = u16(d.vtx_count + 1);
+    index_data[d.total_idx_count++] = u16(d.vtx_count + 2);
+    
+    vertex_data[d.total_vtx_count++] = {p0, color};
+    vertex_data[d.total_vtx_count++] = {p1, color};
+    vertex_data[d.total_vtx_count++] = {p2, color};
+
+    d.idx_count += 3;
+    d.vtx_count += 3;
+}
+
+void Renderer_2D::add_triangle(v2f32 p0, v2f32 p1, v2f32 p2, color c0, color c1, color c2) {
+    index_data[d.total_idx_count++] = d.vtx_count;
+    index_data[d.total_idx_count++] = d.vtx_count + 1;
+    index_data[d.total_idx_count++] = d.vtx_count + 2;
+
+    vertex_data[d.total_vtx_count++] = { p0, c0 };
+    vertex_data[d.total_vtx_count++] = { p1, c1 };
+    vertex_data[d.total_vtx_count++] = { p2, c2 };
+
+    d.idx_count += 3;
+    d.vtx_count += 3;
+}
+
 void Renderer_2D::add_rect(rf32 rect, color color) {
     index_data[d.total_idx_count++] = d.vtx_count + 0;
     index_data[d.total_idx_count++] = d.vtx_count + 1;
@@ -266,6 +292,73 @@ void Renderer_2D::add_rect(rf32 rect, color color) {
 
     d.idx_count += 6;
     d.vtx_count += 4;
+}
+
+void Renderer_2D::add_rect(rf32 rect, color c_top_left, color c_top_right, color c_bot_left, color c_bot_right)
+{
+    index_data[d.total_idx_count++] = d.vtx_count + 0;
+    index_data[d.total_idx_count++] = d.vtx_count + 1;
+    index_data[d.total_idx_count++] = d.vtx_count + 2;
+    index_data[d.total_idx_count++] = d.vtx_count + 2;
+    index_data[d.total_idx_count++] = d.vtx_count + 3;
+    index_data[d.total_idx_count++] = d.vtx_count + 0;
+    
+    vertex_data[d.total_vtx_count++] = {{rect.x.low , rect.y.low }, c_top_left};
+    vertex_data[d.total_vtx_count++] = {{rect.x.low , rect.y.high}, c_bot_left};
+    vertex_data[d.total_vtx_count++] = {{rect.x.high, rect.y.high}, c_bot_right};
+    vertex_data[d.total_vtx_count++] = {{rect.x.high, rect.y.low }, c_top_right};
+
+    d.idx_count += 6;
+    d.vtx_count += 4;
+}
+
+void Renderer_2D::add_rect_outline(rf32 rect, float thick, Border_Style style, color c) {
+    for (int i = 0; i < 8; i++) {
+    // I bet you've never seen code like this:
+        i & 0x1 ?
+        (
+            index_data[d.total_idx_count++] = d.vtx_count + i,
+            index_data[d.total_idx_count++] = d.vtx_count + ( i + 1u ) % 8u,
+            index_data[d.total_idx_count++] = d.vtx_count + ( i + 2u ) % 8u
+        ):(
+            index_data[d.total_idx_count++] = d.vtx_count + i,
+            index_data[d.total_idx_count++] = d.vtx_count + ( i + 2u ) % 8u,
+            index_data[d.total_idx_count++] = d.vtx_count + ( i + 1u ) % 8u
+        );
+    }
+    float in_l = rect.x.low,  out_l = in_l;
+    float in_r = rect.x.high, out_r = in_r;
+    float in_t = rect.y.low,  out_t = in_t;
+    float in_b = rect.y.high, out_b = in_b;
+    float half = thick * 0.5f;
+
+    switch (style)
+    {
+    default: case BORDER_CENTER:
+        out_l -= half, out_t -= half;
+        out_r += half, out_b += half;
+         in_l += half,  in_t += half;
+         in_r -= half,  in_b -= half;
+    break; case BORDER_INSIDE:
+        in_l += thick, in_t += thick;
+        in_r -= thick, in_b -= thick;
+    break; case BORDER_OUTSIDE:
+        out_l -= thick, out_t -= thick;
+        out_r += thick, out_b += thick;
+    break;
+    }
+
+    vertex_data[d.total_vtx_count++] = {{out_l, out_b}, c};
+    vertex_data[d.total_vtx_count++] = {{ in_l,  in_b}, c};
+    vertex_data[d.total_vtx_count++] = {{out_l, out_t}, c};
+    vertex_data[d.total_vtx_count++] = {{ in_l,  in_t}, c};
+    vertex_data[d.total_vtx_count++] = {{out_r, out_t}, c};
+    vertex_data[d.total_vtx_count++] = {{ in_r,  in_t}, c};
+    vertex_data[d.total_vtx_count++] = {{out_r, out_b}, c};
+    vertex_data[d.total_vtx_count++] = {{ in_r,  in_b}, c};
+
+    d.idx_count += 24;
+    d.vtx_count += 8;
 }
 
 void Renderer_2D::add_line(v2f32 start, v2f32 end, float stroke, color startColor, color endColor)
@@ -288,7 +381,74 @@ void Renderer_2D::add_line(v2f32 start, v2f32 end, float stroke, color startColo
     d.vtx_count += 4;
 }
 
-void Textured_Renderer_2D::add_glyph(Glyph const* g, v2f32 origin, float scale, color color)
+void Renderer_2D::add_circle(v2f32 position, float radius, color color) {
+    int vtx_count = math::min(math::max(int(radius)*2, 10), 64);
+
+    for (int i = 0; i < vtx_count-2; ++i) {
+        index_data[d.total_idx_count++] = d.vtx_count;
+        index_data[d.total_idx_count++] = d.vtx_count + i + 1;
+        index_data[d.total_idx_count++] = d.vtx_count + i + 2;
+    }
+
+    for (int i = 0; i < vtx_count; ++i) {
+        float t = float(FS_TAU) * float(i) / float(vtx_count);
+        vertex_data[d.total_vtx_count++] = {position + v2f32(cosf(t), sinf(t))*radius, color};
+    }
+
+    d.vtx_count += vtx_count;
+    d.idx_count += (vtx_count - 2) * 3;
+}
+
+void Renderer_2D::add_circle_outline(v2f32 position, float radius, float inner_radius, color c_out, color c_in)
+{
+    int vtx_count = math::min(math::max(int(radius)*2, 10), 64);
+
+    for (int i = 0; i < vtx_count-1; ++i) {
+        index_data[d.total_idx_count++] = d.vtx_count + i*2 + 0;
+        index_data[d.total_idx_count++] = d.vtx_count + i*2 + 1;
+        index_data[d.total_idx_count++] = d.vtx_count + i*2 + 2;
+
+        index_data[d.total_idx_count++] = d.vtx_count + i*2 + 1;
+        index_data[d.total_idx_count++] = d.vtx_count + i*2 + 3;
+        index_data[d.total_idx_count++] = d.vtx_count + i*2 + 2;
+    }
+
+    index_data[d.total_idx_count++] = d.vtx_count + (vtx_count-1)*2 + 0;
+    index_data[d.total_idx_count++] = d.vtx_count + (vtx_count-1)*2 + 1;
+    index_data[d.total_idx_count++] = d.vtx_count + 0;
+
+    index_data[d.total_idx_count++] = d.vtx_count + (vtx_count-1)*2 + 1;
+    index_data[d.total_idx_count++] = d.vtx_count + 1;
+    index_data[d.total_idx_count++] = d.vtx_count + 0;
+
+    for (int i = 0; i < vtx_count; ++i) {
+        float t = float(FS_TAU) * float(i) / float(vtx_count);
+        vertex_data[d.total_vtx_count++] = {position + v2f32(cosf(t), sinf(t))*radius, c_out};
+        vertex_data[d.total_vtx_count++] = {position + v2f32(cosf(t), sinf(t))*inner_radius, c_in};
+    }
+
+    d.vtx_count += vtx_count * 2;
+    d.idx_count += vtx_count * 6;
+}
+
+void Textured_Renderer_2D::add_rect(rf32 const& rect, rf32 const& uv, color color) {
+    index_data[d.total_idx_count++] = d.vtx_count + 0;
+    index_data[d.total_idx_count++] = d.vtx_count + 1;
+    index_data[d.total_idx_count++] = d.vtx_count + 2;
+    index_data[d.total_idx_count++] = d.vtx_count + 2;
+    index_data[d.total_idx_count++] = d.vtx_count + 3;
+    index_data[d.total_idx_count++] = d.vtx_count + 0;
+    
+    vertex_data[d.total_vtx_count++] = {{rect.x.low , rect.y.low }, {uv.x.low , uv.y.low }, color};
+    vertex_data[d.total_vtx_count++] = {{rect.x.low , rect.y.high}, {uv.x.low , uv.y.high}, color};
+    vertex_data[d.total_vtx_count++] = {{rect.x.high, rect.y.high}, {uv.x.high, uv.y.high}, color};
+    vertex_data[d.total_vtx_count++] = {{rect.x.high, rect.y.low }, {uv.x.high, uv.y.low }, color};
+
+    d.idx_count += 6;
+    d.vtx_count += 4;
+}
+
+void Textured_Renderer_2D::add_glyph(Glyph const *g, v2f32 origin, float scale, color color)
 {
     index_data[d.total_idx_count++] = d.vtx_count;
     index_data[d.total_idx_count++] = d.vtx_count + 1u;
@@ -297,7 +457,7 @@ void Textured_Renderer_2D::add_glyph(Glyph const* g, v2f32 origin, float scale, 
     index_data[d.total_idx_count++] = d.vtx_count;
     index_data[d.total_idx_count++] = d.vtx_count + 2u;
 
-    const auto rect = rf32{
+    const auto rect = rf32 {
         roundf(origin.x + scale * g->rc.x.low),
         roundf(origin.x + scale * g->rc.x.high),
         roundf(origin.y + scale * g->rc.y.low),

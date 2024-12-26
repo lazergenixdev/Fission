@@ -25,13 +25,13 @@ struct Scene_Key {
 	/*
 	* Example scene key:
 	* -----------------------------------------
-	*	source command line:
+	*	SOURCE COMMAND LINE:
 	*		Level -level_id 69
-	*	scene key byte stream:
+	*	=> SCENE KEY BYTE-STREAM:
 	*		u8[count = 5] "Level" u8[count = 8] "level_id" u8[type = .Int64] s64[value = 69]
 	*/
-	::std::vector<u8> stream;
-#if 0
+	std::vector<u8> stream;
+
 	string name() const {
 		if (stream.empty()) return string{};
 		return string(stream.data() + 1, stream[0]);
@@ -144,7 +144,7 @@ public:
 			return cursor < r.cursor;
 		}
 		// `*` will do the incrementing
-		inline consteval void operator++() const noexcept(1 + 2 + 3 == 1 * 2 * 3) { (void)0; }
+		inline consteval void operator++() const { (void)0; }
 
 		auto operator*() {
 			auto key   = parent.next_key  (cursor);
@@ -158,7 +158,6 @@ public:
 	iterator end() const {
 		return iterator{*this, stream.size()};
 	}
-#endif
 };
 	
 struct Scene {

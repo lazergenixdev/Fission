@@ -202,7 +202,7 @@ auto Engine::create_screenshot_buffer () -> bool
 	};
 	VkBufferCreateInfo bufferInfo{
 		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		.size = 1920 * 1920 * sizeof(fs::rgba8),
+		.size = 1920 * 1920 * sizeof(fs::rgba8), // TODO: get largest monitor size
 		.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 	};
 	check(vmaCreateBuffer(graphics.allocator, &bufferInfo, &allocInfo, &screenshot_buffer, &screenshot_allocation, nullptr),
@@ -219,9 +219,9 @@ void Engine::destroy()
 	// Before doing anything that might crash the engine,
 	//    save persistant data to files...
 
-    engine.flags &=~ Engine::Running; // Ensure render thread will terminate
+    engine.flags &= ~Running; // Ensure render thread will terminate
     if (engine.render_thread) os_thread_join(engine.render_thread);
-	vkDeviceWaitIdle(graphics.device);
+	vkDeviceWaitIdle(graphics.device); // All graphics object must not be in use
 	current_scene->~Scene();
 	debug_layer.destroy();
 	console_layer.destroy();
@@ -231,10 +231,10 @@ void Engine::destroy()
 	vmaDestroyBuffer(graphics.allocator, transform_2d.buffer, transform_2d.allocation);
 	font.debug.destroy();
 	font.console.destroy();
+	FT_Done_FreeType(font.library);
 	vkDestroyDescriptorPool(graphics.device, descriptor_pool, nullptr);
 	vkDestroyDescriptorSetLayout(engine.graphics.device, transform_2d.layout, nullptr);
 	vkDestroyDescriptorSetLayout(graphics.device, texture_layout, nullptr);
-	FT_Done_FreeType(font.library);
 	vmaDestroyBuffer(engine.graphics.allocator, screenshot_buffer, screenshot_allocation);
 	for_n (graphics.sc_image_count) vkDestroyFramebuffer(graphics.device, frame_buffers[i], nullptr);
 	FISSION_DEFAULT_FREE(frame_buffers);
@@ -254,9 +254,8 @@ void Engine::shutdown()
 	window.close();
 }
 
-bool stop()
-{
-    engine.flags &=~ Engine::Running;
+bool stop() {
+    engine.flags &= ~Engine::Running;
     return false;
 }
 
@@ -290,12 +289,10 @@ auto Engine::render_frame() -> bool
 		resize();
 		flags &= ~Graphics_Recreate_Swap_Chain;
 	}
-#if 0
-#if defined(FISSION_PLATFORM_WINDOWS)
+#if defined(FISSION_PLATFORM_WINDOWS) && false
+	{
 		auto timer = CreateWaitableTimerExW(NULL, NULL, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);
-#endif
 		if (flags & fFPS_Limiter_Enable) {
-#if defined(FISSION_PLATFORM_WINDOWS)
 			auto time_between_frames = s64(1e7f / fps_limit);
 			auto next = fps_last + time_between_frames;
 			auto now = timestamp();
@@ -306,11 +303,9 @@ auto Engine::render_frame() -> bool
 				WaitForSingleObject(timer, INFINITE);
 			}
 			fps_last = next;
-#endif
 		}
-#if defined(FISSION_PLATFORM_WINDOWS)
 		CloseHandle(timer);
-#endif
+	}
 #endif
 
 //=====================================================================================
@@ -509,7 +504,7 @@ void* convert_to_rgb(void* data, int pixel_count) {
 
 	for (int i = 0, j = 0; i < pixel_count * 4; i += 4, j += 3) {
 		// Copy RGB values (skipping the alpha channel)
-		output_data[j] = input_data[i + 2];     // Blue
+		output_data[j]     = input_data[i + 2]; // Blue
 		output_data[j + 1] = input_data[i + 1]; // Green
 		output_data[j + 2] = input_data[i];     // Red
 	}
