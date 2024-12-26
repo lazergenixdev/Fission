@@ -167,7 +167,9 @@ struct Scene {
         (void)events;
         (void)render_context;
     }
-	virtual void on_resize() {}
+	virtual void on_resize(int old_image_count) {
+		(void)old_image_count;
+	}
 	virtual ~Scene() = default;
 };
 

@@ -199,7 +199,7 @@ struct Single_Descriptor_Set_Layout {
 };
 
 //! @TODO: vvv  rename this
-using Transform_2D_Layout = Single_Descriptor_Set_Layout<VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER>;
+using Transform_2D_Layout = Single_Descriptor_Set_Layout<VK_SHADER_STAGE_VERTEX_BIT,   VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER>;
 using Texture_Layout      = Single_Descriptor_Set_Layout<VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER>;
 
 struct Transform_2D_Data {
@@ -254,15 +254,15 @@ namespace vk
 		static constexpr VkFormat value = VK_FORMAT_UNDEFINED;
 	};
 
-	template <>	struct _format_of<fs::rgba8> { static constexpr VkFormat value = VK_FORMAT_R8G8B8A8_UNORM; };
+	template <>	struct _format_of<fs::rgba8> { static constexpr VkFormat value = VK_FORMAT_R8G8B8A8_UNORM;      };
 	template <>	struct _format_of<fs::rgba>  { static constexpr VkFormat value = VK_FORMAT_R32G32B32A32_SFLOAT; };
-	template <>	struct _format_of<fs::rgb>   { static constexpr VkFormat value = VK_FORMAT_R32G32B32_SFLOAT; };
+	template <>	struct _format_of<fs::rgb>   { static constexpr VkFormat value = VK_FORMAT_R32G32B32_SFLOAT;    };
 	template <>	struct _format_of<fs::v4f32> { static constexpr VkFormat value = VK_FORMAT_R32G32B32A32_SFLOAT; };
-	template <>	struct _format_of<fs::v3f32> { static constexpr VkFormat value = VK_FORMAT_R32G32B32_SFLOAT; };
-	template <>	struct _format_of<fs::v2f32> { static constexpr VkFormat value = VK_FORMAT_R32G32_SFLOAT; };
-	template <>	struct _format_of<fs::f32>   { static constexpr VkFormat value = VK_FORMAT_R32_SFLOAT; };
-	template <>	struct _format_of<fs::s32>   { static constexpr VkFormat value = VK_FORMAT_R32_SINT; };
-	template <>	struct _format_of<fs::u32>   { static constexpr VkFormat value = VK_FORMAT_R32_UINT; };
+	template <>	struct _format_of<fs::v3f32> { static constexpr VkFormat value = VK_FORMAT_R32G32B32_SFLOAT;    };
+	template <>	struct _format_of<fs::v2f32> { static constexpr VkFormat value = VK_FORMAT_R32G32_SFLOAT;       };
+	template <>	struct _format_of<fs::f32>   { static constexpr VkFormat value = VK_FORMAT_R32_SFLOAT;          };
+	template <>	struct _format_of<fs::s32>   { static constexpr VkFormat value = VK_FORMAT_R32_SINT;            };
+	template <>	struct _format_of<fs::u32>   { static constexpr VkFormat value = VK_FORMAT_R32_UINT;            };
 
 	template <typename T> static constexpr VkFormat format_of = _format_of<T>::value;
 
@@ -283,7 +283,47 @@ namespace vk
 		return vkEndCommandBuffer(command_buffer);
 	}
 	
-	FISSION_API void begin(VkCommandBuffer command_buffer, VkRenderPass render_pass, VkFramebuffer frame_buffer, VkClearColorValue color = {});
+	FISSION_API void begin(
+		VkCommandBuffer command_buffer,
+		VkRenderPass render_pass,
+		VkFramebuffer frame_buffer,
+		VkClearColorValue color
+	);
+
+	FISSION_API void begin(
+		VkCommandBuffer command_buffer,
+		VkRenderPass render_pass,
+		VkFramebuffer frame_buffer
+	);
+
+	inline VkImageSubresourceRange color_image_range(uint32_t layer = 0) {
+		return {
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.baseMipLevel = 0,
+			.levelCount = 1,
+			.baseArrayLayer = layer,
+			.layerCount = 1,
+		};
+	}
+
+	inline void image_barrier(
+		VkCommandBuffer cmd,
+		VkImage image,
+		VkImageLayout src_layout, VkAccessFlags src_access, VkPipelineStageFlags src_stage,
+		VkImageLayout dst_layout, VkAccessFlags dst_access, VkPipelineStageFlags dst_stage,
+		VkImageSubresourceRange range = color_image_range()
+	) {
+		VkImageMemoryBarrier barrier {
+			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+			.oldLayout = src_layout,
+			.newLayout = dst_layout,
+			.image = image,
+			.subresourceRange = range,
+			.srcAccessMask = src_access,
+			.dstAccessMask = dst_access,
+		};
+		vkCmdPipelineBarrier(cmd, src_stage, dst_stage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+	}
 
 	static constexpr uint32_t size_of(VkFormat format) {
 		switch (format)
@@ -406,7 +446,7 @@ namespace vk
 	}
 
 	enum Shader_Stage {
-		Vertex = VK_SHADER_STAGE_VERTEX_BIT,
+		Vertex   = VK_SHADER_STAGE_VERTEX_BIT,
 		Fragment = VK_SHADER_STAGE_FRAGMENT_BIT,
 		Geometry = VK_SHADER_STAGE_GEOMETRY_BIT,
 	};

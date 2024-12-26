@@ -3,6 +3,31 @@
 
 using namespace fs;
 
+#if defined(FISSION_PLATFORM_WINDOWS)
+void get_cpu_string(string& buffer) {
+	int CPUInfo[4] = { -1 };
+	unsigned   nExIds, i = 0;
+	// Get the information associated with each extended ID.
+	__cpuid(CPUInfo, 0x80000000);
+	nExIds = CPUInfo[0];
+	for (i = 0x80000000; i <= nExIds; ++i)
+	{
+		__cpuid(CPUInfo, i);
+		// Interpret CPU brand string
+		if (i == 0x80000002)
+			memcpy(buffer.data,      CPUInfo, sizeof(CPUInfo));
+		else if (i == 0x80000003)
+			memcpy(buffer.data + 16, CPUInfo, sizeof(CPUInfo));
+		else if (i == 0x80000004)
+			memcpy(buffer.data + 32, CPUInfo, sizeof(CPUInfo));
+	}
+
+	size_t size = strlen((char*)buffer.data) - 1;
+	while (buffer.data[size] == ' ') size--;
+	buffer.count = size + 1;
+}
+#endif
+
 struct Console_Window {
     HANDLE output;
     Console_Window() {

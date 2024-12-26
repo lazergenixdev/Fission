@@ -13,45 +13,9 @@
 
 extern fs::Engine engine;
 extern fs::string platform_version;
+extern fs::string cpu_name;
 
 using namespace fs;
-
-#if defined(FISSION_PLATFORM_WINDOWS)
-void get_cpu_string(string& buffer) {
-	int CPUInfo[4] = { -1 };
-	unsigned   nExIds, i = 0;
-	// Get the information associated with each extended ID.
-	__cpuid(CPUInfo, 0x80000000);
-	nExIds = CPUInfo[0];
-	for (i = 0x80000000; i <= nExIds; ++i)
-	{
-		__cpuid(CPUInfo, i);
-		// Interpret CPU brand string
-		if (i == 0x80000002)
-			memcpy(buffer.data,      CPUInfo, sizeof(CPUInfo));
-		else if (i == 0x80000003)
-			memcpy(buffer.data + 16, CPUInfo, sizeof(CPUInfo));
-		else if (i == 0x80000004)
-			memcpy(buffer.data + 32, CPUInfo, sizeof(CPUInfo));
-	}
-
-	size_t size = strlen((char*)buffer.data) - 1;
-	while (buffer.data[size] == ' ') size--;
-	buffer.count = size + 1;
-}
-
-template <>
-struct ::std::formatter<fs::compressed_version> {
-	constexpr auto parse(std::format_parse_context& ctx) {
-		return ctx.begin();
-	}
-
-	auto format(const fs::compressed_version& cv, std::format_context& ctx) {
-		auto v = cv.uncompress();
-		return std::format_to(ctx.out(), "{}.{}.{}", v.Major, v.Minor, v.Patch);
-	}
-};
-#endif
 
 void copy_to(string s, std::vector<c8>& out) {
 	for_n (s.count) out.emplace_back(s.data[i]);
@@ -79,8 +43,12 @@ void Debug_Layer::create() {
 	app_info_string = next_view;
 
 	offset = character_buffer.size();
-    // TODO: version is hard-coded!
-	copy_to(std::random_device{}() % 128 ? string("Fission Engine (v0.10.0)") : string("Unreal Engine v6.0.0"), character_buffer);
+	fmt::format_to(std::back_inserter(character_buffer), "{} ({}.{}.{})",
+		(std::random_device{}() % 128 ? "Fission Engine" : "Unreal Engine"),
+        engine.version.Major,
+        engine.version.Minor,
+        engine.version.Patch
+    );
 	right_strings.emplace_back(next_view);
 	
 	offset = character_buffer.size();
@@ -96,14 +64,9 @@ void Debug_Layer::create() {
 #if FS_DEBUG_LAYER_SHOW_HARDWARE
 	right_strings.emplace_back();
 
-#if defined(FISSION_PLATFORM_WINDOWS)
-	char CPUBrandString[0x40];
-	string cpu_string = FS_str_buffer(CPUBrandString);
-	get_cpu_string(cpu_string);
 	offset = character_buffer.size();
-	std::format_to(std::back_inserter(character_buffer), "CPU: {}", cpu_string.str());
+	fmt::format_to(std::back_inserter(character_buffer), "CPU: {}", cpu_name.str());
 	right_strings.emplace_back(next_view);
-#endif
 
 	VkPhysicalDeviceProperties props;
 	vkGetPhysicalDeviceProperties(engine.graphics.physical_device, &props);

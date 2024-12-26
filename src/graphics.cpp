@@ -745,8 +745,8 @@ void Graphics::upload(VkBuffer dstBuffer, void const* inData, VkDeviceSize inSiz
 }
 
 // TODO: errors? they exist right??
-void Graphics::upload
-(	VkImage       destination,
+void Graphics::upload (
+	VkImage       destination,
 	void const*   image_data,
 	VkExtent3D    extent,
 	VkFormat      format,
@@ -790,25 +790,15 @@ void Graphics::upload
 
 	vk::begin(command_buffer, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     {
+		auto range = vk::color_image_range(layer);
+
         // 4. Set Image Layout for transfer
-		VkImageSubresourceRange range {
-			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-			.baseMipLevel = 0,
-			.levelCount = 1,
-			.baseArrayLayer = layer,
-			.layerCount = 1,
-		};
-        VkImageMemoryBarrier to_transfer {
-			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-			.srcAccessMask = 0,
-			.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-			.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			.image = destination,
-			.subresourceRange = range,
-		};
-        vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-			VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &to_transfer);
+		vk::image_barrier (
+			command_buffer, destination,
+			VK_IMAGE_LAYOUT_UNDEFINED,            VK_ACCESS_NONE,               VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			range
+		);
 
         // 5. Copy from Staging Buffer to Destination Image
 		VkBufferImageCopy region {
@@ -824,17 +814,12 @@ void Graphics::upload
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
         // 6. Set Image Layout to the Final Layout
-        VkImageMemoryBarrier to_readable {
-			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-			.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-			.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
-			.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			.newLayout = final_layout,
-			.image = destination,
-			.subresourceRange = range,
-		};
-        vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &to_readable);
+		vk::image_barrier (
+			command_buffer, destination,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			final_layout,                         VK_ACCESS_SHADER_READ_BIT,    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+			range
+		);
     }
     vk::end(command_buffer);
 
@@ -854,20 +839,18 @@ void Graphics::upload
 
 version Graphics::api_version()
 {
-	uint32_t instanceVersion;
-	
-	// TODO: should I pass instance here?
-	auto enumerateInstanceVersion = (PFN_vkEnumerateInstanceVersion)vkGetInstanceProcAddr(nullptr, "vkEnumerateInstanceVersion");
-	if (enumerateInstanceVersion == nullptr)
-		return version(1,0,0);
-	
-	if (enumerateInstanceVersion(&instanceVersion) != VK_SUCCESS)
-		return version();
+	if (physical_device == VK_NULL_HANDLE) {
+		fs::log::warn("Cannot call Graphics::api_version until graphics has been created");
+		return {};
+	}
+
+	VkPhysicalDeviceProperties properties;
+	vkGetPhysicalDeviceProperties(physical_device, &properties);
 
 	return {
-		VK_API_VERSION_MAJOR(instanceVersion),
-		VK_API_VERSION_MINOR(instanceVersion),
-		VK_API_VERSION_PATCH(instanceVersion),
+		VK_API_VERSION_MAJOR(properties.apiVersion),
+		VK_API_VERSION_MINOR(properties.apiVersion),
+		VK_API_VERSION_PATCH(properties.apiVersion),
 	};
 }
 
@@ -877,7 +860,7 @@ auto Graphics::pre_rotation() -> glm::mat2
 	switch (sc_transform)
 	{
 	default:
-		return glm::mat2(1.0f);
+		return mat2(1.0f);
 	case VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR:
 		return rotate(mat4(1.0f), radians(90.0f), vec3(0.0f, 0.0f, 1.0f));
 	case VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR:
@@ -910,12 +893,22 @@ void vk::begin(VkCommandBuffer command_buffer, VkRenderPass render_pass, VkFrame
 		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
 		.renderPass = render_pass,
 		.framebuffer = frame_buffer,
-		.renderArea = {
-			.offset = {0, 0},
-			.extent = engine.graphics.sc_extent,
-		},
+		.renderArea = { {0, 0}, engine.graphics.sc_extent },
 		.clearValueCount = 1,
 		.pClearValues = &clear_color,
+	};
+	vkCmdBeginRenderPass(command_buffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
+}
+
+void vk::begin(VkCommandBuffer command_buffer, VkRenderPass render_pass, VkFramebuffer frame_buffer)
+{
+	VkRenderPassBeginInfo begin_info {
+		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+		.renderPass = render_pass,
+		.framebuffer = frame_buffer,
+		.renderArea = { {0, 0}, engine.graphics.sc_extent },
+		.clearValueCount = 0,
+		.pClearValues = nullptr,
 	};
 	vkCmdBeginRenderPass(command_buffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
 }
@@ -973,11 +966,11 @@ VkResult vk::Render_Pass_Creator::create(VkRenderPass* pRenderPass) {
 	VkRenderPassCreateInfo render_pass_info {
 		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
 		.attachmentCount = (fs::u32)attachments.size(),
-		.pAttachments = attachments.data(),
-		.subpassCount = (fs::u32)subpasses.size(),
-		.pSubpasses = subpasses.data(),
+		.pAttachments    = attachments.data(),
+		.subpassCount    = (fs::u32)subpasses.size(),
+		.pSubpasses      = subpasses.data(),
 		.dependencyCount = (fs::u32)subpass_dependencies.size(),
-		.pDependencies = subpass_dependencies.data(),
+		.pDependencies   = subpass_dependencies.data(),
 	};
 	return vkCreateRenderPass(engine.graphics.device, &render_pass_info, nullptr, pRenderPass);
 }

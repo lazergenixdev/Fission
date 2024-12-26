@@ -101,9 +101,7 @@ struct Textured_Renderer_2D {
 	void add_glyph(Glyph const* g, v2f32 origin, float scale, color c);
 
 	// exists so that there is no need to pass extra parameter to add_string
-	void set_font(struct Font* font) {
-		current_font = font;
-	}
+	void set_font(struct Font* font) { current_font = font; }
 
 	v2f32 add_string(string str, v2f32 top_left, color col);
 
