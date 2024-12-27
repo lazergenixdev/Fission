@@ -47,6 +47,10 @@ struct Renderer_2D {
 
 	void add_triangle(v2f32 p0, v2f32 p1, v2f32 p2, color c1, color c2, color c3);
 
+	void add_line(v2f32 start, v2f32 end, float stroke, color c) {
+		add_line(start, end, stroke, c, c);
+	}
+
 	void add_line(v2f32 start, v2f32 end, float stroke, color c_start, color c_end);
 
 	void add_rect(rf32 rect, color c);
