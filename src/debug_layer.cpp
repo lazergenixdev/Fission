@@ -204,6 +204,7 @@ void Debug_Layer::on_update(double dt, Render_Context* ctx) {
 	
 	add_text(app_info_string.absolute(base));
 	add_text(fmt::format("{:.1f} FPS ({:.2f} ms)", 1.0f / mean_frame_time, mean_frame_time * 1000.0f));
+	add_text(fmt::format("Resolution: [{}x{}]", engine.graphics.sc_extent.width, engine.graphics.sc_extent.height));
 
 	if (flags& layer::debug_show_verbose) {
 		add_text(fmt::format("CPU time: {:.4f} ms", cpu_time * 1000.f));

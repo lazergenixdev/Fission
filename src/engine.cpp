@@ -27,7 +27,6 @@ fs::Engine engine {
 
 auto Engine::create(Defaults const& defaults) -> bool
 {
-    (void)defaults; // TODO
     log::info("Creating Fission Engine...");
 
 	// setup the console early so we can use it as soon as possible
@@ -35,7 +34,9 @@ auto Engine::create(Defaults const& defaults) -> bool
 	add_engine_console_commands();
 
     if (window.create({
-        .title = __TITLE__,
+        .title = defaults.window_title,
+		.width = defaults.window_width,
+		.height = defaults.window_height,
     })) return true;
 
 	if (graphics.create({

@@ -67,7 +67,7 @@ auto Window::create(Window_Create_Info const& info) -> bool
     glfwInitVulkanLoader(&vkGetInstanceProcAddr);
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    _glfw_window = glfwCreateWindow(800, 600, __TITLE__, nullptr, nullptr);
+    _glfw_window = glfwCreateWindow(info.width/2, info.height/2, info.title.str().c_str(), nullptr, nullptr);
     glfwSetWindowUserPointer(_glfw_window, this);
     glfwSetFramebufferSizeCallback(_glfw_window, on_glfw_frame_buffer_resize);
     glfwSetCursorPosCallback(_glfw_window, on_glfw_cursor_position);
