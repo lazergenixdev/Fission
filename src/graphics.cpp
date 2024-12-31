@@ -946,6 +946,28 @@ VkResult vk::Pipeline_Creator::create(VkPipeline* p_pipeline) {
 		1, &pipeline_info, nullptr, p_pipeline);
 }
 
+VkResult vk::Pipeline_Creator::create_no_fragment(VkPipeline* pipeline) {
+	dynamic_state.dynamicStateCount = (fs::u32)dynamic_states.size();
+	dynamic_state.pDynamicStates = dynamic_states.data();
+	color_blend_state.pAttachments = &blend_attachment;
+
+	VkGraphicsPipelineCreateInfo pipelineInfo{ VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
+	pipelineInfo.stageCount = 1;
+	pipelineInfo.pStages = shaders.data();
+	pipelineInfo.pVertexInputState = vertex_input_state;
+	pipelineInfo.pInputAssemblyState = &input_assembly_state;
+	pipelineInfo.pViewportState = &viewport_state;
+	pipelineInfo.pRasterizationState = &rasterization_state;
+	pipelineInfo.pMultisampleState = &multisample_state;
+	pipelineInfo.pDepthStencilState = &depth_stencil_state;
+	pipelineInfo.pColorBlendState = &color_blend_state;
+	pipelineInfo.pDynamicState = &dynamic_state;
+	pipelineInfo.layout = layout;
+	pipelineInfo.renderPass = render_pass;
+	pipelineInfo.subpass = subpass;
+	return vkCreateGraphicsPipelines(engine.graphics.device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, pipeline);
+}
+
 VkResult vk::Pipeline_Layout_Creator::create(VkPipelineLayout* p_pipeline_layout) {
 	VkPipelineLayoutCreateInfo pipeline_layout_info{
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -973,4 +995,22 @@ VkResult vk::Render_Pass_Creator::create(VkRenderPass* pRenderPass) {
 		.pDependencies   = subpass_dependencies.data(),
 	};
 	return vkCreateRenderPass(engine.graphics.device, &render_pass_info, nullptr, pRenderPass);
+}
+
+void fs::set_viewport_and_scissor(VkCommandBuffer cmd, rf32 rect) {
+	VkRect2D scissor {
+		.offset = {},
+		.extent = { .width = rect.width(), .height = rect.height() },
+	};
+	vkCmdSetScissor(cmd, 0, 1, &scissor);
+
+	VkViewport viewport {
+		.width = rect.width(),
+		.height = rect.height(),
+		.minDepth = 0.0f,
+		.maxDepth = 1.0f,
+		.x = 0.0f,
+		.y = 0.0f,
+	};
+	vkCmdSetViewport(cmd, 0, 1, &viewport);
 }

@@ -41,8 +41,8 @@ enum EventType {
 
 // TODO: try linked list for events (no pointers, only offsets)
 struct Event {
-    u64 type;
     s64 timestamp;
+    u8 type;
 
 	union {
         struct {
