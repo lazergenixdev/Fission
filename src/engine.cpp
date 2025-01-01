@@ -90,7 +90,7 @@ auto Engine::create_layers() -> bool
 		VkDescriptorPoolCreateInfo descPoolInfo {
 			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
 			.maxSets = (32 + 64),
-			.poolSizeCount = (fs::u32)std::size(pool_sizes),
+			.poolSizeCount = (u32)std::size(pool_sizes),
 			.pPoolSizes = pool_sizes,
 		};
 		check(vkCreateDescriptorPool(graphics.device, &descPoolInfo, nullptr, &descriptor_pool),
@@ -112,7 +112,7 @@ auto Engine::create_layers() -> bool
 		VmaAllocationCreateInfo allocInfo { .usage = VMA_MEMORY_USAGE_AUTO };
 		VkBufferCreateInfo bufferInfo {
 			.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-			.size = sizeof(fs::Transform_2D_Data),
+			.size = sizeof(Transform_2D_Data),
 			.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 		};
 		check(vmaCreateBuffer(graphics.allocator, &bufferInfo, &allocInfo, &transform_2d.buffer, &transform_2d.allocation, nullptr),
@@ -343,16 +343,21 @@ auto Engine::render_frame() -> bool
 	//-------------------------------------------------------------------------------------
 	// Eat any events handled by debug and console layers
 	window.event_queue.pop_all(events);
-	debug_layer.handle_events(events);
+	debug_layer  .handle_events(events);
 	console_layer.handle_events(events);
 	//-------------------------------------------------------------------------------------
 
+	graphics.set_default_scissor(render_context.command_buffer);
+	graphics.set_default_viewport(render_context.command_buffer);
 	current_scene->on_update(delta_time, events, render_context);
 
 	//-------------------------------------------------------------------------------------
 	// Render console and debug overlay
 	vk::begin(render_context.command_buffer, overlay_render_pass, render_context.frame_buffer, {});
 	{
+		graphics.set_default_scissor(render_context.command_buffer);
+		graphics.set_default_viewport(render_context.command_buffer);
+
 		bind_font(render_context.command_buffer, &font.console);
 		console_layer.on_update(delta_time, &render_context);
 
@@ -366,7 +371,7 @@ auto Engine::render_frame() -> bool
 
 	vkEndCommandBuffer(render_context.command_buffer);
 
-	renderer_2d.end_render(render_context);
+	renderer_2d         .end_render(render_context);
 	textured_renderer_2d.end_render(render_context);
 
 	//-------------------------------------------------------------------------------------

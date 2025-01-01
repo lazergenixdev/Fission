@@ -94,6 +94,7 @@ struct Renderer_2D {
 	u16*    index_data;
 
 	Draw_Data d;
+	int draw_call_count; // per frame
 
     // Shaders free to use for other pipelines,
     // will always be alive until engine gets destroyed
@@ -146,6 +147,7 @@ struct Textured_Renderer_2D {
 	Font* current_font;
 
 	Draw_Data d;
+	int draw_call_count; // per frame
 
     // Shaders free to use for other pipelines,
     // will always be alive until engine gets destroyed

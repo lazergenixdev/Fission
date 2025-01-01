@@ -1,6 +1,7 @@
 #include <Fission/graphics/renderer_2d.hpp>
 #include <Fission/core/engine.hpp>
 #include <Fission/base/memory.hpp>
+#include <format.hpp>
 
 extern fs::Engine engine;
 
@@ -109,6 +110,8 @@ void Renderer_2D::create(Graphics* gfx, VkRenderPass render_pass, Transform_2D_L
 
 	frag = pc.shaders[0].module;
 	vert = pc.shaders[1].module;
+
+    draw_call_count = 0;
 }
 
 
@@ -154,6 +157,8 @@ void Textured_Renderer_2D::create(
 
 	frag = pc.shaders[0].module;
 	vert = pc.shaders[1].module;
+
+    draw_call_count = 0;
 }
 
 void Renderer_2D::destroy() {
@@ -188,67 +193,48 @@ void Renderer_2D::draw_pipeline(Render_Context const& ctx, VkPipeline pipeline) 
 	vkCmdBindIndexBuffer(ctx.command_buffer, fd.index_buffer, 0, VK_INDEX_TYPE_UINT16);
 	VkDeviceSize offset = 0;
 	vkCmdBindVertexBuffers(ctx.command_buffer, 0, 1, &fd.vertex_buffer, &offset);
-
-	VkViewport viewport{};
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width  = static_cast<float>(engine.graphics.sc_extent.width);
-	viewport.height = static_cast<float>(engine.graphics.sc_extent.height);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-	vkCmdSetViewport(ctx.command_buffer, 0, 1, &viewport);
-
-	VkRect2D scissor{};
-	scissor.offset = { 0, 0 };
-	scissor.extent = engine.graphics.sc_extent;
-	vkCmdSetScissor(ctx.command_buffer, 0, 1, &scissor);
-
 	vkCmdDrawIndexed(ctx.command_buffer, d.idx_count, 1, d.idx_offset, d.vtx_offset, 0);
 
 	d.start_new_draw();
+    draw_call_count++;
 }
 
 void Textured_Renderer_2D::draw_pipeline(Render_Context const& ctx, VkPipeline pipeline) {
 	auto& fd = frame_data[ctx.frame];
 
 	VkDeviceSize offset {0};
-	VkViewport viewport {
-        .x = 0.0f,
-        .y = 0.0f,
-        .width  = static_cast<float>(engine.graphics.sc_extent.width),
-        .height = static_cast<float>(engine.graphics.sc_extent.height),
-        .minDepth = 0.0f,
-        .maxDepth = 1.0f,
-    };
-	VkRect2D scissor {
-	    .offset = {0, 0},
-	    .extent = engine.graphics.sc_extent,
-    };
 
 	vkCmdBindPipeline(ctx.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 	vkCmdBindIndexBuffer(ctx.command_buffer, fd.index_buffer, 0, VK_INDEX_TYPE_UINT16);
 	vkCmdBindVertexBuffers(ctx.command_buffer, 0, 1, &fd.vertex_buffer, &offset);
-	vkCmdSetViewport(ctx.command_buffer, 0, 1, &viewport);
-	vkCmdSetScissor(ctx.command_buffer, 0, 1, &scissor);
 	vkCmdDrawIndexed(ctx.command_buffer, d.idx_count, 1, d.idx_offset, d.vtx_offset, 0);
 
 	d.start_new_draw();
+    draw_call_count++;
 }
 
 void Renderer_2D::end_render(Render_Context const& ctx) {
+    float vmem = math::min(d.total_vtx_count, d.total_idx_count / 2);
+    engine.debug_layer.add(fmt::format("2d renderer (memory {:.3f}%) ({} draw calls)", vmem / float(MAX_COUNT), draw_call_count));
+
 	if (d.total_vtx_count) {
 		auto& fd = frame_data[ctx.frame];
 		fd.send(engine.graphics.allocator, vertex_data, index_data, d.total_vtx_count * sizeof(Vertex), d.total_idx_count * sizeof(u16));
 		d.reset();
 	}
+    draw_call_count = 0;
 }
 
 void Textured_Renderer_2D::end_render(Render_Context const& ctx) {
+    float vmem = math::min(d.total_vtx_count, d.total_idx_count / 2);
+    engine.debug_layer.add(fmt::format("uv renderer (memory {:.3f}%) ({} draw calls)", vmem / float(MAX_COUNT), draw_call_count));
+
 	if (d.total_vtx_count) {
 		auto& fd = frame_data[ctx.frame];
 		fd.send(engine.graphics.allocator, vertex_data, index_data, d.total_vtx_count * sizeof(Vertex), d.total_idx_count * sizeof(u16));
 		d.reset();
 	}
+    draw_call_count = 0;
 }
 
 void Renderer_2D::add_triangle(v2f32 p0, v2f32 p1, v2f32 p2, color color) {

@@ -94,6 +94,7 @@ struct Graphics
 
 	auto pre_rotation () -> glm::mat2;
 
+	// size for shaders???
 	inline constexpr v2u32 size() const {
 		u32 w = sc_extent.width;
 		u32 h = sc_extent.height;
@@ -102,11 +103,16 @@ struct Graphics
 		? v2u32{h, w} : v2u32{w, h};
 	}
 
+	// Physical size of each swap chain image
 	inline constexpr v2f32 render_size() const {
-		auto x = float(sc_extent.width);
-		auto y = float(sc_extent.height);
-		return { x, y };
+		return {
+			static_cast<float>(sc_extent.width),
+			static_cast<float>(sc_extent.height)
+		};
 	}
+
+	void set_default_viewport(VkCommandBuffer cmd);
+	void set_default_scissor(VkCommandBuffer cmd);
 
 	VkInstance       instance         {};
 	VkPhysicalDevice physical_device  {};
@@ -168,6 +174,7 @@ private:
     bool create_sync_objects    ();
 };
 
+// Set Viewport and Scissor with a single rect
 extern void set_viewport_and_scissor(VkCommandBuffer cmd, rf32 rect);
 
 // TODO: Templating this makes no sense, please refactor... anytime now!

@@ -870,6 +870,26 @@ auto Graphics::pre_rotation() -> glm::mat2
 	}
 }
 
+void Graphics::set_default_viewport(VkCommandBuffer cmd) {
+    VkViewport viewport {
+        .x = 0.0f,
+        .y = 0.0f,
+        .width  = static_cast<float>(sc_extent.width),
+        .height = static_cast<float>(sc_extent.height),
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f,
+    };
+    vkCmdSetViewport(cmd, 0, 1, &viewport);
+}
+
+void Graphics::set_default_scissor(VkCommandBuffer cmd) {
+    VkRect2D scissor {
+        .offset = { 0, 0 },
+        .extent = sc_extent,
+    };
+    vkCmdSetScissor(cmd, 0, 1, &scissor);
+}
+
 
 ////////////////////////////////////////////////////////////////////
 // Shaders
