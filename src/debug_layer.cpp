@@ -1,7 +1,6 @@
-#include <Fission/core/layer.hpp>
-#include <Fission/core/engine.hpp>
-#include <Fission/core/input/keys.hpp>
-#include "internal.hpp"
+#include "Fission/core/layer.hpp"
+#include "Fission/core/engine.hpp"
+#include "Fission/core/input/keys.hpp"
 #include <format>
 #include <random>
 
@@ -23,9 +22,9 @@ void Debug_Layer::create() {
 	frame_times = (float*)FISSION_DEFAULT_ALLOC(frame_count * sizeof(float));
 	for_n(frame_count) frame_times[i] = 0.001f;
 
-	character_buffer.reserve(512);
-	left_strings.reserve(16);
-	right_strings.reserve(16);
+	character_buffer.clear();
+	left_strings.clear();
+	right_strings.clear();
 
 #   define next_view string_view{.offset = (u32)offset, .count = u32(character_buffer.size() - offset)}
 
@@ -187,7 +186,7 @@ void Debug_Layer::on_update(double dt, Render_Context* ctx) {
 		}
 		offset += height;
 	};
-	float right = (float)engine.graphics.sc_extent.width;
+	float right = (float)engine.graphics.size().x;
 	auto add_text_right = [&](string s) {
 		if (s.count) {
 			auto bounds = engine.textured_renderer_2d.add_string_rtl(s, { right, offset }, colors::white);

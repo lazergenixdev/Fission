@@ -11,17 +11,11 @@
  * @License:      MIT (see end of file)
  */
 #pragma once
-// I am lazy, sorry :(
-// https://github.com/TheCherno/Hazel/blob/master/Hazel/src/Hazel/Core/PlatformDetection.h
+
 #if defined(FISSION_USE_HEADLESS)
 #   define FISSION_PLATFORM_HEADLESS
 #elif defined(_WIN32)
 #	define FISSION_PLATFORM_WINDOWS
-#	ifdef _WIN64
-#		define FISSION_PLATFORM_WINDOWS_64
-#	else
-#		define FISSION_PLATFORM_WINDOWS_32
-#	endif
 #elif defined(__APPLE__) || defined(__MACH__)
 #	include <TargetConditionals.h>
 	/* TARGET_OS_MAC exists on all the platforms
@@ -29,13 +23,11 @@
 	* to ensure that we're running on MAC
 	* and not some other Apple platform */
 #	if TARGET_IPHONE_SIMULATOR == 1
-#		error "IOS simulator is not supported!"
+#		define FISSION_PLATFORM_IOS
 #	elif TARGET_OS_IPHONE == 1
 #		define FISSION_PLATFORM_IOS
-#		error "IOS is not supported!"
 #	elif TARGET_OS_MAC == 1
 #		define FISSION_PLATFORM_MACOS
-//#		error "MacOS is not supported!"
 #	else
 #		error "Unknown Apple platform!"
 #	endif

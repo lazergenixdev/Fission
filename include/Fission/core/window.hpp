@@ -19,9 +19,8 @@
 #include <Fission/platform/utils.hpp>
 #include <mutex>
 #include <vector>
-#include <iterator>
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 enum Window_Mode: u32 {
 	Windowed             = 0x01,
@@ -37,13 +36,14 @@ struct thread_safe_queue {
 
 	thread_safe_queue() {
 		os_mutex_create(&access_mutex);
+        array.reserve(1000);
 	}
 
 	~thread_safe_queue() {
 		os_mutex_destroy(access_mutex);
 	}
 
-	inline void append(Event const& event) {
+	inline void append(T const& event) {
 		os::scoped_lock lock {access_mutex};
 		array.emplace_back(event);
 	}
@@ -51,9 +51,10 @@ struct thread_safe_queue {
 	inline void pop_all(std::vector<T>& out_array) {
 		out_array.clear();
         os::scoped_lock lock {access_mutex};
-		std::copy(array.begin(), array.end(), std::back_inserter(out_array));
-		array.clear();
-	}
+        for (auto&& item: array)
+            out_array.emplace_back(item);
+	    array.clear();
+    }
 
 	os::Mutex access_mutex;
 	std::vector<T> array;
@@ -63,46 +64,44 @@ using Event_Queue = thread_safe_queue<Event, 64>;
 
 struct Window : public platform::Window
 {
-	Event_Queue  event_queue    {};
-	v2s32        mouse_position {};
-	Window_Mode  mode           {Windowed_Fullscreen};
-	int          display_index  {Display_Index_Automatic}; // NOT IMPLEMENTED
+	Event_Queue  event_queue      {};
+	v2s32        mouse_position   {};
+	Window_Mode  mode             {Windowed_Fullscreen};
+	int          display_index    {Display_Index_Automatic};
+	bool         use_mouse_deltas {false};
 
-private:
-	bool         use_mouse_deltas = false;
-//	int          width {}, height {};
-//	v2s32        position {}; // position when in Windowed mode only
-
-public:
+	// Private API
 	auto create(struct Window_Create_Info const& info) -> bool;
 
+	// Private API
+	// When a window is created, it will be hidden, calling
+	//  this will show the window (at least in Windows).
     void show();
-	void close(); // If window is open, close
 
+	// Private API
+	// Closes the window => causes engine to stop running
+	// => Application closes
+	// Don't call this function, use Engine::flags and
+	//  set the Running Bit to zero.
+	void close();
+
+	// @see enum Window_Mode
 	auto supported_modes() -> u32;
 
 	//void set_title(string const& title);
 	//bool is_minimized();
-	//bool exists() const; // this function is weird
-	
-	//! @brief Display that is used is determined by the `display_index`
 	//void set_mode(Window_Mode mode);
 
-	void toggle_using_mouse_deltas();
+	inline void toggle_using_mouse_deltas() {
+    	set_using_mouse_delta(!use_mouse_deltas);
+	}
+
+	void set_using_mouse_delta(bool use);
 
 	~Window();
+};
 
-private:
-	friend struct Engine;
-	friend struct Window_Proxy;
-
-#if   defined(FISSION_PLATFORM_WINDOWS)
-    auto process_message(HWND, UINT, WPARAM, LPARAM) noexcept -> LRESULT;
-#endif
-
-}; // struct fs::Window
-
-__FISSION_END__
+FISSION_NAMESPACE_END
 
 /**
  *	MIT License

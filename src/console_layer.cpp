@@ -1,15 +1,14 @@
-#include <Fission/core/engine.hpp>
-#include <Fission/core/input/keys.hpp>
-#include <Fission/core/console.hpp>
-#include <Fission/base/math/library.hpp>
-#include "internal.hpp"
+#include "Fission/core/engine.hpp"
+#include "Fission/core/input/keys.hpp"
+#include "Fission/core/console.hpp"
+#include "Fission/base/math/library.hpp"
 #include <unordered_map>
 
 extern fs::Engine engine;
 
 #define ESCAPE 0x1b
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 //////////////////////////////////////////////////////////////////////////////
 // Public facing interface
@@ -573,4 +572,4 @@ void Console_Layer::on_update(double dt, Render_Context* ctx) {
 	engine.textured_renderer_2d.draw(*ctx);
 }
 
-__FISSION_END__
+FISSION_NAMESPACE_END

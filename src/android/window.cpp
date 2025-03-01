@@ -1,15 +1,20 @@
-#include "internal.hpp"
+#include "../internal.hpp"
 #include <Fission/core/engine.hpp>
-#include <pthread.h>
+#include <Fission/core/input/Keys.hpp>
 #include <android/native_window_jni.h>
 #include <android/input.h>
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
+#include <pthread.h>
 #include <fmt/format.h>
-#include <Fission/core/input/Keys.hpp>
 
 using fmt::format;
 using namespace fs;
+
+fs::string platform_version = "Android 19";
+fs::string cpu_name = "[CPU NAME]";
+
+#define __ANDROID_NAMESPACE__ com_example_testfission
 
 #define JOIN(A,B,C,D) A ## B ## C ## D
 #define JAVA_NATIVE_FUNCTION2(NAMESPACE, NAME) JOIN(Java_, NAMESPACE, _MainActivity_, NAME)
@@ -28,14 +33,16 @@ struct Java {
     JavaVM* vm {};
     jclass  activity_class {};
     jobject activity {};
+    AAssetManager* asset_manager {};
 
     enum {
 #define X(ID, NAME, SIG) ID,
         JAVA_FUNCTIONS
 #undef X
+        JAVA_FUNCTION_COUNT,
     };
 
-    Function functions [1] {
+    Function functions [JAVA_FUNCTION_COUNT] {
 #define X(ID, NAME, SIG) { NAME, SIG },
             JAVA_FUNCTIONS
 #undef X
@@ -96,10 +103,24 @@ JAVA_NATIVE_FUNCTION(createGraphics)(JNIEnv *env, jclass, jobject java_surface)
 
 extern "C"
 JNIEXPORT void JNICALL
-JAVA_NATIVE_FUNCTION(resizeGraphics)(JNIEnv *env, jclass, jobject java_surface, jint surface_format, jint width, jint height)
-{
-    //log::debug(format("Surface ({}) resized: [format={},width={},height={}]", (void*)java_surface, surface_format, width, height));
-    // No need to really do anything here, since we will know when to resize from Vulkan.
+JAVA_NATIVE_FUNCTION(test)(JNIEnv *env, jclass, jobject java_asset_manager) {
+    log::verbose("Julie says hi!");
+
+    AAssetManager* asset_manager = AAssetManager_fromJava(env, java_asset_manager);
+    AAssetDir* dir = AAssetManager_openDir(asset_manager, "autumn_field_puresky_8k");
+
+    log::debug(format("dir = {}", (void*)dir));
+
+    const char* filename = NULL;
+
+    do {
+        filename = AAssetDir_getNextFileName(dir);
+        log::debug(format("file = {}", (filename ? filename : "[NULL]")));
+    } while (filename != NULL);
+
+    AAssetDir_close(dir);
+
+    java.asset_manager = asset_manager;
 }
 
 extern "C"
@@ -172,10 +193,32 @@ void Window::close() {
 
 }
 
-s64 fs::timestamp() {
-    return 0;
+void Window::toggle_using_mouse_deltas() {
+
 }
 
-auto fs::seconds_elasped_and_reset(s64& last) -> double {
-    return 1.0 / 60.0;
+inline struct timespec temp;
+#define nb 1'000'000'000
+
+auto fs::timestamp() -> s64 {
+    clock_gettime(CLOCK_MONOTONIC, &temp);
+    return temp.tv_sec * nb + temp.tv_nsec; // <- this is fucking garbage
+}
+
+auto fs::seconds_elasped_and_reset(s64& last) -> f64 {
+    auto current = fs::timestamp();
+    auto duration = double(current - last) / 1e9;
+    last = current;
+    return duration;
+}
+
+void* load_entire_file(const char* filename, int* size) {
+    AAsset* asset = AAssetManager_open(java.asset_manager, filename, AASSET_MODE_BUFFER);
+    log::info(format("Opened asset={} file=\"{}\"", (void*)asset, filename));
+    int length = AAsset_getLength(asset);
+    void* data = malloc(length);
+    AAsset_read(asset, data, length);
+    *size = length;
+    AAsset_close(asset);
+    return data;
 }

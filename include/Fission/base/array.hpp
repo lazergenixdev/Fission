@@ -13,7 +13,7 @@
 #pragma once
 #include <Fission/base/memory.hpp>
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 template <typename T>
 struct array {
@@ -97,7 +97,7 @@ struct dynamic_array
 	constexpr type      * end  ()       { return data + count; }
 };
 
-__FISSION_END__
+FISSION_NAMESPACE_END
 
 /**
  *	MIT License

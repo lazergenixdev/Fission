@@ -9,19 +9,15 @@ find_package(Freetype REQUIRED)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-file(GLOB SOURCES "src/*.cpp")
-
-# Add platform-specific sources
-if(WIN32)
-    file(GLOB WINDOWS_SOURCES "src/windows/*.cpp")
-    list(APPEND SOURCES ${WINDOWS_SOURCES})
-elseif(APPLE)
-    file(GLOB MACOS_SOURCES "src/macos/*.cpp")
-    list(APPEND SOURCES ${MACOS_SOURCES})
+if(APPLE)
+#    file(GLOB PLATFORM_SOURCES "src/macos/*.cpp")
     find_package(glfw3 REQUIRED)
 endif()
 
-add_library(Fission ${SOURCES})
+#file(GLOB SOURCES "src/*.cpp")
+#add_library(Fission ${SOURCES} ${PLATFORM_SOURCES})
+
+add_library(Fission "src/main.cpp")
 
 # Specify include directories for the library
 target_include_directories(Fission PUBLIC include/)
@@ -38,4 +34,4 @@ if(APPLE)
 endif()
 # ************************************* vendor *************************************
 
-target_compile_definitions(Fission PRIVATE __TITLE__="what?")
+target_compile_definitions(Fission PRIVATE MACRO_NAME="this is a test")

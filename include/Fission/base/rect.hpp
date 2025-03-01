@@ -14,7 +14,7 @@
 #include <Fission/base/math/vector.hpp>
 #include <Fission/base/range.hpp>
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 //! @brief Structure defining a rectangle containing min and mox for X and Y.
 template <typename T>
@@ -25,8 +25,6 @@ struct rect
 
 	range<T> x, y;
 
-
-	constexpr rect(rect const&) = default;
 
 	//! @brief Create a null rect.
 	constexpr rect()noexcept:x(),y(){}
@@ -199,7 +197,7 @@ struct rect
 
 _FISSION_BASE_ALIASES(rect, r);
 
-__FISSION_END__
+FISSION_NAMESPACE_END
 
 /**
  *	MIT License

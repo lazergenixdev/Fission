@@ -26,7 +26,7 @@
 #endif
 
 #include <vma/vk_mem_alloc.h>
-#include <glm/mat2x2.hpp>
+#include <glm/matrix.hpp>
 
 #if defined(FISSION_COMPILER_MSVC)
 #	pragma warning (pop)
@@ -40,7 +40,7 @@
 #define FISSION_DEFAULT_SWAP_CHAIN_USAGE \
 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 struct MSAA_Info {
 	VkSampleCountFlagBits sampleCount;
@@ -129,8 +129,8 @@ struct Graphics
     u32               sc_image_count  {0};
     VkPresentModeKHR  sc_present_mode {VK_PRESENT_MODE_FIFO_KHR};
     VkSurfaceTransformFlagBitsKHR sc_transform {};
-    VkImage*          sc_images       {};
-	VkImageView*      sc_image_views  {};
+    VkImage           *sc_images       {};
+	VkImageView       *sc_image_views  {};
 
 	// Main graphics command pool
 	VkCommandPool    command_pool {};
@@ -210,11 +210,10 @@ using Transform_2D_Layout = Single_Descriptor_Set_Layout<VK_SHADER_STAGE_VERTEX_
 using Texture_Layout      = Single_Descriptor_Set_Layout<VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER>;
 
 struct Transform_2D_Data {
-	v2f32 scale;
-	v2f32 offset;
+	glm::mat4x4 transform;
 };
 
-__FISSION_END__
+FISSION_NAMESPACE_END
 
 #define FS_VK_BIND_DESCRIPTOR_SETS(COMMAND_BUFFER, PIPELINE_LAYOUT, SET_COUNT, SETS) \
 vkCmdBindDescriptorSets(COMMAND_BUFFER, VK_PIPELINE_BIND_POINT_GRAPHICS, PIPELINE_LAYOUT, 0, SET_COUNT, SETS, 0, nullptr)

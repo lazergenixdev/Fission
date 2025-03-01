@@ -15,7 +15,7 @@
 #include <Fission/base/string.hpp>
 #include <Fission/base/math/vector.hpp>
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 //// functions that do not exist
 //void on_key_down(u32 key_id, bool repeat);
@@ -67,7 +67,7 @@ struct Event {
 	};
 };
 
-__FISSION_END__
+FISSION_NAMESPACE_END
 
 /**
  *	MIT License

@@ -1,6 +1,37 @@
-#include <Fission/core/engine.hpp>
+#include "Fission/config.hpp"
 
-__FISSION_BEGIN__
+FISSION_DISABLE_ALL_WARNINGS_BEGIN
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/image.h>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb/image_write.h>
+
+#define VMA_IMPLEMENTATION
+#include <vma/vk_mem_alloc.h>
+
+FISSION_DISABLE_ALL_WARNINGS_END
+
+#include "config.hpp"
+#include "engine.cpp"
+#include "font.cpp"
+#include "graphics.cpp"
+#include "renderer_2d.cpp"
+#include "console_layer.cpp"
+#include "debug_layer.cpp"
+
+#if   defined(FISSION_PLATFORM_WINDOWS)
+#   include "platform_windows.cpp"
+#elif defined(FISSION_PLATFORM_MACOS)
+#   include "platform_macos.cpp"
+#elif defined(FISSION_PLATFORM_LINUX)
+#   include "platform_linux.cpp"
+#elif defined(FISSION_PLATFORM_ANDROID)
+#   include "platform_android.cpp"
+#endif
+
+FISSION_NAMESPACE_BEGIN
 
 auto OS_CALL render_main(void*) noexcept -> os::Thread_Result
 {
@@ -12,7 +43,7 @@ auto OS_CALL render_main(void*) noexcept -> os::Thread_Result
     return {};
 }
 
-__FISSION_END__
+FISSION_NAMESPACE_END
 
 #ifdef _os_main
 _os_main()

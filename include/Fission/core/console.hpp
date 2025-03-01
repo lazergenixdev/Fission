@@ -14,7 +14,7 @@
 #include <Fission/base/string.hpp>
 #include <Fission/base/color.hpp>
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 namespace console_callback {
 	void procedure(string args);
@@ -56,7 +56,7 @@ namespace console {
 	}
 }
 
-__FISSION_END__
+FISSION_NAMESPACE_END
 
 /**
  *	MIT License

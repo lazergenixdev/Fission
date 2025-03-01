@@ -14,7 +14,7 @@
 #include <Fission/config.hpp>
 #include <chrono>
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 namespace base
 {
@@ -88,7 +88,7 @@ namespace base
 
 using simple_timer = base::simple_timer<std::chrono::high_resolution_clock>;
 
-__FISSION_END__
+FISSION_NAMESPACE_END
 
 /**
  *	MIT License

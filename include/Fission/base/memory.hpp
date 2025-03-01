@@ -15,7 +15,7 @@
 #include <cstdlib>
 #include <memory>
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 #if   defined(FISSION_PLATFORM_WINDOWS)
 #   define FISSION_DEFAULT_ALLOC(Size) ::_aligned_malloc(Size, 64)
@@ -24,7 +24,7 @@ __FISSION_BEGIN__
 #   define FISSION_DEFAULT_ALLOC(Size) ::malloc(Size)
 #   define FISSION_DEFAULT_FREE(Ptr)   ::free(Ptr)
 #else
-#   define FISSION_DEFAULT_ALLOC(Size) ::aligned_alloc(64, Size)
+#   define FISSION_DEFAULT_ALLOC(Size) ::malloc(Size)
 #   define FISSION_DEFAULT_FREE(Ptr)   ::free(Ptr)
 #endif
 
@@ -86,7 +86,7 @@ struct bump_allocator
 	}
 };
 
-__FISSION_END__
+FISSION_NAMESPACE_END
 
 /**
  *	MIT License

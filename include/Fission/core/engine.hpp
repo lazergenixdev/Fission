@@ -50,7 +50,7 @@ extern auto on_create_scene(fs::Scene_Key const& key) -> fs::Scene*;
 
 // ******************************************************************
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 extern auto OS_CALL render_main(void*) noexcept -> os::Thread_Result;
 
@@ -104,7 +104,6 @@ struct Engine
 
 	////////////////////////////////////////////////////////////////////////////
 	// Members
-    Logger               logger;
 	Window               window;
 	Graphics             graphics;
 
@@ -193,7 +192,7 @@ private:
 	void write_frame ();
 };
 
-__FISSION_END__
+FISSION_NAMESPACE_END
 
 /**
  *	MIT License

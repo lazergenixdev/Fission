@@ -30,7 +30,7 @@ constexpr TYPE():X1(static_cast<type>(0)),X2(static_cast<type>(0)),X3(static_cas
 constexpr TYPE(type const& X1,type const& X2,type const& X3,type const& X4 = impl::max_color_value<type>):X1(X1),X2(X2),X3(X3),X4(X4){} \
 constexpr bool operator==(TYPE const& right)const{return(X1==right.X1)&&(X2==right.X2)&&(X3==right.X3)&&(X4==right.X4);}
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -512,7 +512,7 @@ namespace colors
 	};
 }
 
-__FISSION_END__
+FISSION_NAMESPACE_END
 
 #undef _FISSION_IMPLEMENT_BASIC_COLOR
 #undef _FISSION_IMPLEMENT_BASIC_COLORA

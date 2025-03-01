@@ -39,13 +39,12 @@
 
 // FISSION_DISABLE_WARNING(WARNING)
 #if defined(FISSION_COMPILER_MSVC)
-#   define FISSION_DISABLE_WARNING(WARNINGS) MACRO_PRAGMA(warning(disable: WARNINGS))
+#   define FISSION_DISABLE_WARNING(WARNINGS)  MACRO_PRAGMA(warning(disable: WARNINGS))
 #   define FISSION_DISABLE_ALL_WARNINGS_BEGIN MACRO_PRAGMA(warning(push, 0))
 #   define FISSION_DISABLE_ALL_WARNINGS_END   MACRO_PRAGMA(warning(pop))
 #elif defined(FISSION_COMPILER_CLANG) || defined(FISSION_COMPILER_GCC)
-#   define FISSION_DISABLE_WARNING(WARNING) MACRO_PRAGMA(GCC diagnostic ignored WARNING)
-#   define FISSION_DISABLE_ALL_WARNINGS_BEGIN \
-    MACRO_PRAGMA(GCC diagnostic push) FISSION_DISABLE_WARNING("-Weverything")
+#   define FISSION_DISABLE_WARNING(WARNING)   MACRO_PRAGMA(GCC diagnostic ignored WARNING)
+#   define FISSION_DISABLE_ALL_WARNINGS_BEGIN MACRO_PRAGMA(GCC diagnostic push) FISSION_DISABLE_WARNING("-Weverything")
 #   define FISSION_DISABLE_ALL_WARNINGS_END   MACRO_PRAGMA(GCC diagnostic pop)
 #endif
 
@@ -65,71 +64,14 @@
 #include <stdint.h> // Vulkan includes also this
 #include <type_traits>
 
-///////////////////////////////////////////////////////////////////////////////
-// Disable Warnings
-
-#if   defined(FISSION_COMPILER_MSVC)
-
-// 'bytes' bytes padding added after construct 'member_name'
-	FISSION_DISABLE_WARNING(4820)
-
-// enumerator 'identifier' in switch of enum 'enumeration'
-// is not explicitly handled by a case label
-	FISSION_DISABLE_WARNING(4061)
-
-// 4625 => copy constructor
-// 5026 => move constructor
-// 4626 => copy operator
-// 5027 => move operator    ... was implicitly deleted
-	FISSION_DISABLE_WARNING(4625 5026 4626 5027)
-
-// 'function' : unreferenced inline function has been removed
-	FISSION_DISABLE_WARNING(4514)
-
-// Compiler will insert Spectre mitigation for memory load
-// if /Qspectre switch specified
-	FISSION_DISABLE_WARNING(5045)
-
-// 'operation': unsafe conversion from 'type_of_expression'
-// to 'type_required'
-	FISSION_DISABLE_WARNING(4191)
-
-// 'derived class' : default constructor was implicitly defined as deleted
-	FISSION_DISABLE_WARNING(4623)
-
-// nameless struct/union
-	FISSION_DISABLE_WARNING(4201)
-
-#elif defined(FISSION_COMPILER_CLANG)
-
-// It's reserved??.. Who asked??????
-	FISSION_DISABLE_WARNING("-Wreserved-macro-identifier")
-
-	FISSION_DISABLE_WARNING("-Wc++98-compat")
-	FISSION_DISABLE_WARNING("-Wc++98-compat-pedantic")
-
-// Nearly impossible to silence this warning,
-// great job GCC, I'm so proud of you.
-	FISSION_DISABLE_WARNING("-Wunsafe-buffer-usage")
-
-// It's called "C-style cast", go fuck yourself <- I did not write this
-	FISSION_DISABLE_WARNING("-Wold-style-cast")
-
-// ????
-	FISSION_DISABLE_WARNING("-Wc++20-extensions")
-
-	FISSION_DISABLE_WARNING("-Wnested-anon-types")
-
-#endif
-
 
 ///////////////////////////////////////////////////////////////////////////////
 // Miscellaneous
 
 // Fission namespace (fs) will be used a lot, no need
 //	for extra indentation.
-#define __FISSION_BEGIN__ namespace fs {
-#define __FISSION_END__ }
+#define FISSION_NAMESPACE_BEGIN namespace fs {
+#define FISSION_NAMESPACE_END   }
 
 /// Convert bool value to "True" or "False"
 #define FS_BTF(B) ((B)?"True":"False")
@@ -160,7 +102,7 @@ X(0)X(1)X(2)X(3)X(4)X(5)X(6)X(7)X(8)X(9)
 #define FMT_HEADER_ONLY 1
 
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 ///////////////////////////////////////////////////////////////////////////////
 // Types
@@ -239,7 +181,7 @@ static constexpr u32 size_of_n = _size_of_n<i, T...>::value;
 template <typename...T>
 static constexpr u32 size_of = _size_of_n<sizeof...(T), T...>::value;
 
-__FISSION_END__
+FISSION_NAMESPACE_END
 
 /**
  *	MIT License

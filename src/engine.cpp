@@ -1,9 +1,8 @@
-#include "internal.hpp"
-#include <Fission/core/engine.hpp>
-#include <Fission/core/console.hpp>
-#include <format.hpp>
-#include <freetype/freetype.h>
-#include <stb/image_write.h>
+#include "Fission/core/engine.hpp"
+#include "Fission/core/console.hpp"
+#include "freetype/freetype.h"
+#define GLM_ENABLE_EXPERIMENTAL
+#include "glm/gtx/rotate_normalized_axis.hpp"
 
 using fmt::format;
 using namespace fs;
@@ -58,7 +57,7 @@ auto Engine::create(Defaults const& defaults) -> bool
 		return true;
 	}
 
-    log::verbose(format("logger is_open() => {}", FS_BTF(engine.logger.file.is_open())));
+    debug_layer.flags |= layer::show;
 
     return false;
 }
@@ -118,9 +117,15 @@ auto Engine::create_layers() -> bool
 		check(vmaCreateBuffer(graphics.allocator, &bufferInfo, &allocInfo, &transform_2d.buffer, &transform_2d.allocation, nullptr),
 			"Failed to create buffer for 2d transform");
 
+		using namespace glm;
+		auto size = graphics.size();
 		Transform_2D_Data transform {
-			.offset = { -1.0f, -1.0f },
-			.scale = { 2.0f / (float)graphics.sc_extent.width, 2.0f / (float)graphics.sc_extent.height },
+			.transform = mat4(graphics.pre_rotation()) * (mat4x4 {
+				{ 2.0f / (float)size.x, 0.0f, 0.0f, 0.0f },
+				{ 0.0f, 2.0f / (float)size.y, 0.0f, 0.0f },
+				{ 0.0f, 0.0f, 1.0f, 0.0f },
+				{ -1.0f, -1.0f, 0.0f, 1.0f },
+			})
 		};
 		graphics.upload(transform_2d.buffer, &transform, sizeof(transform));
 	}
@@ -197,17 +202,19 @@ auto Engine::create_frame_buffers(u32 old_count) -> bool
 
 auto Engine::create_screenshot_buffer () -> bool
 {
-	VmaAllocationCreateInfo allocInfo{
+	VmaAllocationCreateInfo allocInfo {
 		.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
 		.usage = VMA_MEMORY_USAGE_AUTO,
 	};
-	VkBufferCreateInfo bufferInfo{
+	VkBufferCreateInfo bufferInfo {
 		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		.size = 1920 * 1920 * sizeof(fs::rgba8), // TODO: get largest monitor size
+		.size = 1920 * 1920 * sizeof(fs::rgba8), // TODO: fixed size is bad here. what else can we do?
 		.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 	};
 	check(vmaCreateBuffer(graphics.allocator, &bufferInfo, &allocInfo, &screenshot_buffer, &screenshot_allocation, nullptr),
 		"Failed to create buffer for screenshots");
+
+	return false;
 }
 
 #undef check
@@ -447,10 +454,17 @@ void Engine::resize()
 	create_frame_buffers(old_image_count);
 
 	// Update screen transform
+	using namespace glm;
+	auto size = graphics.size();
 	Transform_2D_Data transform {
-		.offset = {-1.0f, -1.0f},
-		.scale  = {2.0f / (float)graphics.sc_extent.width, 2.0f / (float)graphics.sc_extent.height},
+		.transform = mat4(graphics.pre_rotation()) * (mat4x4 {
+			{ 2.0f / (float)size.x, 0.0f, 0.0f, 0.0f },
+			{ 0.0f, 2.0f / (float)size.y, 0.0f, 0.0f },
+			{ 0.0f, 0.0f, 1.0f, 0.0f },
+			{ -1.0f, -1.0f, 0.0f, 1.0f },
+		})
 	};
+
 	graphics.upload(transform_2d.buffer, &transform, sizeof(transform));
 
 	current_scene->on_resize(old_image_count);

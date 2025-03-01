@@ -15,7 +15,7 @@
 #include <vector>
 #include <cstring>
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 struct Event;
 struct Render_Context;
@@ -144,7 +144,7 @@ public:
 			return cursor < r.cursor;
 		}
 		// `*` will do the incrementing
-		inline consteval void operator++() const { (void)0; }
+		inline constexpr void operator++() const { (void)0; }
 
 		auto operator*() {
 			auto key   = parent.next_key  (cursor);
@@ -172,7 +172,8 @@ struct Scene {
 	virtual ~Scene() = default;
 };
 
-__FISSION_END__
+FISSION_NAMESPACE_END
+
 /**
  *	MIT License
  *

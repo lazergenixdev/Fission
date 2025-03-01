@@ -1,7 +1,7 @@
 #pragma once
 #include <Fission/core/graphics.hpp>
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 struct Draw_Data {
 	u32 total_vtx_count {0};
@@ -25,7 +25,7 @@ public:
 	}
 };
 
-__FISSION_END__
+FISSION_NAMESPACE_END
 
 namespace vk
 {

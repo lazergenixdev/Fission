@@ -15,7 +15,8 @@
 #include <Fission/base/array.hpp>
 #include <Fission/base/math/library.hpp>
 #include <string>
-__FISSION_BEGIN__
+
+FISSION_NAMESPACE_BEGIN
 
 struct string {
     size_t count = 0;
@@ -123,7 +124,7 @@ struct string_array {
     inline constexpr auto end()const { return string_array_iterator{ buffer.data + (buffer.count? buffer.count - 1 : 0)}; }
 };
 
-__FISSION_END__
+FISSION_NAMESPACE_END
 
 /**
  *	MIT License

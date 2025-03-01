@@ -66,7 +66,7 @@ namespace os
     void show_error_dialog(fs::string const& title, fs::string const& message);
 }
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 namespace log
 {
@@ -86,25 +86,25 @@ namespace log
     inline void error   (string const& message) { os::log(Error  , message); }
 }
 
-// TODO: what is this?
-struct Logger
-{
-    std::ofstream file {"log.txt"};
-};
-
-__FISSION_END__
+FISSION_NAMESPACE_END
 
 #if   defined(FISSION_PLATFORM_HEADLESS)
+#   define FS_PLATFORM_NAME "Headless"
 #   include "platform/headless.hpp"
 #elif defined(FISSION_PLATFORM_WINDOWS)
+#   define FS_PLATFORM_NAME "Windows"
 #   include "platform/windows.hpp"
 #elif defined(FISSION_PLATFORM_LINUX)
+#   define FS_PLATFORM_NAME "Linux"
 #   include "platform/linux.hpp"
 #elif defined(FISSION_PLATFORM_ANDROID)
+#   define FS_PLATFORM_NAME "Android"
 #   include "platform/android.hpp"
 #elif defined(FISSION_PLATFORM_MACOS)
-#   include "platform/macos.hpp"
+#   define FS_PLATFORM_NAME "MacOS"
+#   include "platform/macos.inl"
 #elif defined(FISSION_PLATFORM_IOS)
+#   define FS_PLATFORM_NAME "IOS"
 #   include "platform/ios.hpp"
 #endif
 

@@ -18,7 +18,7 @@
 		
         <activity
             android:exported="true"
-            android:name=".MainActivity"
+            android:name="com.example.testfission.MainActivity"
             android:configChanges="orientation|screenSize"
             android:screenOrientation="userLandscape">
             <intent-filter>

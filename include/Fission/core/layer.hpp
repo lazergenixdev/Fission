@@ -17,7 +17,7 @@
 #include <Fission/core/input/event.hpp>
 #include <vector>
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 // @note: this is better than using stupid `enum class`;
 //         cannot do `using` with enum classes!
@@ -117,7 +117,7 @@ private:
 	static constexpr u64 maximum_buffer_delete_count = FS_KILOBYTES(2);
 };
 
-__FISSION_END__
+FISSION_NAMESPACE_END
 
 /**
  *	MIT License

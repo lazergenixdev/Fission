@@ -16,7 +16,7 @@
 #include <Fission/config.hpp>
 #include <Fission/platform.hpp>
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 #define FISSION_X_24              \
 X(1)X(2)X(3)X(4)X(5)X(6)X(7)X(8)  \
@@ -230,7 +230,7 @@ Numpad ## N = KEY(VK_NUMPAD ## N, 320+N, 50+N),
 
 } // namespace fs::keys
 
-__FISSION_END__
+FISSION_NAMESPACE_END
 
 /**
  *	MIT License

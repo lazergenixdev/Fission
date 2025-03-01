@@ -26,7 +26,7 @@ using NAME ## f32 = BASE<f32>; \
 using NAME ## f64 = BASE<f64>
 
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 /* Data Encodings: */
 
@@ -36,7 +36,7 @@ struct base64url // hopefully I will find a use for this...
 	static constexpr auto alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890-_";
 };
 
-__FISSION_END__
+FISSION_NAMESPACE_END
 
 /**
  *	MIT License

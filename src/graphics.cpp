@@ -1,14 +1,20 @@
-#include "internal.hpp"
-#include <Fission/graphics/util.hpp>
-#include <format.hpp>
+#include "Fission/graphics/util.hpp"
+#include "fmt/format.h"
 #include <numeric>
 #define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/rotate_normalized_axis.hpp>
+#include "glm/gtx/rotate_normalized_axis.hpp"
 #if defined(FISSION_PLATFORM_LINUX) || defined(FISSION_PLATFORM_MACOS)
-#include <GLFW/glfw3.h>
+#include "GLFW/glfw3.h"
 #endif
 
 // TODO: only do portability stuff when on MACOS
+
+// TODO: find a solution to where to put this / is this needed
+constexpr auto popcount(unsigned x) noexcept {
+    unsigned num{};
+    for (; x; ++num, x &= (x - 1));
+    return num;
+};
 
 using fmt::format;
 using namespace fs;
@@ -45,11 +51,12 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debug_utils_callback(
 {
 	(void)type;
 	(void)user;
+    auto level = severity <= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
+        ? log::Warn
+        : log::Error;
+
 	if (severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-		auto level = severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
-			? log::Warn
-			: log::Error;
-		os::log(level, std::string(data->pMessage));
+    	os::log(level, std::string(data->pMessage));
 	}
 
 	if (severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
@@ -163,7 +170,9 @@ auto Graphics::create_instance(bool debug) -> bool
 	));
 
 	const char* extension_names[] = {
+    #if defined(FISSION_PLATFORM_MACOS)
         VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
+    #endif
 		VK_KHR_SURFACE_EXTENSION_NAME,
 		FISSION_PLATFORM_VULKAN_EXTENSION_NAMES,
 		VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
@@ -184,7 +193,11 @@ auto Graphics::create_instance(bool debug) -> bool
 	VkInstanceCreateInfo instance_info {
 		.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
 		.pNext = debug? &debug_utils_info:nullptr,
+    #if defined(FISSION_PLATFORM_MACOS)
         .flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR,
+    #else
+        .flags = 0,
+    #endif
 		.pApplicationInfo = &application_info,
 		.enabledLayerCount = debug? 1u:0u,
 		.ppEnabledLayerNames = layer_names,
@@ -329,8 +342,8 @@ bool Graphics::pick_queue_families()
 
 		if (flags & VK_QUEUE_TRANSFER_BIT) {
 			if (extra.queue_family.transfer != ~0u) {
-				int count = std::popcount(transfer_flags);
-				int new_count = std::popcount(flags);
+				int count = popcount(transfer_flags);
+				int new_count = popcount(flags);
 				
 				// select family with the least bits
 				// meaning we want the most "specialized" for transfer operations
@@ -413,11 +426,14 @@ bool Graphics::create_device(bool debug)
     }
 
 	const char* device_extensions[] = {
+    #if defined(FISSION_PLATFORM_MACOS)
         "VK_KHR_portability_subset",
+    #endif
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 	};
 
 	VkPhysicalDeviceFeatures features {}; // This looks fun
+	//features.fillModeNonSolid = VK_TRUE;
 
 /*
   https://vulkan-tutorial.com/en/Drawing_a_triangle/Setup/Logical_device_and_queues
@@ -478,8 +494,10 @@ size_t pick_surface_format(std::vector<VkSurfaceFormatKHR> const& formats) {
 	int max_score = 0;
 	for_n (formats.size()) {
 		int score = [](VkSurfaceFormatKHR const& sf) {switch (sf.format) {
-			case VK_FORMAT_B8G8R8A8_SRGB: return 2;
-			case VK_FORMAT_R8G8B8A8_SRGB: return 1;
+            case VK_FORMAT_B8G8R8A8_UNORM: return 4;
+            case VK_FORMAT_R8G8B8A8_UNORM: return 3;
+			case VK_FORMAT_B8G8R8A8_SRGB:  return 2;
+			case VK_FORMAT_R8G8B8A8_SRGB:  return 1;
 			default: return 0;
 		}} (formats[i]);
 
@@ -528,7 +546,7 @@ bool Graphics::create_swap_chain(Window* window)
     {
         // Pre-rotation: always use native orientation
 		// i.e. if rotated, use width and height of identity transform
-        std::swap(sc_extent.width, sc_extent.height);
+    	std::swap(sc_extent.width, sc_extent.height);
     }
 
 #ifdef FISSION_PLATFORM_LINUX
@@ -548,7 +566,7 @@ bool Graphics::create_swap_chain(Window* window)
 		.imageArrayLayers = 1, /* For non-stereoscopic-3D applications, this value is 1 */
 		.imageUsage = FISSION_DEFAULT_SWAP_CHAIN_USAGE,
 		.preTransform = sc_transform,
-		.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR, // <-- TODO: fix this
+		.compositeAlpha = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR,//VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR, // <-- TODO: fix this (ANDROID)
 		.presentMode = sc_present_mode, // TODO: this needs to be configurable
 		.clipped = VK_TRUE, /* "... allows more efficient presentation methods to be used on some platforms." */
 	};

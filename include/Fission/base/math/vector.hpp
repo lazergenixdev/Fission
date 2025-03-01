@@ -16,7 +16,7 @@
 #include <Fission/base/impl/operators.hpp>
 #include <compare>
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 namespace math
 {
@@ -212,10 +212,7 @@ _FISSION_BASE_ALIASES(math::vector2, v2);
 _FISSION_BASE_ALIASES(math::vector3, v3);
 _FISSION_BASE_ALIASES(math::vector4, v4);
 
-#if 0
-#endif
-
-__FISSION_END__
+FISSION_NAMESPACE_END
 
 template <typename T> _FISSION_IMPLEMENT_OPERATOR_MULTIPLY_2(fs::math::vector2<T>, T, x, y)
 template <typename T> _FISSION_IMPLEMENT_OPERATOR_MULTIPLY_3(fs::math::vector3<T>, T, x, y, z)

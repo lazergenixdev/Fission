@@ -13,7 +13,7 @@
 #pragma once
 #include <Fission/base/types.hpp>
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 
 template <typename type>
@@ -22,7 +22,6 @@ struct range
 	type low;  // lower bound of the range
 	type high; // upper bound of the range
 
-	constexpr range(range const&) = default;
 
 	//! @brief Create null range: {0,0}.
 	constexpr range():low(static_cast<type>(0)),high(static_cast<type>(0)){}
@@ -84,14 +83,14 @@ struct range
 
 	//! @brief Get a Scaled range from center.
 	inline constexpr auto scaled(type const&scale)const{
-		auto center=      (this->high+this->low)/static_cast<type>(2),
+		auto center=(this->high+this->low)/static_cast<type>(2),
 			d=scale*(this->high-this->low)/static_cast<type>(2); 
 		return range(center-d,center+d);
 	}
 
 	//! @brief Scales this range from center.
 	inline constexpr auto&scale(type const&scale){
-		auto center=      (this->high+this->low)/static_cast<type>(2),
+		auto center=(this->high+this->low)/static_cast<type>(2),
 			d=scale*(this->high-this->low)/static_cast<type>(2); 
 		this->low=center-d,this->high=center+d;return*this;
 	}
@@ -201,7 +200,7 @@ private:
     iterable obj;
 };
 
-__FISSION_END__
+FISSION_NAMESPACE_END
 
 /**
  *	MIT License

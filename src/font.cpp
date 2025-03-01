@@ -1,9 +1,7 @@
-#include <Fission/core/font.hpp>
-#include <Fission/core/engine.hpp>
-#include <freetype/freetype.h>
-#include <MaxRectsBinPack.hpp>
-#include <stb/image_write.h>
-#include <format.hpp>
+#include "Fission/core/font.hpp"
+#include "Fission/core/engine.hpp"
+#include "freetype/freetype.h"
+#include "MaxRectsBinPack.hpp"
 
 #define check(X, WHAT) if(X) { log::error("Font Error: " WHAT); return; } (void)0
 

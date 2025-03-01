@@ -17,7 +17,7 @@
 #include <Fission/base/rect.hpp>
 #include <vector>
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 struct Display_Mode {
 	v2u32 resolution;
@@ -48,7 +48,7 @@ struct Display : public platform::Display
 	auto revert_display_mode() -> bool;
 };
 
-__FISSION_END__
+FISSION_NAMESPACE_END
 
 /**
  *	MIT License

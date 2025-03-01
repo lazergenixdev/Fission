@@ -18,7 +18,7 @@
 //! @TODO: Cache Font Faces that are already loaded.
 //! @TODO: System for picking language codepoints (用éäК)
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 struct Glyph {
 	rf32 uv; // Location in font atlas
@@ -99,7 +99,7 @@ inline v2f32 bounding_box(Font* font, string s) {
 	return {std::max(max_width, pos.x), pos.y};
 }
 
-__FISSION_END__
+FISSION_NAMESPACE_END
 
 /**
  *	MIT License

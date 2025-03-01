@@ -18,7 +18,7 @@
 #include <Fission/core/font.hpp>
 #include <Fission/graphics/util.hpp>
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 namespace impl {
     struct Frame_Data {
@@ -155,7 +155,7 @@ struct Textured_Renderer_2D {
 	VkShaderModule frag;
 };
 
-__FISSION_END__
+FISSION_NAMESPACE_END
 
 /**
  *	MIT License

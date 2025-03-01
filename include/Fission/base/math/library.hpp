@@ -14,7 +14,7 @@
 #include <Fission/config.hpp>
 #include <cmath>
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 namespace math
 {
@@ -103,7 +103,7 @@ namespace math
 
 } // namespace Fission::math
 
-__FISSION_END__
+FISSION_NAMESPACE_END
 
 /**
  *	MIT License

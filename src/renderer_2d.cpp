@@ -1,11 +1,11 @@
 #include <Fission/graphics/renderer_2d.hpp>
 #include <Fission/core/engine.hpp>
 #include <Fission/base/memory.hpp>
-#include <format.hpp>
+#include "fmt/format.h"
 
 extern fs::Engine engine;
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 impl::Frame_Data::Frame_Data(VmaAllocator allocator, u32 max_vertex_size, u32 max_index_size) {
     VmaAllocationCreateInfo allocation_info {
@@ -39,13 +39,13 @@ void impl::Frame_Data::send(VmaAllocator allocator, void* vertex_data, void* ind
 }
 
 struct solid_color_vs : public vk::embed::Vertex_Shader {
-#   include "../resources/BinaryShaders/solid_color.vert.inl"
+#   include "shaders/solid_color.vert.inl"
 };
 struct solid_color_fs : public vk::embed::Fragment_Shader {
 #   include "../resources/BinaryShaders/solid_color.frag.inl"
 };
 struct textured_2d_vs : public vk::embed::Vertex_Shader {
-#   include "../resources/BinaryShaders/textured_2d.vert.inl"
+#   include "shaders/texture_2d.vert.inl"
 };
 struct textured_2d_fs : public vk::embed::Fragment_Shader {
 #   include "../resources/BinaryShaders/textured_2d.frag.inl"
@@ -533,4 +533,4 @@ v2f32 Textured_Renderer_2D::add_string_rtl(string str, v2f32 top_right, color co
     return { width, pos.y - starty + current_font->height };
 }
 
-__FISSION_END__
+FISSION_NAMESPACE_END

@@ -34,7 +34,7 @@ void os::show_error_dialog(string const&, string const&) {
     // not implemented
 }
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
     
 inline struct timespec temp;
 #define nb 1'000'000'000
@@ -63,5 +63,5 @@ void Engine::run() {
     //engine.window._handle = NULL;
 }
 
-__FISSION_END__
+FISSION_NAMESPACE_END
 

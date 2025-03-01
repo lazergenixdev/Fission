@@ -16,7 +16,7 @@
 #include <Fission/config.hpp>
 #include <optional>
 
-__FISSION_BEGIN__
+FISSION_NAMESPACE_BEGIN
 
 struct version;
 struct compressed_version;
@@ -82,7 +82,7 @@ static constexpr compressed_version make_compressed_version =
         std::conditional_t<major < 256 && minor < 2048 && patch < 8192,
                 compressed_version, void>(major, minor, patch);
 
-__FISSION_END__
+FISSION_NAMESPACE_END
 
 /**
  *	MIT License
