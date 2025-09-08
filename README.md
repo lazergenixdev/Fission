@@ -20,6 +20,8 @@ Once you have clang installed then you can run `tools/setup-windows.bat` (or sim
 You should already have the Apple Clang Compiler installed with Xcode.
 - [Install Xcode](https://apps.apple.com/us/app/xcode/id497799835?mt=12)
 
+Then you can run `tools/setup-macos.sh` (or simply compile the `build.c` yourself)
+
 ## How to use build program
 Then to build the project, simply run the build program from the project directory.
 ```bash
