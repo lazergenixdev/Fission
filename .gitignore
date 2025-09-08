@@ -1,38 +1,6 @@
-# Compiled Object files
-**.slo
-**.lo
-**.o
-**.obj
+*.exe
+*.old
 
-# Built Config files
-sandbox/etc/
-
-# Log files
-*.log
-
-# Visual Studio files and folder
-.vs/
-**.sln
-**.vcxproj
-**.vcxproj.user
-**.vcxproj.filters
-# Complement to resource files
-**.aps
-
-# get tf outta here "Visual Studio Code"
-**.vscode
-
-# Build Stuff
 bin/
-bin-int/
-**/Makefile
-
-# copyright lol
-**.mp3
-
-# debug stuff
-*.ini
-*.args.json
-
-# compiled shaders
-sandbox/shaders/*.inl
+temp/
+include/freetype/
