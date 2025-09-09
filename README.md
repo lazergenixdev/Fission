@@ -3,7 +3,7 @@ todo
 # Building 🏗️
 ## Prerequisites
 The build program is built with the Clang C compiler, make sure to have clang installed.
-You can check that you have clang installe🏗️d by running `clang` in your terminal.
+You can check that you have clang installed by running `clang` in your terminal.
 ## Windows
 
 In order to compile code for Windows, you will need to have Visual Studio installed.
