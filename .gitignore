@@ -1,6 +1,13 @@
+# 3rd-party
+.vscode/
+
+# Binaries
 *.exe
 *.old
-
 bin/
+build
+
+# Generated
 temp/
 include/freetype/
+include/glfw/

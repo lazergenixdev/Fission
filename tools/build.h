@@ -3,55 +3,60 @@
 
 #if defined(_WIN32)
 #	define PLATFORM_WINDOWS
-#   define PLATFORM "windows"
+#   define PLATFORM_NAME "windows"
 #elif defined(__APPLE__) || defined(__MACH__)
 #	include <TargetConditionals.h>
 #	if TARGET_IPHONE_SIMULATOR == 1
 #		define PLATFORM_IOS
-#       define PLATFORM "ios"
+#       define PLATFORM_NAME "ios"
 #	elif TARGET_OS_IPHONE == 1
 #		define PLATFORM_IOS
-#       define PLATFORM "ios"
+#       define PLATFORM_NAME "ios"
 #	elif TARGET_OS_MAC == 1
 #		define PLATFORM_MACOS
-#       define PLATFORM "macos"
+#       define PLATFORM_NAME "macos"
 #	else
 #		error "Unknown Apple platform!"
 #	endif
 #elif defined(__ANDROID__)
 #	define PLATFORM_ANDROID
-#   define PLATFORM "android"
+#   define PLATFORM_NAME "android"
 #elif defined(__linux__)
 #	define PLATFORM_LINUX
-#   define PLATFORM "linux"
+#   define PLATFORM_NAME "linux"
 #else
 #	error "Unknown platform!"
 #endif
-
-void assert_impl(int cond, const char* info);
 
 #define NOB_IMPLEMENTATION
 #define NOB_STRIP_PREFIX
 #include "nob.h"
 
 #define PATH(L) "(\x1b[92m" L "\x1b[0m)"
-#define CACHE_DIR "bin/" PLATFORM "/cache"
+#define CACHE_DIR "bin/" PLATFORM_NAME "/cache"
 
 #ifdef assert
 #undef assert
 #endif
+void assert_impl(int cond, const char* info);
 #define assert(E) assert_impl(E, #E)
 #define check(E) if (!(E)) exit(1)
 #define run(...) do { Cmd C = {0}; cmd_append(&C, __VA_ARGS__); check(cmd_run_sync(C)); cmd_free(C); } while(0)
 #define len(A) (sizeof(A)/sizeof(A[0]))
 #define forn(N) for (int i = 0; i < (N); ++i)
 #define iterate(A) for (int i = 0; i < len(A); ++i)
-#define def_struct(N) typedef struct N N; struct N
 #define create_symbolic_link(src,link) (symlink(src, link) != 0 ? nob_log(ERROR, "Failed to create symbolic link (%s -> %s)", link, src), 0 : 1)
 
-#define scoped(start, end) for (int i = (start, 0); i < 1; (end), ++i)
+#define scoped(start, end) for (int _i = (start, 0); _i < 1; (end), ++_i)
 #define scoped_dir(dir) scoped(pushd(dir), popd())
-#define scoped_log(level) for (int old = minimal_log_level, new = level; (minimal_log_level = new), new == level; new = old)
+#define scoped_log(level) for (int _old = minimal_log_level, _new = level; (minimal_log_level = _new), _new == level; _new = _old)
+#define scoped_temp() for (int _i = (mkdir_if_not_exists("temp"), pushd("temp"), 0); _i < 1; (popd()), ++_i)
+
+#define scoped_time(what) for (uint64_t _start_ns = nanos_since_unspecified_epoch(), _done = 0; !_done; nob_log(INFO, what " took \x1b[93m%f\x1b[0m seconds", (double)((nanos_since_unspecified_epoch() - _start_ns)/1000)/1e6), _done = 1)
+
+//uint64_t start_ns = nanos_since_unspecified_epoch();
+//uint64_t duration_ns = nanos_since_unspecified_epoch() - start_ns;
+//nob_log(INFO, "Build took \x1b[93m%f\x1b[0m seconds", (double)(duration_ns/1000)/1e6);
 
 typedef struct Dependency Dependency;
 typedef int (*P_fetch_callback)(Dependency*);
@@ -68,6 +73,16 @@ struct Dependency {
     const char*       subfolder;
 };
 
+const char* file_name_no_exts(const char* path)
+{
+	int len = strlen(path);
+	int start = len;
+	for (;start > 0 && path[start-1] != '\\' && path[start-1] != '/'; --start);
+	int end = start;
+	for (;end < len && path[end] != '.'; ++end);
+	return temp_sprintf("%.*s", end - start, path + start);
+}
+
 typedef enum {
 	Opt_Speed  = 0, // speed is the default
 	Opt_None   = 1,
@@ -76,11 +91,13 @@ typedef enum {
 typedef enum {
 	COMPILE_DEBUG          = (1<<0),
 	COMPILE_STATIC_LIBRARY = (1<<1),
+	COMPILE_OBJECT         = (1<<2),
 } Compile_Flags;
 
 typedef struct {
 	const char*    source;
 	Cmd            include_dirs;
+	Cmd            object_files; // additional object files to compile into library
 	Cmd            libraries;
 	Cmd            library_dirs;
 	const char*    output_name;
@@ -91,6 +108,8 @@ typedef struct {
 bool compile(Cpp_Program program)
 {
     Cmd cmd = {0};
+	if (program.output_name == NULL)
+		program.output_name = file_name_no_exts(program.source);
 #if defined(PLATFORM_WINDOWS)
 	cmd_append(&cmd, "cl.exe", "/nologo", "/utf-8", "/std:c++20");
 	cmd_append(&cmd, "/W4", "/EHsc-", "/MD"); // TODO: compile with static CRT
@@ -104,25 +123,15 @@ bool compile(Cpp_Program program)
     cmd_append(&cmd, program.source);
 	forn (program.include_dirs.count)
 		cmd_append(&cmd, temp_sprintf("/I%s", program.include_dirs.items[i]));
-	if (program.output_name)
-		cmd_append(&cmd, temp_sprintf("/Fo%s/%s.obj", "bin/" PLATFORM "/int", program.output_name));
-	else
-		cmd_append(&cmd, temp_sprintf("/Fo%s/", "bin/" PLATFORM "/int"));
+	cmd_append(&cmd, temp_sprintf("/Fo%s/%s.obj", "bin/" PLATFORM_NAME "/int", program.output_name));
 	if (program.flags & COMPILE_DEBUG)
 	{
 		cmd_append(&cmd, "/Zi");
-		if (program.output_name)
-			cmd_append(&cmd, temp_sprintf("/Fd%s/%s.pdb", "bin/" PLATFORM, program.output_name));
-		else
-			cmd_append(&cmd, temp_sprintf("/Fd%s/", "bin/" PLATFORM));
+		cmd_append(&cmd, temp_sprintf("/Fd%s/%s.pdb", "bin/" PLATFORM_NAME, program.output_name));
 	}
 	if (!(program.flags & COMPILE_STATIC_LIBRARY))
 	{	
-		if (program.output_name)
-			cmd_append(&cmd, temp_sprintf("/Fe%s/%s.exe", "bin/" PLATFORM, program.output_name));
-		else
-			cmd_append(&cmd, temp_sprintf("/Fe%s/", "bin/" PLATFORM));
-		
+		cmd_append(&cmd, temp_sprintf("/Fe%s/%s.exe", "bin/" PLATFORM_NAME, program.output_name));
 		cmd_append(&cmd, "/link", "/SUBSYSTEM:WINDOWS");
 		forn (program.library_dirs.count)
 			cmd_append(&cmd, temp_sprintf("/LIBPATH:\"%s\"", program.library_dirs.items[i]));
@@ -133,13 +142,61 @@ bool compile(Cpp_Program program)
 	if (program.flags & COMPILE_STATIC_LIBRARY)
 	{
 		cmd_append(&cmd, "lib", "/nologo");
-		cmd_append(&cmd, temp_sprintf("/OUT:%s/%s.lib", "bin/" PLATFORM, program.output_name));
-		cmd_append(&cmd, temp_sprintf("%s/%s.obj", "bin/" PLATFORM "/int", program.output_name));
+		cmd_append(&cmd, temp_sprintf("/OUT:%s/%s.lib", "bin/" PLATFORM_NAME, program.output_name));
+		cmd_append(&cmd, temp_sprintf("%s/%s.obj", "bin/" PLATFORM_NAME "/int", program.output_name));
 		if (!cmd_run_sync(cmd)) return 0;
 	}
-	cmd_free(cmd);
+#elif defined(PLATFORM_MACOS)
+	cmd_append(&cmd, "clang++", "-std=c++20");
+	cmd_append(&cmd, "-Wall", "-Wextra", "-Wpedantic", "-fno-exceptions");
+	switch (program.optimization) {
+		default: cmd_append(&cmd, "-O2"); break;
+		case Opt_None: break;
+	}
+	if ((program.flags & COMPILE_STATIC_LIBRARY) || (program.flags & COMPILE_OBJECT))
+		cmd_append(&cmd, "-c");
+	cmd_append(&cmd, program.source);
+	forn (program.include_dirs.count)
+		cmd_append(&cmd, temp_sprintf("-I%s", program.include_dirs.items[i]));
+
+	cmd_append(&cmd, "-o", temp_sprintf("bin/%s/int/%s.o", PLATFORM_NAME, program.output_name));
+
+	if (program.flags & COMPILE_DEBUG)
+		cmd_append(&cmd, "-g");
+
+	if (!(program.flags & COMPILE_STATIC_LIBRARY) && !(program.flags & COMPILE_OBJECT))
+	{	
+		cmd_append(&cmd, "-o", temp_sprintf("bin/%s/%s", PLATFORM_NAME, program.output_name));
+
+		forn (program.library_dirs.count)
+			cmd_append(&cmd, temp_sprintf("-L%s", program.library_dirs.items[i]));
+		forn (program.libraries.count)
+			cmd_append(&cmd, temp_sprintf("-l%s", program.libraries.items[i]));
+
+		cmd_append(&cmd, "-rpath", "@executable_path/");
+		cmd_append(&cmd, "-framework", "OpenGL", "-framework", "Cocoa",
+						 "-framework", "IOKit", "-framework", "CoreVideo");
+	}
+    if (!cmd_run_sync_and_reset(&cmd)) return 0;
+	if (program.flags & COMPILE_STATIC_LIBRARY)
+	{
+		cmd_append(&cmd, "ar", "rvs");
+		cmd_append(&cmd, temp_sprintf("bin/%s/lib%s.a", PLATFORM_NAME, program.output_name));
+		cmd_append(&cmd, temp_sprintf("bin/%s/int/%s.o", PLATFORM_NAME, program.output_name));
+		forn (program.object_files.count)
+			cmd_append(&cmd, temp_sprintf("bin/%s/int/%s.o", PLATFORM_NAME, program.object_files.items[i]));
+		if (!cmd_run_sync(cmd)) return 0;
+	}
 #endif
+	cmd_free(cmd);
 	return true;
+}
+
+bool string_begins_with(const char* input, const char* begin)
+{
+	int m = 0;
+	for (; input[m] == begin[m]; ++m);
+	return begin[m] == 0;
 }
 
 const char* library_temp(const char* dir, const char* name)
@@ -202,14 +259,6 @@ Response ask(const char* question)
 	if (ch == '\n') return NO;
 	while (getchar() != '\n');
 	return ch == 'y' ? YES : NO;
-}
-
-bool load_variable(const char** out, const char* name)
-{
-    const char* var = getenv(name);
-    if (var == NULL) return 0;
-    *out = var;
-    return 1;
 }
 
 bool copy_file_if_not_exists(const char* src_path, const char* dst_path)
@@ -276,7 +325,6 @@ const char* find_file_recursive(const char* search_path, const char* file)
 		const char* child = children.items[i];
 		if (strcmp(child, ".")  == 0) continue;
 		if (strcmp(child, "..") == 0) continue;
-		
 		if (strcmp(child, file) == 0)
 			return_defer(temp_sprintf("%.*s%s", full_path_length, full_path, child));
 		
@@ -285,8 +333,53 @@ const char* find_file_recursive(const char* search_path, const char* file)
 			return_defer(found);
 	}
 defer:
+	da_free(children); // strings stored in temp memory
 	full_path_length -= k;
 	return result;
+}
+const char* find_begins_with_in_directory(const char* path, const char* begin)
+{
+	const char* result = NULL;
+	File_Paths children = {0};
+	check(read_entire_dir(path, &children));
+	forn (children.count) {
+		const char* child = children.items[i];
+		if (string_begins_with(child, begin))
+			return_defer(child);
+	}
+defer:
+	da_free(children); // strings stored in temp memory
+	return result;
+}
+
+const char* find_any_in_directory(const char* path)
+{
+	const char* result = NULL;
+	File_Paths children = {0};
+	if (!read_entire_dir(path, &children))
+		return_defer(NULL);
+	forn (children.count) {
+		const char* child = children.items[i];
+		if (strcmp(child, ".")  == 0) continue;
+		if (strcmp(child, "..") == 0) continue;
+		return_defer(child);
+	}
+defer:
+	da_free(children); // strings stored in temp memory
+	return result;
+}
+
+//! @param n: how many digits to include (Example: n=2 => "1.2")
+//! @returns: length of the resulting string
+int truncate_version(const char* version, int n)
+{
+    int i = 0, k = 0;
+    while (version[i] != 0) {
+        if (version[i] == '.') k += 1;
+        if (k >= n) break;
+        i += 1;
+    }
+    return i;
 }
 
 void assert_impl(int cond, const char* info)
@@ -296,7 +389,7 @@ void assert_impl(int cond, const char* info)
 	exit(1);
 }
 
-int build(void);
-int build_all(void);
+int build_fission(void);
+int build_fission_all(void);
 
 #endif // BUILD_H

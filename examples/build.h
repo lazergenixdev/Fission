@@ -30,7 +30,7 @@ void build_example(const char* source)
 }
 */
 
-void build_all_examples(Cpp_Program start)
+int build_all_examples(Cpp_Program start)
 {
 	Cpp_Program program = start;
 	
@@ -44,6 +44,7 @@ void build_all_examples(Cpp_Program start)
             continue;
         
 		program.source = temp_sprintf("examples/%s", paths.items[i]);
-		compile(program);
+		if (!compile(program)) return 1;
     }
+    return 0;
 }

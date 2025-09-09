@@ -18,6 +18,7 @@
 
 #if defined(_WIN32)
 #	define OS_WINDOWS
+#   define OS_NAME "Windows"
 #elif defined(__APPLE__) || defined(__MACH__)
 #	include <TargetConditionals.h>
 	/* TARGET_OS_MAC exists on all the platforms
@@ -26,10 +27,13 @@
 	* and not some other Apple platform */
 #	if TARGET_IPHONE_SIMULATOR == 1
 #		define OS_IOS
+#       define OS_NAME "IOS"
 #	elif TARGET_OS_IPHONE == 1
 #		define OS_IOS
+#       define OS_NAME "IOS"
 #	elif TARGET_OS_MAC == 1
 #		define OS_MACOS
+#       define OS_NAME "MacOS"
 #	else
 #		pragma message("[Fission] Unknown Apple platform!")
 #	endif
@@ -38,8 +42,10 @@
  * it has __linux__ defined */
 #elif defined(__ANDROID__)
 #	define OS_ANDROID
+#   define OS_NAME "Android"
 #elif defined(__linux__)
 #	define OS_LINUX
+#   define OS_NAME "Linux"
 #else
 #	pragma message("[Fission] Unknown platform!")
 #endif
@@ -48,8 +54,13 @@
 // OS includes
 
 #if defined(OS_WINDOWS)
-#   include <Windows.h>
-#elif defined(OS_LINUX) || defined(OS_ANDROID) || defined(OS_MACOS)
+#   define VK_USE_PLATFORM_WIN32_KHR
+#elif defined(OS_ANDROID)
+#   define VK_USE_PLATFORM_ANDROID_KHR
+#endif
+#include "vulkan/vulkan.h"
+
+#if defined(OS_LINUX) || defined(OS_ANDROID) || defined(OS_MACOS)
 #   include <pthread.h>
 #   include "GLFW/glfw3.h"
 #elif defined(OS_ANDROID)
@@ -65,24 +76,9 @@
 #   define os_main() int APIENTRY ::WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int)
 #elif defined(OS_LINUX) || defined(OS_MACOS)
 #   define OS_CALL
-#   define os_main() int main(int argc, char* argv[])
+#   define os_main() int main(int, char**)
 #elif defined(OS_ANDROID)
 #   define OS_CALL
-#endif
-
-// --------------------------------------------------------------------------------
-// Vulkan setup
-
-#if defined(OS_WINDOWS)
-#   define VK_USE_PLATFORM_WIN32_KHR 1
-#   define OS_VULKAN_EXTENSION_NAMES "VK_EXT_win32_surface"
-#elif defined(OS_LINUX)
-#   define OS_VULKAN_EXTENSION_NAMES "VK_KHR_wayland_surface", "VK_KHR_xcb_surface", "VK_KHR_xlib_surface"
-#elif defined(OS_MACOS)
-#define FISSION_PLATFORM_VULKAN_EXTENSION_NAMES "VK_EXT_metal_surface"
-#elif defined(OS_ANDROID)
-#   define VK_USE_PLATFORM_ANDROID_KHR 1
-#   define OS_VULKAN_EXTENSION_NAMES "VK_EXT_android_surface"
 #endif
 
 // --------------------------------------------------------------------------------
@@ -168,7 +164,7 @@ protected:
 #elif defined(OS_LINUX) || defined(OS_MACOS)
 struct Window
 {
-    GLFWwindow* _window;
+    struct GLFWwindow* _window;
 };
 #elif defined(OS_ANDROID)
 struct Window

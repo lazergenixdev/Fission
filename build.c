@@ -5,8 +5,8 @@ void create_build_directories(void)
 {
 	scoped_log(WARNING) {
 		check(mkdir_if_not_exists("bin"));
-		check(mkdir_if_not_exists("bin/" PLATFORM));
-		check(mkdir_if_not_exists("bin/" PLATFORM "/int"));
+		check(mkdir_if_not_exists("bin/" PLATFORM_NAME));
+		check(mkdir_if_not_exists("bin/" PLATFORM_NAME "/int"));
 		check(mkdir_if_not_exists(CACHE_DIR));
 	}
 }
@@ -64,10 +64,9 @@ int fetch_vulkan(Dependency* d)
 	if (sdk_location == NULL) {
 		nob_log(ERROR, "Vulkan SDK not found!");
 		if (ask("Would you like to install the Vulkan SDK?") == NO)
-			return 1;
+			exit(1);
 		
-		check(mkdir_if_not_exists("temp"));
-		scoped(pushd("temp"), popd())
+		scoped_temp()
 		{
 			if (!file_exists("vulkan_sdk.exe"))
 				run("curl", "-O", url);
@@ -88,74 +87,150 @@ int fetch_vulkan(Dependency* d)
     assert(file_exists(d->include_path));
     assert(file_exists(d->library_path));
 #elif defined(PLATFORM_MACOS)
-    // TODO
-    //run("curl", "-sO", "https://vulkan.lunarg.com/sdk/latest/mac.json");
-    //String_View latest_version_json = read_entire_file_to_sv("mac.json");
-    //const char* version = get_json_value(latest_version_json.data, "mac");
-    //assert(strlen(version) > 0);
-    //run("curl", "-O", "https://sdk.lunarg.com/sdk/download/latest/mac/vulkan_sdk.zip");
-    //run("unzip", "vulkan_sdk.zip");
-    //const char* installer = temp_sprintf("./vulkansdk-macOS-%s.app/Contents/MacOS/vulkansdk-macOS-%s", version, version);
-    //run(installer);
-    const char* path = temp_sprintf("%s/VulkanSDK/%s", env_home, d->version);
-    if (file_exists(path)) {
-        nob_log(INFO, "Found Vulkan SDK " PATH("%s"), path);
-    }
-    else {
-        nob_log(ERROR, "Could not find vulkan sdk [TODO]");
-        exit(1);
-    }
-    //delete_file("vulkan_sdk.zip");
+	const char* url = "https://sdk.lunarg.com/sdk/download/latest/mac/vulkan_sdk.zip";
+	const char* home = getenv("HOME");
+	const char* sdk_location = find_any_in_directory(temp_sprintf("%s/VulkanSDK", home));
+    if (sdk_location == NULL)
+	{
+		nob_log(ERROR, "Vulkan SDK not found!");
+		if (ask("Would you like to install the Vulkan SDK?") == NO)
+			exit(1);
+		
+		scoped_temp()
+		{
+			if (!file_exists("vulkan_sdk.zip"))
+				run("curl", "-O", url);
 
-    d->include_path = temp_sprintf("%s/macOS/include", path);
-    d->library_path = temp_sprintf("%s/macOS/lib", path);
-    assert(file_exists(d->include_path));
-    assert(file_exists(d->library_path));
+			const char* installer = find_begins_with_in_directory(".", "vulkansdk-macOS");
+			if (installer == NULL) {
+    			run("unzip", "vulkan_sdk.zip");
+				installer = find_begins_with_in_directory(".", "vulkansdk-macOS");
+			}
 
-    const char* shared1 = temp_sprintf("libvulkan.%.*s.dylib", vulkan_cut_version(d->version, 1), d->version);
-    const char* shared3 = temp_sprintf("libvulkan.%.*s.dylib", vulkan_cut_version(d->version, 3), d->version);
-    check(copy_file_if_not_exists(temp_sprintf("%s/%s", d->library_path, shared1), temp_sprintf("bin/" PLATFORM "/%s", shared1)));
-    check(copy_file_if_not_exists(temp_sprintf("%s/%s", d->library_path, shared3), temp_sprintf("bin/" PLATFORM "/%s", shared3)));
-#else
+			nob_log(INFO, "installer: %s", installer);
+
+			run("open", temp_sprintf("%s/", installer), "--args",
+				"--accept-licenses", "--default-answer", "--confirm-command", "install");
+			exit(0); // why installer exit immediately, so annoying
+		}
+	//	sdk_location = find_any_in_directory(temp_sprintf("%s/VulkanSDK", home));
+	//	assert(sdk_location != NULL);
+    }
+    else nob_log(INFO, "Found Vulkan SDK " PATH("%s"), sdk_location);
+	const char* version = sdk_location;
+	sdk_location = temp_sprintf("%s/VulkanSDK/%s", home, sdk_location);
+
+    d->include_path = temp_sprintf("%s/macOS/include", sdk_location);
+    d->library_path = temp_sprintf("%s/macOS/lib", sdk_location);
+	assert(file_exists(d->include_path));
+	assert(file_exists(d->library_path));
+
+	scoped_log(WARNING) {
+		const char* shared1 = temp_sprintf("libvulkan.%.*s.dylib", truncate_version(version, 1), version);
+		const char* shared3 = temp_sprintf("libvulkan.%.*s.dylib", truncate_version(version, 3), version);
+		check(copy_file_if_not_exists(temp_sprintf("%s/%s", d->library_path, shared1), temp_sprintf("bin/" PLATFORM_NAME "/%s", shared1)));
+		check(copy_file_if_not_exists(temp_sprintf("%s/%s", d->library_path, shared3), temp_sprintf("bin/" PLATFORM_NAME "/%s", shared3)));
+	}
 #endif
 	return 0;
 }
 
 int fetch_freetype(Dependency* d)
 {
-	const char* lib_path = library_temp("bin/" PLATFORM, "freetype");
+	const char* lib_path = library_temp("bin/" PLATFORM_NAME, "freetype");
 	if (!file_exists(lib_path) || !file_exists(d->include_path))
-	scoped_dir("temp")
 	{
-		const char* zip_name = temp_sprintf("freetype-VER-%s.zip", d->version);
-		if (!file_exists(zip_name))
-			run("curl", "-sO", temp_sprintf(d->url, d->version, d->version));
-		const char* source_dir = temp_sprintf("freetype-VER-%s", d->version);
-		if (!file_exists(source_dir))
-			run("unzip", "-q", zip_name);
-		const char* build_dir = temp_sprintf("%s/build", source_dir);
-		run("cmake", "--log-level", "ERROR",
-			"-S", source_dir, "-B", build_dir,
-			"-DCMAKE_BUILD_TYPE=Release",
-			"-D", "FT_DISABLE_ZLIB=TRUE",
-			"-D", "FT_DISABLE_BZIP2=TRUE",
-			"-D", "FT_DISABLE_PNG=TRUE",
-			"-D", "FT_DISABLE_HARFBUZZ=TRUE",
-			"-D", "FT_DISABLE_BROTLI=TRUE",
-		);
-		run("cmake", "--build", build_dir, "-j", "--config", "Release");
-		const char* release_dir = temp_sprintf("%s/Release", build_dir);
-		check(copy_file(
-			library_temp(release_dir, "freetype"),
-			temp_sprintf("../%s", lib_path)
-		));
-		check(copy_directory_recursively(
-			temp_sprintf("%s/include", source_dir),
-			temp_sprintf("../%s", d->include_path)
-		));
+		nob_log(ERROR, "FreeType not found!");
+		if (ask("Would you like to install the FreeType?") == NO)
+			return 1;
+
+		scoped_temp()
+		{
+			const char* zip_name = temp_sprintf("freetype-VER-%s.zip", d->version);
+			if (!file_exists(zip_name))
+				run("curl", "-sO", temp_sprintf(d->url, d->version, d->version));
+			const char* source_dir = temp_sprintf("freetype-VER-%s", d->version);
+			if (!file_exists(source_dir))
+				run("unzip", "-q", zip_name);
+			const char* build_dir = temp_sprintf("%s/build", source_dir);
+			run("cmake", "--log-level", "ERROR",
+				"-S", source_dir, "-B", build_dir,
+				"-DCMAKE_BUILD_TYPE=Release",
+				"-D", "FT_DISABLE_ZLIB=TRUE",
+				"-D", "FT_DISABLE_BZIP2=TRUE",
+				"-D", "FT_DISABLE_PNG=TRUE",
+				"-D", "FT_DISABLE_HARFBUZZ=TRUE",
+				"-D", "FT_DISABLE_BROTLI=TRUE",
+			);
+			run("cmake", "--build", build_dir, "-j", "--config", "Release");
+#if defined(OS_WINDOWS)
+			build_dir = temp_sprintf("%s/Release", build_dir);
+#endif
+			const char* dst_lib_path = temp_sprintf("../%s", lib_path);
+			if (!file_exists(dst_lib_path))
+			check(copy_file(
+				library_temp(build_dir, "freetype"),
+				dst_lib_path
+			));
+
+			const char* dst_include_path = temp_sprintf("../%s", d->include_path);
+			if (!file_exists(dst_include_path))
+			check(copy_directory_recursively(
+				temp_sprintf("%s/include", source_dir),
+				dst_include_path
+			));
+		}
     }
 	else nob_log(INFO, "Found %s " PATH("%s"), d->display_name, d->version);
 	return 0;
+}
+
+int fetch_glfw(Dependency* d)
+{
+	const char* lib_path = library_temp("bin/" PLATFORM_NAME, "glfw");
+	if (!file_exists(lib_path) || !file_exists(d->include_path))
+	{
+		nob_log(ERROR, "GLFW not found!");
+		if (ask("Would you like to install the GLFW?") == NO)
+			return 1;
+
+		scoped_temp()
+		{
+			if (!file_exists("glfw"))
+				run("git", "clone", "-q", "--depth=1", "--branch", d->version, d->url);
+
+			const char* build_dir = "glfw/build";
+			run("cmake", "--log-level", "ERROR", "-S", "glfw", "-B", build_dir,
+				"-DCMAKE_BUILD_TYPE=Release",
+			);
+			run("cmake", "--build", build_dir, "-j", "--config", "Release");
+
+			const char* dst_lib_path = temp_sprintf("../%s", lib_path);
+			if (!file_exists(dst_lib_path))
+			check(copy_file(
+				library_temp(temp_sprintf("%s/src", build_dir), "glfw3"),
+				dst_lib_path
+			));
+
+			const char* dst_include_path = temp_sprintf("../%s", d->include_path);
+			if (!file_exists(dst_include_path))
+			check(copy_directory_recursively("glfw/include", dst_include_path));
+		}
+	}
+	else nob_log(INFO, "Found %s " PATH("%s"), d->display_name, d->version);
+	return 0;
+/*
+    if (file_exists("bin/" PLATFORM "/lib/libglfw3.a")) {
+        nob_log(INFO, "Found %s " PATH("%s"), d->display_name ? d->display_name : d->name, d->include_path);
+        goto done;
+    }
+    run("cmake", "--log-level", "ERROR", "-S", d->include_path, "-B", "bin/" PLATFORM "/int/glfw");
+    run("cmake", "--build", "bin/" PLATFORM "/int/glfw", "-j");
+    check(copy_file("bin/" PLATFORM "/int/glfw/src/libglfw3.a", "bin/" PLATFORM "/lib/libglfw3.a"));
+done:
+    d->name = "glfw3";
+    d->include_path = "3rd-party/glfw/include";
+*/
 }
 
 Dependency dependencies[] = {
@@ -168,138 +243,20 @@ int check_dependencies(void)
         Dependency* d = &dependencies[i];
         if (d->fetch(d)) return 1;
 	}
+	const char* header_only_output = "bin/" PLATFORM_NAME "/int/header_only.o";
+	const char* header_only_source = "src/header_only.cpp";
+	if (needs_rebuild(header_only_output, &header_only_source, 1))
+	{
+		Cpp_Program header_only = {
+			.source = header_only_source,
+			.output_name = "header_only",
+			.flags = COMPILE_OBJECT,
+		};
+		cmd_append(&header_only.include_dirs, "include");
+		if (!compile(header_only)) return 1;
+	}
 	return 0;
 }
-
-
-/*
-const char* env_home = NULL;
-
-#define CppApplication (1<<0)
-#define CppLibrary     (1<<0)
-
-struct CppProgram {
-    const char*  name;
-    const char*  output_path;
-    const char* *library_dirs;
-    const char* *include_dirs;
-    uint32_t     flags;
-};
-
-int vulkan_cut_version(const char* version, int n)
-{
-    int i = 0, k = 0;
-    while (version[i] != 0) {
-        if (version[i] == '.') k += 1;
-        if (k >= n) break;
-        i += 1;
-    }
-    return i;
-}
-
-void fetch_glfw(Dependency* d)
-{
-    if (!file_exists(d->include_path)) {
-        run("git", "clone", "-q", "--depth=1", "--branch", d->version, d->url, d->include_path);
-    }
-    if (file_exists("bin/" PLATFORM "/lib/libglfw3.a")) {
-        nob_log(INFO, "Found %s " PATH("%s"), d->display_name ? d->display_name : d->name, d->include_path);
-        goto done;
-    }
-    run("cmake", "--log-level", "ERROR", "-S", d->include_path, "-B", "bin/" PLATFORM "/int/glfw");
-    run("cmake", "--build", "bin/" PLATFORM "/int/glfw", "-j");
-    check(copy_file("bin/" PLATFORM "/int/glfw/src/libglfw3.a", "bin/" PLATFORM "/lib/libglfw3.a"));
-done:
-    d->name = "glfw3";
-    d->include_path = "3rd-party/glfw/include";
-}
-
-void fetch_git(Dependency* d)
-{
-    if (file_exists(d->include_path)) {
-        nob_log(INFO, "Found %s " PATH("%s"), d->display_name ? d->display_name : d->name, d->include_path);
-        goto done;
-    }
-    run("git", "clone", "-q", "--depth=1", d->url, d->include_path);
-done:
-    if (d->subfolder) {
-        d->include_path = temp_sprintf("%s/%s", d->include_path, d->subfolder);
-    }
-}
-
-void fetch_header_only(Dependency* d)
-{
-    if (file_exists(d->include_path)) {
-        nob_log(INFO, "Found %s " PATH("%s"), d->display_name ? d->display_name : d->name, d->include_path);
-        goto done;
-    }
-    run("curl", "-so", d->include_path, temp_sprintf(d->url, d->version));
-done:
-    d->include_path = NULL;
-}
-
-Dependency dependencies[] = {
-#   include "dependencies.h"
-};
-
-void fetch_all_dependencies(void)
-{
-    forn (len(dependencies)) {
-        Dependency* d = &dependencies[i];
-        d->fetch(d);
-    }
-}
-
-#define print_string(s) printf("[%p]", s); if (s) printf(" \"%s\"\n", s); else putchar('\n')
-
-int main(int argc, char* argv[])
-{
-    NOB_GO_REBUILD_URSELF_PLUS(argc, argv, "3rd-party/build.h", "dependencies.h");
-
-    check(load_variable(&env_home, "HOME"));
-    check(mkdir_if_not_exists("bin/"));
-    check(mkdir_if_not_exists("bin/" PLATFORM));
-    check(mkdir_if_not_exists("bin/" PLATFORM "/int/"));
-    check(mkdir_if_not_exists("3rd-party/single-header/"));
-    fetch_all_dependencies();
-
-    const char* name = "fission";
-    const char* int_output = temp_sprintf("bin/" PLATFORM "/int/%s.o", name);
-
-    check(mkdir_if_not_exists("bin/" PLATFORM "/lib/"));
-    cmd_append(&cmd, "ar");
-    cmd_append(&cmd, "rvs", temp_sprintf("bin/" PLATFORM "/lib/lib%s.a", name));
-    cmd_append(&cmd, int_output);
-    check(cmd_run_sync_and_reset(&cmd));
-
-    String_Builder builder = {0};
-    const char* format = "{.name = \"%s\", .include_path = \"%s\", .library_path = \"%s\"},\n";
-    sb_appendf(&builder, format, name, "include", "bin/" PLATFORM "/lib"); // Fission library
-    sb_appendf(&builder, "{.include_path = \"%s\"},\n", "3rd-party/single-header"); // Header-only libraries
-    sb_appendf(&builder, "{.include_path = \"%s\"},\n", "3rd-party/glm"); // GLM
-    sb_appendf(&builder, "{.include_path = \"%s\"},\n", "3rd-party/fmt/include"); // fmt
-    iterate (dependencies) {
-        Dependency* d = &dependencies[i];
-        if (!d->header_only) {
-            sb_appendf(&builder, "{.name = \"%s\",", d->name);
-            if (d->include_path) sb_appendf(&builder, ".include_path = \"%s\",", d->include_path);
-            if (d->library_path) sb_appendf(&builder, ".library_path = \"%s\",", d->library_path);
-            sb_appendf(&builder, "},\n");
-        }
-    }
-    check(write_entire_file("bin/" PLATFORM "/dependencies.h", builder.items, builder.count));
-
-    rebuild_directory("examples");
-
-    if (argc > 2) {
-        if (strcmp(argv[1], "run") == 0)
-        {
-            const char* app = temp_sprintf("./bin/" PLATFORM "/%s", argv[2]);
-            run(app);
-        }
-    }
-}
-*/
 
 Cpp_Program fission = {
 	.source = "src/main.cpp",
@@ -307,16 +264,16 @@ Cpp_Program fission = {
 	.flags = COMPILE_STATIC_LIBRARY,
 };
 
-int build_all(void)
+int build_fission_all(void)
 {
-	if (build()) return 1;
+	if (build_fission()) return 1;
 	
 	Cpp_Program start = {
 		.include_dirs = fission.include_dirs,
 		.flags = fission.flags & (~COMPILE_STATIC_LIBRARY),
 	};
 	
-	cmd_append(&start.library_dirs, "bin/" PLATFORM); 
+	cmd_append(&start.library_dirs, "bin/" PLATFORM_NAME); 
 	cmd_append(&start.libraries, "fission");
 	
     iterate (dependencies) {
@@ -326,24 +283,36 @@ int build_all(void)
 			cmd_append(&start.library_dirs, d->library_path);
     }
 	
-	scoped_dir("examples")
-		build_all_examples(start);
-	return 0;
+	int result = 0;
+	scoped_time("Build All Examples")
+	{
+		scoped_dir("examples")
+			if (build_all_examples(start))
+				return_defer(1);
+	}
+defer:
+	return result;
 }
 
-int build(void)
+int build_fission(void)
 {
 	create_build_directories();
 	check_cpp_compiler();
-	check_dependencies();
+	if (check_dependencies()) return 1;
 	
 	cmd_append(&fission.include_dirs, "include");
     iterate (dependencies) {
         Dependency* d = &dependencies[i];
 		cmd_append(&fission.include_dirs, d->include_path);
     }
+	cmd_append(&fission.object_files, "header_only");
 	
-	return !compile(fission);
+	int r = 0;
+	scoped_time("Build Fission")
+	{
+		r = compile(fission);
+	}
+	return !r;
 }
 
 int main(int argc, char* argv[])
@@ -361,14 +330,9 @@ int main(int argc, char* argv[])
 		if (strcmp(argv[i], "debug") == 0) fission.flags |= COMPILE_DEBUG;
 	}
 	
-	int r = 0;
-	uint64_t start_ns = nanos_since_unspecified_epoch();
 	switch (action)
 	{
-		case Build_All: r = build_all(); break;
-		default:        r = build(); break;
+		case Build_All: return build_fission_all();
+		default:        return build_fission();
 	}
-	uint64_t duration_ns = nanos_since_unspecified_epoch() - start_ns;
-	nob_log(INFO, "Build took %f seconds", (double)(duration_ns/1000)/1e6);
-	return r;
 }

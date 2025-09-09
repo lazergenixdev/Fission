@@ -13,8 +13,9 @@
 #pragma once
 #include <cstdint>     // -> sized integer types
 #include <cmath>
-#include <type_traits>
-#include <vector>      // TODO: remove
+#include <concepts>
+#include <glm/glm.hpp> // TODO: may need to remove dependency
+//#include <vector>      // TODO: remove
 
 // --------------------------------------------------------------------------------
 // Macro Helpers
@@ -29,7 +30,9 @@
 #define BEGIN_NAMESPACE(name) namespace name {
 #define END_NAMESPACE()       }
 
+#define TEMP_VAR MACRO_JOIN_EXPAND(_, __LINE__)
 #define NOT_USED(...) (void)sizeof(__VA_ARGS__)
+#define global extern
 
 // --------------------------------------------------------------------------------
 // Compiler Detection
@@ -53,7 +56,7 @@
 #   define DISABLE_ALL_WARNINGS_END   MACRO_PRAGMA(warning(pop))
 #elif defined(COMPILER_CLANG) || defined(COMPILER_GCC)
 #   define DISABLE_WARNING(WARNING)   MACRO_PRAGMA(GCC diagnostic ignored WARNING)
-#   define DISABLE_ALL_WARNINGS_BEGIN MACRO_PRAGMA(GCC diagnostic push) FISSION_DISABLE_WARNING("-Weverything")
+#   define DISABLE_ALL_WARNINGS_BEGIN MACRO_PRAGMA(GCC diagnostic push) DISABLE_WARNING("-Weverything")
 #   define DISABLE_ALL_WARNINGS_END   MACRO_PRAGMA(GCC diagnostic pop)
 #endif
 
@@ -99,8 +102,40 @@ using NAME ## f64 = BASE<f64>
 // --------------------------------------------------------------------------------
 // Constants
 
+namespace fission
+{
+	// Set Variable only for a scope
+	template <typename T>
+	struct scoped_set_variable
+	{
+		T original;
+		T& dst;
+		~scoped_set_variable() { dst = original; }
+	};
+#	define scoped_set(dst, original) auto TEMP_VAR = scoped_set_variable{ dst, dst = original }
+}
+
+// --------------------------------------------------------------------------------
+// Constants
+
 #define PI   (3.1415926535897932384626433)
 #define TAU  (6.2831853071795864769252867)
+
+// --------------------------------------------------------------------------------
+// Conversion -> Bytes
+
+inline constexpr unsigned long long operator"" _KiB(unsigned long long KiB)
+{
+    return KiB * 1024ULL;
+}
+inline constexpr unsigned long long operator"" _MiB(unsigned long long MiB)
+{
+    return MiB * 1024ULL * 1024ULL;
+}
+inline constexpr unsigned long long operator"" _GiB(unsigned long long GiB)
+{
+    return GiB * 1024ULL * 1024ULL * 1024ULL;
+}
 
 // --------------------------------------------------------------------------------
 // Math
@@ -436,14 +471,18 @@ namespace fission
 
 	}; // vector4
 
-	template<typename type> using v2 = vector2<type>;
-	template<typename type> using v3 = vector3<type>;
-	template<typename type> using v4 = vector4<type>;
+	template<typename T> using v2 = vector2<T>;
+	template<typename T> using v3 = vector3<T>;
+	template<typename T> using v4 = vector4<T>;
 
 	FISSION_PRIMITIVE_ALIASES(vector2, v2);
 	FISSION_PRIMITIVE_ALIASES(vector3, v3);
 	FISSION_PRIMITIVE_ALIASES(vector4, v4);
 
+	// Default vector types
+	using vec2 = vector2<f32>;
+	using vec3 = vector3<f32>;
+	using vec4 = vector3<f32>;
 } // fission
 
 template <typename T> FISSION_IMPLEMENT_OPERATOR_MULTIPLY_2(fission::vector2<T>, T, x, y)
@@ -457,6 +496,59 @@ template <typename T> FISSION_IMPLEMENT_OPERATOR_DIVISION_4(fission::vector4<T>,
 template <typename T> FISSION_IMPLEMENT_OPERATOR_DOT_2(fission::vector2<T>, x, y)
 template <typename T> FISSION_IMPLEMENT_OPERATOR_DOT_3(fission::vector3<T>, x, y, z)
 template <typename T> FISSION_IMPLEMENT_OPERATOR_DOT_4(fission::vector4<T>, x, y, z, w)
+
+// --------------------------------------------------------------------------------
+// Result Values
+
+namespace fission
+{
+	enum Result: s32 {
+		Success   = 0,
+		Failed    = 1,
+	};
+}
+
+// --------------------------------------------------------------------------------
+// Arena Allocators
+
+namespace fission
+{
+	struct Arena
+	{
+		void* start        {};
+		size_t allocated   {};
+		size_t capacity    {};
+
+		inline auto create(size_t max_size) -> Result;
+		inline void destroy();
+		inline auto alloc(size_t size) -> void*;
+		inline void reset() { allocated = 0; }
+
+		template <typename T>
+		inline auto alloc(size_t count) -> T* {
+			return reinterpret_cast<T*>(alloc(count*sizeof(T)));
+		}
+		template <typename T=void>
+		inline auto next_ptr() -> T* {
+			return reinterpret_cast<T*>(reinterpret_cast<byte*>(start) + allocated);
+		}
+		inline auto remaining() -> size_t {
+			return capacity - allocated;
+		}
+		template <typename T>
+		inline auto push(T* data, size_t count) -> T* {
+			auto ptr = next_ptr<std::remove_const_t<T>>();
+			memcpy(reinterpret_cast<void*>(ptr), data, count * sizeof(T));
+			allocated += count * sizeof(T);
+			return ptr;
+		}
+		template <typename T>
+		inline void push(T obj) {
+			memcpy(next_ptr<void*>(), &obj, sizeof(T));
+			allocated += sizeof(T);
+		}
+	};
+}
 
 // --------------------------------------------------------------------------------
 // Strings
@@ -477,7 +569,7 @@ namespace fission
 
 		template <size_t buffer_size>
 		inline constexpr string(char (&buffer)[buffer_size])
-		:	count(buffer_size), data((c8*)buffer)
+		:	count(buffer_size), data(reinterpret_cast<c8*>(buffer))
 		{}
 
 		template <typename string_type>
@@ -507,6 +599,58 @@ namespace fission
 		inline constexpr c8* begin() const { return data; }
 		inline constexpr c8* end  () const { return data + count; }
 	};
+
+	inline void format_single(Arena& arena, string s)
+	{
+		arena.push(s.data, s.count);
+	}
+	inline void format_single(Arena& arena, const char* cstring)
+	{
+		arena.push(cstring, strlen(cstring));
+	}
+	template <size_t size>
+	inline void format_single(Arena& arena, const char (&string_literal)[size])
+	{
+		arena.push(const_cast<char*>(string_literal), size - 1);
+	}
+}
+
+// --------------------------------------------------------------------------------
+// Formatting
+
+namespace fission
+{
+	template <std::integral T>
+	inline void format_single(Arena& arena, const T value)
+	{
+		if (value == 0) { arena.push('0'); return; }
+		if constexpr (std::is_signed<T>::value)
+		{
+			if (value < 0) arena.push('-');
+			format_single(arena, u64(value < 0? -value : value));
+		}
+		if constexpr (std::is_unsigned<T>::value)
+		{
+			u64 x = value, p = 10000000000000000000ULL;
+			while (p != 0) {
+				u64 d = x / p;
+				if (d != 0 || x == 0) {
+					arena.push('0' + c8(d));
+					x -= d * p;
+				}
+				p /= 10;
+			}
+		}
+	}
+
+	//! TODO: use current context arena
+	template <typename...T>
+	inline auto format(Arena& arena, T&&...args) -> string
+	{
+		auto buffer = arena.next_ptr<char>();
+		(format_single(arena, std::forward<T>(args)), ...);
+		return string(buffer, static_cast<u64>(arena.next_ptr<char>() - buffer));
+	}
 }
 
 // --------------------------------------------------------------------------------

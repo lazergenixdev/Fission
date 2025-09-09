@@ -51,28 +51,6 @@ struct Console_Window {
     }
 };
 
-void os::log(int level, string const& message)
-{
-    static constexpr char const * level_strings [] {
-        "VERBOSE", "DEBUG", "INFO", "WARN", "ERROR",
-    };
-
-    SYSTEMTIME lt;
-    GetLocalTime(&lt);
-
-    auto buffer = format("{:02}:{:02}:{:02}.{:03}   {:>9}   {}\n",
-        lt.wHour, lt.wDay, lt.wSecond, lt.wMilliseconds,
-        level_strings[level], message.view()
-    );
-
-    engine.logger.file << buffer;
-#if 0
-#else
-    OutputDebugStringA(buffer.c_str());
-    Console_Window::get().write(level, buffer);
-#endif
-}
-
 void os::show_error_dialog(fs::string const& title, fs::string const& message)
 {
     MessageBoxA(0, message.str().c_str(), title.str().c_str(), MB_ICONERROR | MB_OK);

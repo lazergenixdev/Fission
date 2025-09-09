@@ -77,16 +77,6 @@ void os::show_error_dialog(string const&, string const&) {
 
 FISSION_NAMESPACE_BEGIN
 
-void Engine::run() {
-    log::verbose(PLATFORM_LOG_PREFIX "starting message loop...");
-
-    while (!glfwWindowShouldClose(engine.window._glfw_window))
-        glfwWaitEvents();
-
-    // invalidate main window
-    //engine.window._handle = NULL;
-}
-
 FISSION_NAMESPACE_END
 
 using namespace fs;
@@ -188,13 +178,4 @@ void Window::close() {
 void Window::set_using_mouse_delta(bool use) {
     glfwSetInputMode(_glfw_window, GLFW_CURSOR, use ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
     use_mouse_deltas = use;
-}
-
-Window::~Window() {
-    log::verbose("Destroying Window...");
-    glfwDestroyWindow(_glfw_window);
-    log::verbose(PLATFORM_LOG_PREFIX "GLFW Terminate");
-    glfwTerminate();
-    log::verbose(PLATFORM_LOG_PREFIX "YOU ARE TERMINATED");
-    _glfw_window = nullptr;
 }
