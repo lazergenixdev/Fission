@@ -1,8 +1,4 @@
 #include "Fission/core.hpp"
-#ifdef TEST_FMT
-#include "fmt/chrono.h"
-#endif
-#include <unistd.h>
 
 namespace os { auto init() -> fission::Result; }
 
@@ -41,11 +37,41 @@ void log::write_log_from_logging_arena(int level)
     static constexpr const char * level_colors [] {
         "\x1b[90m", "\x1b[96m", "\x1b[0m", "\x1b[93m", "\x1b[91m",
     };
-    // TODO: Log to log file
-    fputs(level_colors[level], stdout);
+	fwrite(logging_arena.start, 1, logging_arena.allocated, logging_file);
+	fflush(logging_file);
+#if defined(OS_WINDOWS)
+	if (auto handle = os::output_console()) {
+        WORD attr = FOREGROUND_INTENSITY;
+        if (level == Info)  attr |= FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+        if (level == Debug) attr  = FOREGROUND_BLUE | FOREGROUND_INTENSITY;
+        if (level == Warn)  attr  = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY;
+        if (level == Error) attr  = FOREGROUND_RED | FOREGROUND_INTENSITY;
+        SetConsoleTextAttribute(handle, attr);
+
+		DWORD offset = 0;
+		DWORD count = DWORD(logging_arena.allocated);
+		DWORD written;
+		while (WriteConsoleA(handle, (byte*)logging_arena.start + offset, count, &written, NULL))
+		{
+			offset += written;
+			count -= written;
+			if (offset >= logging_arena.allocated) break;
+		}
+	}
+	else {
+		fputs(level_colors[level], stdout);
+		fwrite(logging_arena.start, 1, logging_arena.allocated, stdout);
+	}
+#else
+	fputs(level_colors[level], stdout);
     fwrite(logging_arena.start, 1, logging_arena.allocated, stdout);
+#endif
+#if !defined(OS_WINDOWS)
     if (level != Info) fputs("\x1b[0m", stdout);
+#endif
+	fflush(stdout);
 #if defined(OS_WINDOWS) // Also output to debugger (if available)
+	ASSERT(strlen((char*)logging_arena.start) < logging_arena.capacity);
     OutputDebugStringA((char*)logging_arena.start);
 #endif
 }
@@ -54,8 +80,9 @@ auto Engine::create(Defaults const& defaults) -> Result
 {
 	if (os::init()) return Failed;
     logging_arena.create(1_KiB);
+	logging_file = fopen("log.txt", "wb");
     os_mutex_create(&logging_mutex);
-    log::info("Creating Fission Engine...");
+    log::info("Creating Fission Engine...", 100);
     /*
 	// setup the console early so we can use it as soon as possible
 	console_layer.setup_console_api();
@@ -138,6 +165,8 @@ bool stop() {
 
 auto Engine::render_frame() -> bool
 {
+	Sleep(100);
+	#if 0
     VkResult       result {VK_SUCCESS};
 	Render_Context render_context { .frame = frame_count & 1 };
 	VkSemaphore    write_semaphore = graphics.image_write_semaphore[render_context.frame];
@@ -296,7 +325,7 @@ auto Engine::render_frame() -> bool
 
 	//delta_time = fs::seconds_elasped_and_reset(last_timestamp);
 	frame_count += 1;
-
+#endif
 	return bool(flags & Running);
 }
 

@@ -5,35 +5,38 @@ void create_build_directories(void)
 {
 	scoped_log(WARNING) {
 		check(mkdir_if_not_exists("bin"));
-		check(mkdir_if_not_exists("bin/" PLATFORM_NAME));
-		check(mkdir_if_not_exists("bin/" PLATFORM_NAME "/int"));
-		check(mkdir_if_not_exists(CACHE_DIR));
+		compiler.output_dir = temp_sprintf("bin/%s", target_name(compiler.target_os));
+		check(mkdir_if_not_exists(compiler.output_dir));
+		compiler.intermediate_dir = temp_sprintf("%s/int", compiler.output_dir);
+		check(mkdir_if_not_exists(compiler.intermediate_dir));
+		compiler.cache_dir = temp_sprintf("%s/cache", compiler.output_dir);
+		check(mkdir_if_not_exists(compiler.cache_dir));
 	}
 }
 
 void check_cpp_compiler(void)
 {
-#if defined(PLATFORM_WINDOWS)
-	const char* vcvarsall = cache_find("vcvarsall");
-	
-	if (vcvarsall == NULL) {		
-		vcvarsall = find_file_recursive("C:/Program Files/Microsoft Visual Studio", "vcvarsall.bat");
+#if OS == OS_WINDOWS
+	const char* vcvarsall_cache = cache_file_temp("vcvarsall");
+	String_Builder builder = {0};
+	if (!read_entire_file(vcvarsall_cache, &builder))
+	{
+		const char* location = find_file_recursive("C:/Program Files/Microsoft Visual Studio", "vcvarsall.bat");
 		
-		if (vcvarsall == NULL) {
+		if (location == NULL) {
 			nob_log(ERROR, "Could not find `vcvarsall.bat`");
 			exit(1);
 		}
-		nob_log(INFO, "Found `vcvarsall.bat` location " PATH("%s"), vcvarsall);
+		nob_log(INFO, "Found `vcvarsall.bat` location " PATH("%s"), location);
 		
 		Cmd cmd = {0};
-		cmd_append(&cmd, "cmd.exe", "/c", "call", vcvarsall, "x64", ">nul", "&&", "set");
-		cmd_run(&cmd, .stdout_path = cache_file_temp("vcvarsall"));
+		cmd_append(&cmd, "cmd.exe", "/c", "call", location, "x64", ">nul", "&&", "set");
+		cmd_run(&cmd, .stdout_path = vcvarsall_cache);
+		check(read_entire_file(vcvarsall_cache, &builder));
 	}
 	
 	nob_log(INFO, "Setting environment variables for Microsoft Visual Studio ...");
 	{
-		String_Builder builder = {0};
-		check(read_entire_file(cache_file_temp("vcvarsall"), &builder));
 		const char* name = builder.items;
 		const char* value = NULL;
 		for (int i = 0; i < builder.count; ++i)
@@ -58,7 +61,7 @@ void check_cpp_compiler(void)
 
 int fetch_vulkan(Dependency* d)
 {
-#if defined(PLATFORM_WINDOWS)
+#if OS == OS_WINDOWS
 	const char* url = "https://sdk.lunarg.com/sdk/download/latest/windows/vulkan_sdk.exe";
 	const char* sdk_location = getenv("VULKAN_SDK");
 	if (sdk_location == NULL) {
@@ -86,7 +89,7 @@ int fetch_vulkan(Dependency* d)
 	
     assert(file_exists(d->include_path));
     assert(file_exists(d->library_path));
-#elif defined(PLATFORM_MACOS)
+#elif OS == OS_MACOS
 	const char* url = "https://sdk.lunarg.com/sdk/download/latest/mac/vulkan_sdk.zip";
 	const char* home = getenv("HOME");
 	const char* sdk_location = find_any_in_directory(temp_sprintf("%s/VulkanSDK", home));
@@ -137,7 +140,8 @@ int fetch_vulkan(Dependency* d)
 
 int fetch_freetype(Dependency* d)
 {
-	const char* lib_path = library_temp("bin/" PLATFORM_NAME, "freetype");
+	const char* lib_path = library_temp(compiler.output_dir, "freetype");
+	nob_log(INFO, lib_path);
 	if (!file_exists(lib_path) || !file_exists(d->include_path))
 	{
 		nob_log(ERROR, "FreeType not found!");
@@ -187,7 +191,7 @@ int fetch_freetype(Dependency* d)
 
 int fetch_glfw(Dependency* d)
 {
-	const char* lib_path = library_temp("bin/" PLATFORM_NAME, "glfw");
+	const char* lib_path = library_temp(compiler.output_dir, "glfw");
 	if (!file_exists(lib_path) || !file_exists(d->include_path))
 	{
 		nob_log(ERROR, "GLFW not found!");
@@ -219,31 +223,29 @@ int fetch_glfw(Dependency* d)
 	}
 	else nob_log(INFO, "Found %s " PATH("%s"), d->display_name, d->version);
 	return 0;
-/*
-    if (file_exists("bin/" PLATFORM "/lib/libglfw3.a")) {
-        nob_log(INFO, "Found %s " PATH("%s"), d->display_name ? d->display_name : d->name, d->include_path);
-        goto done;
-    }
-    run("cmake", "--log-level", "ERROR", "-S", d->include_path, "-B", "bin/" PLATFORM "/int/glfw");
-    run("cmake", "--build", "bin/" PLATFORM "/int/glfw", "-j");
-    check(copy_file("bin/" PLATFORM "/int/glfw/src/libglfw3.a", "bin/" PLATFORM "/lib/libglfw3.a"));
-done:
-    d->name = "glfw3";
-    d->include_path = "3rd-party/glfw/include";
-*/
 }
 
 Dependency dependencies[] = {
 #   include "dependencies.h"
 };
 
+Cpp_Program fission = {
+	.source = "src/main.cpp",
+	.output_name = "fission",
+	.flags = COMPILE_STATIC_LIBRARY,
+};
+
 int check_dependencies(void)
 {
+	cmd_append(&fission.include_dirs, "include");
 	iterate (dependencies) {
         Dependency* d = &dependencies[i];
+		if (!(d->targets & compiler.target_os)) continue;
         if (d->fetch(d)) return 1;
+		cmd_append(&fission.include_dirs, d->include_path);
 	}
-	const char* header_only_output = "bin/" PLATFORM_NAME "/int/header_only.o";
+
+	const char* header_only_output = temp_sprintf("%s/header_only" OBJ_EXT, compiler.intermediate_dir);
 	const char* header_only_source = "src/header_only.cpp";
 	if (needs_rebuild(header_only_output, &header_only_source, 1))
 	{
@@ -251,18 +253,12 @@ int check_dependencies(void)
 			.source = header_only_source,
 			.output_name = "header_only",
 			.flags = COMPILE_OBJECT,
+			.include_dirs = fission.include_dirs,
 		};
-		cmd_append(&header_only.include_dirs, "include");
 		if (!compile(header_only)) return 1;
 	}
 	return 0;
 }
-
-Cpp_Program fission = {
-	.source = "src/main.cpp",
-	.output_name = "fission",
-	.flags = COMPILE_STATIC_LIBRARY,
-};
 
 int build_fission_all(void)
 {
@@ -273,11 +269,12 @@ int build_fission_all(void)
 		.flags = fission.flags & (~COMPILE_STATIC_LIBRARY),
 	};
 	
-	cmd_append(&start.library_dirs, "bin/" PLATFORM_NAME); 
+	cmd_append(&start.library_dirs, compiler.output_dir); 
 	cmd_append(&start.libraries, "fission");
 	
     iterate (dependencies) {
         Dependency* d = &dependencies[i];
+		if (!(d->targets & compiler.target_os)) continue;
 		cmd_append(&start.libraries, d->name);
 		if (d->library_path)
 			cmd_append(&start.library_dirs, d->library_path);
@@ -300,11 +297,6 @@ int build_fission(void)
 	check_cpp_compiler();
 	if (check_dependencies()) return 1;
 	
-	cmd_append(&fission.include_dirs, "include");
-    iterate (dependencies) {
-        Dependency* d = &dependencies[i];
-		cmd_append(&fission.include_dirs, d->include_path);
-    }
 	cmd_append(&fission.object_files, "header_only");
 	
 	int r = 0;
@@ -317,9 +309,10 @@ int build_fission(void)
 
 int main(int argc, char* argv[])
 {
+#ifndef DEBUG
     NOB_GO_REBUILD_URSELF_PLUS(argc, argv,
 		"tools/build.h", "examples/build.h", "dependencies.h");
-
+#endif
 	enum {
 		Build_Fission = 0,
 		Build_All     = 1,
@@ -330,9 +323,13 @@ int main(int argc, char* argv[])
 		if (strcmp(argv[i], "debug") == 0) fission.flags |= COMPILE_DEBUG;
 	}
 	
+	compiler.target_os = OS;
+	int r = 0;
 	switch (action)
 	{
-		case Build_All: return build_fission_all();
-		default:        return build_fission();
+		case Build_All: r = build_fission_all(); break;
+		default:        r = build_fission(); break;
 	}
+	nob_log(INFO, r? "\x1b[91mCompilation Failed!\x1b[0m" : "\x1b[92mCompilation Succedded!\x1b[0m");
+	return r;
 }

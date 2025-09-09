@@ -1,29 +1,30 @@
 #ifndef BUILD_H
 #define BUILD_H
 
+#define OS_WINDOWS 0x01
+#define OS_MACOS   0x02
+#define OS_LINUX   0x04
+#define OS_ANDROID 0x08
+#define OS_IOS     0x10
+#define OS_ALL     0xFF
+
 #if defined(_WIN32)
-#	define PLATFORM_WINDOWS
-#   define PLATFORM_NAME "windows"
+#	define OS OS_WINDOWS
 #elif defined(__APPLE__) || defined(__MACH__)
 #	include <TargetConditionals.h>
 #	if TARGET_IPHONE_SIMULATOR == 1
-#		define PLATFORM_IOS
-#       define PLATFORM_NAME "ios"
+#		define OS OS_IOS
 #	elif TARGET_OS_IPHONE == 1
-#		define PLATFORM_IOS
-#       define PLATFORM_NAME "ios"
+#		define OS OS_IOS
 #	elif TARGET_OS_MAC == 1
-#		define PLATFORM_MACOS
-#       define PLATFORM_NAME "macos"
+#		define OS OS_MACOS
 #	else
 #		error "Unknown Apple platform!"
 #	endif
 #elif defined(__ANDROID__)
-#	define PLATFORM_ANDROID
-#   define PLATFORM_NAME "android"
+#	define OS OS_ANDROID
 #elif defined(__linux__)
-#	define PLATFORM_LINUX
-#   define PLATFORM_NAME "linux"
+#	define OS OS_LINUX
 #else
 #	error "Unknown platform!"
 #endif
@@ -33,7 +34,6 @@
 #include "nob.h"
 
 #define PATH(L) "(\x1b[92m" L "\x1b[0m)"
-#define CACHE_DIR "bin/" PLATFORM_NAME "/cache"
 
 #ifdef assert
 #undef assert
@@ -54,14 +54,17 @@ void assert_impl(int cond, const char* info);
 
 #define scoped_time(what) for (uint64_t _start_ns = nanos_since_unspecified_epoch(), _done = 0; !_done; nob_log(INFO, what " took \x1b[93m%f\x1b[0m seconds", (double)((nanos_since_unspecified_epoch() - _start_ns)/1000)/1e6), _done = 1)
 
-//uint64_t start_ns = nanos_since_unspecified_epoch();
-//uint64_t duration_ns = nanos_since_unspecified_epoch() - start_ns;
-//nob_log(INFO, "Build took \x1b[93m%f\x1b[0m seconds", (double)(duration_ns/1000)/1e6);
+#if OS == OS_WINDOWS
+#	define OBJ_EXT ".obj"
+#else
+#	define OBJ_EXT ".o"
+#endif
 
 typedef struct Dependency Dependency;
 typedef int (*P_fetch_callback)(Dependency*);
 
 struct Dependency {
+	uint32_t          targets;
     const char*       name;
     const char*       display_name;
     const char*       version;
@@ -73,6 +76,7 @@ struct Dependency {
     const char*       subfolder;
 };
 
+// Example: "path/to/my/file.ext.ok" => "file.ext"
 const char* file_name_no_exts(const char* path)
 {
 	int len = strlen(path);
@@ -81,6 +85,18 @@ const char* file_name_no_exts(const char* path)
 	int end = start;
 	for (;end < len && path[end] != '.'; ++end);
 	return temp_sprintf("%.*s", end - start, path + start);
+}
+
+const char* target_name(int os)
+{
+	switch (os) {
+		case OS_WINDOWS: return "windows";
+		case OS_MACOS:   return "macos";
+		case OS_LINUX:   return "linux";
+		case OS_ANDROID: return "android";
+		case OS_IOS:     return "ios";
+	}
+	return NULL;
 }
 
 typedef enum {
@@ -105,12 +121,19 @@ typedef struct {
 	Optimization   optimization;
 } Cpp_Program;
 
+struct {
+	int         target_os;
+	const char* output_dir;
+	const char* intermediate_dir;
+	const char* cache_dir;
+} compiler;
+
 bool compile(Cpp_Program program)
 {
     Cmd cmd = {0};
 	if (program.output_name == NULL)
 		program.output_name = file_name_no_exts(program.source);
-#if defined(PLATFORM_WINDOWS)
+#if OS == OS_WINDOWS
 	cmd_append(&cmd, "cl.exe", "/nologo", "/utf-8", "/std:c++20");
 	cmd_append(&cmd, "/W4", "/EHsc-", "/MD"); // TODO: compile with static CRT
 	if (!(program.flags & COMPILE_DEBUG)) // Debug symbols are terrible with Optimizations
@@ -118,35 +141,39 @@ bool compile(Cpp_Program program)
 		default: cmd_append(&cmd, "/O2"); break;
 		case Opt_None: break;
 	}
-	if (program.flags & COMPILE_STATIC_LIBRARY)
+	if ((program.flags & COMPILE_STATIC_LIBRARY) || (program.flags & COMPILE_OBJECT))
 		cmd_append(&cmd, "/c");
     cmd_append(&cmd, program.source);
 	forn (program.include_dirs.count)
 		cmd_append(&cmd, temp_sprintf("/I%s", program.include_dirs.items[i]));
-	cmd_append(&cmd, temp_sprintf("/Fo%s/%s.obj", "bin/" PLATFORM_NAME "/int", program.output_name));
+	cmd_append(&cmd, temp_sprintf("/Fo%s/%s.obj", compiler.intermediate_dir, program.output_name));
 	if (program.flags & COMPILE_DEBUG)
 	{
 		cmd_append(&cmd, "/Zi");
-		cmd_append(&cmd, temp_sprintf("/Fd%s/%s.pdb", "bin/" PLATFORM_NAME, program.output_name));
+		cmd_append(&cmd, temp_sprintf("/Fd%s/%s.pdb", compiler.output_dir, program.output_name));
 	}
-	if (!(program.flags & COMPILE_STATIC_LIBRARY))
+	if (!(program.flags & COMPILE_STATIC_LIBRARY) && !(program.flags & COMPILE_OBJECT))
 	{	
-		cmd_append(&cmd, temp_sprintf("/Fe%s/%s.exe", "bin/" PLATFORM_NAME, program.output_name));
+		cmd_append(&cmd, temp_sprintf("/Fe%s/%s.exe", compiler.output_dir, program.output_name));
 		cmd_append(&cmd, "/link", "/SUBSYSTEM:WINDOWS");
 		forn (program.library_dirs.count)
 			cmd_append(&cmd, temp_sprintf("/LIBPATH:\"%s\"", program.library_dirs.items[i]));
 		forn (program.libraries.count)
 			cmd_append(&cmd, temp_sprintf("%s.lib", program.libraries.items[i]));
+		// System Libraries			
+		cmd_append(&cmd, "user32.lib", "Gdi32.lib");
 	}
     if (!cmd_run_sync_and_reset(&cmd)) return 0;
 	if (program.flags & COMPILE_STATIC_LIBRARY)
 	{
 		cmd_append(&cmd, "lib", "/nologo");
-		cmd_append(&cmd, temp_sprintf("/OUT:%s/%s.lib", "bin/" PLATFORM_NAME, program.output_name));
-		cmd_append(&cmd, temp_sprintf("%s/%s.obj", "bin/" PLATFORM_NAME "/int", program.output_name));
+		cmd_append(&cmd, temp_sprintf("/OUT:%s/%s.lib", compiler.output_dir, program.output_name));
+		cmd_append(&cmd, temp_sprintf("%s/%s.obj", compiler.intermediate_dir, program.output_name));
+		forn (program.object_files.count)
+			cmd_append(&cmd, temp_sprintf("%s/%s.obj", compiler.intermediate_dir, program.object_files.items[i]));
 		if (!cmd_run_sync(cmd)) return 0;
 	}
-#elif defined(PLATFORM_MACOS)
+#else
 	cmd_append(&cmd, "clang++", "-std=c++20");
 	cmd_append(&cmd, "-Wall", "-Wextra", "-Wpedantic", "-fno-exceptions");
 	switch (program.optimization) {
@@ -167,12 +194,11 @@ bool compile(Cpp_Program program)
 	if (!(program.flags & COMPILE_STATIC_LIBRARY) && !(program.flags & COMPILE_OBJECT))
 	{	
 		cmd_append(&cmd, "-o", temp_sprintf("bin/%s/%s", PLATFORM_NAME, program.output_name));
-
 		forn (program.library_dirs.count)
 			cmd_append(&cmd, temp_sprintf("-L%s", program.library_dirs.items[i]));
 		forn (program.libraries.count)
 			cmd_append(&cmd, temp_sprintf("-l%s", program.libraries.items[i]));
-
+		// System Libraries
 		cmd_append(&cmd, "-rpath", "@executable_path/");
 		cmd_append(&cmd, "-framework", "OpenGL", "-framework", "Cocoa",
 						 "-framework", "IOKit", "-framework", "CoreVideo");
@@ -201,7 +227,7 @@ bool string_begins_with(const char* input, const char* begin)
 
 const char* library_temp(const char* dir, const char* name)
 {
-#if defined(PLATFORM_WINDOWS)
+#if OS == OS_WINDOWS
 	return temp_sprintf("%s/%s.lib", dir, name);
 #else
 	return temp_sprintf("%s/lib%s.a", dir, name);
@@ -229,7 +255,7 @@ void popd()
 
 const char* cache_file_temp(const char* name)
 {
-	return temp_sprintf(CACHE_DIR "/%s", name);
+	return temp_sprintf("%s/%s", compiler.cache_dir, name);
 }
 
 const char* cache_find(const char* name)
@@ -272,7 +298,7 @@ bool copy_file_if_not_exists(const char* src_path, const char* dst_path)
 
 void root_run(const char* program, const char* args)
 {
-#if defined(PLATFORM_WINDOWS)
+#if OS == OS_WINDOWS
 #	pragma comment (lib, "shell32.lib")
 	SHELLEXECUTEINFO sei = { sizeof(sei) };
 	sei.lpVerb = "runas";
@@ -290,7 +316,6 @@ void root_run(const char* program, const char* args)
 		}
 		exit(1);
 	}
-#else
 #endif
 }
 

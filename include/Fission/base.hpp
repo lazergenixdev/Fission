@@ -14,6 +14,7 @@
 #include <cstdint>     // -> sized integer types
 #include <cmath>
 #include <concepts>
+#include <chrono>
 #include <glm/glm.hpp> // TODO: may need to remove dependency
 //#include <vector>      // TODO: remove
 
@@ -33,6 +34,8 @@
 #define TEMP_VAR MACRO_JOIN_EXPAND(_, __LINE__)
 #define NOT_USED(...) (void)sizeof(__VA_ARGS__)
 #define global extern
+#define internal static
+#define local_persist static
 #define forn(N) for (decltype(N) i = 0; i < (N); ++i)
 
 // --------------------------------------------------------------------------------
@@ -65,6 +68,13 @@ struct source_location {
 #   define COMPILER_MSVC
 #else
 #   pragma message("[Fission] Unable to detect compiler!")
+#endif
+
+// --------------------------------------------------------------------------------
+// Normalize compiler intrinsics
+
+#if defined(COMPILER_MSVC)
+#define __PRETTY_FUNCTION__ __FUNCSIG__
 #endif
 
 // --------------------------------------------------------------------------------
@@ -544,6 +554,9 @@ namespace fission
 		inline auto alloc(size_t size) -> void*;
 		inline void reset() { allocated = 0; }
 
+		// Prevent future bugs from C++'s shitty template deduction
+		inline void push_byte(byte b) { push<byte>(b); }
+
 		template <typename T>
 		inline auto alloc(size_t count) -> T* {
 			return reinterpret_cast<T*>(alloc(count*sizeof(T)));
@@ -650,26 +663,23 @@ namespace fission
 		{
 			if (value) arena.push("true", 4);
 			else       arena.push("false", 5);
-			return;
 		}
-		if constexpr (std::is_signed<T>::value)
+		else if constexpr (std::is_signed<T>::value)
 		{
 			if (value < 0) arena.push('-');
 			format_single(arena, u64(value < 0? -value : value));
-			return;
 		}
-		if constexpr (std::is_unsigned<T>::value)
+		else if constexpr (std::is_unsigned<T>::value)
 		{
 			u64 x = value, p = 10000000000000000000ULL;
 			while (p != 0) {
 				u64 d = x / p;
 				if (d != 0 || x == 0) {
-					arena.push('0' + c8(d));
+					arena.push_byte(byte('0' + d));
 					x -= d * p;
 				}
 				p /= 10;
 			}
-			return;
 		}
 	}
 

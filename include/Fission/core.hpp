@@ -82,31 +82,31 @@ namespace fission
 	{
 		auto p = reinterpret_cast<c8*>(arena.start);
 		u32 year = (ts.date>>16)&0xFFFF, month = (ts.date>>8)&0xFF, day = ts.date&0xFF;
-		p[arena.allocated++] = ('0' + (year) / 1000);
-		p[arena.allocated++] = ('0' + (year / 100) % 10);
-		p[arena.allocated++] = ('0' + (year / 10) % 10);
-		p[arena.allocated++] = ('0' + (year) % 10);
-		p[arena.allocated++] = '-';
-		p[arena.allocated++] = ('0' + (month) / 10);
-		p[arena.allocated++] = ('0' + (month) % 10);
-		p[arena.allocated++] = '-';
-		p[arena.allocated++] = ('0' + (day) / 10);
-		p[arena.allocated++] = ('0' + (day) % 10);
-		p[arena.allocated++] = ' ';
+		p[arena.allocated++] = c8('0' + (year) / 1000);
+		p[arena.allocated++] = c8('0' + (year / 100) % 10);
+		p[arena.allocated++] = c8('0' + (year / 10) % 10);
+		p[arena.allocated++] = c8('0' + (year) % 10);
+		p[arena.allocated++] = c8('-');
+		p[arena.allocated++] = c8('0' + (month) / 10);
+		p[arena.allocated++] = c8('0' + (month) % 10);
+		p[arena.allocated++] = c8('-');
+		p[arena.allocated++] = c8('0' + (day) / 10);
+		p[arena.allocated++] = c8('0' + (day) % 10);
+		p[arena.allocated++] = c8(' ');
 
 		u32 hour = (ts.time>>16)&0xFF, min = (ts.time>>8)&0xFF, sec = ts.time&0xFF;
-		p[arena.allocated++] = ('0' + (hour) / 10);
-		p[arena.allocated++] = ('0' + (hour) % 10);
-		p[arena.allocated++] = ':';
-		p[arena.allocated++] = ('0' + (min) / 10);
-		p[arena.allocated++] = ('0' + (min) % 10);
-		p[arena.allocated++] = ':';
-		p[arena.allocated++] = ('0' + (sec) / 10);
-		p[arena.allocated++] = ('0' + (sec) % 10);
-		p[arena.allocated++] = '.';
-		p[arena.allocated++] = ('0' + (ts.milliseconds / 100) % 10);
-		p[arena.allocated++] = ('0' + (ts.milliseconds / 10) % 10);
-		p[arena.allocated++] = ('0' + (ts.milliseconds) % 10);
+		p[arena.allocated++] = c8('0' + (hour) / 10);
+		p[arena.allocated++] = c8('0' + (hour) % 10);
+		p[arena.allocated++] = c8(':');
+		p[arena.allocated++] = c8('0' + (min) / 10);
+		p[arena.allocated++] = c8('0' + (min) % 10);
+		p[arena.allocated++] = c8(':');
+		p[arena.allocated++] = c8('0' + (sec) / 10);
+		p[arena.allocated++] = c8('0' + (sec) % 10);
+		p[arena.allocated++] = c8('.');
+		p[arena.allocated++] = c8('0' + (ts.milliseconds / 100) % 10);
+		p[arena.allocated++] = c8('0' + (ts.milliseconds / 10) % 10);
+		p[arena.allocated++] = c8('0' + (ts.milliseconds) % 10);
 	}
 }
 
@@ -148,6 +148,7 @@ namespace fission::log
 		os_mutex_lock(logging_mutex);
 		logging_arena.reset();
     	format(logging_arena, Logging_Timestamp::now(), level_strings[level]);
+		if (logging_prefix) format(logging_arena, "(", logging_prefix, ") ");
 		(format_single(logging_arena, std::forward<T>(args)), ...);
 		format(logging_arena, "\n\0"); // null terminate in case we use C functions
 		write_log_from_logging_arena(level);

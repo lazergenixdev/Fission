@@ -238,7 +238,9 @@ auto Graphics::create_instance(bool debug) -> Result
         VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
     #endif
 		VK_KHR_SURFACE_EXTENSION_NAME,
-    #if defined(OS_MACOS)
+	#if defined(OS_WINDOWS)
+		"VK_KHR_win32_surface",
+    #elif defined(OS_MACOS)
         "VK_EXT_metal_surface",
     #endif
 		VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
@@ -377,8 +379,10 @@ auto Graphics::pick_physical_device() -> Result
 			default:                                     return "(Unknown)         ";
 		}};
 
+		const char* device_name = properties.deviceName;
+
 		log::info(" - GPU ", i++, ": ", (d == physical_device)? ">> ":"   ",
-            dt(properties.deviceType), properties.deviceName);
+            dt(properties.deviceType), device_name);
 	}
     return Success;
 }
@@ -629,7 +633,7 @@ auto Graphics::create_swap_chain(Window* window) -> Result
 		.imageArrayLayers = 1, /* For non-stereoscopic-3D applications, this value is 1 */
 		.imageUsage = image_usage,
 		.preTransform = transform,
-		.compositeAlpha = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR,//VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR, // <-- TODO: fix this (ANDROID)
+		.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR, // <-- TODO: fix this (ANDROID)
 		.presentMode = present_mode, // TODO: this needs to be configurable
 		.clipped = VK_TRUE, /* "... allows more efficient presentation methods to be used on some platforms." */
 	};
@@ -641,8 +645,6 @@ auto Graphics::create_swap_chain(Window* window) -> Result
 auto Graphics::create_sc_image_views() -> Result
 {
 	log::debug("Creating Vulkan swap chain image views...");
-
-	u32 old_image_count = image_count;
 
 	check(vkGetSwapchainImagesKHR(device, swap_chain, &image_count, nullptr),
 		  "vkGetSwapchainImagesKHR failed");

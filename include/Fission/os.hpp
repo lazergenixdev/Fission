@@ -177,6 +177,14 @@ struct Window
 #endif
 
 // --------------------------------------------------------------------------------
+// Console
+
+#if defined(OS_WINDOWS)
+	internal HANDLE _console;
+	inline auto output_console() -> HANDLE { return _console; }
+#endif
+
+// --------------------------------------------------------------------------------
 // General Functions
 
 // --------------------------------------------------------------------------------
