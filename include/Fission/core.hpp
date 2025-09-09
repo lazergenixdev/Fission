@@ -24,6 +24,7 @@ DISABLE_ALL_WARNINGS_END
 namespace fission
 {
 	using os::Mutex;
+	using os::File;
 }
  
 // TODO: refactor

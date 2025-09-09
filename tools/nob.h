@@ -1299,7 +1299,8 @@ NOBDEF Nob_Fd nob_fd_open_for_write(const char *path)
 NOBDEF void nob_fd_close(Nob_Fd fd)
 {
 #ifdef _WIN32
-    CloseHandle(fd);
+    BOOL result = CloseHandle(fd);
+	printf("%i\n", result);
 #else
     close(fd);
 #endif // _WIN32

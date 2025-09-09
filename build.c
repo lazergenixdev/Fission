@@ -21,6 +21,7 @@ void check_cpp_compiler(void)
 	String_Builder builder = {0};
 	if (!read_entire_file(vcvarsall_cache, &builder))
 	{
+		nob_log(INFO, "Looking for file `vcvarsall.bat` ...");
 		const char* location = find_file_recursive("C:/Program Files/Microsoft Visual Studio", "vcvarsall.bat");
 		
 		if (location == NULL) {
@@ -29,9 +30,7 @@ void check_cpp_compiler(void)
 		}
 		nob_log(INFO, "Found `vcvarsall.bat` location " PATH("%s"), location);
 		
-		Cmd cmd = {0};
-		cmd_append(&cmd, "cmd.exe", "/c", "call", location, "x64", ">nul", "&&", "set");
-		cmd_run(&cmd, .stdout_path = vcvarsall_cache);
+		run("cmd.exe", "/c", "call", location, "x64", ">nul", "&&", "set", ">", vcvarsall_cache);
 		check(read_entire_file(vcvarsall_cache, &builder));
 	}
 	
@@ -141,7 +140,6 @@ int fetch_vulkan(Dependency* d)
 int fetch_freetype(Dependency* d)
 {
 	const char* lib_path = library_temp(compiler.output_dir, "freetype");
-	nob_log(INFO, lib_path);
 	if (!file_exists(lib_path) || !file_exists(d->include_path))
 	{
 		nob_log(ERROR, "FreeType not found!");

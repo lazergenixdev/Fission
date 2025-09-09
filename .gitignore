@@ -7,6 +7,10 @@
 bin/
 build
 
+# Debug
+*.pdb
+*.rdi
+
 # Generated
 temp/
 include/freetype/

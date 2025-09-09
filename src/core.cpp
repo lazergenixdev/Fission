@@ -80,7 +80,7 @@ auto Engine::create(Defaults const& defaults) -> Result
 {
 	if (os::init()) return Failed;
     logging_arena.create(1_KiB);
-	logging_file = fopen("log.txt", "wb");
+	logging_file = os::open_file("log.txt", os::Write);
     os_mutex_create(&logging_mutex);
     log::info("Creating Fission Engine...", 100);
     /*

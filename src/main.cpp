@@ -13,7 +13,7 @@ namespace fission
     Mutex logging_mutex;
     const char* logging_prefix;
     int minimum_log_level {log::Verbose};
-	FILE* logging_file;
+	File logging_file;
 }
 
 // --------------------------------------------------------------------------------

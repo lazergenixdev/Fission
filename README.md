@@ -30,3 +30,7 @@ Then to build the project, simply run the build program from the project directo
 Additionally, you can pass options to the build program:
  - `all`: Compile all example programs along with Fission
  - `debug`: Compile with debug symbols
+
+## Binaries 📦
+After a build, Fission and all other libraries you will need to link you application with will be in `bin/[target_os]/`.
+Additionally, all the includes you will need will be in `include/`.

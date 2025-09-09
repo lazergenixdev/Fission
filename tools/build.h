@@ -325,6 +325,7 @@ const char* find_file_recursive(const char* search_path, const char* file)
 	static int full_path_length = 0;
 	
 	const char* result = NULL;
+	File_Paths children = {0};
 	int k = 0;
 	
 	// Add to full path
@@ -344,7 +345,6 @@ const char* find_file_recursive(const char* search_path, const char* file)
 	assert(full_path_length < sizeof(full_path));
 	full_path[full_path_length] = 0; // null terminate
 	
-	File_Paths children = {0};
 	check(read_entire_dir(full_path, &children));
 	forn (children.count) {
 		const char* child = children.items[i];
