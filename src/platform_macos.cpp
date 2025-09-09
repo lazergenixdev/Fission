@@ -1,10 +1,19 @@
 #include "Fission/core.hpp"
+#include <unistd.h>
 
 BEGIN_NAMESPACE(os)
 
 auto init() -> fission::Result
 {
 	return fission::Success;
+}
+
+int fatal_error(fission::string error, fission::string message, source_location location)
+{
+    printf("\x1b[91m%.*s\x1b[0m: %.*s (\x1b[92m%s\x1b[0m in \x1b[93m%s:%i\x1b[0m)\n",
+        (int)error.count, (char*)error.data, (int)message.count, (char*)message.data,
+        location.function, location.file, location.line);
+    _exit(1); // Syscall, don't want to continue any execution after this
 }
 
 END_NAMESPACE()
@@ -26,7 +35,8 @@ void on_glfw_error(int error, const char* description) {
 }
 
 void on_glfw_frame_buffer_resize(GLFWwindow*, int width, int height) {
-    //engine.flags |= Engine::Graphics_Recreate_Swap_Chain;
+    NOT_USED(width, height);
+    engine.flags |= Engine::Graphics_Recreate_Swap_Chain;
 }
 
 void on_glfw_cursor_position(GLFWwindow* glfw_window, double x, double y) {
@@ -34,8 +44,7 @@ void on_glfw_cursor_position(GLFWwindow* glfw_window, double x, double y) {
     window->mouse_position = {(int)x * 2, (int)y * 2}; // ?? wtf is this
 
     // Global variables to store deltas
-    static double lastX = 0, lastY = 0;
-    
+    //static double lastX = 0, lastY = 0;
     //if (window->use_mouse_deltas) {
     //    window->event_queue.append({
     //        .type = Event_Mouse_Move_Relative,
@@ -44,11 +53,10 @@ void on_glfw_cursor_position(GLFWwindow* glfw_window, double x, double y) {
     //        }
     //    });
     //}
-
-    lastX = x;
-    lastY = y;
+    //lastX = x;
+    //lastY = y;
 }
-
+/*
 void on_glfw_mouse_button(GLFWwindow* glfw_window, int button, int action, int mods) {
     auto window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
     //if (action == GLFW_PRESS)
@@ -91,37 +99,28 @@ void on_glfw_character(GLFWwindow* glfw_window, unsigned int codepoint) {
     //    }
     //});
 }
-
+*/
 auto Window::create(Create_Info const& info) -> Result
 {
 	scoped_set(logging_prefix, OS_NAME);
-#ifdef TEST_FMT
-    log::info(fmt::format("Using GLFW version {}", glfwGetVersionString()));
-#else
-    log::info("Using GLFW version {}");
-#endif
+    log::info("Using GLFW version ", glfwGetVersionString());
     glfwSetErrorCallback(on_glfw_error);
     log::info("Creating Window...");
     glfwInitVulkanLoader(&vkGetInstanceProcAddr);
     if (glfwInit() != GLFW_TRUE) return Failed;
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwCreateCursor((GLFWimage*)&engine, 0, 0);
     _window = glfwCreateWindow(info.width/2, info.height/2, "WHAT", nullptr, nullptr);
 	if (_window == nullptr) return Failed;
-    //glfwSetWindowUserPointer(_window, this);
-    //glfwSetFramebufferSizeCallback(_glfw_window, on_glfw_frame_buffer_resize);
-    //glfwSetCursorPosCallback(_glfw_window, on_glfw_cursor_position);
-    //glfwSetMouseButtonCallback(_glfw_window, on_glfw_mouse_button);
-    //glfwSetKeyCallback(_glfw_window, on_glfw_key);
-    //glfwSetCharCallback(_glfw_window, on_glfw_character);
+    glfwSetWindowUserPointer(_window, this);
+    glfwSetFramebufferSizeCallback(_window, on_glfw_frame_buffer_resize);
+    glfwSetCursorPosCallback(_window, on_glfw_cursor_position);
+    //glfwSetMouseButtonCallback(_window, on_glfw_mouse_button);
+    //glfwSetKeyCallback(_window, on_glfw_key);
+    //glfwSetCharCallback(_window, on_glfw_character);
 
 	int w, h;
 	glfwGetFramebufferSize(_window, &w, &h);
-#ifdef TEST_FMT
-	log::verbose(fmt::format("Window size: {}x{}", w, h));
-#else
 	log::verbose("Window size: ", w, "x", h);
-#endif
 
     return Success;
 }

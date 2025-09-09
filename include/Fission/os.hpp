@@ -72,7 +72,7 @@
 // OS entry point / calling convention
 
 #if defined(OS_WINDOWS)
-#   define OS_CALL WINAPI
+#   define OS_CALL CALLBACK
 #   define os_main() int APIENTRY ::WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int)
 #elif defined(OS_LINUX) || defined(OS_MACOS)
 #   define OS_CALL
@@ -81,9 +81,12 @@
 #   define OS_CALL
 #endif
 
-// --------------------------------------------------------------------------------
-
 BEGIN_NAMESPACE(os)
+
+// --------------------------------------------------------------------------------
+// Fatal Errors
+
+int fatal_error(fission::string error, fission::string message, source_location location);
     
 // --------------------------------------------------------------------------------
 // Type: `Mutex`

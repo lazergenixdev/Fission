@@ -273,13 +273,11 @@ bool stop() {
 
 auto Engine::render_frame() -> bool
 {
-	std::vector<Event> events;
-
-    VkResult result = VK_SUCCESS;
+    VkResult       result {VK_SUCCESS};
 	Render_Context render_context { .frame = frame_count & 1 };
-	VkSemaphore write_semaphore = graphics.sc_image_write_semaphore[render_context.frame];
-	VkSemaphore read_semaphore  = graphics.sc_image_read_semaphore[render_context.frame];
-	VkFence     fence           = graphics.cb_fences[render_context.frame];
+	VkSemaphore    write_semaphore = graphics.sc_image_write_semaphore[render_context.frame];
+	VkSemaphore    read_semaphore  = graphics.sc_image_read_semaphore[render_context.frame];
+	VkFence        fence           = graphics.cb_fences[render_context.frame];
 
 #if 0
 	unlikely if (window.is_minimized()) {

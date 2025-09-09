@@ -5,10 +5,13 @@
 
 namespace fission
 {
+    u8 _scratch_memory[1_MiB];
+
 	Engine engine;
-    Arena logging_arena {};
-    Mutex logging_mutex {};
-    const char* logging_prefix {nullptr};
+    Arena logging_arena;
+    Arena scratch_arena {.start = _scratch_memory, .capacity = sizeof(_scratch_memory)};
+    Mutex logging_mutex;
+    const char* logging_prefix;
     int minimum_log_level {log::Verbose};
 }
 
@@ -30,6 +33,7 @@ namespace fission
 
 #include "base.cpp"
 #include "core.cpp"
+#include "graphics.cpp"
 
 // --------------------------------------------------------------------------------
 // Entry-points

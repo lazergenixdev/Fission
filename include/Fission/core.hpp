@@ -304,6 +304,19 @@ namespace fission
 
 namespace fission
 {
+	struct Queue_Families {
+		u32 graphics;
+		u32 present;
+		u32 transfer;
+	};
+
+	struct Render_Context {
+		VkFramebuffer   frame_buffer;
+		VkCommandBuffer command_buffer;
+		u32             frame;
+		u32             image_index;
+	};
+
 	struct Graphics
 	{
 		void upload (VkBuffer destination, void const* data, VkDeviceSize size);
@@ -326,6 +339,8 @@ namespace fission
 		inline void set_default_viewport(VkCommandBuffer cmd);
 		inline void set_default_scissor(VkCommandBuffer cmd);
 
+		//! NOTE: VK_IMAGE_USAGE_TRANSFER_SRC_BIT must be set on swapchain to take screenshots
+
 		VkInstance                     instance                  {};
 		VkPhysicalDevice               physical_device           {};
 		VkDevice                       device                    {};
@@ -335,12 +350,12 @@ namespace fission
 		VkSwapchainKHR                 swap_chain                {};
 		VkExtent2D                     extent                    {}; // Swap Chain
 		VkFormat                       format                    {}; // Swap Chain
-		VkImageUsageFlags              image_usage               {}; // Swap Chain
+		VkImageUsageFlags              image_usage               {VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_TRANSFER_SRC_BIT}; // Swap Chain
 		u32                            image_count               {0}; // Swap Chain
 		VkPresentModeKHR               present_mode              {VK_PRESENT_MODE_FIFO_KHR}; // Swap Chain
 		VkSurfaceTransformFlagBitsKHR  transform                 {}; // Swap Chain
-		VkImage*                       images                    {}; // Swap Chain
-		VkImageView*                   image_views               {}; // Swap Chain
+		VkImage                        images                [8] {}; // Swap Chain
+		VkImageView                    image_views           [8] {}; // Swap Chain
 		VkCommandPool                  command_pool              {};
 		VkQueue                        transfer_queue            {};
 		VkCommandPool                  transfer_command_pool     {};
@@ -350,7 +365,7 @@ namespace fission
 		VkSemaphore                    image_read_semaphore  [2] {};
 		VmaAllocator                   allocator                 {};
 		VkDebugUtilsMessengerEXT       debug_messenger           {};
-	//	Graphics_Extra   extra {};
+		Queue_Families                 queue_family              {};
 
 		Graphics() = default;
 		Graphics(Graphics const&) = delete;
@@ -436,11 +451,15 @@ namespace fission
 			Save_Current_Frame            = 1 << 6,
 		};
 
-		int             exit_code       {EXIT_SUCCESS};
-		os::Thread      render_thread   {};
-		Arena           frame_arena     {};
-		Window          window          {};
-		Graphics        graphics        {};
+		int             exit_code               {EXIT_SUCCESS};
+		u64             flags                   {};
+		Window          window                  {};
+		Graphics        graphics                {};
+		os::Thread      render_thread           {};
+		Arena           frame_arena             {};
+		VkRenderPass    overlay_render_pass     {};
+		VkFramebuffer   frame_buffers       [8] {};
+		u32             frame_count             {};
 
 	public:
 		auto version_string  () -> string;
@@ -455,7 +474,7 @@ namespace fission
 		static auto OS_CALL render_main(void*) noexcept -> os::Thread_Result;
 		
 		auto setup () -> Result;
-		auto render_frame () -> Result;
+		auto render_frame () -> bool;
 		void shutdown ();
 
 		void resize ();

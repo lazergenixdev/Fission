@@ -33,6 +33,26 @@
 #define TEMP_VAR MACRO_JOIN_EXPAND(_, __LINE__)
 #define NOT_USED(...) (void)sizeof(__VA_ARGS__)
 #define global extern
+#define forn(N) for (decltype(N) i = 0; i < (N); ++i)
+
+// --------------------------------------------------------------------------------
+// Source Location
+
+struct source_location {
+	const char* file;
+	const char* function;
+	int line;
+};
+#define CURRENT_LOCATION source_location{__FILE__, __PRETTY_FUNCTION__, __LINE__}
+
+// --------------------------------------------------------------------------------
+// Assertions
+
+#if defined(DEBUG)
+#	define ASSERT(cond) (cond ? 0 : ::os::fatal_error("Assertion Failed", #cond, CURRENT_LOCATION)) 
+#else
+#	define ASSERT(cond) (cond ? 0 : ::os::fatal_error("Assertion Failed", #cond, CURRENT_LOCATION)) 
+#endif
 
 // --------------------------------------------------------------------------------
 // Compiler Detection
@@ -544,10 +564,12 @@ namespace fission
 		}
 		template <typename T>
 		inline void push(T obj) {
-			memcpy(next_ptr<void*>(), &obj, sizeof(T));
+			memcpy(next_ptr(), &obj, sizeof(T));
 			allocated += sizeof(T);
 		}
 	};
+
+	global Arena scratch_arena;
 }
 
 // --------------------------------------------------------------------------------
@@ -624,10 +646,17 @@ namespace fission
 	inline void format_single(Arena& arena, const T value)
 	{
 		if (value == 0) { arena.push('0'); return; }
+		if constexpr (std::is_same<T, bool>::value)
+		{
+			if (value) arena.push("true", 4);
+			else       arena.push("false", 5);
+			return;
+		}
 		if constexpr (std::is_signed<T>::value)
 		{
 			if (value < 0) arena.push('-');
 			format_single(arena, u64(value < 0? -value : value));
+			return;
 		}
 		if constexpr (std::is_unsigned<T>::value)
 		{
@@ -640,6 +669,7 @@ namespace fission
 				}
 				p /= 10;
 			}
+			return;
 		}
 	}
 
@@ -650,6 +680,35 @@ namespace fission
 		auto buffer = arena.next_ptr<char>();
 		(format_single(arena, std::forward<T>(args)), ...);
 		return string(buffer, static_cast<u64>(arena.next_ptr<char>() - buffer));
+	}
+
+	namespace formatting
+	{
+		template <typename T>
+		struct padded_object
+		{
+			T object;
+			size_t padding;
+		};
+
+		template <typename T>
+		auto pad(T const& object, size_t padding) -> padded_object<T>
+		{
+			return {object, padding};
+		}
+	}
+
+	template <typename T>
+	inline void format_single(Arena& arena, formatting::padded_object<T> const& padded_object)
+	{
+		size_t start = arena.allocated;
+		format_single(arena, padded_object.object);
+		size_t length = arena.allocated - start;
+		if (length < padded_object.padding)
+		{
+			memset(arena.next_ptr(), ' ', padded_object.padding - length);
+			arena.allocated += padded_object.padding - length;
+		}
 	}
 }
 
@@ -984,6 +1043,25 @@ namespace fission
 	}; // rect
 
 	FISSION_PRIMITIVE_ALIASES(rect, r);
+}
+
+// --------------------------------------------------------------------------------
+// Arrays
+
+namespace fission
+{
+	template <typename T, u32 count>
+	u32 array_count(T (&)[count]) { return count; }
+
+	template <typename T>
+	struct array
+	{
+		size_t count;
+		T* data;
+
+		inline constexpr T* begin() const { return const_cast<T*>(data); }
+		inline constexpr T* end() const { return const_cast<T*>(data + count); }
+	};
 }
 
 /**

@@ -16,16 +16,10 @@ void Arena::destroy()
 }
 auto Arena::alloc(size_t size) -> void*
 {
+    ASSERT(allocated + size <= capacity);
     void* ptr = (byte*)start + allocated;
     allocated += size;
     return ptr;
 }
 
 END_NAMESPACE();
-
-#ifdef TEST_FMT
-auto fmt::formatter<fission::string>::format(fission::string s, format_context& ctx) const -> format_context::iterator
-{
-    return formatter<string_view>::format(s.as<std::string_view>(), ctx);
-}
-#endif
