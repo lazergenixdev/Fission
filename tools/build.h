@@ -183,14 +183,14 @@ bool compile(Cpp_Program program)
 	forn (program.include_dirs.count)
 		cmd_append(&cmd, temp_sprintf("-I%s", program.include_dirs.items[i]));
 
-	cmd_append(&cmd, "-o", temp_sprintf("bin/%s/int/%s.o", PLATFORM_NAME, program.output_name));
+	cmd_append(&cmd, "-o", temp_sprintf("%s/%s.o", compiler.intermediate_dir, program.output_name));
 
 	if (program.flags & COMPILE_DEBUG)
 		cmd_append(&cmd, "-g");
 
 	if (!(program.flags & COMPILE_STATIC_LIBRARY) && !(program.flags & COMPILE_OBJECT))
 	{	
-		cmd_append(&cmd, "-o", temp_sprintf("bin/%s/%s", PLATFORM_NAME, program.output_name));
+		cmd_append(&cmd, "-o", temp_sprintf("%s/%s", compiler.output_dir, program.output_name));
 		forn (program.library_dirs.count)
 			cmd_append(&cmd, temp_sprintf("-L%s", program.library_dirs.items[i]));
 		forn (program.libraries.count)
@@ -204,10 +204,10 @@ bool compile(Cpp_Program program)
 	if (program.flags & COMPILE_STATIC_LIBRARY)
 	{
 		cmd_append(&cmd, "ar", "rvs");
-		cmd_append(&cmd, temp_sprintf("bin/%s/lib%s.a", PLATFORM_NAME, program.output_name));
-		cmd_append(&cmd, temp_sprintf("bin/%s/int/%s.o", PLATFORM_NAME, program.output_name));
+		cmd_append(&cmd, temp_sprintf("%s/lib%s.a", compiler.output_dir, program.output_name));
+		cmd_append(&cmd, temp_sprintf("%s/%s.o", compiler.intermediate_dir, program.output_name));
 		forn (program.object_files.count)
-			cmd_append(&cmd, temp_sprintf("bin/%s/int/%s.o", PLATFORM_NAME, program.object_files.items[i]));
+			cmd_append(&cmd, temp_sprintf("%s/%s.o", compiler.intermediate_dir, program.object_files.items[i]));
 		if (!cmd_run_sync(cmd)) return 0;
 	}
 #endif

@@ -28,6 +28,8 @@ void Engine::run() {
 
     while (!glfwWindowShouldClose(window._window))
         glfwWaitEvents();
+
+    engine.flags &=~ Engine::Running;
 }
 
 void on_glfw_error(int error, const char* description) {
@@ -87,11 +89,7 @@ void on_glfw_key(GLFWwindow* glfw_window, int key, int scancode, int action, int
 
 void on_glfw_character(GLFWwindow* glfw_window, unsigned int codepoint) {
     auto window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
-#ifdef TEST_FMT
-    log::debug(fmt::format("codepoint: U+{:x}", codepoint));
-#else
-    log::debug("codepoint: U+{:x}");
-#endif // TEST_FMT
+    //log::debug(fmt::format("codepoint: U+{:x}", codepoint));
     //window->event_queue.append({
     //    .type = Event_Character_Input,
     //    .character_input = {
@@ -109,7 +107,10 @@ auto Window::create(Create_Info const& info) -> Result
     glfwInitVulkanLoader(&vkGetInstanceProcAddr);
     if (glfwInit() != GLFW_TRUE) return Failed;
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    _window = glfwCreateWindow(info.width/2, info.height/2, "WHAT", nullptr, nullptr);
+    auto title = scratch_arena.temp_array<char>(info.title.count + 1);
+    memcpy(title.data, info.title.data, info.title.count);
+    title[info.title.count] = 0;
+    _window = glfwCreateWindow(info.width/2, info.height/2, title.data, nullptr, nullptr);
 	if (_window == nullptr) return Failed;
     glfwSetWindowUserPointer(_window, this);
     glfwSetFramebufferSizeCallback(_window, on_glfw_frame_buffer_resize);

@@ -156,13 +156,14 @@ using File = FILE*;
 enum File_Access: u32 { Read = 0x1, Write = 0x2 };
 #if defined(OS_WINDOWS)
 	inline auto open_file(const char* path, File_Access access) -> File {
-		NOT_USED(access);
+		ASSERT(access == Write);
 		File file {};
 		fopen_s(&file, path, "wb");
 		return file;
 	}
 #elif defined(OS_LINUX) || defined(OS_ANDROID) || defined(OS_MACOS)
 	inline auto open_file(const char* path, File_Access access) -> File {
+		ASSERT(access == Write);
 		return fopen(path, "wb");
 	}
 #endif

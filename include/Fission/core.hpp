@@ -150,7 +150,6 @@ namespace fission::log
 			"     WARN  ",
 			"    ERROR  ",
 		};
-    	if (level < logger.minimum_level) return;
 		// Note: could probably do better than using locks
 		os_mutex_lock(logger.mutex);
 		logger.arena.reset();
@@ -309,7 +308,7 @@ namespace fission
 }
 
 // --------------------------------------------------------------------------------
-// Window
+// Graphics
 
 namespace fission
 {
@@ -325,6 +324,9 @@ namespace fission
 		u32             frame;
 		u32             image_index;
 	};
+
+// --------------------------------------------------------------------------------
+// Main Graphics Context
 
 	struct Graphics
 	{
@@ -359,6 +361,7 @@ namespace fission
 		VkSwapchainKHR                 swap_chain                {};
 		VkExtent2D                     extent                    {}; // Swap Chain
 		VkFormat                       format                    {}; // Swap Chain
+    	VkColorSpaceKHR                color_space               {}; // Swap Chain
 		VkImageUsageFlags              image_usage               {VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_TRANSFER_SRC_BIT}; // Swap Chain
 		u32                            image_count               {0}; // Swap Chain
 		VkPresentModeKHR               present_mode              {VK_PRESENT_MODE_FIFO_KHR}; // Swap Chain
@@ -375,6 +378,7 @@ namespace fission
 		VmaAllocator                   allocator                 {};
 		VkDebugUtilsMessengerEXT       debug_messenger           {};
 		Queue_Families                 queue_family              {};
+
 
 		Graphics() = default;
 		Graphics(Graphics const&) = delete;
@@ -402,6 +406,211 @@ namespace fission
 		auto create_command_buffers () -> Result;
 		auto create_sync_objects    () -> Result;
 	};
+
+	inline constexpr auto begin(VkCommandBuffer command_buffer, VkCommandBufferUsageFlags flags = 0) -> VkResult
+	{
+		VkCommandBufferBeginInfo begin_info {
+			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+			.flags = flags,
+		};
+		return vkBeginCommandBuffer(command_buffer, &begin_info);
+	}
+
+	enum Attachment_Preset {
+		// Use this for Depth and Color images that we want to write to
+		Attachment_Preset_New_Image_Present, // load = CLEAR, store = STORE, stencil = DONT CARE, inital = UNDEFINED, final = PRESENT_SRC_KHR
+		Attachment_Preset_New_Image,         // load = CLEAR, store = STORE, stencil = DONT CARE, inital = UNDEFINED
+		Attachment_Preset_Cumulative_Image,  // load = LOAD , store = STORE, stencil = DONT CARE, inital = UNDEFINED
+	};
+
+// --------------------------------------------------------------------------------
+// Render Pass Creator
+
+	struct Render_Pass_Creator {
+		Arena arena;
+		array<VkAttachmentReference> attachment_references {};
+		array<VkAttachmentDescription> attachments {};
+		array<VkSubpassDescription> subpasses {};
+		array<VkSubpassDependency> subpass_dependencies {};
+
+		static constexpr size_t max_attachment_reference_count = 16;
+
+		// Helpers
+		VkPipelineStageFlags pick_stage_mask_from_access_mask(VkAccessFlags access);
+		VkImageLayout pick_final_image_layout_for_format(VkFormat format);
+
+		Render_Pass_Creator(Arena& arena = temp_arena());
+
+		Render_Pass_Creator& add_external_subpass_dependency(uint32_t subpass);
+		Render_Pass_Creator& add_dependency(uint32_t src_subpass, uint32_t dst_subpass, VkAccessFlags src_access, VkAccessFlags dst_access);
+		Render_Pass_Creator& add_subpass(std::initializer_list<VkAttachmentReference> const& refs);
+		Render_Pass_Creator& add_attachment(VkFormat format, Attachment_Preset preset, VkSampleCountFlagBits sample_count = VK_SAMPLE_COUNT_1_BIT);
+
+		VkResult create(VkRenderPass* pRenderPass);
+	};
+
+// --------------------------------------------------------------------------------
+// Data Type => Vulkan Type
+
+	//! TODO: move this to base
+	struct rgba8 {
+		u32 value;
+		
+		rgba8(u8 r, u8 g, u8 b, u8 a = 0xFF) {
+			union {
+				u8 in[4];
+				u32 out;
+			} data;
+			data.in[0] = r;
+			data.in[1] = g;
+			data.in[2] = b;
+			data.in[3] = a;
+			value = data.out;
+		}
+	};
+
+	template <typename T> struct _vk_format_of {
+		static constexpr VkFormat value = VK_FORMAT_UNDEFINED;
+	};
+
+	template <>	struct _vk_format_of<rgba8> { static constexpr VkFormat value = VK_FORMAT_R8G8B8A8_UNORM;      };
+	template <>	struct _vk_format_of<v4f32> { static constexpr VkFormat value = VK_FORMAT_R32G32B32A32_SFLOAT; };
+	template <>	struct _vk_format_of<v3f32> { static constexpr VkFormat value = VK_FORMAT_R32G32B32_SFLOAT;    };
+	template <>	struct _vk_format_of<v2f32> { static constexpr VkFormat value = VK_FORMAT_R32G32_SFLOAT;       };
+	template <>	struct _vk_format_of<f32>   { static constexpr VkFormat value = VK_FORMAT_R32_SFLOAT;          };
+	template <>	struct _vk_format_of<s32>   { static constexpr VkFormat value = VK_FORMAT_R32_SINT;            };
+	template <>	struct _vk_format_of<u32>   { static constexpr VkFormat value = VK_FORMAT_R32_UINT;            };
+
+	template <typename T> static constexpr VkFormat vk_format_of = _vk_format_of<T>::value;
+
+// --------------------------------------------------------------------------------
+// Vertex Layout
+
+	template <typename V, typename...Attributes>
+	struct Vertex_Layout
+	{
+		static constexpr uint32_t attribute_count = sizeof...(Attributes);
+
+		VkPipelineVertexInputStateCreateInfo info;
+		VkVertexInputBindingDescription binding;
+		VkVertexInputAttributeDescription attributes[attribute_count];
+
+		inline constexpr Vertex_Layout() noexcept
+		{
+			using namespace meta;
+
+			info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+			info.pNext = nullptr;
+			info.flags = 0;
+			info.vertexBindingDescriptionCount = 1;
+			info.pVertexBindingDescriptions = &binding;
+			info.vertexAttributeDescriptionCount = attribute_count;
+			info.pVertexAttributeDescriptions = attributes;
+
+			binding.binding = 0;
+			binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+			binding.stride = size_of_n<attribute_count, Attributes...>;
+
+			[&] <typename T, size_t...n>(std::integer_sequence<T, n...>) {
+				((attributes[n].binding = 0), ...);
+				((attributes[n].format = vk_format_of<meta::type_at<n, Attributes...>>), ...);
+				((attributes[n].location = n), ...);
+				(set_offset<n>(), ...);
+			} (std::make_index_sequence<attribute_count>{});
+		}
+
+		template <size_t n>
+		inline constexpr void set_offset()
+		{
+			using namespace meta;
+			attributes[n].offset = size_of_n<(int)n, Attributes...>;
+		}
+	};
+
+// --------------------------------------------------------------------------------
+// Pipeline Creator
+
+	struct Pipeline_Creator
+	{
+		std::vector<VkDynamicState> dynamic_states;
+		std::vector<VkPipelineShaderStageCreateInfo> shaders;
+		VkPipelineColorBlendAttachmentState blend_attachment {
+			.colorWriteMask = 0b1111,
+		};
+		VkPipelineVertexInputStateCreateInfo const* vertex_input_state;
+		VkPipelineInputAssemblyStateCreateInfo input_assembly_state {
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+			.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+			.primitiveRestartEnable = VK_FALSE,
+		};
+		VkPipelineViewportStateCreateInfo viewport_state {
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+			.viewportCount = 1,
+			.scissorCount = 1,
+		};
+		VkPipelineRasterizationStateCreateInfo rasterization_state {
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+			.depthClampEnable = VK_FALSE,
+			.rasterizerDiscardEnable = VK_FALSE,
+			.polygonMode = VK_POLYGON_MODE_FILL,
+			.cullMode = VK_CULL_MODE_NONE,
+			.frontFace = VK_FRONT_FACE_CLOCKWISE,
+			.depthBiasEnable = VK_FALSE,
+			.lineWidth = 1.0f,
+		};
+		VkPipelineMultisampleStateCreateInfo multisample_state {
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+			.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+			.sampleShadingEnable = VK_FALSE,
+		};
+		VkPipelineDepthStencilStateCreateInfo depth_stencil_state {
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+			.depthTestEnable = VK_TRUE,
+			.depthWriteEnable = VK_TRUE,
+			.depthCompareOp = VK_COMPARE_OP_LESS,
+			.depthBoundsTestEnable = VK_FALSE,
+			.stencilTestEnable = VK_FALSE,
+			.minDepthBounds = 0.0f,
+			.maxDepthBounds = 1.0f,
+		};
+		VkPipelineColorBlendStateCreateInfo color_blend_state {
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+			.logicOpEnable = VK_FALSE,
+			.attachmentCount = 1,
+			.pAttachments = nullptr,
+		};
+		VkPipelineDynamicStateCreateInfo dynamic_state {
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO
+		};
+
+		template <typename V, typename...T>
+		Pipeline_Creator& vertex_layout(Vertex_Layout<V,T...> const& layout)
+		{
+			vertex_input_state = &layout.info;
+			return *this;
+		}
+
+		Pipeline_Creator& add_dynamic_state(VkDynamicState state);
+		Pipeline_Creator& add_shader(VkShaderStageFlagBits stage, const void* data, size_t size);
+
+		VkResult create(VkPipeline* pPipeline, VkPipelineLayout layout, VkRenderPass render_pass);
+	};
+
+// --------------------------------------------------------------------------------
+// Draw Data 2D - Data for a single draw call
+
+	struct Draw_Data_2D
+	{
+		struct vertex
+		{
+			v2f32 position;
+			rgba8 color;
+		};
+
+		Dynamic_Arena vertex_arena;
+		Dynamic_Arena index_arena;
+	};
+
 }
 
 // --------------------------------------------------------------------------------
@@ -489,7 +698,7 @@ namespace fission
 
 		void resize ();
 		auto create_layers () -> Result;
-		auto create_frame_buffers (u32 old_count) -> Result;
+		auto create_frame_buffers () -> Result;
 		auto create_screenshot_buffer () -> Result;
 	//	void save_frame (Render_Context& ctx);
 		void write_frame ();

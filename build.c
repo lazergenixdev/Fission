@@ -130,8 +130,8 @@ int fetch_vulkan(Dependency* d)
 	scoped_log(WARNING) {
 		const char* shared1 = temp_sprintf("libvulkan.%.*s.dylib", truncate_version(version, 1), version);
 		const char* shared3 = temp_sprintf("libvulkan.%.*s.dylib", truncate_version(version, 3), version);
-		check(copy_file_if_not_exists(temp_sprintf("%s/%s", d->library_path, shared1), temp_sprintf("bin/" PLATFORM_NAME "/%s", shared1)));
-		check(copy_file_if_not_exists(temp_sprintf("%s/%s", d->library_path, shared3), temp_sprintf("bin/" PLATFORM_NAME "/%s", shared3)));
+		check(copy_file_if_not_exists(temp_sprintf("%s/%s", d->library_path, shared1), temp_sprintf("%s/%s", compiler.output_dir, shared1)));
+		check(copy_file_if_not_exists(temp_sprintf("%s/%s", d->library_path, shared3), temp_sprintf("%s/%s", compiler.output_dir, shared3)));
 	}
 #endif
 	return 0;

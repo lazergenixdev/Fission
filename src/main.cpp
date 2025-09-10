@@ -11,13 +11,14 @@ namespace fission
     Arena scratch_arena {.start = _scratch_memory, .capacity = sizeof(_scratch_memory)};
 	Logger logger {
 		.arena = {.start = _logger_memory, .capacity = sizeof(_logger_memory)},
-		.minimum_level = log::Debug
+		.minimum_level = log::Info
 	};
 	Engine engine;
 }
 namespace os
 {
 	os::Info _info;
+//  os::Internal _internal;
 }
 
 // --------------------------------------------------------------------------------

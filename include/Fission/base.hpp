@@ -130,6 +130,58 @@ using NAME ## f32 = BASE<f32>;               \
 using NAME ## f64 = BASE<f64>
 
 // --------------------------------------------------------------------------------
+// Template Meta Programming
+
+BEGIN_NAMESPACE(meta)
+
+template <typename>
+static constexpr bool always_false = false; // Thanks C++, very cool
+
+// Base
+template <int, typename...>
+struct _type_at { using type = void; };
+
+// Single Type
+template <int i, typename T>
+struct _type_at<i, T> { using type = T; };
+
+// Two or more Types
+template <int i, typename T, typename...Rest>
+struct _type_at<i, T, Rest...> {
+	using type = std::conditional_t<i <= 0, T, typename _type_at<i - 1, Rest...>::type>;
+};
+
+template <int i, typename...T>
+using type_at = typename _type_at<i, T...>::type;
+
+
+// Base
+template <int, typename...>
+struct _size_of_n {
+	static constexpr u32 value = 0u;
+};
+
+// Two or more Types
+template <int i, typename T, typename...Rest>
+struct _size_of_n<i, T, Rest...> {
+	static constexpr u32 value = (i > 0) ? (sizeof(T) + _size_of_n<i - 1, Rest...>::value) : 0u;
+};
+
+// Single Type
+template <int i, typename T>
+struct _size_of_n<i, T> {
+	static constexpr u32 value = (i > 0) ? sizeof(T) : 0u;
+};
+
+template <int i, typename...T>
+static constexpr u32 size_of_n = _size_of_n<i, T...>::value;
+
+template <typename...T>
+static constexpr u32 size_of = _size_of_n<sizeof...(T), T...>::value;
+
+END_NAMESPACE()
+
+// --------------------------------------------------------------------------------
 // Constants
 
 namespace fission
@@ -549,10 +601,36 @@ namespace fission
 		size_t allocated   {};
 		size_t capacity    {};
 
-		inline auto create(size_t max_size) -> Result;
-		inline void destroy();
-		inline auto alloc(size_t size) -> void*;
+		template <typename T>
+		struct Temp_Array
+		{
+			size_t count;
+			T* data;
+			Arena& arena;
+			size_t checkpoint;
+
+			inline constexpr T& operator[](size_t i) const { return (T&)data[i]; }
+			inline constexpr T* begin() const { return data; }
+			inline constexpr T* end() const { return data + count; }
+
+			inline ~Temp_Array() {
+				arena.allocated = checkpoint;
+			}
+		};
+
+		auto create(size_t max_size) -> Result;
+		void destroy();
+		auto alloc(size_t size) -> void*;
+		
 		inline void reset() { allocated = 0; }
+
+		template <typename T>
+		inline auto temp_array(size_t count) -> Temp_Array<T>
+		{
+			auto checkpoint = allocated;
+			auto ptr = alloc<T>(count);
+			return { count, ptr, *this, checkpoint };
+		}
 
 		// Prevent future bugs from C++'s shitty template deduction
 		inline void push_byte(byte b) { push<byte>(b); }
@@ -571,19 +649,27 @@ namespace fission
 		}
 		template <typename T>
 		inline auto push(T* data, size_t count) -> T* {
-			auto ptr = next_ptr<std::remove_const_t<T>>();
-			memcpy(reinterpret_cast<void*>(ptr), data, count * sizeof(T));
-			allocated += count * sizeof(T);
+			auto ptr = alloc<T>(count);
+			memcpy((void*)(ptr), data, count * sizeof(T));
 			return ptr;
 		}
 		template <typename T>
-		inline void push(T obj) {
-			memcpy(next_ptr(), &obj, sizeof(T));
-			allocated += sizeof(T);
+		inline auto push(T obj) -> T* {
+			auto ptr = alloc<T>(1);
+			memcpy((void*)(ptr), &obj, sizeof(T));
+			return ptr;
 		}
 	};
 
+	struct Dynamic_Arena: public Arena
+	{
+		auto create(size_t max_size) -> Result;
+		void destroy();
+		auto alloc(size_t size) -> void*;
+	};
+
 	global Arena scratch_arena;
+	extern Arena& temp_arena();
 }
 
 // --------------------------------------------------------------------------------

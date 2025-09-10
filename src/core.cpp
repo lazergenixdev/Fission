@@ -14,6 +14,142 @@ Window::~Window() {
 	log::info("YOU ARE TERMINATED");
 }
 
+Arena& temp_arena() { return engine.temp_arena; }
+
+unsigned char shader_spirv[] = {
+	0x03, 0x02, 0x23, 0x07, 0x00, 0x05, 0x01, 0x00, 0x28, 0x00, 0x00, 0x00,
+	0x2a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x00, 0x02, 0x00,
+	0x01, 0x00, 0x00, 0x00, 0x0e, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x00, 0x00, 0x0f, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x02, 0x00, 0x00, 0x00, 0x76, 0x65, 0x72, 0x74, 0x65, 0x78, 0x4d, 0x61,
+	0x69, 0x6e, 0x00, 0x00, 0x1f, 0x00, 0x00, 0x00, 0x22, 0x00, 0x00, 0x00,
+	0x0d, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x0f, 0x00, 0x09, 0x00,
+	0x04, 0x00, 0x00, 0x00, 0x25, 0x00, 0x00, 0x00, 0x66, 0x72, 0x61, 0x67,
+	0x6d, 0x65, 0x6e, 0x74, 0x4d, 0x61, 0x69, 0x6e, 0x00, 0x00, 0x00, 0x00,
+	0x29, 0x00, 0x00, 0x00, 0x28, 0x00, 0x00, 0x00, 0x10, 0x00, 0x03, 0x00,
+	0x25, 0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x03, 0x00, 0x03, 0x00,
+	0x0b, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x05, 0x00, 0x06, 0x00,
+	0x0d, 0x00, 0x00, 0x00, 0x69, 0x6e, 0x70, 0x75, 0x74, 0x2e, 0x70, 0x6f,
+	0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x00, 0x00, 0x05, 0x00, 0x05, 0x00,
+	0x10, 0x00, 0x00, 0x00, 0x69, 0x6e, 0x70, 0x75, 0x74, 0x2e, 0x63, 0x6f,
+	0x6c, 0x6f, 0x72, 0x00, 0x05, 0x00, 0x0b, 0x00, 0x22, 0x00, 0x00, 0x00,
+	0x65, 0x6e, 0x74, 0x72, 0x79, 0x50, 0x6f, 0x69, 0x6e, 0x74, 0x50, 0x61,
+	0x72, 0x61, 0x6d, 0x5f, 0x76, 0x65, 0x72, 0x74, 0x65, 0x78, 0x4d, 0x61,
+	0x69, 0x6e, 0x2e, 0x63, 0x6f, 0x6c, 0x6f, 0x72, 0x00, 0x00, 0x00, 0x00,
+	0x05, 0x00, 0x05, 0x00, 0x02, 0x00, 0x00, 0x00, 0x76, 0x65, 0x72, 0x74,
+	0x65, 0x78, 0x4d, 0x61, 0x69, 0x6e, 0x00, 0x00, 0x05, 0x00, 0x05, 0x00,
+	0x28, 0x00, 0x00, 0x00, 0x69, 0x6e, 0x70, 0x75, 0x74, 0x2e, 0x63, 0x6f,
+	0x6c, 0x6f, 0x72, 0x00, 0x05, 0x00, 0x0a, 0x00, 0x29, 0x00, 0x00, 0x00,
+	0x65, 0x6e, 0x74, 0x72, 0x79, 0x50, 0x6f, 0x69, 0x6e, 0x74, 0x50, 0x61,
+	0x72, 0x61, 0x6d, 0x5f, 0x66, 0x72, 0x61, 0x67, 0x6d, 0x65, 0x6e, 0x74,
+	0x4d, 0x61, 0x69, 0x6e, 0x00, 0x00, 0x00, 0x00, 0x05, 0x00, 0x06, 0x00,
+	0x25, 0x00, 0x00, 0x00, 0x66, 0x72, 0x61, 0x67, 0x6d, 0x65, 0x6e, 0x74,
+	0x4d, 0x61, 0x69, 0x6e, 0x00, 0x00, 0x00, 0x00, 0x47, 0x00, 0x04, 0x00,
+	0x0d, 0x00, 0x00, 0x00, 0x1e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x47, 0x00, 0x04, 0x00, 0x10, 0x00, 0x00, 0x00, 0x1e, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x00, 0x00, 0x47, 0x00, 0x04, 0x00, 0x1f, 0x00, 0x00, 0x00,
+	0x0b, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x47, 0x00, 0x04, 0x00,
+	0x22, 0x00, 0x00, 0x00, 0x1e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x47, 0x00, 0x04, 0x00, 0x28, 0x00, 0x00, 0x00, 0x1e, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x47, 0x00, 0x04, 0x00, 0x29, 0x00, 0x00, 0x00,
+	0x1e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x13, 0x00, 0x02, 0x00,
+	0x01, 0x00, 0x00, 0x00, 0x21, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x00, 0x00, 0x16, 0x00, 0x03, 0x00, 0x06, 0x00, 0x00, 0x00,
+	0x20, 0x00, 0x00, 0x00, 0x17, 0x00, 0x04, 0x00, 0x07, 0x00, 0x00, 0x00,
+	0x06, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x17, 0x00, 0x04, 0x00,
+	0x0a, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
+	0x20, 0x00, 0x04, 0x00, 0x0c, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+	0x0a, 0x00, 0x00, 0x00, 0x20, 0x00, 0x04, 0x00, 0x0f, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x2b, 0x00, 0x04, 0x00,
+	0x06, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x2b, 0x00, 0x04, 0x00, 0x06, 0x00, 0x00, 0x00, 0x17, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x80, 0x3f, 0x20, 0x00, 0x04, 0x00, 0x1e, 0x00, 0x00, 0x00,
+	0x03, 0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x3b, 0x00, 0x04, 0x00,
+	0x0c, 0x00, 0x00, 0x00, 0x0d, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+	0x3b, 0x00, 0x04, 0x00, 0x0f, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x00, 0x00, 0x3b, 0x00, 0x04, 0x00, 0x1e, 0x00, 0x00, 0x00,
+	0x1f, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x3b, 0x00, 0x04, 0x00,
+	0x1e, 0x00, 0x00, 0x00, 0x22, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00,
+	0x3b, 0x00, 0x04, 0x00, 0x0f, 0x00, 0x00, 0x00, 0x28, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x00, 0x00, 0x3b, 0x00, 0x04, 0x00, 0x1e, 0x00, 0x00, 0x00,
+	0x29, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x36, 0x00, 0x05, 0x00,
+	0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x03, 0x00, 0x00, 0x00, 0xf8, 0x00, 0x02, 0x00, 0x04, 0x00, 0x00, 0x00,
+	0x3d, 0x00, 0x04, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x0b, 0x00, 0x00, 0x00,
+	0x0d, 0x00, 0x00, 0x00, 0x3d, 0x00, 0x04, 0x00, 0x07, 0x00, 0x00, 0x00,
+	0x0e, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x50, 0x00, 0x06, 0x00,
+	0x07, 0x00, 0x00, 0x00, 0x15, 0x00, 0x00, 0x00, 0x0b, 0x00, 0x00, 0x00,
+	0x16, 0x00, 0x00, 0x00, 0x17, 0x00, 0x00, 0x00, 0x3e, 0x00, 0x03, 0x00,
+	0x1f, 0x00, 0x00, 0x00, 0x15, 0x00, 0x00, 0x00, 0x3e, 0x00, 0x03, 0x00,
+	0x22, 0x00, 0x00, 0x00, 0x0e, 0x00, 0x00, 0x00, 0xfd, 0x00, 0x01, 0x00,
+	0x38, 0x00, 0x01, 0x00, 0x36, 0x00, 0x05, 0x00, 0x01, 0x00, 0x00, 0x00,
+	0x25, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00,
+	0xf8, 0x00, 0x02, 0x00, 0x26, 0x00, 0x00, 0x00, 0x3d, 0x00, 0x04, 0x00,
+	0x07, 0x00, 0x00, 0x00, 0x27, 0x00, 0x00, 0x00, 0x28, 0x00, 0x00, 0x00,
+	0x3e, 0x00, 0x03, 0x00, 0x29, 0x00, 0x00, 0x00, 0x27, 0x00, 0x00, 0x00,
+	0xfd, 0x00, 0x01, 0x00, 0x38, 0x00, 0x01, 0x00
+};
+unsigned int shader_spirv_len = 848;
+
+void render_triangle(VkRenderPass render_pass, VkCommandBuffer cmd)
+{
+	using V = Draw_Data_2D::vertex;
+
+	local_persist VkBuffer vertex_buffer {};
+	
+	if (!vertex_buffer)
+	{
+		VmaAllocationCreateInfo allocation_info {
+			.usage = VMA_MEMORY_USAGE_AUTO,
+			.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+		};
+		VkBufferCreateInfo buffer_info {
+			.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO
+		};
+		VmaAllocation vertex_allocation {};
+
+		buffer_info.size = 3 * sizeof(V);
+		buffer_info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		vmaCreateBuffer(engine.graphics.allocator, &buffer_info, &allocation_info, &vertex_buffer, &vertex_allocation, nullptr);
+	
+		V vert[] {
+			{{0.0f, 0.0f}, rgba8(0xFF,0x00,0x00)},
+			{{0.0f, 1.0f}, rgba8(0x00,0xFF,0x00)},
+			{{1.0f, 0.0f}, rgba8(0x00,0x00,0xFF)},
+		};
+
+		V* data;
+		vmaMapMemory(engine.graphics.allocator, vertex_allocation, (void**)&data);
+		memcpy(data, vert, sizeof(vert));
+		vmaUnmapMemory(engine.graphics.allocator, vertex_allocation);
+	}
+
+	local_persist VkPipelineLayout pipeline_layout {};
+	local_persist VkPipeline pipeline {};
+	
+	if (!pipeline) 
+	{
+		VkPipelineLayoutCreateInfo pipelineLayoutInfo {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        };
+		vkCreatePipelineLayout(engine.graphics.device, &pipelineLayoutInfo, nullptr, &pipeline_layout);
+
+		auto vertex_layout = Vertex_Layout<V, v2f32, rgba8>{};
+		Pipeline_Creator{}
+			.vertex_layout(vertex_layout)
+			.add_dynamic_state(VK_DYNAMIC_STATE_VIEWPORT)
+			.add_dynamic_state(VK_DYNAMIC_STATE_SCISSOR)
+			.add_shader(VK_SHADER_STAGE_VERTEX_BIT, shader_spirv, shader_spirv_len)
+			.add_shader(VK_SHADER_STAGE_FRAGMENT_BIT, shader_spirv, shader_spirv_len)
+			.create(&pipeline, pipeline_layout, render_pass);
+	}
+
+	VkDeviceSize offset = 0;
+	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+	vkCmdBindVertexBuffers(cmd, 0, 1, &vertex_buffer, &offset);
+	vkCmdDraw(cmd, 3, 1, 0, 0);
+}
+
 Logging_Timestamp Logging_Timestamp::now()
 {
     using namespace std::chrono;
@@ -44,6 +180,10 @@ void log::write_log_from_logger(int level)
     };
 	fwrite(logger.arena.start, 1, logger.arena.allocated, logger.backing_file);
 	fflush(logger.backing_file);
+#if defined(OS_WINDOWS) // Also output to debugger (if available)
+    OutputDebugStringA((char*)logger.arena.start);
+#endif
+	if (level < logger.minimum_level) return;
 #if defined(OS_WINDOWS)
 	if (auto handle = os::output_console()) {
         WORD attr = FOREGROUND_INTENSITY;
@@ -75,10 +215,6 @@ void log::write_log_from_logger(int level)
     if (level != Info) fputs("\x1b[0m", stdout);
 #endif
 	fflush(stdout);
-#if defined(OS_WINDOWS) // Also output to debugger (if available)
-	ASSERT(strlen((char*)logger.arena.start) < logger.arena.capacity);
-    OutputDebugStringA((char*)logger.arena.start);
-#endif
 }
 
 bool stop() {
@@ -86,216 +222,40 @@ bool stop() {
     return false;
 }
 
-namespace vk {
-	struct Render_Pass_Creator {
-		std::vector<VkAttachmentDescription> attachments;
-		std::vector<VkAttachmentReference> attachment_references;
-		std::vector<VkSubpassDescription> subpasses;
-		std::vector<VkSubpassDependency> subpass_dependencies;
-
-		Render_Pass_Creator(size_t attachment_reference_count) {
-			attachment_references.reserve(attachment_reference_count);
-		}
-
-		Render_Pass_Creator& add_external_subpass_dependency(uint32_t subpass) {
-			VkSubpassDependency dependency{};
-			dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-			dependency.dstSubpass = subpass;
-			dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			dependency.srcAccessMask = 0;
-			dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-			subpass_dependencies.emplace_back(dependency);
-			return *this;
-		}
-
-		VkPipelineStageFlags pick_stage_mask_from_access_mask(VkAccessFlags access) {
-			switch (access)
-			{
-			case VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT:         return VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			case VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT: return VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-			case VK_ACCESS_SHADER_READ_BIT:                    return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-			default:                                           return 0;
-			}
-		}
-
-		Render_Pass_Creator& add_dependency(uint32_t src_subpass, uint32_t dst_subpass, VkAccessFlags src_access, VkAccessFlags dst_access) {
-			VkSubpassDependency dependency{};
-			dependency.srcSubpass = src_subpass;
-			dependency.dstSubpass = dst_subpass;
-			dependency.srcStageMask = pick_stage_mask_from_access_mask(src_access);
-			dependency.srcAccessMask = src_access;
-			dependency.dstStageMask = pick_stage_mask_from_access_mask(dst_access);
-			dependency.dstAccessMask = dst_access;
-			subpass_dependencies.emplace_back(dependency);
-			return *this;
-		}
-
-		Render_Pass_Creator& add_subpass(std::initializer_list<VkAttachmentReference> const& refs) {
-			VkSubpassDescription subpass{};
-			subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-			subpass.colorAttachmentCount = (u32)refs.size();
-			subpass.pColorAttachments = attachment_references.data() + attachment_references.size();
-			for (auto&& ref : refs) attachment_references.emplace_back(ref);
-			subpasses.emplace_back(subpass);
-			return *this;
-		}
-		Render_Pass_Creator& add_subpass_input(std::initializer_list<VkAttachmentReference> const& refs, std::initializer_list<VkAttachmentReference> const& input_refs) {
-			VkSubpassDescription subpass{};
-			subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-			subpass.colorAttachmentCount = (u32)refs.size();
-			subpass.inputAttachmentCount = (u32)input_refs.size();
-			subpass.pColorAttachments = attachment_references.data() + attachment_references.size();
-			for (auto&& ref : refs) attachment_references.emplace_back(ref);
-			subpass.pInputAttachments = attachment_references.data() + attachment_references.size();
-			for (auto&& ref : input_refs) attachment_references.emplace_back(ref);
-			subpasses.emplace_back(subpass);
-			return *this;
-		}
-
-		Render_Pass_Creator& add_subpass(std::initializer_list<VkAttachmentReference> const& refs, VkAttachmentReference depth_ref) {
-			VkSubpassDescription subpass{};
-			subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-			subpass.colorAttachmentCount = (u32)refs.size();
-			subpass.pColorAttachments = attachment_references.data() + attachment_references.size();
-			//	subpass.pResolveAttachments = &colorAttachmentResolveRef; // MSAA
-			for (auto&& ref : refs) attachment_references.emplace_back(ref);
-			subpass.pDepthStencilAttachment = attachment_references.data() + attachment_references.size();
-			attachment_references.emplace_back(depth_ref);
-			subpasses.emplace_back(subpass);
-			return *this;
-		}
-		Render_Pass_Creator& add_subpass(std::initializer_list<VkAttachmentReference> const& refs, VkAttachmentReference depth_ref, VkAttachmentReference resolve_ref) {
-			VkSubpassDescription subpass{};
-			subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-			subpass.colorAttachmentCount = (u32)refs.size();
-			subpass.pColorAttachments = attachment_references.data() + attachment_references.size();
-			for (auto&& ref : refs) attachment_references.emplace_back(ref);
-			subpass.pDepthStencilAttachment = attachment_references.data() + attachment_references.size();
-			attachment_references.emplace_back(depth_ref);
-			subpass.pResolveAttachments = attachment_references.data() + attachment_references.size(); // MSAA
-			attachment_references.emplace_back(resolve_ref);
-			subpasses.emplace_back(subpass);
-			return *this;
-		}
-
-		Render_Pass_Creator& add_subpass_with_input_attachment(std::initializer_list<VkAttachmentReference> const& refs, VkAttachmentReference input_ref) {
-			VkSubpassDescription subpass{};
-			subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-			subpass.colorAttachmentCount = (u32)refs.size();
-			subpass.pColorAttachments = attachment_references.data() + attachment_references.size();
-			//	subpass.pResolveAttachments = &colorAttachmentResolveRef; // MSAA
-			for (auto&& ref : refs) attachment_references.emplace_back(ref);
-			subpass.pInputAttachments = attachment_references.data() + attachment_references.size();
-			subpass.inputAttachmentCount = 1;
-			attachment_references.emplace_back(input_ref);
-			subpasses.emplace_back(subpass);
-			return *this;
-		}
-
-		VkImageLayout pick_final_image_layout_for_format(VkFormat format) {
-			switch (format)
-			{
-			case VK_FORMAT_D16_UNORM:
-			case VK_FORMAT_X8_D24_UNORM_PACK32:
-			case VK_FORMAT_D32_SFLOAT:
-			case VK_FORMAT_D16_UNORM_S8_UINT:
-			case VK_FORMAT_D24_UNORM_S8_UINT:
-			case VK_FORMAT_D32_SFLOAT_S8_UINT:   return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-			default:                             return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-			}
-		}
-
-		enum Attachment_Preset {
-			// Use this for Depth and Color images that we want to write to
-			Attachment_New_Image,        // load = CLEAR, store = STORE, stencil = DONT CARE, inital = UNDEFINED
-			Attachment_Cumulative_Image, // load = LOAD , store = STORE, stencil = DONT CARE, inital = UNDEFINED
-		};
-
-		Render_Pass_Creator& add_attachment(VkFormat format, VkSampleCountFlagBits sample_count = VK_SAMPLE_COUNT_1_BIT) {
-			VkAttachmentDescription attachment{};
-			attachment.format = format;
-			attachment.samples = sample_count;
-			attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-			attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-			attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			attachment.finalLayout = pick_final_image_layout_for_format(format);
-			attachments.emplace_back(attachment);
-			return *this;
-		}
-		Render_Pass_Creator& add_attachment(VkFormat format, VkAttachmentLoadOp loadOp, VkImageLayout layout, VkSampleCountFlagBits sample_count = VK_SAMPLE_COUNT_1_BIT) {
-			VkAttachmentDescription attachment{};
-			attachment.format = format;
-			attachment.samples = sample_count;
-			attachment.loadOp = loadOp;
-			attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-			attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			attachment.initialLayout = layout;
-			attachment.finalLayout = layout;
-			attachments.emplace_back(attachment);
-			return *this;
-		}
-
-		Render_Pass_Creator& add_attachment(
-			VkFormat format,
-			VkImageLayout initial_layout,
-			VkImageLayout final_layout,
-			VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
-			VkSampleCountFlagBits sample_count = VK_SAMPLE_COUNT_1_BIT
-		) {
-			attachments.emplace_back(VkAttachmentDescription {
-				.format = format,
-				.samples = sample_count,
-				.loadOp = loadOp,
-				.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-				.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-				.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-				.initialLayout = initial_layout,
-				.finalLayout = final_layout,
-			});
-			return *this;
-		}
-
-		VkResult create(VkRenderPass* pRenderPass);
-	};
-}
-
 auto Engine::create(Defaults const& defaults) -> Result
 {
+//	scoped_set(logger.minimum_level, log::Verbose);
 	if (os::init()) return Failed;
-	logger.backing_file = os::open_file("log.txt", os::Write);
+	logger.backing_file = os::open_file("./bin/fission.log", os::Write);
     os_mutex_create(&logger.mutex);
     log::info("Creating Fission Engine...");
-	engine.temp_arena.create(4_MiB);
+	engine.temp_arena.create(16_MiB);
 
-    /*
+/*
 	// setup the console early so we can use it as soon as possible
 	console_layer.setup_console_api();
 	add_engine_console_commands();
-    */
-    Window::Create_Info window_info = {
+*/
+    Window::Create_Info window_info {
 		.title = defaults.window_title,
         .width = defaults.window_width,
         .height = defaults.window_height,
     };
     if (window.create(window_info)) return Failed;
     
-    Graphics::Create_Info graphics_info = {
+    Graphics::Create_Info graphics_info {
 		.window = &window,
         .debug = true,
     };
 	if (graphics.create(graphics_info)) return Failed;
 
-    vk::Render_Pass_Creator{4}
-        .add_attachment(graphics.format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_ATTACHMENT_LOAD_OP_CLEAR)
+    Render_Pass_Creator{}
+        .add_attachment(graphics.format, Attachment_Preset_New_Image_Present)
         .add_subpass({ {0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} })
         .add_external_subpass_dependency(0)
         .create(&overlay_render_pass);
 
-	create_frame_buffers(0);
+	create_frame_buffers();
 
     /*
 	if (create_screenshot_buffer()) return true;
@@ -303,8 +263,9 @@ auto Engine::create(Defaults const& defaults) -> Result
 
 	engine.current_scene = on_create_scene({});
     */
+   
     engine.flags |= Engine::Running;
-    log::debug("Creating render thread...");
+    log::info("Starting render thread...");
 	if (os_thread_start(render_main, nullptr, &engine.render_thread))
 		return log::error("Failed to start render thread!"), Failed;
 	return Success;
@@ -312,11 +273,9 @@ auto Engine::create(Defaults const& defaults) -> Result
 
 void Engine::destroy()
 {
-#ifdef TEST_FMT
-    log::verbose(fmt::format("{}", __PRETTY_FUNCTION__));
-#else
     log::verbose(__PRETTY_FUNCTION__);
-#endif
+	os_thread_join(render_thread);
+//	graphics.destroy();
 }
 
 auto Engine::setup() -> Result
@@ -328,14 +287,6 @@ auto Engine::setup() -> Result
 //! TODO: move this out
 namespace vk
 {
-	inline VkResult begin(VkCommandBuffer command_buffer, VkCommandBufferUsageFlags flags = 0)
-	{
-		VkCommandBufferBeginInfo begin_info {
-			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-			.flags = flags,
-		};
-		return vkBeginCommandBuffer(command_buffer, &begin_info);
-	}
     void begin(VkCommandBuffer command_buffer, VkRenderPass render_pass, VkFramebuffer frame_buffer, VkClearColorValue color)
     {
         VkClearValue clear_color = { color };
@@ -421,10 +372,9 @@ auto Engine::render_frame() -> bool
 
 //	auto cpu_start = timestamp();
 
-	render_context.frame_buffer   = frame_buffers[render_context.image_index];
+	render_context.frame_buffer = frame_buffers[render_context.image_index];
 	render_context.command_buffer = graphics.command_buffers[render_context.frame];
-
-	check(vk::begin(render_context.command_buffer), "Failed to begin command buffer");
+	begin(render_context.command_buffer);
 
 	//-------------------------------------------------------------------------------------
 	// Eat any events handled by debug and console layers
@@ -439,8 +389,14 @@ auto Engine::render_frame() -> bool
 
 	//-------------------------------------------------------------------------------------
 	// Render console and debug overlay
-	vk::begin(render_context.command_buffer, overlay_render_pass, render_context.frame_buffer, {});
+    local_persist f32 t = 0;
+	f32 v = sinf(t*2.0f) * 0.5f;
+	v *= v;
+	vk::begin(render_context.command_buffer, overlay_render_pass, render_context.frame_buffer, {{v,v,v,1}});
+    t += 0.01f;
+    if (t > f32 PI) t -= f32 PI;
 	{
+		render_triangle(overlay_render_pass, render_context.command_buffer);
 	//	graphics.set_default_scissor(render_context.command_buffer);
 	//	graphics.set_default_viewport(render_context.command_buffer);
 //
@@ -515,7 +471,7 @@ auto Engine::render_frame() -> bool
 	return bool(flags & Running);
 }
 
-auto Engine::create_frame_buffers(u32 old_count) -> Result
+auto Engine::create_frame_buffers() -> Result
 {
 	VkFramebufferCreateInfo frame_buffer_info {
 		.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -544,13 +500,11 @@ void Engine::resize()
     vkDestroySwapchainKHR(g.device, g.swap_chain, nullptr);
     forn (g.image_count) vkDestroyImageView(g.device, g.image_views[i], nullptr);
     forn (g.image_count) vkDestroyFramebuffer(g.device, frame_buffers[i], nullptr);
-	u32 old_image_count = g.image_count;
 
     // Create
     g.create_swap_chain(&window);
     g.create_sc_image_views();
-
-	create_frame_buffers(old_image_count);
+	create_frame_buffers();
 
 	// Update screen transform
 	//using namespace glm;
@@ -573,19 +527,6 @@ void Engine::shutdown()
 {
 	log::verbose("Exiting render thread...");
 //	window.close();
-}
-
-VkResult vk::Render_Pass_Creator::create(VkRenderPass* pRenderPass) {
-	VkRenderPassCreateInfo render_pass_info {
-		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-		.attachmentCount = (u32)attachments.size(),
-		.pAttachments    = attachments.data(),
-		.subpassCount    = (u32)subpasses.size(),
-		.pSubpasses      = subpasses.data(),
-		.dependencyCount = (u32)subpass_dependencies.size(),
-		.pDependencies   = subpass_dependencies.data(),
-	};
-	return vkCreateRenderPass(engine.graphics.device, &render_pass_info, nullptr, pRenderPass);
 }
 
 END_NAMESPACE()

@@ -1,6 +1,15 @@
 #include "Fission/core.hpp"
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/rotate_normalized_axis.hpp"
+#include <bit>
+using std::popcount;
+#define TAB "   "
+
+//constexpr auto popcount(unsigned x) {
+//    unsigned num{};
+//    for (; x; ++num, x &= (x - 1));
+//    return num;
+//};
 
 namespace vk
 {
@@ -25,37 +34,118 @@ namespace vk
 
 BEGIN_NAMESPACE(fission)
 
+#define X_VK_SURFACE_TRANSFORMS(X)                                  \
+    X(IDENTITY) X(ROTATE_90) X(ROTATE_180) X(ROTATE_270)            \
+    X(HORIZONTAL_MIRROR) X(HORIZONTAL_MIRROR_ROTATE_90)             \
+    X(HORIZONTAL_MIRROR_ROTATE_180) X(HORIZONTAL_MIRROR_ROTATE_270) \
+    X(INHERIT)
+
 void format_single(Arena& arena, VkSurfaceTransformFlagBitsKHR surface_transform_flags)
 {
 	bool found = false;
-	if (surface_transform_flags&VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
-		found? format_single(arena, "-"):(void)0, format_single(arena, "IDENTITY"), found = true;
-	if (surface_transform_flags&VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR)
-		found? format_single(arena, "-"):(void)0, format_single(arena, "ROTATE_90"), found = true;
-	if (surface_transform_flags&VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR)
-		found? format_single(arena, "-"):(void)0, format_single(arena, "ROTATE_180"), found = true;
-	if (surface_transform_flags&VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR)
-		found? format_single(arena, "-"):(void)0, format_single(arena, "ROTATE_270"), found = true;
-	if (surface_transform_flags&VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_BIT_KHR)
-		found? format_single(arena, "-"):(void)0, format_single(arena, "HORIZONTAL_MIRROR"), found = true;
-	if (surface_transform_flags&VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_90_BIT_KHR)
-		found? format_single(arena, "-"):(void)0, format_single(arena, "HORIZONTAL_MIRROR_ROTATE_90"), found = true;
-	if (surface_transform_flags&VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_180_BIT_KHR)
-		found? format_single(arena, "-"):(void)0, format_single(arena, "HORIZONTAL_MIRROR_ROTATE_180"), found = true;
-	if (surface_transform_flags&VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR)
-		found? format_single(arena, "-"):(void)0, format_single(arena, "HORIZONTAL_MIRROR_ROTATE_270"), found = true;
-	if (surface_transform_flags&VK_SURFACE_TRANSFORM_INHERIT_BIT_KHR)
-		found? format_single(arena, "-"):(void)0, format_single(arena, "INHERIT"), found = true;
+	#define FORMAT_ENUM(NAME) \
+	if (surface_transform_flags&VK_SURFACE_TRANSFORM_##NAME##_BIT_KHR) \
+		found? format_single(arena, "-"):(void)0, format_single(arena, #NAME), found = true;
+	X_VK_SURFACE_TRANSFORMS(FORMAT_ENUM)
+	#undef FORMAT_ENUM
 }
 
-// TODO: only do portability stuff when on MACOS
+#define X_VK_FORMATS(X) \
+    X(UNDEFINED) X(R4G4_UNORM_PACK8) X(R4G4B4A4_UNORM_PACK16) X(B4G4R4A4_UNORM_PACK16) \
+    X(R5G6B5_UNORM_PACK16) X(B5G6R5_UNORM_PACK16) X(R5G5B5A1_UNORM_PACK16) \
+    X(B5G5R5A1_UNORM_PACK16) X(A1R5G5B5_UNORM_PACK16) X(R8_UNORM) X(R8_SNORM) \
+    X(R8_USCALED) X(R8_SSCALED) X(R8_UINT) X(R8_SINT) X(R8_SRGB) X(R8G8_UNORM) \
+    X(R8G8_SNORM) X(R8G8_USCALED) X(R8G8_SSCALED) X(R8G8_UINT) X(R8G8_SINT) X(R8G8_SRGB) \
+	X(R8G8B8_UNORM) X(R8G8B8_SNORM) X(R8G8B8_USCALED) X(R8G8B8_SSCALED) X(R8G8B8_UINT) \
+    X(R8G8B8_SINT) X(R8G8B8_SRGB) X(B8G8R8_UNORM) X(B8G8R8_SNORM) X(B8G8R8_USCALED) \
+    X(B8G8R8_SSCALED) X(B8G8R8_UINT) X(B8G8R8_SINT) X(B8G8R8_SRGB) X(R8G8B8A8_UNORM) \
+    X(R8G8B8A8_SNORM) X(R8G8B8A8_USCALED) X(R8G8B8A8_SSCALED) X(R8G8B8A8_UINT) X(R8G8B8A8_SINT) \
+    X(R8G8B8A8_SRGB) X(B8G8R8A8_UNORM) X(B8G8R8A8_SNORM) X(B8G8R8A8_USCALED) X(B8G8R8A8_SSCALED) \
+    X(B8G8R8A8_UINT) X(B8G8R8A8_SINT) X(B8G8R8A8_SRGB) X(A8B8G8R8_UNORM_PACK32) \
+    X(A8B8G8R8_SNORM_PACK32) X(A8B8G8R8_USCALED_PACK32) X(A8B8G8R8_SSCALED_PACK32) X(A8B8G8R8_UINT_PACK32) \
+	X(A8B8G8R8_SRGB_PACK32) X(A2R10G10B10_UNORM_PACK32) X(A2R10G10B10_SNORM_PACK32) \
+	X(A2R10G10B10_USCALED_PACK32) X(A2R10G10B10_SSCALED_PACK32) X(A2R10G10B10_UINT_PACK32) \
+	X(A2R10G10B10_SINT_PACK32) X(A2B10G10R10_UNORM_PACK32) X(A2B10G10R10_SNORM_PACK32) \
+	X(A2B10G10R10_USCALED_PACK32) X(A2B10G10R10_SSCALED_PACK32) X(A2B10G10R10_UINT_PACK32) \
+	X(A2B10G10R10_SINT_PACK32) X(R16_UNORM) X(R16_SNORM) X(R16_USCALED) X(R16_SSCALED) X(R16_UINT) \
+	X(R16_SINT) X(R16_SFLOAT) X(R16G16_UNORM) X(R16G16_SNORM) X(R16G16_USCALED) X(R16G16_SSCALED) \
+	X(R16G16_UINT) X(R16G16_SINT) X(R16G16_SFLOAT) X(R16G16B16_UNORM) X(R16G16B16_SNORM) \
+	X(R16G16B16_USCALED) X(R16G16B16_SSCALED) X(R16G16B16_UINT) X(R16G16B16_SINT) X(R16G16B16_SFLOAT) \
+	X(R16G16B16A16_UNORM) X(R16G16B16A16_SNORM) \
+    X(R16G16B16A16_USCALED) X(R16G16B16A16_SSCALED) X(R16G16B16A16_UINT) X(R16G16B16A16_SINT) \
+    X(R16G16B16A16_SFLOAT) X(R32_UINT) X(R32_SINT) X(R32_SFLOAT) X(R32G32_UINT) X(R32G32_SINT) \
+    X(R32G32_SFLOAT) X(R32G32B32_UINT) X(R32G32B32_SINT) X(R32G32B32_SFLOAT) X(R32G32B32A32_UINT) \
+    X(R32G32B32A32_SINT) X(R32G32B32A32_SFLOAT) X(R64_UINT) X(R64_SINT) X(R64_SFLOAT) \
+    X(R64G64_UINT) X(R64G64_SINT) X(R64G64_SFLOAT) X(R64G64B64_UINT) X(R64G64B64_SINT) X(R64G64B64_SFLOAT) \
+    X(R64G64B64A64_UINT) X(R64G64B64A64_SINT) X(R64G64B64A64_SFLOAT) X(B10G11R11_UFLOAT_PACK32) \
+    X(E5B9G9R9_UFLOAT_PACK32) X(D16_UNORM) X(X8_D24_UNORM_PACK32) X(D32_SFLOAT) X(S8_UINT) \
+    X(D16_UNORM_S8_UINT) X(D24_UNORM_S8_UINT) X(D32_SFLOAT_S8_UINT) X(BC1_RGB_UNORM_BLOCK) \
+	X(BC1_RGB_SRGB_BLOCK) X(BC1_RGBA_UNORM_BLOCK) X(BC1_RGBA_SRGB_BLOCK) X(BC2_UNORM_BLOCK) \
+    X(BC2_SRGB_BLOCK) X(BC3_UNORM_BLOCK) X(BC3_SRGB_BLOCK) X(BC4_UNORM_BLOCK) X(BC4_SNORM_BLOCK) \
+    X(BC5_UNORM_BLOCK) X(BC5_SNORM_BLOCK) X(BC6H_UFLOAT_BLOCK) X(BC6H_SFLOAT_BLOCK) X(BC7_UNORM_BLOCK) \
+    X(BC7_SRGB_BLOCK) X(ETC2_R8G8B8_UNORM_BLOCK) X(ETC2_R8G8B8_SRGB_BLOCK) X(ETC2_R8G8B8A1_UNORM_BLOCK) \
+    X(ETC2_R8G8B8A1_SRGB_BLOCK) X(ETC2_R8G8B8A8_UNORM_BLOCK) X(ETC2_R8G8B8A8_SRGB_BLOCK) \
+	X(EAC_R11_UNORM_BLOCK) X(EAC_R11_SNORM_BLOCK) X(EAC_R11G11_UNORM_BLOCK) X(EAC_R11G11_SNORM_BLOCK) \
+    X(ASTC_4x4_UNORM_BLOCK) X(ASTC_4x4_SRGB_BLOCK) X(ASTC_5x4_UNORM_BLOCK) X(ASTC_5x4_SRGB_BLOCK) \
+    X(ASTC_5x5_UNORM_BLOCK) X(ASTC_5x5_SRGB_BLOCK) X(ASTC_6x5_UNORM_BLOCK) X(ASTC_6x5_SRGB_BLOCK) \
+	X(ASTC_6x6_UNORM_BLOCK) X(ASTC_6x6_SRGB_BLOCK) X(ASTC_8x5_UNORM_BLOCK) X(ASTC_8x5_SRGB_BLOCK) \
+    X(ASTC_8x6_UNORM_BLOCK) X(ASTC_8x6_SRGB_BLOCK) X(ASTC_8x8_UNORM_BLOCK) X(ASTC_8x8_SRGB_BLOCK) \
+    X(ASTC_10x5_UNORM_BLOCK) X(ASTC_10x5_SRGB_BLOCK) X(ASTC_10x6_UNORM_BLOCK) X(ASTC_10x6_SRGB_BLOCK) \
+    X(ASTC_10x8_UNORM_BLOCK) X(ASTC_10x8_SRGB_BLOCK) X(ASTC_10x10_UNORM_BLOCK) X(ASTC_10x10_SRGB_BLOCK) \
+    X(ASTC_12x10_UNORM_BLOCK) X(ASTC_12x10_SRGB_BLOCK) X(ASTC_12x12_UNORM_BLOCK) X(ASTC_12x12_SRGB_BLOCK) \
+    X(G8B8G8R8_422_UNORM) X(B8G8R8G8_422_UNORM) X(G8_B8_R8_3PLANE_420_UNORM) X(G8_B8R8_2PLANE_420_UNORM) \
+    X(G8_B8_R8_3PLANE_422_UNORM) X(G8_B8R8_2PLANE_422_UNORM) X(G8_B8_R8_3PLANE_444_UNORM) X(R10X6_UNORM_PACK16) \
+    X(R10X6G10X6_UNORM_2PACK16) X(R10X6G10X6B10X6A10X6_UNORM_4PACK16) X(G10X6B10X6G10X6R10X6_422_UNORM_4PACK16) \
+    X(B10X6G10X6R10X6G10X6_422_UNORM_4PACK16) X(G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16) \
+    X(G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16) X(G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16) \
+    X(G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16) X(G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16) \
+    X(R12X4_UNORM_PACK16) X(R12X4G12X4_UNORM_2PACK16) X(R12X4G12X4B12X4A12X4_UNORM_4PACK16) \
+    X(G12X4B12X4G12X4R12X4_422_UNORM_4PACK16) X(B12X4G12X4R12X4G12X4_422_UNORM_4PACK16) \
+    X(G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16) X(G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16) \
+    X(G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16) X(G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16) \
+    X(G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16) X(G16B16G16R16_422_UNORM) X(B16G16R16G16_422_UNORM) \
+    X(G16_B16_R16_3PLANE_420_UNORM) X(G16_B16R16_2PLANE_420_UNORM) X(G16_B16_R16_3PLANE_422_UNORM) \
+    X(G16_B16R16_2PLANE_422_UNORM) X(G16_B16_R16_3PLANE_444_UNORM) X(G8_B8R8_2PLANE_444_UNORM) \
+    X(G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16) X(G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16) \
+    X(G16_B16R16_2PLANE_444_UNORM) X(A4R4G4B4_UNORM_PACK16) X(A4B4G4R4_UNORM_PACK16) \
+    X(ASTC_4x4_SFLOAT_BLOCK) X(ASTC_5x4_SFLOAT_BLOCK) X(ASTC_5x5_SFLOAT_BLOCK) \
+    X(ASTC_6x5_SFLOAT_BLOCK) X(ASTC_6x6_SFLOAT_BLOCK) X(ASTC_8x5_SFLOAT_BLOCK) \
+    X(ASTC_8x6_SFLOAT_BLOCK) X(ASTC_8x8_SFLOAT_BLOCK) X(ASTC_10x5_SFLOAT_BLOCK) \
+    X(ASTC_10x6_SFLOAT_BLOCK) X(ASTC_10x8_SFLOAT_BLOCK) X(ASTC_10x10_SFLOAT_BLOCK) \
+    X(ASTC_12x10_SFLOAT_BLOCK) X(ASTC_12x12_SFLOAT_BLOCK) X(A1B5G5R5_UNORM_PACK16) \
+    X(A8_UNORM) X(PVRTC1_2BPP_UNORM_BLOCK_IMG) X(PVRTC1_4BPP_UNORM_BLOCK_IMG) \
+    X(PVRTC2_2BPP_UNORM_BLOCK_IMG) X(PVRTC2_4BPP_UNORM_BLOCK_IMG) X(PVRTC1_2BPP_SRGB_BLOCK_IMG) \
+	X(PVRTC1_4BPP_SRGB_BLOCK_IMG) X(PVRTC2_2BPP_SRGB_BLOCK_IMG) X(PVRTC2_4BPP_SRGB_BLOCK_IMG) \
+    X(R16G16_SFIXED5_NV)
 
-// TODO: find a solution to where to put this / is this needed
-constexpr auto popcount(unsigned x) {
-    unsigned num{};
-    for (; x; ++num, x &= (x - 1));
-    return num;
-};
+void format_single(Arena& arena, VkFormat iFormat)
+{
+	#define FORMAT_ENUM(NAME) case VK_FORMAT_##NAME: format_single(arena, #NAME); break;
+	switch (iFormat)
+	{
+		X_VK_FORMATS(FORMAT_ENUM)
+		default: format(arena, "[VkFormat ", (int)iFormat, "]"); break;
+	}
+	#undef FORMAT_ENUM
+}
+
+#define X_VK_COLOR_SPACES(X) \
+    X(SRGB_NONLINEAR_KHR) X(DISPLAY_P3_NONLINEAR_EXT) X(EXTENDED_SRGB_LINEAR_EXT) \
+	X(DISPLAY_P3_LINEAR_EXT) X(DCI_P3_NONLINEAR_EXT) X(BT709_LINEAR_EXT) \
+    X(BT709_NONLINEAR_EXT) X(BT2020_LINEAR_EXT) X(HDR10_ST2084_EXT) \
+    X(DOLBYVISION_EXT) X(HDR10_HLG_EXT) X(ADOBERGB_LINEAR_EXT) X(ADOBERGB_NONLINEAR_EXT) \
+    X(PASS_THROUGH_EXT) X(EXTENDED_SRGB_NONLINEAR_EXT) X(DISPLAY_NATIVE_AMD)
+
+void format_single(Arena& arena, VkColorSpaceKHR color_space)
+{
+	#define FORMAT_ENUM(NAME) case VK_COLOR_SPACE_##NAME: format_single(arena, #NAME); break;
+	switch (color_space)
+	{
+		X_VK_COLOR_SPACES(FORMAT_ENUM)
+		default: format(arena, "[VkColorSpaceKHR ", (int)color_space, "]"); break;
+	}
+	#undef FORMAT_ENUM
+}
 
 #define DEBUG_UTILS_MESSAGE_SEVERITY_ALL            \
     VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT \
@@ -67,19 +157,6 @@ constexpr auto popcount(unsigned x) {
     VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT     \
 |   VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT  \
 |   VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT
-
-inline constexpr char const*
-severity_string(VkDebugUtilsMessageSeverityFlagBitsEXT severity)
-{
-	switch (severity)
-	{
-	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT: return "Verbose";
-	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:    return "Info";
-	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT: return "Warning";
-	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:   return "Error";
-	default:                                              return "Unknown";
-	}
-}
 
 VKAPI_ATTR VkBool32 VKAPI_CALL debug_utils_callback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT severity,
@@ -114,7 +191,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debug_utils_callback(
 #define assert(EXPR, ERROR_MESSAGE) \
   if (!(EXPR)) {                    \
     log::error(ERROR_MESSAGE);      \
-    return true;                    \
+    return Failed;                  \
   }                                 \
   (void)0
 
@@ -135,18 +212,19 @@ auto Graphics::create (Create_Info const& info) -> Result
     if (create_sync_objects())          return Failed;
     return Success;
 }
-#if 0
+
 void Graphics::destroy()
 {
-	log::verbose("Destroying Graphics...");
+	log::info("Destroying Graphics...");
 
 	if (device)
 		vkDeviceWaitIdle(device);
 
-	if (device) for_n (2) {
-		vkDestroySemaphore(device, sc_image_read_semaphore[i], nullptr);
-		vkDestroySemaphore(device, sc_image_write_semaphore[i], nullptr);
-		vkDestroyFence(device, cb_fences[i], nullptr);
+	if (device)
+	forn (8) {
+		vkDestroySemaphore(device, image_read_semaphore[i], nullptr);
+		vkDestroySemaphore(device, image_write_semaphore[i], nullptr);
+		vkDestroyFence(device, fences[i], nullptr);
 	}
 
 	if (transfer_command_pool)
@@ -155,8 +233,9 @@ void Graphics::destroy()
 	if (command_pool)
 		vkDestroyCommandPool(device, command_pool, nullptr);
 	
-	if (swap_chain) for_n (sc_image_count)
-		vkDestroyImageView(device, sc_image_views[i], nullptr);
+	if (swap_chain)
+	forn (image_count)
+		vkDestroyImageView(device, image_views[i], nullptr);
 
 	if (swap_chain) vkDestroySwapchainKHR(device, swap_chain, nullptr);
 	if (allocator) vmaDestroyAllocator(allocator);
@@ -176,10 +255,8 @@ void Graphics::destroy()
 
 	if (instance) vkDestroyInstance(instance, nullptr);
 
-    // Set everything to null.. just in case
-    memset(this, 0, sizeof(*this));
+	memset(this, 0, sizeof(*this));
 }
-#endif
 
 void log_layers_and_extensions()
 {
@@ -196,7 +273,7 @@ void log_layers_and_extensions()
         using namespace formatting;
         const char* layer_name = layers[i].layerName;
         const char* description = layers[i].description;
-		log::verbose(" - ", pad(layer_name, 36), " ", description);
+		log::verbose(TAB, pad(layer_name, 36), " ", description);
 	}
     scratch_arena.reset();
 
@@ -213,7 +290,7 @@ void log_layers_and_extensions()
 	forn (extension_count) {
         using namespace formatting;
         const char* extension_name = extensions[i].extensionName;
-		log::verbose(" - ", extension_name);
+		log::verbose(TAB, extension_name);
 	}
     scratch_arena.reset();
 }
@@ -229,6 +306,7 @@ auto Graphics::create_instance(bool debug) -> Result
 		.pApplicationName = "How did you find this?",
 		.applicationVersion = VK_MAKE_API_VERSION(1, 0, 0, 69),
 		.pEngineName = "Fission",
+		//! TODO: engine version
 	//	.engineVersion = vk::make_api_version<1,version_major,version_minor,version_patch>,
 		.apiVersion = VK_API_VERSION_1_3,
 	};
@@ -283,22 +361,21 @@ auto Graphics::create_instance(bool debug) -> Result
 		if (vkCreateDebugUtilsMessengerEXT == nullptr) {
 			log::error("Could not load function \"vkCreateDebugUtilsMessengerEXT\"");
 		}
-		else 
-		check(vkCreateDebugUtilsMessengerEXT(instance, &debug_utils_info, nullptr, &debug_messenger),
-			  "Failed to create debug messenger");
+		else if (vkCreateDebugUtilsMessengerEXT(instance, &debug_utils_info, nullptr, &debug_messenger) < VK_SUCCESS)
+			log::error("Failed to create debug messenger");
 	}
     return Success;
 }
 
 auto Graphics::create_surface(Window* window) -> Result
 {
+	scoped_set(logger.prefix, OS_NAME);
     log::verbose("Creating Vulkan surface...");
 #if defined(OS_WINDOWS)
 	VkWin32SurfaceCreateInfoKHR surface_info {
 		.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
 		.hwnd = window->_handle,
     };
-
     check(vkCreateWin32SurfaceKHR(instance, &surface_info, nullptr, &surface),
           "Failed to create surface!");
 #elif defined(OS_ANDROID)
@@ -306,7 +383,6 @@ auto Graphics::create_surface(Window* window) -> Result
         .sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
         .window = window->_native,
     };
-
     check(vkCreateAndroidSurfaceKHR(instance, &surface_info, nullptr, &surface),
           "Failed to create surface!");
 #elif defined(OS_LINUX) || defined(OS_MACOS)
@@ -324,10 +400,8 @@ auto Graphics::pick_physical_device() -> Result
     check(vkEnumeratePhysicalDevices(instance, &count, nullptr),
           "Failed to enumerate physical devices");
 
-    if (count == 0) {
-        log::error("Unable to find physical device with Vulkan support!");
-        return Failed;
-    }
+    if (count == 0)
+        return log::error("Unable to find physical device with Vulkan support!"), Failed;
 
     auto physical_devices = scratch_arena.alloc<VkPhysicalDevice>(count);
 	check(vkEnumeratePhysicalDevices(instance, &count, physical_devices),
@@ -381,7 +455,7 @@ auto Graphics::pick_physical_device() -> Result
 
 		const char* device_name = properties.deviceName;
 
-		log::info(" - GPU ", i++, ": ", (d == physical_device)? ">> ":"   ",
+		log::info((d == physical_device)? TAB">> ":TAB"   ", "GPU ", i++, ": ",
             dt(properties.deviceType), device_name);
 	}
     return Success;
@@ -427,7 +501,7 @@ auto Graphics::pick_queue_families() -> Result
 		}
 
 		VkBool32 supports_surface = false;
-#if 1
+#if 1 // ? need GLFW here ?
 		vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, i, surface, &supports_surface);
 #else
         supports_surface = glfwGetPhysicalDevicePresentationSupport(instance, physical_device, i);
@@ -496,8 +570,8 @@ auto Graphics::create_device(bool debug) -> Result
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 	};
 
-	VkPhysicalDeviceFeatures features {}; // This looks fun
-	//features.fillModeNonSolid = VK_TRUE;
+	VkPhysicalDeviceFeatures features {};
+	//! TODO: look at features
 
 /*
   https://vulkan-tutorial.com/en/Drawing_a_triangle/Setup/Logical_device_and_queues
@@ -508,6 +582,7 @@ auto Graphics::create_device(bool debug) -> Result
 	However, it is still a good idea to set them anyway to be compatible
 	with older implementations"
 */
+	//! TODO: only do this on debug builds
 	const char* layer_names[] = { "VK_LAYER_KHRONOS_validation" };
 
     VkDeviceCreateInfo device_info {
@@ -528,7 +603,6 @@ auto Graphics::create_device(bool debug) -> Result
 	vkGetDeviceQueue(device, queue_family.graphics, 0, &graphics_queue);
 	vkGetDeviceQueue(device, queue_family.present , 0, &present_queue);
 	vkGetDeviceQueue(device, queue_family.transfer, 0, &transfer_queue);
-    
     return Success;
 }
 
@@ -549,10 +623,10 @@ auto Graphics::create_allocator() -> Result
 	return Success;
 }
 
-size_t pick_surface_format(std::vector<VkSurfaceFormatKHR> const& formats) {
+size_t pick_surface_format(Arena::Temp_Array<VkSurfaceFormatKHR> const& formats) {
 	size_t index = 0;
 	int max_score = 0;
-	forn (formats.size()) {
+	forn (formats.count) {
 		int score = [](VkSurfaceFormatKHR const& sf) {switch (sf.format) {
             case VK_FORMAT_B8G8R8A8_UNORM: return 4;
             case VK_FORMAT_R8G8B8A8_UNORM: return 3;
@@ -577,34 +651,35 @@ auto Graphics::create_swap_chain(Window* window) -> Result
 	check(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &capabilities),
 		  "Failed to get Vulkan surface capabilities");
 
-    log::verbose("max image count ", capabilities.minImageCount);
-    log::verbose("min image count ", capabilities.maxImageCount);
+    log::verbose("max image count = ", capabilities.minImageCount);
+    log::verbose("min image count = ", capabilities.maxImageCount);
 
-    u32 surface_format_count {};
-    check(vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &surface_format_count, nullptr),
-          "Failed to enumerate surface formats");
+	// Pick surface format
+	{
+		u32 surface_format_count {};
+		check(vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &surface_format_count, nullptr),
+			"Failed to enumerate surface formats");
 
-    if (surface_format_count == 0) {
-        log::error("Unable to find any surface formats!");
-        return Failed;
-    }
+		if (surface_format_count == 0)
+			return log::error("Unable to find any surface formats!"), Failed;
 
-    std::vector<VkSurfaceFormatKHR> surface_formats {surface_format_count};
-    check(vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &surface_format_count, surface_formats.data()),
-          "Failed to enumerate surface formats");
+		auto surface_formats = scratch_arena.temp_array<VkSurfaceFormatKHR>(surface_format_count);
+		check(vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &surface_format_count, surface_formats.data),
+			"Failed to enumerate surface formats");
 
-	size_t surface_format_index = pick_surface_format(surface_formats);
+    	log::verbose("Number of surface formats: ", surface_formats.count);
+		size_t picked = pick_surface_format(surface_formats);
+		forn (surface_formats.count) {
+			using namespace formatting;
+		    log::verbose((i == picked)? TAB">> ":TAB"   ", pad(surface_formats[i].format, 32), surface_formats[i].colorSpace);
+		}
+		format = surface_formats[picked].format;
+		color_space = surface_formats[picked].colorSpace;
+	}
 
-	//! TODO: fix
-    //for (auto&& [i,sf]: enumerate(surface_formats)) {
-    //    log::debug(format(" - {:3}: {} {:32} {}", i, (i == surface_format_index)? ">>":"  ",
-	//		vk::name(sf.colorSpace), vk::name(sf.format)));
-    //}
-
-	format = surface_formats[surface_format_index].format;
 	extent = capabilities.currentExtent;
     transform = capabilities.currentTransform;
-    log::debug(" - Surface Transform: ", transform);
+    log::verbose("Surface transform: ", transform);
 
     if (transform & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR
 	||  transform & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR)
@@ -619,16 +694,16 @@ auto Graphics::create_swap_chain(Window* window) -> Result
 #else
 	NOT_USED(window);
 #endif
-    log::debug(" - size: ", extent.width, "x", extent.height);
+    log::verbose("Swap chain size: ", extent.width, "x", extent.height);
 	//! TODO: present mode formatter
-	log::debug(" - present mode: ", int(present_mode));
+	log::verbose("Swap chain present mode: ", int(present_mode));
 
 	VkSwapchainCreateInfoKHR swap_chain_info {
 		.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
 		.surface = surface,
 		.minImageCount = capabilities.minImageCount + 1,
 		.imageFormat = format,
-		.imageColorSpace = surface_formats[surface_format_index].colorSpace,
+		.imageColorSpace = color_space,
 		.imageExtent = extent,
 		.imageArrayLayers = 1, /* For non-stereoscopic-3D applications, this value is 1 */
 		.imageUsage = image_usage,
@@ -644,14 +719,14 @@ auto Graphics::create_swap_chain(Window* window) -> Result
 }
 auto Graphics::create_sc_image_views() -> Result
 {
-	log::debug("Creating Vulkan swap chain image views...");
+	log::verbose("Creating swap chain image views...");
 
 	check(vkGetSwapchainImagesKHR(device, swap_chain, &image_count, nullptr),
 		  "vkGetSwapchainImagesKHR failed");
 
-	log::debug(" - Number of swap chain images: ", image_count);
+	log::verbose("Number of swap chain images: ", image_count);
 
-	ASSERT(image_count <= 8);
+	assert(image_count <= 8, "Image count must be less than 8");
 	check(vkGetSwapchainImagesKHR(device, swap_chain, &image_count, images),
 		  "vkGetSwapchainImagesKHR failed");
 	
@@ -667,7 +742,7 @@ auto Graphics::create_sc_image_views() -> Result
 
 auto Graphics::create_command_buffers() -> Result
 {
-	log::debug("Creating Vulkan command buffers...");
+	log::verbose("Creating command buffers...");
 
 	VkCommandPoolCreateInfo graphics_pool_info {
 		.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
@@ -1023,22 +1098,195 @@ VkResult vk::Pipeline_Layout_Creator::create(VkPipelineLayout* p_pipeline_layout
 }
 #endif
 
-////////////////////////////////////////////////////////////////////
+// --------------------------------------------------------------------------------
 // Render Pass Creator
-#if 0
-VkResult vk::Render_Pass_Creator::create(VkRenderPass* pRenderPass) {
-	VkRenderPassCreateInfo render_pass_info {
-		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-		.attachmentCount = (fs::u32)attachments.size(),
-		.pAttachments    = attachments.data(),
-		.subpassCount    = (fs::u32)subpasses.size(),
-		.pSubpasses      = subpasses.data(),
-		.dependencyCount = (fs::u32)subpass_dependencies.size(),
-		.pDependencies   = subpass_dependencies.data(),
-	};
-	return vkCreateRenderPass(engine.graphics.device, &render_pass_info, nullptr, pRenderPass);
+
+VkPipelineStageFlags Render_Pass_Creator::pick_stage_mask_from_access_mask(VkAccessFlags access)
+{
+	switch (access)
+	{
+	case VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT:         return VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	case VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT: return VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+	case VK_ACCESS_SHADER_READ_BIT:                    return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+	default:                                           return 0;
+	}
 }
-#endif
+
+VkImageLayout Render_Pass_Creator::pick_final_image_layout_for_format(VkFormat format)
+{
+	switch (format)
+	{
+	case VK_FORMAT_D16_UNORM:
+	case VK_FORMAT_X8_D24_UNORM_PACK32:
+	case VK_FORMAT_D32_SFLOAT:
+	case VK_FORMAT_D16_UNORM_S8_UINT:
+	case VK_FORMAT_D24_UNORM_S8_UINT:
+	case VK_FORMAT_D32_SFLOAT_S8_UINT:   return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+	default:                             return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	}
+}
+
+Render_Pass_Creator::Render_Pass_Creator(Arena& iArena)
+: arena(iArena)
+{
+	// Allocate space for VkAttachmentReference because they are small
+	attachment_references.data = arena.alloc<VkAttachmentReference>(max_attachment_reference_count);
+}
+
+Render_Pass_Creator& Render_Pass_Creator::add_external_subpass_dependency(uint32_t subpass)
+{
+	auto ptr = arena.push<VkSubpassDependency>({
+		.srcSubpass = VK_SUBPASS_EXTERNAL,
+		.dstSubpass = subpass,
+		.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+		.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+		.srcAccessMask = 0,
+		.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+	});
+	if (subpass_dependencies.data == nullptr)
+		subpass_dependencies.data = ptr;
+	subpass_dependencies.count += 1;
+	return *this;
+}
+
+Render_Pass_Creator& Render_Pass_Creator::add_dependency(uint32_t src_subpass, uint32_t dst_subpass, VkAccessFlags src_access, VkAccessFlags dst_access)
+{
+	auto ptr = arena.push<VkSubpassDependency>({
+		.srcSubpass = src_subpass,
+		.dstSubpass = dst_subpass,
+		.srcStageMask = pick_stage_mask_from_access_mask(src_access),
+		.dstStageMask = pick_stage_mask_from_access_mask(dst_access),
+		.srcAccessMask = src_access,
+		.dstAccessMask = dst_access,
+	});
+	if (subpass_dependencies.data == nullptr)
+		subpass_dependencies.data = ptr;
+	subpass_dependencies.count += 1;
+	return *this;
+}
+
+Render_Pass_Creator& Render_Pass_Creator::add_subpass(std::initializer_list<VkAttachmentReference> const& refs)
+{
+	ASSERT(attachments.count > 0 && subpass_dependencies.count == 0);
+	ASSERT(attachment_references.count + refs.size() < max_attachment_reference_count);
+	VkSubpassDescription subpass = {
+		.flags = 0,
+		.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+		.colorAttachmentCount = (u32)refs.size(),
+		.pColorAttachments = attachment_references.data + attachment_references.count,
+	};
+	memcpy(attachment_references.data + attachment_references.count, refs.begin(), refs.size() * sizeof(VkAttachmentReference));
+	attachment_references.count += subpass.colorAttachmentCount;
+	auto ptr = arena.push(subpass);
+	if (subpasses.data == nullptr)
+		subpasses.data = ptr;
+	subpasses.count += 1;
+	return *this;
+}
+
+Render_Pass_Creator& Render_Pass_Creator::add_attachment(VkFormat format, Attachment_Preset preset, VkSampleCountFlagBits sample_count)
+{
+	ASSERT(subpasses.count == 0);
+	VkAttachmentDescription attachment = {
+		.flags = 0,
+		.format = format,
+		.samples = sample_count,
+		.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+		.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+		.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+	};
+	switch (preset) {
+		break; case Attachment_Preset_New_Image_Present:
+			attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+			attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		break; case Attachment_Preset_New_Image:
+			ASSERT(false);
+		break; case Attachment_Preset_Cumulative_Image:
+			ASSERT(false);
+		break;
+	}
+	auto ptr = arena.push(attachment);
+	if (attachments.data == nullptr)
+		attachments.data = ptr;
+	attachments.count += 1;
+	return *this;
+}
+
+VkResult Render_Pass_Creator::create(VkRenderPass* pRenderPass) {
+	VkRenderPassCreateInfo info {
+		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+		.attachmentCount = (u32)attachments.count,
+		.pAttachments    = attachments.data,
+		.subpassCount    = (u32)subpasses.count,
+		.pSubpasses      = subpasses.data,
+		.dependencyCount = (u32)subpass_dependencies.count,
+		.pDependencies   = subpass_dependencies.data,
+	};
+	return vkCreateRenderPass(engine.graphics.device, &info, nullptr, pRenderPass);
+}
+
+// --------------------------------------------------------------------------------
+// Pipeline Creator
+
+Pipeline_Creator& Pipeline_Creator::add_dynamic_state(VkDynamicState state)
+{
+	dynamic_states.emplace_back(state);
+	return *this;
+}
+
+VkShaderModule create_shader(size_t size, void const* data)
+{
+	VkShaderModuleCreateInfo shader_info {
+		.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+		.codeSize = size,
+		.pCode = reinterpret_cast<const uint32_t*>(data),
+	};
+	VkShaderModule shader;
+	vkCreateShaderModule(engine.graphics.device, &shader_info, nullptr, &shader);
+	return shader;
+}
+
+Pipeline_Creator& Pipeline_Creator::add_shader(VkShaderStageFlagBits stage, const void* data, size_t size)
+{
+	VkPipelineShaderStageCreateInfo info {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+		.module = create_shader(size, data),
+		.stage = stage,
+		.pName = (stage == VK_SHADER_STAGE_VERTEX_BIT? "vertexMain" : "fragmentMain"),
+	};
+	shaders.emplace_back(info);
+	return *this;
+}
+
+VkResult Pipeline_Creator::create(VkPipeline* pPipeline, VkPipelineLayout layout, VkRenderPass render_pass)
+{
+	dynamic_state.dynamicStateCount = (u32)dynamic_states.size();
+	dynamic_state.pDynamicStates = dynamic_states.data();
+	color_blend_state.pAttachments = &blend_attachment;
+
+	VkGraphicsPipelineCreateInfo info {
+		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+		.stageCount          = (u32)shaders.size(),
+		.pStages             = shaders.data(),
+		.pVertexInputState   = vertex_input_state,
+		.pInputAssemblyState = &input_assembly_state,
+		.pViewportState      = &viewport_state,
+		.pRasterizationState = &rasterization_state,
+		.pMultisampleState   = &multisample_state,
+		.pDepthStencilState  = &depth_stencil_state,
+		.pColorBlendState    = &color_blend_state,
+		.pDynamicState       = &dynamic_state,
+		.layout              = layout,
+		.renderPass          = render_pass,
+		.subpass             = 0,
+	};
+	return vkCreateGraphicsPipelines(engine.graphics.device, 0, 1, &info, nullptr, pPipeline);
+}
+
+// --------------------------------------------------------------------------------
+//
 
 void Graphics::set_default_viewport(VkCommandBuffer cmd) {
     VkViewport viewport {
