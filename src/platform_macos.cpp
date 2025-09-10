@@ -8,7 +8,7 @@ auto init() -> fission::Result
 	return fission::Success;
 }
 
-int fatal_error(fission::string error, fission::string message, source_location location)
+int fatal_error(string error, string message, source_location location)
 {
     printf("\x1b[91m%.*s\x1b[0m: %.*s (\x1b[92m%s\x1b[0m in \x1b[93m%s:%i\x1b[0m)\n",
         (int)error.count, (char*)error.data, (int)message.count, (char*)message.data,
@@ -22,7 +22,7 @@ BEGIN_NAMESPACE(fission)
 
 void Engine::run() {
 	{
-		scoped_set(logging_prefix, OS_NAME);
+		scoped_set(logger.prefix, OS_NAME);
     	log::verbose("Starting message loop...");
 	}
 
@@ -102,7 +102,7 @@ void on_glfw_character(GLFWwindow* glfw_window, unsigned int codepoint) {
 */
 auto Window::create(Create_Info const& info) -> Result
 {
-	scoped_set(logging_prefix, OS_NAME);
+	scoped_set(logger.prefix, OS_NAME);
     log::info("Using GLFW version ", glfwGetVersionString());
     glfwSetErrorCallback(on_glfw_error);
     log::info("Creating Window...");

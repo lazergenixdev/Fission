@@ -83,10 +83,23 @@
 
 BEGIN_NAMESPACE(os)
 
+using fission::string;
+
+// --------------------------------------------------------------------------------
+// Operating System Info
+
+struct Info {
+	string name;
+	string cpu_name;
+	u64 page_size;
+};
+
+auto info() -> const Info&;
+
 // --------------------------------------------------------------------------------
 // Fatal Errors
 
-int fatal_error(fission::string error, fission::string message, source_location location);
+int fatal_error(string error, string message, source_location location);
     
 // --------------------------------------------------------------------------------
 // Type: `Mutex`
@@ -183,7 +196,7 @@ struct Window
     u32  _flags {};
 
 protected:
-    static LRESULT CALLBACK _setup_callback(HWND, UINT, WPARAM, LPARAM) noexcept;
+    static LRESULT CALLBACK _setup_callback(HWND, UINT, WPARAM, LPARAM);
 };
 #elif defined(OS_LINUX) || defined(OS_MACOS)
 struct Window

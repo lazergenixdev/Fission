@@ -16,7 +16,7 @@ struct Window_Style {
 
 namespace fs {
     struct Window_Proxy {
-        static LRESULT _message_callback(HWND, UINT, WPARAM, LPARAM) noexcept;
+        static LRESULT _message_callback(HWND, UINT, WPARAM, LPARAM);
     };
 }
 
@@ -104,7 +104,7 @@ Window::~Window ()
     else log::verbose(PLATFORM_"Unregistered window class");
 }
 
-LRESULT Window::process_message(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) noexcept
+LRESULT Window::process_message(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
     switch (Msg) {
     case WM_LBUTTONDOWN: case WM_LBUTTONDBLCLK:
@@ -166,7 +166,7 @@ LRESULT Window::process_message(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lPara
     return DefWindowProcW(hWnd, Msg, wParam, lParam);
 }
 
-LRESULT Window_Proxy::_message_callback(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) noexcept
+LRESULT Window_Proxy::_message_callback(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
     switch (Msg)
     {
@@ -196,7 +196,7 @@ LRESULT Window_Proxy::_message_callback(HWND hWnd, UINT Msg, WPARAM wParam, LPAR
     return p_window->process_message(hWnd, Msg, wParam, lParam);
 }
 
-LRESULT platform::Window::_setup_callback(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) noexcept
+LRESULT platform::Window::_setup_callback(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
     if (Msg == WM_NCCREATE) {
         auto p_create_struct = reinterpret_cast<CREATESTRUCTW*>(lParam);

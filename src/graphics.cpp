@@ -51,7 +51,7 @@ void format_single(Arena& arena, VkSurfaceTransformFlagBitsKHR surface_transform
 // TODO: only do portability stuff when on MACOS
 
 // TODO: find a solution to where to put this / is this needed
-constexpr auto popcount(unsigned x) noexcept {
+constexpr auto popcount(unsigned x) {
     unsigned num{};
     for (; x; ++num, x &= (x - 1));
     return num;
@@ -706,7 +706,7 @@ auto Graphics::create_sync_objects() -> Result
 		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO
 	};
 	
-	forn (2) {
+	forn (8) {
 		check(vkCreateSemaphore(device, &semaphore_info, nullptr, image_read_semaphore + i),
 			  "Failed to create semaphore");
 
@@ -719,7 +719,7 @@ auto Graphics::create_sync_objects() -> Result
 		.flags = VK_FENCE_CREATE_SIGNALED_BIT,
 	};
 
-	forn (2) {
+	forn (8) {
 		check(vkCreateFence(device, &fence_info, nullptr, fences + i),
 			  "Failed to create fence");
 	}
@@ -912,26 +912,6 @@ auto Graphics::pre_rotation() -> glm::mat2
 	}
 }
 
-void Graphics::set_default_viewport(VkCommandBuffer cmd) {
-    VkViewport viewport {
-        .x = 0.0f,
-        .y = 0.0f,
-        .width  = static_cast<float>(sc_extent.width),
-        .height = static_cast<float>(sc_extent.height),
-        .minDepth = 0.0f,
-        .maxDepth = 1.0f,
-    };
-    vkCmdSetViewport(cmd, 0, 1, &viewport);
-}
-
-void Graphics::set_default_scissor(VkCommandBuffer cmd) {
-    VkRect2D scissor {
-        .offset = { 0, 0 },
-        .extent = sc_extent,
-    };
-    vkCmdSetScissor(cmd, 0, 1, &scissor);
-}
-
 
 ////////////////////////////////////////////////////////////////////
 // Shaders
@@ -1041,11 +1021,11 @@ VkResult vk::Pipeline_Layout_Creator::create(VkPipelineLayout* p_pipeline_layout
 	return vkCreatePipelineLayout(engine.graphics.device, &pipeline_layout_info,
 		nullptr, p_pipeline_layout);
 }
-
+#endif
 
 ////////////////////////////////////////////////////////////////////
 // Render Pass Creator
-
+#if 0
 VkResult vk::Render_Pass_Creator::create(VkRenderPass* pRenderPass) {
 	VkRenderPassCreateInfo render_pass_info {
 		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
@@ -1058,24 +1038,44 @@ VkResult vk::Render_Pass_Creator::create(VkRenderPass* pRenderPass) {
 	};
 	return vkCreateRenderPass(engine.graphics.device, &render_pass_info, nullptr, pRenderPass);
 }
+#endif
 
-void fs::set_viewport_and_scissor(VkCommandBuffer cmd, rf32 rect) {
+void Graphics::set_default_viewport(VkCommandBuffer cmd) {
+    VkViewport viewport {
+        .x = 0.0f,
+        .y = 0.0f,
+        .width  = static_cast<float>(extent.width),
+        .height = static_cast<float>(extent.height),
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f,
+    };
+    vkCmdSetViewport(cmd, 0, 1, &viewport);
+}
+
+void Graphics::set_default_scissor(VkCommandBuffer cmd) {
+    VkRect2D scissor {
+        .offset = { 0, 0 },
+        .extent = extent,
+    };
+    vkCmdSetScissor(cmd, 0, 1, &scissor);
+}
+
+void set_viewport_and_scissor(VkCommandBuffer cmd, rf32 rect) {
 	VkRect2D scissor {
 		.offset = {},
-		.extent = { .width = rect.width(), .height = rect.height() },
+		.extent = { .width = (u32)rect.width(), .height = (u32)rect.height() },
 	};
 	vkCmdSetScissor(cmd, 0, 1, &scissor);
 
 	VkViewport viewport {
+		.x = 0.0f,
+		.y = 0.0f,
 		.width = rect.width(),
 		.height = rect.height(),
 		.minDepth = 0.0f,
 		.maxDepth = 1.0f,
-		.x = 0.0f,
-		.y = 0.0f,
 	};
 	vkCmdSetViewport(cmd, 0, 1, &viewport);
 }
-#endif
 
 END_NAMESPACE()

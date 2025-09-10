@@ -279,7 +279,7 @@ int build_fission_all(void)
     }
 	
 	int result = 0;
-	scoped_time("Build All Examples")
+	scoped_timer("Build All Examples")
 	{
 		scoped_dir("examples")
 			if (build_all_examples(start))
@@ -298,7 +298,7 @@ int build_fission(void)
 	cmd_append(&fission.object_files, "header_only");
 	
 	int r = 0;
-	scoped_time("Build Fission")
+	scoped_timer("Build Fission")
 	{
 		r = compile(fission);
 	}

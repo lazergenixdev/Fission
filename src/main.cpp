@@ -5,15 +5,19 @@
 
 namespace fission
 {
-    u8 _scratch_memory[1_MiB];
+    byte _scratch_memory[1_MiB];
+    byte _logger_memory[4_KiB];
 
-	Engine engine;
-    Arena logging_arena;
     Arena scratch_arena {.start = _scratch_memory, .capacity = sizeof(_scratch_memory)};
-    Mutex logging_mutex;
-    const char* logging_prefix;
-    int minimum_log_level {log::Verbose};
-	File logging_file;
+	Logger logger {
+		.arena = {.start = _logger_memory, .capacity = sizeof(_logger_memory)},
+		.minimum_level = log::Debug
+	};
+	Engine engine;
+}
+namespace os
+{
+	os::Info _info;
 }
 
 // --------------------------------------------------------------------------------
@@ -41,7 +45,7 @@ namespace fission
 
 using namespace fission;
 
-auto OS_CALL Engine::render_main(void*) noexcept -> os::Thread_Result
+auto OS_CALL Engine::render_main(void*) -> os::Thread_Result
 {
     engine.setup();
     while (engine.render_frame());
@@ -53,7 +57,7 @@ auto OS_CALL Engine::render_main(void*) noexcept -> os::Thread_Result
 os_main()
 {
     if (engine.create(on_create()))
-        return engine.exit_code;
+		return engine.exit_code;
     engine.run();
     engine.destroy();
 	return engine.exit_code;

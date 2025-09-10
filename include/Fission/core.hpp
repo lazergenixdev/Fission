@@ -116,10 +116,16 @@ namespace fission
 
 namespace fission
 {
-	global Arena       logging_arena;
-	global Mutex       logging_mutex;
-	global int         minimum_log_level;
-	global const char* logging_prefix;
+	struct Logger
+	{
+		Arena       arena;
+		Mutex       mutex;
+		File        backing_file;
+		int         minimum_level;
+		const char* prefix; // Prefix to put before message
+	};
+	
+	global Logger logger;
 }
 namespace fission::log
 {
@@ -132,10 +138,10 @@ namespace fission::log
         LEVEL_COUNT
     };
 
-	void write_log_from_logging_arena(int level);
+	void write_log_from_logger(int level);
 
 	template <typename...T>
-    void log(int level, T&&...args)
+    inline void log(int level, T&&...args)
 	{
 		static const string level_strings [] {
 			"  VERBOSE  ",
@@ -144,16 +150,16 @@ namespace fission::log
 			"     WARN  ",
 			"    ERROR  ",
 		};
-    	if (level < minimum_log_level) return;
+    	if (level < logger.minimum_level) return;
 		// Note: could probably do better than using locks
-		os_mutex_lock(logging_mutex);
-		logging_arena.reset();
-    	format(logging_arena, Logging_Timestamp::now(), level_strings[level]);
-		if (logging_prefix) format(logging_arena, "(", logging_prefix, ") ");
-		(format_single(logging_arena, std::forward<T>(args)), ...);
-		format(logging_arena, "\n\0"); // null terminate in case we use C functions
-		write_log_from_logging_arena(level);
-		os_mutex_unlock(logging_mutex);
+		os_mutex_lock(logger.mutex);
+		logger.arena.reset();
+    	format(logger.arena, Logging_Timestamp::now(), level_strings[level]);
+		if (logger.prefix) format(logger.arena, "(", logger.prefix, ") ");
+		(format_single(logger.arena, std::forward<T>(args)), ...);
+		format(logger.arena, "\n\0"); // null terminate in case we use C functions
+		write_log_from_logger(level);
+		os_mutex_unlock(logger.mutex);
 	}
 	
     template <typename...T> inline void verbose (T&&...args) { log(Verbose, std::forward<T>(args)...); }
@@ -186,7 +192,7 @@ namespace fission
 		int name_count;
 		rs32 rect;
 
-		string name() const noexcept { return {name_buffer, (size_t)name_count}; }
+		string name() const { return {name_buffer, (size_t)name_count}; }
 
 		auto current_mode() const -> Display_Mode;
 
@@ -282,6 +288,7 @@ namespace fission
 
 	private:
 		struct Create_Info {
+			string title;
 			u32 width;
 			u32 height;
 		};
@@ -361,10 +368,10 @@ namespace fission
 		VkCommandPool                  command_pool              {};
 		VkQueue                        transfer_queue            {};
 		VkCommandPool                  transfer_command_pool     {};
-		VkCommandBuffer                command_buffers       [2] {};
-		VkFence                        fences                [2] {};
-		VkSemaphore                    image_write_semaphore [2] {};
-		VkSemaphore                    image_read_semaphore  [2] {};
+		VkCommandBuffer                command_buffers       [8] {};
+		VkFence                        fences                [8] {};
+		VkSemaphore                    image_write_semaphore [8] {};
+		VkSemaphore                    image_read_semaphore  [8] {};
 		VmaAllocator                   allocator                 {};
 		VkDebugUtilsMessengerEXT       debug_messenger           {};
 		Queue_Families                 queue_family              {};
@@ -439,7 +446,7 @@ namespace fission
 		App_Info();
 	};
 
-//	extern auto OS_CALL render_main(void*) noexcept -> os::Thread_Result;
+//	extern auto OS_CALL render_main(void*) -> os::Thread_Result;
 	 
 	struct Engine
 	{
@@ -455,6 +462,7 @@ namespace fission
 
 		int             exit_code               {EXIT_SUCCESS};
 		u64             flags                   {};
+		Arena           temp_arena              {};
 		Window          window                  {};
 		Graphics        graphics                {};
 		os::Thread      render_thread           {};
@@ -473,7 +481,7 @@ namespace fission
 	#ifdef os_main
 		friend os_main();
 	#endif
-		static auto OS_CALL render_main(void*) noexcept -> os::Thread_Result;
+		static auto OS_CALL render_main(void*) -> os::Thread_Result;
 		
 		auto setup () -> Result;
 		auto render_frame () -> bool;

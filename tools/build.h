@@ -51,8 +51,7 @@ void assert_impl(int cond, const char* info);
 #define scoped_dir(dir) scoped(pushd(dir), popd())
 #define scoped_log(level) for (int _old = minimal_log_level, _new = level; (minimal_log_level = _new), _new == level; _new = _old)
 #define scoped_temp() for (int _i = (mkdir_if_not_exists("temp"), pushd("temp"), 0); _i < 1; (popd()), ++_i)
-
-#define scoped_time(what) for (uint64_t _start_ns = nanos_since_unspecified_epoch(), _done = 0; !_done; nob_log(INFO, what " took \x1b[93m%f\x1b[0m seconds", (double)((nanos_since_unspecified_epoch() - _start_ns)/1000)/1e6), _done = 1)
+#define scoped_timer(what) for (uint64_t _start_ns = nanos_since_unspecified_epoch(), _done = 0; !_done; nob_log(INFO, what " took \x1b[93m%f\x1b[0m seconds", (double)((nanos_since_unspecified_epoch() - _start_ns)/1000)/1e6), _done = 1)
 
 #if OS == OS_WINDOWS
 #	define OBJ_EXT ".obj"
@@ -135,7 +134,7 @@ bool compile(Cpp_Program program)
 		program.output_name = file_name_no_exts(program.source);
 #if OS == OS_WINDOWS
 	cmd_append(&cmd, "cl.exe", "/nologo", "/utf-8", "/std:c++20");
-	cmd_append(&cmd, "/W4", "/EHsc-", "/MD"); // TODO: compile with static CRT
+	cmd_append(&cmd, "/W4", "/EHsc-", "/MD"); //! TODO: compile with static CRT
 	if (!(program.flags & COMPILE_DEBUG)) // Debug symbols are terrible with Optimizations
 	switch (program.optimization) {
 		default: cmd_append(&cmd, "/O2"); break;
@@ -160,8 +159,6 @@ bool compile(Cpp_Program program)
 			cmd_append(&cmd, temp_sprintf("/LIBPATH:\"%s\"", program.library_dirs.items[i]));
 		forn (program.libraries.count)
 			cmd_append(&cmd, temp_sprintf("%s.lib", program.libraries.items[i]));
-		// System Libraries			
-		cmd_append(&cmd, "user32.lib", "Gdi32.lib");
 	}
     if (!cmd_run_sync_and_reset(&cmd)) return 0;
 	if (program.flags & COMPILE_STATIC_LIBRARY)

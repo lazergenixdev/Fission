@@ -13,7 +13,7 @@
 auto on_create () -> fission::Defaults
 {
     return {
-        .window_title = "Test",
+        .window_title = "네, 한국어 정말 재미있어요! ❤🎄",
         .window_width  = 1280,
         .window_height =  720,
     };

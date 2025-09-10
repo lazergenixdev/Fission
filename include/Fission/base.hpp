@@ -561,6 +561,7 @@ namespace fission
 		inline auto alloc(size_t count) -> T* {
 			return reinterpret_cast<T*>(alloc(count*sizeof(T)));
 		}
+		//! TODO: OPTIMIZATION: Add alignment
 		template <typename T=void>
 		inline auto next_ptr() -> T* {
 			return reinterpret_cast<T*>(reinterpret_cast<byte*>(start) + allocated);
@@ -586,14 +587,14 @@ namespace fission
 }
 
 // --------------------------------------------------------------------------------
-// Strings
+// Strings (UTF-8 encoding)
 
 namespace fission
 {
 	struct string
 	{
 		size_t count = 0;
-		c8* data  = nullptr;
+		c8*    data  = nullptr;
 
 		inline constexpr string() = default;
 
@@ -624,6 +625,9 @@ namespace fission
 		// Conversion for std-string-like types
 		template <typename T>
 		inline T as() const { return {(char*)data, count}; }
+		
+		//! NOTE: make sure string IS null-terminated yourself
+		inline const char* cstr() const { return (char*)data; }
 
 		inline constexpr string substr(u64 offset, u64 max_count = 0xFFFFFFFF) const {
 			return {data + offset, math::min(count - offset, max_count)};
@@ -633,6 +637,16 @@ namespace fission
 
 		inline constexpr c8* begin() const { return data; }
 		inline constexpr c8* end  () const { return data + count; }
+	};
+	
+	// UTF-16
+	struct string_u16
+	{
+		size_t count = 0;
+		c16*   data  = nullptr;
+		
+		//! NOTE: make sure string IS null-terminated yourself
+		inline const wchar_t* wstr() const { return (wchar_t*)data; }
 	};
 
 	inline void format_single(Arena& arena, string s)
@@ -706,6 +720,8 @@ namespace fission
 		{
 			return {object, padding};
 		}
+
+		struct {} null;
 	}
 
 	template <typename T>
@@ -719,6 +735,11 @@ namespace fission
 			memset(arena.next_ptr(), ' ', padded_object.padding - length);
 			arena.allocated += padded_object.padding - length;
 		}
+	}
+	
+	inline void format_single(Arena& arena, decltype(formatting::null))
+	{
+		arena.push_byte(0);
 	}
 }
 
@@ -884,7 +905,7 @@ namespace fission
 
 
 		//! @brief Create a null rect.
-		constexpr rect()noexcept:x(),y(){}
+		constexpr rect():x(),y(){}
 
 		//! @brief Create rect from 4 values: left, right, top, and bottom.
 		constexpr rect(type const&x_low,type const&x_high,type const&y_low,type const&y_high):x(x_low,x_high),y(y_low,y_high){}
