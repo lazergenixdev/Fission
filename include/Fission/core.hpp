@@ -407,7 +407,7 @@ namespace fission
 		auto create_sync_objects    () -> Result;
 	};
 
-	inline constexpr auto begin(VkCommandBuffer command_buffer, VkCommandBufferUsageFlags flags = 0) -> VkResult
+	inline auto begin(VkCommandBuffer command_buffer, VkCommandBufferUsageFlags flags = 0) -> VkResult
 	{
 		VkCommandBufferBeginInfo begin_info {
 			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,

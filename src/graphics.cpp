@@ -1252,8 +1252,8 @@ Pipeline_Creator& Pipeline_Creator::add_shader(VkShaderStageFlagBits stage, cons
 {
 	VkPipelineShaderStageCreateInfo info {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-		.module = create_shader(size, data),
 		.stage = stage,
+		.module = create_shader(size, data),
 		.pName = (stage == VK_SHADER_STAGE_VERTEX_BIT? "vertexMain" : "fragmentMain"),
 	};
 	shaders.emplace_back(info);

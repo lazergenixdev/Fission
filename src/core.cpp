@@ -100,8 +100,8 @@ void render_triangle(VkRenderPass render_pass, VkCommandBuffer cmd)
 	if (!vertex_buffer)
 	{
 		VmaAllocationCreateInfo allocation_info {
-			.usage = VMA_MEMORY_USAGE_AUTO,
 			.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+			.usage = VMA_MEMORY_USAGE_AUTO,
 		};
 		VkBufferCreateInfo buffer_info {
 			.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO
