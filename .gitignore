@@ -12,6 +12,7 @@ build
 *.rdi
 
 # Generated
+*.log
 temp/
 include/freetype/
 include/glfw/

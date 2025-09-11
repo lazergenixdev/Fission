@@ -70,6 +70,9 @@ namespace fission
 
 namespace fission
 {
+	auto ticks() -> u64;
+	auto seconds_elasped_and_reset(u64& ticks) -> f64;
+
 	struct Logging_Timestamp
 	{
 		u32 date; // 0xYEARMMDD
@@ -169,7 +172,7 @@ namespace fission::log
 }
 
 // --------------------------------------------------------------------------------
-// Events
+// Displays
 
 namespace fission
 {
@@ -208,26 +211,22 @@ namespace fission
 
 namespace fission
 {
-	enum EventType {
+	enum EventType: u8 {
 		Event_Key_Down,
 		Event_Key_Up,
 		Event_Focus_Lost,
 		Event_Character_Input,
-
-		// Does this really need to be here?
-		// mouse position is always stored in `engine.window.mouse_position`
-		Event_Mouse_Move_Absolute,
-		Event_Mouse_Move_Relative,
+		Event_Mouse_Move,
 	};
 
-	// TODO: try linked list for events (no pointers, only offsets)
 	struct Event {
 		s64 timestamp;
 		u8 type;
 
-		union EventSpecialization {
+		union {
 			struct EventKeyDown {
 				u32 key_id;
+				u32 repeat_count;
 			} key_down;
 
 			struct EventKeyUp {
@@ -238,13 +237,9 @@ namespace fission
 				c32 codepoint;
 			} character_input;
 
-			struct EventMouseMoveAbsolute {
-				v2s32 position;
-			} mouse_move_absolute;
-
-			struct EventMouseMoveRelative {
+			struct EventMouseMove {
 				v2s32 delta;
-			} mouse_move_relative;
+			} mouse_move;
 		};
 	};
 }
@@ -262,14 +257,16 @@ namespace fission
 	};
 
 	using Event_Queue = struct {}; //thread_safe_queue<Event, 64>;
-
+	
 	struct Window : public os::Window
 	{
-		Event_Queue  event_queue      {};
-		v2s32        mouse_position   {};
-		Window_Mode  mode             {Windowed_Fullscreen};
-		int          display_index    {Display_Index_Automatic};
-		bool         use_mouse_deltas {false};
+		v2s32        mouse_position       {};
+		Window_Mode  mode                 {Windowed_Fullscreen};
+		bool         use_mouse_deltas     {false};
+		Event        event_queue   [1024] {};
+		u32          event_head           {};
+		u32          event_tail           {};
+		bool         event_queue_overflow {false};
 
 	public:
 		// @see enum Window_Mode
@@ -294,9 +291,7 @@ namespace fission
 
 		auto create(Create_Info const& info) -> Result;
 
-		// When a window is created, it will be hidden, calling
-		//  this will show the window (at least in Windows).
-		void show();
+		auto pop_all_events(Arena& arena) -> array<Event>;
 
 		// Closes the window => causes engine to stop running => Application closes
 		void close();
@@ -350,34 +345,41 @@ namespace fission
 		inline void set_default_viewport(VkCommandBuffer cmd);
 		inline void set_default_scissor(VkCommandBuffer cmd);
 
+		static constexpr int MAX_FRAMES_IN_FLIGHT  = 2;
+		static constexpr int MAX_SWAP_CHAIN_IMAGES = 8;
+
+		// Shorthand
+		static constexpr int F = MAX_FRAMES_IN_FLIGHT;
+		static constexpr int M = MAX_SWAP_CHAIN_IMAGES;
+
 		//! NOTE: VK_IMAGE_USAGE_TRANSFER_SRC_BIT must be set on swapchain to take screenshots
 
-		VkInstance                     instance                  {};
-		VkPhysicalDevice               physical_device           {};
-		VkDevice                       device                    {};
-		VkQueue                        graphics_queue            {};
-		VkQueue                        present_queue             {};
-		VkSurfaceKHR                   surface                   {};
-		VkSwapchainKHR                 swap_chain                {};
-		VkExtent2D                     extent                    {}; // Swap Chain
-		VkFormat                       format                    {}; // Swap Chain
-    	VkColorSpaceKHR                color_space               {}; // Swap Chain
-		VkImageUsageFlags              image_usage               {VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_TRANSFER_SRC_BIT}; // Swap Chain
-		u32                            image_count               {0}; // Swap Chain
-		VkPresentModeKHR               present_mode              {VK_PRESENT_MODE_FIFO_KHR}; // Swap Chain
-		VkSurfaceTransformFlagBitsKHR  transform                 {}; // Swap Chain
-		VkImage                        images                [8] {}; // Swap Chain
-		VkImageView                    image_views           [8] {}; // Swap Chain
-		VkCommandPool                  command_pool              {};
-		VkQueue                        transfer_queue            {};
-		VkCommandPool                  transfer_command_pool     {};
-		VkCommandBuffer                command_buffers       [8] {};
-		VkFence                        fences                [8] {};
-		VkSemaphore                    image_write_semaphore [8] {};
-		VkSemaphore                    image_read_semaphore  [8] {};
-		VmaAllocator                   allocator                 {};
-		VkDebugUtilsMessengerEXT       debug_messenger           {};
-		Queue_Families                 queue_family              {};
+		VkInstance                     instance                    {};
+		VkPhysicalDevice               physical_device             {};
+		VkDevice                       device                      {};
+		VkQueue                        graphics_queue              {};
+		VkQueue                        present_queue               {};
+		VkSurfaceKHR                   surface                     {};
+		VkSwapchainKHR                 swap_chain                  {};
+		VkExtent2D                     extent                      {}; // Swap Chain
+		VkFormat                       format                      {}; // Swap Chain
+    	VkColorSpaceKHR                color_space                 {}; // Swap Chain
+		VkImageUsageFlags              image_usage                 {VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_TRANSFER_SRC_BIT}; // Swap Chain
+		u32                            image_count                 {0}; // Swap Chain
+		VkPresentModeKHR               present_mode                {VK_PRESENT_MODE_FIFO_KHR}; // Swap Chain
+		VkSurfaceTransformFlagBitsKHR  transform                   {}; // Swap Chain
+		VkImage                        images                  [M] {}; // Swap Chain
+		VkImageView                    image_views             [M] {}; // Swap Chain
+		VkCommandPool                  command_pool                {};
+		VkQueue                        transfer_queue              {};
+		VkCommandPool                  transfer_command_pool       {};
+		VkCommandBuffer                command_buffers         [F] {}; // Max 2 frames in flight
+		VkFence                        fences                  [F] {};
+		VkSemaphore                    image_ready_semaphore   [F] {}; // Signalled when image is ready to be rendered to
+		VkSemaphore                    present_ready_semaphore [M] {}; // Signalled when image is ready to be presented
+		VmaAllocator                   allocator                   {};
+		VkDebugUtilsMessengerEXT       debug_messenger             {};
+		Queue_Families                 queue_family                {};
 
 
 		Graphics() = default;
@@ -453,20 +455,16 @@ namespace fission
 // Data Type => Vulkan Type
 
 	//! TODO: move this to base
-	struct rgba8 {
+	union rgba8
+	{
+		struct {
+			u8 r, g, b, a;
+		};
 		u32 value;
 		
-		rgba8(u8 r, u8 g, u8 b, u8 a = 0xFF) {
-			union {
-				u8 in[4];
-				u32 out;
-			} data;
-			data.in[0] = r;
-			data.in[1] = g;
-			data.in[2] = b;
-			data.in[3] = a;
-			value = data.out;
-		}
+		rgba8(u8 r, u8 g, u8 b, u8 a = 0xFF)
+		:	r(r), g(g), b(b), a(a)
+		{}
 	};
 
 	template <typename T> struct _vk_format_of {
@@ -532,6 +530,7 @@ namespace fission
 
 	struct Pipeline_Creator
 	{
+		//! TODO: no std::vector
 		std::vector<VkDynamicState> dynamic_states;
 		std::vector<VkPipelineShaderStageCreateInfo> shaders;
 		VkPipelineColorBlendAttachmentState blend_attachment {
@@ -591,27 +590,126 @@ namespace fission
 		}
 
 		Pipeline_Creator& add_dynamic_state(VkDynamicState state);
-		Pipeline_Creator& add_shader(VkShaderStageFlagBits stage, const void* data, size_t size);
+		Pipeline_Creator& add_shader(VkShaderStageFlagBits stage, VkShaderModule shader);
 
 		VkResult create(VkPipeline* pPipeline, VkPipelineLayout layout, VkRenderPass render_pass);
 	};
 
 // --------------------------------------------------------------------------------
-// Draw Data 2D - Data for a single draw call
+// Draw Data 2D
 
-	struct Draw_Data_2D
+	struct Draw_Data_2d
 	{
 		struct vertex
 		{
 			v2f32 position;
 			v2f32 texcoord;
 			rgba8 color;
+
+			using Layout = Vertex_Layout<vertex, v2f32, v2f32, rgba8>;
 		};
 
-		Dynamic_Arena vertex_arena;
-		Dynamic_Arena index_arena;
-	};
+		struct Batch
+		{
+			u32 vertex_offset;
+			u32 vertex_count;
+			u32 index_offset;
+			u32 index_count;
+			VkDescriptorSet texture;
+		};
+		
+		Batch         current;
+		Arena         vertex_arena;
+		Arena         index_arena;
+		VkBuffer      vertex_buffer     [Graphics::MAX_FRAMES_IN_FLIGHT];
+		VkBuffer      index_buffer      [Graphics::MAX_FRAMES_IN_FLIGHT];
+		VmaAllocation vertex_allocation [Graphics::MAX_FRAMES_IN_FLIGHT];
+		VmaAllocation index_allocation  [Graphics::MAX_FRAMES_IN_FLIGHT];
 
+		inline void create(Graphics& graphics, u32 max_vertex_count = 128_KiB, u32 max_index_count = 256_KiB)
+		{
+			VmaAllocationCreateInfo allocation_info {
+				.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+				.usage = VMA_MEMORY_USAGE_AUTO,
+			};
+			VkBufferCreateInfo buffer_info {
+				.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO
+			};
+			//! TODO: error handling
+			forn (Graphics::MAX_FRAMES_IN_FLIGHT)
+			{
+				buffer_info.size = max_vertex_count * sizeof(vertex);
+				buffer_info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+				vmaCreateBuffer(graphics.allocator, &buffer_info, &allocation_info, &vertex_buffer[i], &vertex_allocation[i], nullptr);
+				buffer_info.size = max_index_count * sizeof(u32);
+				buffer_info.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+				vmaCreateBuffer(graphics.allocator, &buffer_info, &allocation_info, &index_buffer[i], &index_allocation[i], nullptr);
+			}
+			vertex_arena.create(max_vertex_count * sizeof(vertex));
+			index_arena.create(max_index_count * sizeof(u32));
+		}
+
+		inline void push_vertex(vertex const& vtx) { vertex_arena.push(vtx); current.vertex_count += 1; }
+		inline void push_index(u32 idx)            { index_arena.push(idx); current.index_count += 1; }
+
+		inline void add_triangle(vec2 p0, vec2 p1, vec2 p2, rgba8 color)
+		{
+			u32 v = current.vertex_count;
+			index_arena.push<v3u32>({v, v+1, v+2});
+			current.index_count += 3;
+			vertex_arena.push<vertex>({.position = p0, .color = color});
+			vertex_arena.push<vertex>({.position = p1, .color = color});
+			vertex_arena.push<vertex>({.position = p2, .color = color});
+			current.vertex_count += 3;
+		}
+
+		inline void flush_batch(VkCommandBuffer cmd, u32 frame_index)
+		{
+			VkDeviceSize offset = 0;
+			vkCmdBindIndexBuffer(cmd, index_buffer[frame_index], 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindVertexBuffers(cmd, 0, 1, &vertex_buffer[frame_index], &offset);
+			vkCmdDrawIndexed(cmd, current.index_count, 1, current.index_offset, current.vertex_offset, 0);
+			current.vertex_offset += current.vertex_count;
+			current.index_offset += current.index_count;
+			current.vertex_count = 0;
+			current.index_count = 0;
+			current.texture = nullptr;
+		}
+
+		inline void send(Graphics& graphics, u32 frame_index)
+		{
+			vertex* gpu_vertex_memory;
+			vmaMapMemory(graphics.allocator, vertex_allocation[frame_index], (void**)&gpu_vertex_memory);
+			memcpy(gpu_vertex_memory, vertex_arena.start, current.vertex_offset * sizeof(vertex));
+			vmaUnmapMemory(graphics.allocator, vertex_allocation[frame_index]);
+			
+			u32* gpu_index_memory;
+			vmaMapMemory(graphics.allocator, index_allocation[frame_index], (void**)&gpu_index_memory);
+			memcpy(gpu_index_memory, index_arena.start, current.index_offset * sizeof(u32));
+			vmaUnmapMemory(graphics.allocator, index_allocation[frame_index]);
+
+			current = {};
+			vertex_arena.reset();
+			index_arena.reset();
+		}
+	};
+	
+// --------------------------------------------------------------------------------
+// Renderer 2D
+
+	struct Renderer_2d
+	{
+		VkPipeline     pipeline;
+		Draw_Data_2d*  draw_data;
+
+        struct Options
+        {
+            VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        };
+
+		void create(VkRenderPass render_pass, VkPipelineLayout pipeline_layout, Draw_Data_2d* draw_data, Options options = {});
+		void draw(Render_Context const& ctx);
+	};
 }
 
 // --------------------------------------------------------------------------------
@@ -639,6 +737,7 @@ namespace fission
 // User implemented functions
 
 auto on_create() -> struct fission::Defaults;
+void on_update(f64 dt, fission::array<fission::Event> events, fission::Render_Context const&);
 
 // ******************************************************************
 // - App_Info()
@@ -670,16 +769,21 @@ namespace fission
 			Save_Current_Frame            = 1 << 6,
 		};
 
-		int             exit_code               {EXIT_SUCCESS};
-		u64             flags                   {};
-		Arena           temp_arena              {};
-		Window          window                  {};
-		Graphics        graphics                {};
-		os::Thread      render_thread           {};
-		Arena           frame_arena             {};
-		VkRenderPass    overlay_render_pass     {};
-		VkFramebuffer   frame_buffers       [8] {};
-		u32             frame_count             {};
+		int              exit_code               {EXIT_SUCCESS};
+		u64              flags                   {};
+		Arena            temp_arena              {};
+		Window           window                  {};
+		Graphics         graphics                {};
+		os::Thread       render_thread           {};
+		Arena            frame_arena             {};
+		VkRenderPass     overlay_render_pass     {};
+		VkFramebuffer    frame_buffers [Graphics::MAX_SWAP_CHAIN_IMAGES] {};
+		u32              frame_count             {};
+		VkPipelineLayout pipeline_layout         {};
+		Draw_Data_2d     draw_data               {};
+		Renderer_2d      renderer                {};
+		Renderer_2d      debug_renderer          {};
+		u64              last_ticks              {};
 
 	public:
 		auto version_string  () -> string;
@@ -687,14 +791,14 @@ namespace fission
 		void run             ();
 		void destroy         ();
 
+		auto render_frame () -> bool;
+		auto setup () -> Result;
 	private:
 	#ifdef os_main
 		friend os_main();
 	#endif
 		static auto OS_CALL render_main(void*) -> os::Thread_Result;
 		
-		auto setup () -> Result;
-		auto render_frame () -> bool;
 		void shutdown ();
 
 		void resize ();

@@ -1,4 +1,5 @@
 #include "Fission/core.hpp"
+#include "embed/draw2d.spv.hpp"
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/rotate_normalized_axis.hpp"
 #include <bit>
@@ -220,11 +221,14 @@ void Graphics::destroy()
 	if (device)
 		vkDeviceWaitIdle(device);
 
-	if (device)
-	forn (8) {
-		vkDestroySemaphore(device, image_read_semaphore[i], nullptr);
-		vkDestroySemaphore(device, image_write_semaphore[i], nullptr);
-		vkDestroyFence(device, fences[i], nullptr);
+	if (fences[0]) {
+		forn (MAX_SWAP_CHAIN_IMAGES) {
+			vkDestroySemaphore(device, present_ready_semaphore[i], nullptr);
+		}
+		forn (MAX_FRAMES_IN_FLIGHT) {
+			vkDestroySemaphore(device, image_ready_semaphore[i], nullptr);
+			vkDestroyFence(device, fences[i], nullptr);
+		}
 	}
 
 	if (transfer_command_pool)
@@ -628,10 +632,10 @@ size_t pick_surface_format(Arena::Temp_Array<VkSurfaceFormatKHR> const& formats)
 	int max_score = 0;
 	forn (formats.count) {
 		int score = [](VkSurfaceFormatKHR const& sf) {switch (sf.format) {
-            case VK_FORMAT_B8G8R8A8_UNORM: return 4;
-            case VK_FORMAT_R8G8B8A8_UNORM: return 3;
-			case VK_FORMAT_B8G8R8A8_SRGB:  return 2;
-			case VK_FORMAT_R8G8B8A8_SRGB:  return 1;
+			case VK_FORMAT_B8G8R8A8_SRGB:  return 4;
+			case VK_FORMAT_R8G8B8A8_SRGB:  return 3;
+            case VK_FORMAT_B8G8R8A8_UNORM: return 2;
+            case VK_FORMAT_R8G8B8A8_UNORM: return 1;
 			default: return 0;
 		}} (formats[i]);
 
@@ -651,8 +655,8 @@ auto Graphics::create_swap_chain(Window* window) -> Result
 	check(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &capabilities),
 		  "Failed to get Vulkan surface capabilities");
 
-    log::verbose("max image count = ", capabilities.minImageCount);
-    log::verbose("min image count = ", capabilities.maxImageCount);
+	log::verbose("min image count = ", capabilities.minImageCount);
+    log::verbose("max image count = ", capabilities.maxImageCount);
 
 	// Pick surface format
 	{
@@ -701,7 +705,7 @@ auto Graphics::create_swap_chain(Window* window) -> Result
 	VkSwapchainCreateInfoKHR swap_chain_info {
 		.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
 		.surface = surface,
-		.minImageCount = capabilities.minImageCount + 1,
+		.minImageCount = capabilities.minImageCount,// + 1,
 		.imageFormat = format,
 		.imageColorSpace = color_space,
 		.imageExtent = extent,
@@ -781,11 +785,8 @@ auto Graphics::create_sync_objects() -> Result
 		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO
 	};
 	
-	forn (8) {
-		check(vkCreateSemaphore(device, &semaphore_info, nullptr, image_read_semaphore + i),
-			  "Failed to create semaphore");
-
-		check(vkCreateSemaphore(device, &semaphore_info, nullptr, image_write_semaphore + i),
+	forn (MAX_SWAP_CHAIN_IMAGES) {
+		check(vkCreateSemaphore(device, &semaphore_info, nullptr, &present_ready_semaphore[i]),
 			  "Failed to create semaphore");
 	}
 
@@ -794,7 +795,9 @@ auto Graphics::create_sync_objects() -> Result
 		.flags = VK_FENCE_CREATE_SIGNALED_BIT,
 	};
 
-	forn (8) {
+	forn (MAX_FRAMES_IN_FLIGHT) {
+		check(vkCreateSemaphore(device, &semaphore_info, nullptr, &image_ready_semaphore[i]),
+			  "Failed to create semaphore");
 		check(vkCreateFence(device, &fence_info, nullptr, fences + i),
 			  "Failed to create fence");
 	}
@@ -1248,14 +1251,18 @@ VkShaderModule create_shader(size_t size, void const* data)
 	return shader;
 }
 
-Pipeline_Creator& Pipeline_Creator::add_shader(VkShaderStageFlagBits stage, const void* data, size_t size)
+Pipeline_Creator& Pipeline_Creator::add_shader(VkShaderStageFlagBits stage, VkShaderModule shader)
 {
 	VkPipelineShaderStageCreateInfo info {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 		.stage = stage,
-		.module = create_shader(size, data),
-		.pName = (stage == VK_SHADER_STAGE_VERTEX_BIT? "vertexMain" : "fragmentMain"),
+		.module = shader,
 	};
+	switch (stage) {
+		case VK_SHADER_STAGE_COMPUTE_BIT:  info.pName = "computeMain"; break;
+		case VK_SHADER_STAGE_VERTEX_BIT:   info.pName = "vertexMain"; break;
+		case VK_SHADER_STAGE_FRAGMENT_BIT: info.pName = "fragmentMain"; break;
+	}
 	shaders.emplace_back(info);
 	return *this;
 }
@@ -1284,9 +1291,6 @@ VkResult Pipeline_Creator::create(VkPipeline* pPipeline, VkPipelineLayout layout
 	};
 	return vkCreateGraphicsPipelines(engine.graphics.device, 0, 1, &info, nullptr, pPipeline);
 }
-
-// --------------------------------------------------------------------------------
-//
 
 void Graphics::set_default_viewport(VkCommandBuffer cmd) {
     VkViewport viewport {
@@ -1324,6 +1328,42 @@ void set_viewport_and_scissor(VkCommandBuffer cmd, rf32 rect) {
 		.maxDepth = 1.0f,
 	};
 	vkCmdSetViewport(cmd, 0, 1, &viewport);
+}
+
+// --------------------------------------------------------------------------------
+// Renderer_2d
+
+void Renderer_2d::create(VkRenderPass render_pass, VkPipelineLayout pipeline_layout, Draw_Data_2d* ref_draw_data, Options options)
+{
+	draw_data = ref_draw_data;
+
+	VkShaderModule shader_module;
+	VkShaderModuleCreateInfo info {
+    	.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+    	.codeSize = size_t(embedded::draw2d_spv_end - embedded::draw2d_spv_start),
+    	.pCode = (u32*)embedded::draw2d_spv_start,
+	};
+	log::info("codeSize: ", info.codeSize);
+	log::info("first: ", *(void**)embedded::draw2d_spv_start);
+	vkCreateShaderModule(engine.graphics.device, &info, nullptr, &shader_module);
+
+	auto vertex_layout = Draw_Data_2d::vertex::Layout{};
+	auto pc = Pipeline_Creator{}
+		.vertex_layout(vertex_layout)
+		.add_dynamic_state(VK_DYNAMIC_STATE_VIEWPORT)
+		.add_dynamic_state(VK_DYNAMIC_STATE_SCISSOR)
+		.add_shader(VK_SHADER_STAGE_VERTEX_BIT, shader_module)
+		.add_shader(VK_SHADER_STAGE_FRAGMENT_BIT, shader_module);
+    pc.input_assembly_state.topology = options.topology;
+	pc.create(&pipeline, pipeline_layout, render_pass);
+
+	vkDestroyShaderModule(engine.graphics.device, shader_module, nullptr);
+}
+
+void Renderer_2d::draw(Render_Context const& ctx)
+{
+	vkCmdBindPipeline(ctx.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+	draw_data->flush_batch(ctx.command_buffer, ctx.frame);
 }
 
 END_NAMESPACE()

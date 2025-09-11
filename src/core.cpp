@@ -1,5 +1,5 @@
 #include "Fission/core.hpp"
-#include "embed/draw2d.spv.h"
+#include "embed/test.txt.hpp"
 
 namespace os {
 	auto init() -> fission::Result;
@@ -10,71 +10,26 @@ BEGIN_NAMESPACE(fission)
 
 #define check(Result, ...) if ((result = (Result)) < VK_SUCCESS) { log::error(__VA_ARGS__); return stop(); } (void)0
 
+auto Window::pop_all_events(Arena& arena) -> array<Event>
+{
+	auto data = arena.next_ptr<Event>();
+	u32 count = 0;
+	u32 tail = event_tail;
+	while (event_head != tail)
+	{
+		arena.push(event_queue[event_head]);
+		count += 1;
+		event_head = (event_head + 1) % array_count(event_queue);
+	}
+	return {count, data};
+}
+
 Window::~Window() {
 	//! NOTE: Exiting application, no need to do anything
 	log::info("YOU ARE TERMINATED");
 }
 
 Arena& temp_arena() { return engine.temp_arena; }
-
-void render_triangle(VkRenderPass render_pass, VkCommandBuffer cmd)
-{
-	using V = Draw_Data_2D::vertex;
-
-	local_persist VkBuffer vertex_buffer {};
-	
-	if (!vertex_buffer)
-	{
-		VmaAllocationCreateInfo allocation_info {
-			.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-			.usage = VMA_MEMORY_USAGE_AUTO,
-		};
-		VkBufferCreateInfo buffer_info {
-			.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO
-		};
-		VmaAllocation vertex_allocation {};
-
-		buffer_info.size = 3 * sizeof(V);
-		buffer_info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-		vmaCreateBuffer(engine.graphics.allocator, &buffer_info, &allocation_info, &vertex_buffer, &vertex_allocation, nullptr);
-	
-		V vert[] {
-			{{0.0f, 0.0f}, {0.0f, 0.0f}, rgba8(0xFF,0x00,0x00)},
-			{{0.0f, 1.0f}, {0.0f, 0.0f}, rgba8(0x00,0xFF,0x00)},
-			{{1.0f, 0.0f}, {0.0f, 0.0f}, rgba8(0x00,0x00,0xFF)},
-		};
-
-		V* data;
-		vmaMapMemory(engine.graphics.allocator, vertex_allocation, (void**)&data);
-		memcpy(data, vert, sizeof(vert));
-		vmaUnmapMemory(engine.graphics.allocator, vertex_allocation);
-	}
-
-	local_persist VkPipelineLayout pipeline_layout {};
-	local_persist VkPipeline pipeline {};
-	
-	if (!pipeline) 
-	{
-		VkPipelineLayoutCreateInfo pipelineLayoutInfo {
-            .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        };
-		vkCreatePipelineLayout(engine.graphics.device, &pipelineLayoutInfo, nullptr, &pipeline_layout);
-
-		auto vertex_layout = Vertex_Layout<V, v2f32, v2f32, rgba8>{};
-		Pipeline_Creator{}
-			.vertex_layout(vertex_layout)
-			.add_dynamic_state(VK_DYNAMIC_STATE_VIEWPORT)
-			.add_dynamic_state(VK_DYNAMIC_STATE_SCISSOR)
-			.add_shader(VK_SHADER_STAGE_VERTEX_BIT, embedded::draw2d_spv_start, embedded::draw2d_spv_end - embedded::draw2d_spv_start)
-			.add_shader(VK_SHADER_STAGE_FRAGMENT_BIT, embedded::draw2d_spv_start, embedded::draw2d_spv_end - embedded::draw2d_spv_start)
-			.create(&pipeline, pipeline_layout, render_pass);
-	}
-
-	VkDeviceSize offset = 0;
-	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-	vkCmdBindVertexBuffers(cmd, 0, 1, &vertex_buffer, &offset);
-	vkCmdDraw(cmd, 3, 1, 0, 0);
-}
 
 Logging_Timestamp Logging_Timestamp::now()
 {
@@ -152,17 +107,19 @@ auto Engine::create(Defaults const& defaults) -> Result
 {
 //	scoped_set(logger.minimum_level, log::Verbose);
 	if (os::init()) return Failed;
-	logger.backing_file = os::open_file("./bin/fission.log", os::Write);
+    //! TODO: log to same directory as the executable
+	logger.backing_file = os::open_file("fission.log", os::Write);
     os_mutex_create(&logger.mutex);
     log::info("Creating Fission Engine...");
 	engine.temp_arena.create(16_MiB);
+	engine.frame_arena.create(8_MiB);
 
-/*
-	// setup the console early so we can use it as soon as possible
-	console_layer.setup_console_api();
-	add_engine_console_commands();
-*/
-    Window::Create_Info window_info {
+	log::info("Length: ", u64(embedded::test_txt_end - embedded::test_txt_start));
+	log::info("Important: ", string(embedded::test_txt_start, u64(embedded::test_txt_end - embedded::test_txt_start)));
+
+	//! TODO: setup in-game console here
+
+	Window::Create_Info window_info {
 		.title = defaults.window_title,
         .width = defaults.window_width,
         .height = defaults.window_height,
@@ -181,15 +138,15 @@ auto Engine::create(Defaults const& defaults) -> Result
         .add_external_subpass_dependency(0)
         .create(&overlay_render_pass);
 
+	VkPipelineLayoutCreateInfo pipelineLayoutInfo {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+	};
+	vkCreatePipelineLayout(engine.graphics.device, &pipelineLayoutInfo, nullptr, &pipeline_layout);
 	create_frame_buffers();
+	draw_data.create(graphics);
+	renderer.create(overlay_render_pass, pipeline_layout, &draw_data);
+	debug_renderer.create(overlay_render_pass, pipeline_layout, &draw_data, {.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST});
 
-    /*
-	if (create_screenshot_buffer()) return true;
-    if (create_layers())            return true;
-
-	engine.current_scene = on_create_scene({});
-    */
-   
     engine.flags |= Engine::Running;
     log::info("Starting render thread...");
 	if (os_thread_start(render_main, nullptr, &engine.render_thread))
@@ -207,6 +164,7 @@ void Engine::destroy()
 auto Engine::setup() -> Result
 {
 	log::verbose("Setting up render thread...");
+	last_ticks = ticks();
     return Success;
 }
 
@@ -230,11 +188,8 @@ namespace vk
 
 auto Engine::render_frame() -> bool
 {
-    VkResult       result {VK_SUCCESS};
-	Render_Context render_context { .frame = frame_count & 1 };
-	VkSemaphore    write_semaphore = graphics.image_write_semaphore[render_context.frame];
-	VkFence        fence           = graphics.fences[render_context.frame];
-
+	VkResult result {VK_SUCCESS};
+	frame_arena.reset();
 #if 0
 	unlikely if (window.is_minimized()) {
 		window.sleep_until_not_minimized();
@@ -251,37 +206,20 @@ auto Engine::render_frame() -> bool
 #endif
 	if (flags & Graphics_Recreate_Swap_Chain) {
 		resize();
-		flags &= ~Graphics_Recreate_Swap_Chain;
+		flags &=~ Graphics_Recreate_Swap_Chain;
 	}
-#if defined(FISSION_PLATFORM_WINDOWS) && false
-	{
-		auto timer = CreateWaitableTimerExW(NULL, NULL, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);
-		if (flags & fFPS_Limiter_Enable) {
-			auto time_between_frames = s64(1e7f / fps_limit);
-			auto next = fps_last + time_between_frames;
-			auto now = timestamp();
-
-			LARGE_INTEGER due_time;
-			due_time.QuadPart = -((next - now) / 100);
-			if (due_time.QuadPart < 0 && SetWaitableTimerEx(timer, &due_time, 0, NULL, NULL, NULL, 0)) {
-				WaitForSingleObject(timer, INFINITE);
-			}
-			fps_last = next;
-		}
-		CloseHandle(timer);
-	}
-#endif
-
-//=====================================================================================
-
-	//	https://github.com/google/vulkan-pre-rotation-demo
-    check(vkWaitForFences(graphics.device, 1, &fence, VK_TRUE, UINT64_MAX), "[vkWaitForFences] failed");
+	
+	Render_Context render_context { .frame = frame_count & 1 };
+	VkFence fence = graphics.fences[render_context.frame];
+	VkSemaphore image_ready_semaphore = graphics.image_ready_semaphore[render_context.frame];
+	
+    check(vkWaitForFences(graphics.device, 1, &fence, true, UINT64_MAX), "[vkWaitForFences] failed");
     check(vkResetFences(graphics.device, 1, &fence), "[vkResetFences] failed");
 
 	result = VK_ERROR_UNKNOWN;
 	while (result != VK_SUCCESS) {
 		result = vkAcquireNextImageKHR(graphics.device, graphics.swap_chain,
-			UINT64_MAX, write_semaphore, VK_NULL_HANDLE, &render_context.image_index);
+			UINT64_MAX, image_ready_semaphore, nullptr, &render_context.image_index);
 
 		if (result == VK_SUBOPTIMAL_KHR) break;
 		else if (result == VK_ERROR_OUT_OF_DATE_KHR) {
@@ -293,79 +231,84 @@ auto Engine::render_frame() -> bool
 			return stop(); // should try to recover here?
 		}
 	}
-
-//-------------------------------------------------------------------------------------
-
-//	auto cpu_start = timestamp();
-
-	render_context.frame_buffer = frame_buffers[render_context.image_index];
+	
 	render_context.command_buffer = graphics.command_buffers[render_context.frame];
+	render_context.frame_buffer = frame_buffers[render_context.image_index];
+
 	begin(render_context.command_buffer);
 
-	//-------------------------------------------------------------------------------------
-	// Eat any events handled by debug and console layers
-	// window.event_queue.pop_all(events);
-	// debug_layer  .handle_events(events);
-	// console_layer.handle_events(events);
-	//-------------------------------------------------------------------------------------
+	vk::begin(render_context.command_buffer, overlay_render_pass, render_context.frame_buffer, {{0.2f, 0.1f, 0.2f}});
+	graphics.set_default_scissor(render_context.command_buffer);
+	graphics.set_default_viewport(render_context.command_buffer);
 
-	 graphics.set_default_scissor(render_context.command_buffer);
-	 graphics.set_default_viewport(render_context.command_buffer);
-	// current_scene->on_update(delta_time, events, render_context);
+	f64 dt = seconds_elasped_and_reset(last_ticks);
+	array<Event> events;// = window.pop_all_events(frame_arena);
+	on_update(dt, events, render_context);
+	
+	renderer.draw(render_context);
+    {
+		const u32 n = 100;
+        u32 v = draw_data.current.vertex_count;
+        
+		forn (n-1) {
+			draw_data.push_index(v+i);
+			draw_data.push_index(v+i+1);
+		}
 
-	//-------------------------------------------------------------------------------------
-	// Render console and debug overlay
-    local_persist f32 t = 0;
-	f32 v = sinf(t*2.0f) * 0.5f;
-	v *= v;
-	vk::begin(render_context.command_buffer, overlay_render_pass, render_context.frame_buffer, {{v,v,v,1}});
-    t += 0.01f;
-    if (t > f32 PI) t -= f32 PI;
-	{
-		render_triangle(overlay_render_pass, render_context.command_buffer);
-	//	graphics.set_default_scissor(render_context.command_buffer);
-	//	graphics.set_default_viewport(render_context.command_buffer);
-//
-	//	bind_font(render_context.command_buffer, &font.console);
-	//	console_layer.on_update(delta_time, &render_context);
-//
-	//	bind_font(render_context.command_buffer, &font.debug);
-	//	debug_layer.on_update(delta_time, &render_context);
-	}
+		local_persist f32 t = 0.0f;
+		t += f32(dt);
+		forn (n) {
+			f32 x = (f32(i)/f32(n-1))*2.0f - 1.0f;
+        	draw_data.push_vertex({{x, sinf(x*2.132f+t)}, {}, rgba8(255,255,255)});
+		}
+        debug_renderer.draw(render_context);
+    }
+    {
+		const u32 n = 256;
+		local_persist f32 frame_times[n] = {};
+		u32 pos = frame_count % n;
+		frame_times[pos] = dt;
+        u32 v = draw_data.current.vertex_count;
+        
+		forn (n-1) {
+			draw_data.push_index(v+i);
+			draw_data.push_index(v+i+1);
+		}
+
+		local_persist f32 t = 0.0f;
+		t += f32(dt);
+		forn (n) {
+			f32 x = (f32(i)/f32(n-1))*2.0f - 1.0f;
+			f32 y = frame_times[i] / 0.100f - 0.166f;
+			s32 k = (pos - i) % n;
+			if (k < 0) k = -k;
+        	draw_data.push_vertex({{x, y}, {}, rgba8(255,u8(k),u8(k))});
+		}
+        debug_renderer.draw(render_context);
+    }
+	draw_data.send(graphics, render_context.frame);
+
 	vkCmdEndRenderPass(render_context.command_buffer);
-	//-------------------------------------------------------------------------------------
-
-	//if (flags & Save_Current_Frame) save_frame(render_context);
-
 	vkEndCommandBuffer(render_context.command_buffer);
 
-	//renderer_2d         .end_render(render_context);
-	//textured_renderer_2d.end_render(render_context);
-
-	//-------------------------------------------------------------------------------------
-
-	//debug_layer.cpu_time = (float)seconds_elasped_and_reset(cpu_start);
-
-	VkSemaphore read_semaphore = graphics.image_read_semaphore[render_context.image_index];
+	VkSemaphore present_ready_semaphore = graphics.present_ready_semaphore[render_context.image_index];
 	VkPipelineStageFlags wait_mask { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	VkSubmitInfo submit_info {
 		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
 		.waitSemaphoreCount = 1,
-		.pWaitSemaphores = &write_semaphore,
+		.pWaitSemaphores = &image_ready_semaphore,
 		.pWaitDstStageMask = &wait_mask,
 		.commandBufferCount = 1,
 		.pCommandBuffers = &render_context.command_buffer,
 		.signalSemaphoreCount = 1,
-		.pSignalSemaphores = &read_semaphore,
+		.pSignalSemaphores = &present_ready_semaphore,
 	};
 	check(vkQueueSubmit(graphics.graphics_queue, 1, &submit_info, fence), "[vkQueueSubmit] failed");
-
-	//-------------------------------------------------------------------------------------
 
 	VkPresentInfoKHR present_info {
 		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 		.waitSemaphoreCount = 1,
-		.pWaitSemaphores = &read_semaphore,
+		.pWaitSemaphores = &present_ready_semaphore,
 		.swapchainCount = 1,
 		.pSwapchains = &graphics.swap_chain,
 		.pImageIndices = &render_context.image_index,
@@ -383,15 +326,6 @@ auto Engine::render_frame() -> bool
 		}
 	}
 
-	if (flags & Save_Current_Frame) {
-		// We must wait for the gpu to finish before we can read image data
-		vkWaitForFences(graphics.device, 1, &fence, VK_TRUE, UINT64_MAX);
-	//	write_frame();
-	}
-
-//=====================================================================================
-
-	//delta_time = fs::seconds_elasped_and_reset(last_timestamp);
 	frame_count += 1;
 
 	return bool(flags & Running);
@@ -431,22 +365,6 @@ void Engine::resize()
     g.create_swap_chain(&window);
     g.create_sc_image_views();
 	create_frame_buffers();
-
-	// Update screen transform
-	//using namespace glm;
-	//auto size = graphics.size();
-	//Transform_2D_Data transform {
-	//	.transform = mat4(graphics.pre_rotation()) * (mat4x4 {
-	//		{ 2.0f / (float)size.x, 0.0f, 0.0f, 0.0f },
-	//		{ 0.0f, 2.0f / (float)size.y, 0.0f, 0.0f },
-	//		{ 0.0f, 0.0f, 1.0f, 0.0f },
-	//		{ -1.0f, -1.0f, 0.0f, 1.0f },
-	//	})
-	//};
-
-	//graphics.upload(transform_2d.buffer, &transform, sizeof(transform));
-
-//	current_scene->on_resize(old_image_count);
 }
 
 void Engine::shutdown()

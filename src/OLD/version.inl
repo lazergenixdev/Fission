@@ -1,6 +1,0 @@
-MAJOR(0)
-MINOR(10)
-PATCH(0)
-COPYRIGHT("2021-2025")
-COMPANY("Lazergenix Software")
-DESCRIPTION("A Framework/Platform Layer built for high performance applications")

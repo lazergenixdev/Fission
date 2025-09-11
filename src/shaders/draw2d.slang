@@ -17,7 +17,7 @@ struct VOut
 VOut vertexMain(Vertex input)
 {
     VOut output;
-    output.position = float4(input.position, 0.0, 1.0);
+    output.position = float4(input.position.x, -input.position.y, 0.0, 1.0);
     output.color = input.color;
     return output;
 }

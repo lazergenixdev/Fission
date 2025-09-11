@@ -36,7 +36,7 @@
 #define global extern
 #define internal static
 #define local_persist static
-#define forn(N) for (decltype(N) i = 0; i < (N); ++i)
+#define forn(N) for (std::remove_const_t<decltype(N)> i = 0; i < (N); ++i)
 
 // --------------------------------------------------------------------------------
 // Source Location
@@ -71,7 +71,7 @@ struct source_location {
 #endif
 
 // --------------------------------------------------------------------------------
-// Normalize compiler intrinsics
+// Normalize compilers
 
 #if defined(COMPILER_MSVC)
 #define __PRETTY_FUNCTION__ __FUNCSIG__
@@ -130,6 +130,35 @@ using NAME ## f32 = BASE<f32>;               \
 using NAME ## f64 = BASE<f64>
 
 // --------------------------------------------------------------------------------
+// Synced variables (experimental api)
+
+namespace fission
+{
+	template <typename T>
+	struct sync
+	{
+		//! NOTE: don't think more than u32 is needed
+		static_assert(std::is_same<T,u32>::value);
+
+		T value;
+
+		T increment()
+		{
+		#if defined(COMPILER_MSVC)
+			return _InterlockedExchangeAdd(&value, 1);
+		#endif
+		}
+
+		T zero()
+		{
+		#if defined(COMPILER_MSVC)
+			return _InterlockedExchange(&value, 0);
+		#endif
+		}
+	};
+}
+
+// --------------------------------------------------------------------------------
 // Template Meta Programming
 
 BEGIN_NAMESPACE(meta)
@@ -182,7 +211,6 @@ static constexpr u32 size_of = _size_of_n<sizeof...(T), T...>::value;
 END_NAMESPACE()
 
 // --------------------------------------------------------------------------------
-// Constants
 
 namespace fission
 {
@@ -200,8 +228,8 @@ namespace fission
 // --------------------------------------------------------------------------------
 // Constants
 
-#define PI   (3.1415926535897932384626433)
-#define TAU  (6.2831853071795864769252867)
+#define PI   3.1415926535897932384626433
+#define TAU  6.2831853071795864769252867
 
 // --------------------------------------------------------------------------------
 // Conversion -> Bytes
@@ -670,7 +698,7 @@ namespace fission
 	};
 
 	global Arena scratch_arena;
-	extern Arena& temp_arena();
+	inline Arena& temp_arena();
 }
 
 // --------------------------------------------------------------------------------
@@ -756,6 +784,7 @@ namespace fission
 
 namespace fission
 {
+	// Integer Formatting
 	template <std::integral T>
 	inline void format_single(Arena& arena, const T value)
 	{
@@ -773,18 +802,34 @@ namespace fission
 		else if constexpr (std::is_unsigned<T>::value)
 		{
 			u64 x = value, p = 10000000000000000000ULL;
+			bool show = false;
 			while (p != 0) {
 				u64 d = x / p;
-				if (d != 0 || x == 0) {
+				if (show || d != 0) {
 					arena.push_byte(byte('0' + d));
 					x -= d * p;
+					show = true;
 				}
 				p /= 10;
 			}
 		}
 	}
+	
+	// Pointer Formatting
+	inline void format_single(Arena& arena, const void* pointer)
+	{
+		arena.push_byte('0');
+		arena.push_byte('x');
+		for (int i = 60; i >= 0; i -= 4)
+		{
+			u64 digit = (u64(pointer) >> u32(i)) & 0xF;
+			if (digit < 10)
+				arena.push_byte(byte('0' + digit));
+			else
+				arena.push_byte(byte('A' + digit - 10));
+		}
+	}
 
-	//! TODO: use current context arena
 	template <typename...T>
 	inline auto format(Arena& arena, T&&...args) -> string
 	{
@@ -1177,6 +1222,7 @@ namespace fission
 		size_t count;
 		T* data;
 
+		inline constexpr T& last() { return data[count - 1]; }
 		inline constexpr T* begin() const { return const_cast<T*>(data); }
 		inline constexpr T* end() const { return const_cast<T*>(data + count); }
 	};

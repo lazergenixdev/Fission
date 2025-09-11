@@ -18,7 +18,6 @@ namespace fission
 namespace os
 {
 	os::Info _info;
-//  os::Internal _internal;
 }
 
 // --------------------------------------------------------------------------------

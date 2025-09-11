@@ -154,13 +154,15 @@ bool compile(Cpp_Program program)
 	if (program.output_name == NULL)
 		program.output_name = file_name_no_exts(program.source);
 #if OS == OS_WINDOWS
-	cmd_append(&cmd, "cl.exe", "/nologo", "/utf-8", "/std:c++20");
-	cmd_append(&cmd, "/W4", "/EHsc-", "/MD"); //! TODO: compile with static CRT
+	cmd_append(&cmd, "cl.exe", "/nologo", "/utf-8", "/std:c++20", "/GR-");
+	cmd_append(&cmd, "/W4", "/wd4201");
+	cmd_append(&cmd, "/EHsc-", "/MT");
 	if (!(program.flags & COMPILE_DEBUG)) // Debug symbols are terrible with Optimizations
 	switch (program.optimization) {
 		default: cmd_append(&cmd, "/O2"); break;
-		case Opt_None: break;
+		case Opt_None: cmd_append(&cmd, "/Od"); break;
 	}
+	else cmd_append(&cmd, "/Od");
 	if ((program.flags & COMPILE_STATIC_LIBRARY) || (program.flags & COMPILE_OBJECT))
 		cmd_append(&cmd, "/c");
     cmd_append(&cmd, program.source);
@@ -246,7 +248,63 @@ int write_object_from_binary_file(const char* output_file, const char* binary_fi
 	if (!read_entire_file(binary_file, &input))
 		return 1;
 
-#if OS == OS_MACOS // ARM64 only
+#if OS == OS_WINDOWS // x86_64 only
+
+	const char* sym_start = temp_sprintf("%s_start", symbol_name);
+	const char* sym_end   = temp_sprintf("%s_end", symbol_name);
+
+    // COFF file header
+    IMAGE_FILE_HEADER coff = {0};
+    coff.Machine = IMAGE_FILE_MACHINE_AMD64;
+    coff.NumberOfSections = 1;
+    coff.TimeDateStamp = (uint32_t)time(NULL);
+    coff.PointerToSymbolTable = sizeof(IMAGE_FILE_HEADER) + sizeof(IMAGE_SECTION_HEADER) + input.count;
+    coff.NumberOfSymbols = 3; // start, end, section symbol
+	coff.Characteristics = IMAGE_FILE_DEBUG_STRIPPED;
+	sb_append_buf(&output, &coff, sizeof(coff));
+
+    // Section header (.rdata)
+    IMAGE_SECTION_HEADER section = {0};
+    memcpy(section.Name, ".rodata", 7);
+    section.SizeOfRawData = input.count;
+    section.PointerToRawData = sizeof(IMAGE_FILE_HEADER) + sizeof(IMAGE_SECTION_HEADER);
+    section.Characteristics = IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ | IMAGE_SCN_ALIGN_8BYTES;
+	sb_append_buf(&output, &section, sizeof(section));
+
+    // Section contents
+	sb_append_buf(&output, input.items, input.count);
+
+    // Write IMAGE_SYMBOL entries
+    IMAGE_SYMBOL sym = {0};
+
+    sym.N.Name.Short = 0;              // use string table
+    sym.N.Name.Long = 4;               // offset into string table (after size field)
+    sym.Value = 0;
+    sym.SectionNumber = 1;
+    sym.Type = IMAGE_SYM_DTYPE_POINTER << 8 | IMAGE_SYM_TYPE_BYTE;
+    sym.StorageClass = IMAGE_SYM_CLASS_EXTERNAL;
+	sb_append_buf(&output, &sym, sizeof(sym));
+
+    sym.N.Name.Long = 4 + (uint32_t)(strlen(sym_start) + 1); // offset to second string
+    sym.Value = input.count;
+	sb_append_buf(&output, &sym, sizeof(sym));
+
+    // Section symbol
+    memset(&sym, 0, sizeof(sym));
+    memcpy(sym.N.ShortName, ".rdata", 6);
+    sym.SectionNumber = 1;
+    sym.StorageClass = IMAGE_SYM_CLASS_STATIC;
+	sb_append_buf(&output, &sym, sizeof(sym));
+
+    // String table
+    uint32_t strtab_size = sizeof(uint32_t) + strlen(sym_start) + strlen(sym_end) + 2;
+	sb_append_buf(&output, &strtab_size, sizeof(strtab_size));
+    sb_append_cstr(&output, sym_start);
+    da_append(&output, 0);
+    sb_append_cstr(&output, sym_end);
+    da_append(&output, 0);
+
+#elif OS == OS_MACOS // ARM64 only
 
     // Offsets
     size_t header_offset   = 0;
@@ -302,7 +360,6 @@ int write_object_from_binary_file(const char* output_file, const char* binary_fi
     sc.nsyms   = 2; // start + end
     sc.stroff  = str_offset;
     sc.strsize = 1 + strlen(sym_start) + 1 + strlen(sym_end) + 1;
-    //fwrite(&sc, sizeof(sc), 1, f);
 	sb_append_buf(&output, &sc, sizeof(sc));
 
     // --- Version command ---
@@ -397,19 +454,6 @@ const char* cache_find(const char* name)
 void cache_set(const char* name, const char* value)
 {
 	check(write_entire_file(cache_file_temp(name), value, strlen(value)));
-}
-
-typedef enum {
-	YES, NO
-} Response;
-
-Response ask(const char* question)
-{
-	printf("[\x1b[92minput\x1b[0m] %s (y/n) ", question);
-	int ch = tolower(getchar());
-	if (ch == '\n') return NO;
-	while (getchar() != '\n');
-	return ch == 'y' ? YES : NO;
 }
 
 bool copy_file_if_not_exists(const char* src_path, const char* dst_path)

@@ -65,8 +65,6 @@ int fetch_vulkan(Dependency* d)
 	const char* sdk_location = getenv("VULKAN_SDK");
 	if (sdk_location == NULL) {
 		nob_log(WARNING, "Vulkan SDK not found! Installing Vulkan...");
-		//if (ask("Would you like to install the Vulkan SDK?") == NO)
-		//	exit(1);
 		
 		scoped_temp()
 		{
@@ -95,8 +93,6 @@ int fetch_vulkan(Dependency* d)
     if (sdk_location == NULL)
 	{
 		nob_log(WARNING, "Vulkan SDK not found! Installing Vulkan...");
-		//if (ask("Would you like to install the Vulkan SDK?") == NO)
-		//	exit(1);
 		
 		scoped_temp()
 		{
@@ -143,8 +139,6 @@ int fetch_freetype(Dependency* d)
 	if (!file_exists(lib_path) || !file_exists(d->include_path))
 	{
 		nob_log(WARNING, "FreeType not found! Installing FreeType...");
-		//if (ask("Would you like to install the FreeType?") == NO)
-		//	return 1;
 
 		scoped_temp()
 		{
@@ -193,8 +187,6 @@ int fetch_glfw(Dependency* d)
 	if (!file_exists(lib_path) || !file_exists(d->include_path))
 	{
 		nob_log(WARNING, "GLFW not found! Installing GLFW...");
-		//if (ask("Would you like to install the GLFW?") == NO)
-		//	return 1;
 
 		scoped_temp()
 		{
@@ -287,7 +279,7 @@ int generate_embedded_objects(void)
 		const char* path = embed_files.items[i];
 		if (strcmp(path, ".")  == 0) continue;
 		if (strcmp(path, "..") == 0) continue;
-		if (sv_end_with(sv_from_cstr(path), ".h")) continue;
+		if (sv_end_with(sv_from_cstr(path), ".hpp")) continue;
 		const char* name = file_name_no_exts(path);
 		const char* output_path = temp_sprintf("%s/%s" OBJ_EXT, compiler.intermediate_dir, path);
 		const char* binary_path = temp_sprintf("src/embed/%s", path);
@@ -302,7 +294,7 @@ int generate_embedded_objects(void)
 		}
 
 		// Generate include file
-		const char* header_path = temp_sprintf("src/embed/%s.h", path);
+		const char* header_path = temp_sprintf("src/embed/%s.hpp", path);
 		if (!file_exists(header_path))
 		{
 			String_Builder builder = {0};

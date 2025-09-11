@@ -1058,9 +1058,13 @@ NOBDEF bool nob_cmd_run_opt(Nob_Cmd *cmd, Nob_Cmd_Opt opt)
         opt_fdout = &fdout;
     }
     if (opt.stderr_path) {
-        fderr = nob_fd_open_for_write(opt.stderr_path);
-        if (fderr == NOB_INVALID_FD) nob_return_defer(false);
-        opt_fderr = &fderr;
+        if (opt.stderr_path == opt.stdout_path) {
+            opt_fderr = opt_fdout;
+        } else {
+            fderr = nob_fd_open_for_write(opt.stderr_path);
+            if (fderr == NOB_INVALID_FD) nob_return_defer(false);
+            opt_fderr = &fderr;
+        }
     }
     Nob_Proc proc = nob__cmd_start_process(*cmd, opt_fdin, opt_fdout, opt_fderr);
 
@@ -1299,8 +1303,8 @@ NOBDEF Nob_Fd nob_fd_open_for_write(const char *path)
 NOBDEF void nob_fd_close(Nob_Fd fd)
 {
 #ifdef _WIN32
-    BOOL result = CloseHandle(fd);
-	printf("%i\n", result);
+    CloseHandle(fd);
+//	printf("%i\n", result);
 #else
     close(fd);
 #endif // _WIN32
