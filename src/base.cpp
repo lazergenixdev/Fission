@@ -23,4 +23,17 @@ auto Arena::alloc(size_t size) -> void*
     return ptr;
 }
 
+auto Dynamic_Arena::alloc(size_t size) -> void*
+{
+    if (allocated + size > capacity)
+    {
+        size_t new_capacity = 3 * (allocated + size) / 2;
+        start = realloc(start, new_capacity);
+        capacity = new_capacity;
+    }
+    void* ptr = (byte*)start + allocated;
+    allocated += size;
+    return ptr;
+}
+
 END_NAMESPACE();

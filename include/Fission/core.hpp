@@ -604,6 +604,7 @@ namespace fission
 		struct vertex
 		{
 			v2f32 position;
+			v2f32 texcoord;
 			rgba8 color;
 		};
 

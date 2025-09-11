@@ -661,6 +661,7 @@ namespace fission
 		}
 	};
 
+	//! NOTE: Will invalidate pointers into arena!
 	struct Dynamic_Arena: public Arena
 	{
 		auto create(size_t max_size) -> Result;

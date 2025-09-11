@@ -64,9 +64,9 @@ int fetch_vulkan(Dependency* d)
 	const char* url = "https://sdk.lunarg.com/sdk/download/latest/windows/vulkan_sdk.exe";
 	const char* sdk_location = getenv("VULKAN_SDK");
 	if (sdk_location == NULL) {
-		nob_log(ERROR, "Vulkan SDK not found!");
-		if (ask("Would you like to install the Vulkan SDK?") == NO)
-			exit(1);
+		nob_log(WARNING, "Vulkan SDK not found! Installing Vulkan...");
+		//if (ask("Would you like to install the Vulkan SDK?") == NO)
+		//	exit(1);
 		
 		scoped_temp()
 		{
@@ -94,9 +94,9 @@ int fetch_vulkan(Dependency* d)
 	const char* sdk_location = find_any_in_directory(temp_sprintf("%s/VulkanSDK", home));
     if (sdk_location == NULL)
 	{
-		nob_log(ERROR, "Vulkan SDK not found!");
-		if (ask("Would you like to install the Vulkan SDK?") == NO)
-			exit(1);
+		nob_log(WARNING, "Vulkan SDK not found! Installing Vulkan...");
+		//if (ask("Would you like to install the Vulkan SDK?") == NO)
+		//	exit(1);
 		
 		scoped_temp()
 		{
@@ -142,9 +142,9 @@ int fetch_freetype(Dependency* d)
 	const char* lib_path = library_temp(compiler.output_dir, "freetype");
 	if (!file_exists(lib_path) || !file_exists(d->include_path))
 	{
-		nob_log(ERROR, "FreeType not found!");
-		if (ask("Would you like to install the FreeType?") == NO)
-			return 1;
+		nob_log(WARNING, "FreeType not found! Installing FreeType...");
+		//if (ask("Would you like to install the FreeType?") == NO)
+		//	return 1;
 
 		scoped_temp()
 		{
@@ -155,7 +155,7 @@ int fetch_freetype(Dependency* d)
 			if (!file_exists(source_dir))
 				run("unzip", "-q", zip_name);
 			const char* build_dir = temp_sprintf("%s/build", source_dir);
-			run("cmake", "--log-level", "ERROR",
+			run_output("freetype.cmake.log", "cmake",
 				"-S", source_dir, "-B", build_dir,
 				"-DCMAKE_BUILD_TYPE=Release",
 				"-D", "FT_DISABLE_ZLIB=TRUE",
@@ -164,8 +164,8 @@ int fetch_freetype(Dependency* d)
 				"-D", "FT_DISABLE_HARFBUZZ=TRUE",
 				"-D", "FT_DISABLE_BROTLI=TRUE",
 			);
-			run("cmake", "--build", build_dir, "-j", "--config", "Release");
-#if defined(OS_WINDOWS)
+			run_output("freetype.build.log", "cmake", "--build", build_dir, "-j", "--config", "Release");
+#if OS == OS_WINDOWS
 			build_dir = temp_sprintf("%s/Release", build_dir);
 #endif
 			const char* dst_lib_path = temp_sprintf("../%s", lib_path);
@@ -192,9 +192,9 @@ int fetch_glfw(Dependency* d)
 	const char* lib_path = library_temp(compiler.output_dir, "glfw");
 	if (!file_exists(lib_path) || !file_exists(d->include_path))
 	{
-		nob_log(ERROR, "GLFW not found!");
-		if (ask("Would you like to install the GLFW?") == NO)
-			return 1;
+		nob_log(WARNING, "GLFW not found! Installing GLFW...");
+		//if (ask("Would you like to install the GLFW?") == NO)
+		//	return 1;
 
 		scoped_temp()
 		{
@@ -202,10 +202,11 @@ int fetch_glfw(Dependency* d)
 				run("git", "clone", "-q", "--depth=1", "--branch", d->version, d->url);
 
 			const char* build_dir = "glfw/build";
-			run("cmake", "--log-level", "ERROR", "-S", "glfw", "-B", build_dir,
+			run_output("glfw.cmake.log", "cmake",
+				"-S", "glfw", "-B", build_dir,
 				"-DCMAKE_BUILD_TYPE=Release",
 			);
-			run("cmake", "--build", build_dir, "-j", "--config", "Release");
+			run_output("glfw.build.log", "cmake", "--build", build_dir, "-j", "--config", "Release");
 
 			const char* dst_lib_path = temp_sprintf("../%s", lib_path);
 			if (!file_exists(dst_lib_path))
@@ -258,6 +259,63 @@ int check_dependencies(void)
 	return 0;
 }
 
+int compile_shaders(void)
+{
+	File_Paths shader_files = {0};
+	check(read_entire_dir("src/shaders", &shader_files));
+
+	forn (shader_files.count) {
+		const char* path = shader_files.items[i];
+		if (strcmp(path, ".")  == 0) continue;
+		if (strcmp(path, "..") == 0) continue;
+		const char* name = file_name_no_exts(path);
+		const char* binary_path = temp_sprintf("src/embed/%s.spv", name);
+		const char* source_path = temp_sprintf("src/shaders/%s", path);
+		if (!needs_rebuild(binary_path, &source_path, 1))
+			continue;
+		run("slangc", "-target", "spirv", source_path, "-o", binary_path);
+	}
+	return 0;
+}
+
+int generate_embedded_objects(void)
+{
+	File_Paths embed_files = {0};
+	check(read_entire_dir("src/embed", &embed_files));
+
+	forn (embed_files.count) {
+		const char* path = embed_files.items[i];
+		if (strcmp(path, ".")  == 0) continue;
+		if (strcmp(path, "..") == 0) continue;
+		if (sv_end_with(sv_from_cstr(path), ".h")) continue;
+		const char* name = file_name_no_exts(path);
+		const char* output_path = temp_sprintf("%s/%s" OBJ_EXT, compiler.intermediate_dir, path);
+		const char* binary_path = temp_sprintf("src/embed/%s", path);
+		const char* symbol_name = identifier_from_file_name(path);
+		cmd_append(&fission.object_files, path);
+
+		// Generate binary object
+		if (needs_rebuild(output_path, &binary_path, 1))
+		{
+			if (write_object_from_binary_file(output_path, binary_path, symbol_name))
+				return 1;
+		}
+
+		// Generate include file
+		const char* header_path = temp_sprintf("src/embed/%s.h", path);
+		if (!file_exists(header_path))
+		{
+			String_Builder builder = {0};
+			sb_append_cstr(&builder, "namespace embedded\n{\n");
+			sb_appendf(&builder, "\textern \"C\" const uint8_t %s_start[];\n", symbol_name);
+			sb_appendf(&builder, "\textern \"C\" const uint8_t %s_end[];\n", symbol_name);
+			sb_appendf(&builder, "}\n");
+			check(write_entire_file(header_path, builder.items, builder.count));
+		}
+	}
+	return 0;
+}
+
 int build_fission_all(void)
 {
 	if (build_fission()) return 1;
@@ -294,6 +352,8 @@ int build_fission(void)
 	create_build_directories();
 	check_cpp_compiler();
 	if (check_dependencies()) return 1;
+	if (compile_shaders()) return 1;
+	if (generate_embedded_objects()) return 1;
 	
 	cmd_append(&fission.object_files, "header_only");
 	
@@ -311,9 +371,11 @@ int main(int argc, char* argv[])
     NOB_GO_REBUILD_URSELF_PLUS(argc, argv,
 		"tools/build.h", "examples/build.h", "dependencies.h");
 #endif
+
 	enum {
 		Build_Fission = 0,
 		Build_All     = 1,
+		Build_Clean   = 2, //! TODO: remove all generated files
 	} action = Build_Fission;
 
 	forn (argc) {

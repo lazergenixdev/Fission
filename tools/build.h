@@ -33,6 +33,11 @@
 #define NOB_STRIP_PREFIX
 #include "nob.h"
 
+#if OS == OS_MACOS
+#include <mach-o/loader.h>
+#include <mach-o/nlist.h>
+#endif
+
 #define PATH(L) "(\x1b[92m" L "\x1b[0m)"
 
 #ifdef assert
@@ -42,6 +47,7 @@ void assert_impl(int cond, const char* info);
 #define assert(E) assert_impl(E, #E)
 #define check(E) if (!(E)) exit(1)
 #define run(...) do { Cmd C = {0}; cmd_append(&C, __VA_ARGS__); check(cmd_run_sync(C)); cmd_free(C); } while(0)
+#define run_output(output_path, ...) do { Cmd C = {0}; cmd_append(&C, __VA_ARGS__); check(cmd_run_opt(&C, (Cmd_Opt){.stdout_path = output_path, .stderr_path = output_path})); cmd_free(C); } while(0)
 #define len(A) (sizeof(A)/sizeof(A[0]))
 #define forn(N) for (int i = 0; i < (N); ++i)
 #define iterate(A) for (int i = 0; i < len(A); ++i)
@@ -84,6 +90,21 @@ const char* file_name_no_exts(const char* path)
 	int end = start;
 	for (;end < len && path[end] != '.'; ++end);
 	return temp_sprintf("%.*s", end - start, path + start);
+}
+
+const char* identifier_from_file_name(const char* file_name)
+{
+	char* out = temp_strdup(file_name);
+	for (int i = 0; file_name[i] != 0; ++i)
+	{
+		char ch = file_name[i];
+		if (!('A' <= ch && ch <= 'Z')
+		&&  !('a' <= ch && ch <= 'z')
+		&&  !('0' <= ch && ch <= '9'))
+			ch = '_';
+		out[i] = ch;
+	}
+	return out;
 }
 
 const char* target_name(int os)
@@ -215,6 +236,114 @@ bool compile(Cpp_Program program)
 	return true;
 }
 
+int write_object_from_binary_file(const char* output_file, const char* binary_file, const char* symbol_name)
+{
+	String_Builder input = {0};
+	String_Builder output = {0};
+
+	nob_log(INFO, "Generating binary object file %s -> %s", binary_file, output_file);
+
+	if (!read_entire_file(binary_file, &input))
+		return 1;
+
+#if OS == OS_MACOS // ARM64 only
+
+    // Offsets
+    size_t header_offset   = 0;
+    size_t segment_offset  = header_offset + sizeof(struct mach_header_64);
+    size_t section_offset  = segment_offset + sizeof(struct segment_command_64);
+    size_t symtab_offset   = section_offset + sizeof(struct section_64);
+    size_t version_offset  = symtab_offset + sizeof(struct symtab_command);
+    size_t data_offset     = version_offset + sizeof(struct version_min_command);
+    size_t sym_offset      = data_offset + input.count;
+    size_t str_offset      = sym_offset + 2 * sizeof(struct nlist_64);
+
+	const char* sym_start = temp_sprintf("_%s_start", symbol_name);
+	const char* sym_end   = temp_sprintf("_%s_end", symbol_name);
+
+    // --- Header ---
+    struct mach_header_64 mh = {0};
+    mh.magic      = MH_MAGIC_64;
+    mh.cputype    = CPU_TYPE_ARM64;
+    mh.cpusubtype = CPU_SUBTYPE_ARM64_ALL;
+    mh.filetype   = MH_OBJECT;
+    mh.ncmds      = 3; // segment + symtab + version
+    mh.sizeofcmds = sizeof(struct segment_command_64) + sizeof(struct section_64)
+                   + sizeof(struct symtab_command) + sizeof(struct version_min_command);
+    mh.flags      = MH_SUBSECTIONS_VIA_SYMBOLS;
+	sb_append_buf(&output, &mh, sizeof(mh));
+
+    // --- Segment ---
+    struct segment_command_64 sg = {0};
+    sg.cmd     = LC_SEGMENT_64;
+    sg.cmdsize = sizeof(sg) + sizeof(struct section_64);
+    strcpy(sg.segname, "__DATA");
+    sg.nsects  = 1;
+    sg.maxprot = VM_PROT_READ;
+    sg.initprot= VM_PROT_READ;
+    sg.vmsize   = input.count;
+    sg.filesize = input.count;
+	sb_append_buf(&output, &sg, sizeof(sg));
+
+    // --- Section ---
+    struct section_64 sec = {0};
+    strcpy(sec.sectname, "__binary");
+    strcpy(sec.segname, "__DATA");
+    sec.offset = data_offset;
+    sec.size   = input.count;
+    sec.align  = 2; // 4-byte alignment
+	sb_append_buf(&output, &sec, sizeof(sec));
+
+    // --- Symtab command ---
+    struct symtab_command sc = {0};
+    sc.cmd     = LC_SYMTAB;
+    sc.cmdsize = sizeof(sc);
+    sc.symoff  = sym_offset;
+    sc.nsyms   = 2; // start + end
+    sc.stroff  = str_offset;
+    sc.strsize = 1 + strlen(sym_start) + 1 + strlen(sym_end) + 1;
+    //fwrite(&sc, sizeof(sc), 1, f);
+	sb_append_buf(&output, &sc, sizeof(sc));
+
+    // --- Version command ---
+    struct version_min_command vmc = {0};
+    vmc.cmd     = LC_VERSION_MIN_MACOSX;
+    vmc.cmdsize = sizeof(vmc);
+    vmc.version = 0x0A0F00; // macOS 10.15
+    vmc.sdk     = 0x0A0F00;
+	sb_append_buf(&output, &vmc, sizeof(vmc));
+
+    // --- Data payload ---
+	sb_append_buf(&output, input.items, input.count);
+
+    // --- Symbol table ---
+    struct nlist_64 syms[2] = {0};
+    syms[0].n_un.n_strx = 1; // offset into string table
+    syms[0].n_type      = N_SECT | N_EXT;
+    syms[0].n_sect      = 1;
+    syms[0].n_value     = 0; // start of section
+
+    syms[1].n_un.n_strx = 1 + strlen(sym_start) + 1; // second string
+    syms[1].n_type      = N_SECT | N_EXT;
+    syms[1].n_sect      = 1;
+    syms[1].n_value     = input.count; // end of section
+
+	sb_append_buf(&output, &syms, sizeof(syms));
+
+    // --- String table ---
+    char *strtab = calloc(1, sc.strsize);
+    strcpy(strtab + 1, sym_start);
+    strcpy(strtab + 1 + strlen(sym_start) + 1, sym_end);
+	sb_append_buf(&output, strtab, sc.strsize);
+    free(strtab);
+#endif
+
+	if (!write_entire_file(output_file, output.items, output.count))
+		return 1;
+
+	return 0;
+}
+
 bool string_begins_with(const char* input, const char* begin)
 {
 	int m = 0;
@@ -250,11 +379,11 @@ void popd()
 	_directory_stack.count -= 1;
 }
 
+//! TODO: simplify caching API
 const char* cache_file_temp(const char* name)
 {
 	return temp_sprintf("%s/%s", compiler.cache_dir, name);
 }
-
 const char* cache_find(const char* name)
 {
 	String_Builder builder = {0};
@@ -265,7 +394,6 @@ const char* cache_find(const char* name)
 	}
 	return NULL;
 }
-
 void cache_set(const char* name, const char* value)
 {
 	check(write_entire_file(cache_file_temp(name), value, strlen(value)));
