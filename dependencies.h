@@ -1,10 +1,10 @@
 {
-	.targets = OS_ALL,
+	.targets = OS_LINUX | OS_WINDOWS | OS_MACOS,
     .name = "vulkan",
     .fetch = &fetch_vulkan
 },
 {
-	.targets = OS_ALL,
+	.targets = OS_LINUX | OS_WINDOWS | OS_MACOS,
     .name = "freetype",
     .display_name = "FreeType",
     .version = "2-13-3",

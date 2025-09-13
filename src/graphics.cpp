@@ -113,11 +113,10 @@ void format_single(Arena& arena, VkSurfaceTransformFlagBitsKHR surface_transform
     X(ASTC_6x5_SFLOAT_BLOCK) X(ASTC_6x6_SFLOAT_BLOCK) X(ASTC_8x5_SFLOAT_BLOCK) \
     X(ASTC_8x6_SFLOAT_BLOCK) X(ASTC_8x8_SFLOAT_BLOCK) X(ASTC_10x5_SFLOAT_BLOCK) \
     X(ASTC_10x6_SFLOAT_BLOCK) X(ASTC_10x8_SFLOAT_BLOCK) X(ASTC_10x10_SFLOAT_BLOCK) \
-    X(ASTC_12x10_SFLOAT_BLOCK) X(ASTC_12x12_SFLOAT_BLOCK) X(A1B5G5R5_UNORM_PACK16) \
-    X(A8_UNORM) X(PVRTC1_2BPP_UNORM_BLOCK_IMG) X(PVRTC1_4BPP_UNORM_BLOCK_IMG) \
+    X(ASTC_12x10_SFLOAT_BLOCK) X(ASTC_12x12_SFLOAT_BLOCK) \
+	X(PVRTC1_2BPP_UNORM_BLOCK_IMG) X(PVRTC1_4BPP_UNORM_BLOCK_IMG) \
     X(PVRTC2_2BPP_UNORM_BLOCK_IMG) X(PVRTC2_4BPP_UNORM_BLOCK_IMG) X(PVRTC1_2BPP_SRGB_BLOCK_IMG) \
-	X(PVRTC1_4BPP_SRGB_BLOCK_IMG) X(PVRTC2_2BPP_SRGB_BLOCK_IMG) X(PVRTC2_4BPP_SRGB_BLOCK_IMG) \
-    X(R16G16_SFIXED5_NV)
+	X(PVRTC1_4BPP_SRGB_BLOCK_IMG) X(PVRTC2_2BPP_SRGB_BLOCK_IMG) X(PVRTC2_4BPP_SRGB_BLOCK_IMG)
 
 void format_single(Arena& arena, VkFormat iFormat)
 {
@@ -211,6 +210,7 @@ auto Graphics::create (Create_Info const& info) -> Result
     if (create_sc_image_views())        return Failed;
     if (create_command_buffers())       return Failed;
     if (create_sync_objects())          return Failed;
+	log::verbose("Graphics context created!");
     return Success;
 }
 
@@ -305,6 +305,7 @@ auto Graphics::create_instance(bool debug) -> Result
     log::verbose("Graphics debugging enabled: ", debug);
 	if (debug) log_layers_and_extensions();
 
+	debug = false;
 	VkApplicationInfo application_info {
 		.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
 		.pApplicationName = "How did you find this?",
@@ -322,6 +323,8 @@ auto Graphics::create_instance(bool debug) -> Result
 		VK_KHR_SURFACE_EXTENSION_NAME,
 	#if defined(OS_WINDOWS)
 		"VK_KHR_win32_surface",
+	#elif defined(OS_ANDROID)
+		"VK_KHR_android_surface",
     #elif defined(OS_MACOS)
         "VK_EXT_metal_surface",
     #endif
@@ -657,6 +660,13 @@ auto Graphics::create_swap_chain(Window* window) -> Result
 
 	log::verbose("min image count = ", capabilities.minImageCount);
     log::verbose("max image count = ", capabilities.maxImageCount);
+	log::verbose("supported composite alpha = ", (int)capabilities.supportedCompositeAlpha);
+	
+	VkCompositeAlphaFlagBitsKHR composite_alpha = VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR;
+	if (capabilities.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR)
+		composite_alpha = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
+	if (capabilities.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR)
+		composite_alpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 
 	// Pick surface format
 	{
@@ -712,7 +722,7 @@ auto Graphics::create_swap_chain(Window* window) -> Result
 		.imageArrayLayers = 1, /* For non-stereoscopic-3D applications, this value is 1 */
 		.imageUsage = image_usage,
 		.preTransform = transform,
-		.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR, // <-- TODO: fix this (ANDROID)
+		.compositeAlpha = composite_alpha, // <-- TODO: fix this (ANDROID)
 		.presentMode = present_mode, // TODO: this needs to be configurable
 		.clipped = VK_TRUE, /* "... allows more efficient presentation methods to be used on some platforms." */
 	};
@@ -1262,6 +1272,7 @@ Pipeline_Creator& Pipeline_Creator::add_shader(VkShaderStageFlagBits stage, VkSh
 		case VK_SHADER_STAGE_COMPUTE_BIT:  info.pName = "computeMain"; break;
 		case VK_SHADER_STAGE_VERTEX_BIT:   info.pName = "vertexMain"; break;
 		case VK_SHADER_STAGE_FRAGMENT_BIT: info.pName = "fragmentMain"; break;
+		default: info.pName = "main"; break;
 	}
 	shaders.emplace_back(info);
 	return *this;
@@ -1343,8 +1354,6 @@ void Renderer_2d::create(VkRenderPass render_pass, VkPipelineLayout pipeline_lay
     	.codeSize = size_t(embedded::draw2d_spv_end - embedded::draw2d_spv_start),
     	.pCode = (u32*)embedded::draw2d_spv_start,
 	};
-	log::info("codeSize: ", info.codeSize);
-	log::info("first: ", *(void**)embedded::draw2d_spv_start);
 	vkCreateShaderModule(engine.graphics.device, &info, nullptr, &shader_module);
 
 	auto vertex_layout = Draw_Data_2d::vertex::Layout{};

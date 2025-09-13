@@ -1,63 +1,6 @@
 #include "tools/build.h"
 #include "examples/build.h"
 
-void create_build_directories(void)
-{
-	scoped_log(WARNING) {
-		check(mkdir_if_not_exists("bin"));
-		compiler.output_dir = temp_sprintf("bin/%s", target_name(compiler.target_os));
-		check(mkdir_if_not_exists(compiler.output_dir));
-		compiler.intermediate_dir = temp_sprintf("%s/int", compiler.output_dir);
-		check(mkdir_if_not_exists(compiler.intermediate_dir));
-		compiler.cache_dir = temp_sprintf("%s/cache", compiler.output_dir);
-		check(mkdir_if_not_exists(compiler.cache_dir));
-	}
-}
-
-void check_cpp_compiler(void)
-{
-#if OS == OS_WINDOWS
-	const char* vcvarsall_cache = cache_file_temp("vcvarsall");
-	String_Builder builder = {0};
-	if (!read_entire_file(vcvarsall_cache, &builder))
-	{
-		nob_log(INFO, "Looking for file `vcvarsall.bat` ...");
-		const char* location = find_file_recursive("C:/Program Files/Microsoft Visual Studio", "vcvarsall.bat");
-		
-		if (location == NULL) {
-			nob_log(ERROR, "Could not find `vcvarsall.bat`");
-			exit(1);
-		}
-		nob_log(INFO, "Found `vcvarsall.bat` location " PATH("%s"), location);
-		
-		run("cmd.exe", "/c", "call", location, "x64", ">nul", "&&", "set", ">", vcvarsall_cache);
-		check(read_entire_file(vcvarsall_cache, &builder));
-	}
-	
-	nob_log(INFO, "Setting environment variables for Microsoft Visual Studio ...");
-	{
-		const char* name = builder.items;
-		const char* value = NULL;
-		for (int i = 0; i < builder.count; ++i)
-		{
-			char ch = builder.items[i];
-			if (ch == '=') {
-				builder.items[i] = '\0';
-				value = builder.items + i + 1;
-			}
-			if (ch == '\r') {
-				builder.items[i] = '\0';
-				SetEnvironmentVariableA(name, value);
-				name = builder.items + i + 1;
-			}
-			if (ch == '\n') {
-				name = builder.items + i + 1;
-			}
-		}
-	}
-#endif
-}
-
 int fetch_vulkan(Dependency* d)
 {
 #if OS == OS_WINDOWS
@@ -126,8 +69,8 @@ int fetch_vulkan(Dependency* d)
 	scoped_log(WARNING) {
 		const char* shared1 = temp_sprintf("libvulkan.%.*s.dylib", truncate_version(version, 1), version);
 		const char* shared3 = temp_sprintf("libvulkan.%.*s.dylib", truncate_version(version, 3), version);
-		check(copy_file_if_not_exists(temp_sprintf("%s/%s", d->library_path, shared1), temp_sprintf("%s/%s", compiler.output_dir, shared1)));
-		check(copy_file_if_not_exists(temp_sprintf("%s/%s", d->library_path, shared3), temp_sprintf("%s/%s", compiler.output_dir, shared3)));
+		check(copy_file_if_not_exists(temp_sprintf("%s/%s", d->library_path, shared1), temp_sprintf("%s/%s", build.output_dir, shared1)));
+		check(copy_file_if_not_exists(temp_sprintf("%s/%s", d->library_path, shared3), temp_sprintf("%s/%s", build.output_dir, shared3)));
 	}
 #endif
 	return 0;
@@ -135,7 +78,7 @@ int fetch_vulkan(Dependency* d)
 
 int fetch_freetype(Dependency* d)
 {
-	const char* lib_path = library_temp(compiler.output_dir, "freetype");
+	const char* lib_path = library_temp(build.output_dir, "freetype");
 	if (!file_exists(lib_path) || !file_exists(d->include_path))
 	{
 		nob_log(WARNING, "FreeType not found! Installing FreeType...");
@@ -183,7 +126,7 @@ int fetch_freetype(Dependency* d)
 
 int fetch_glfw(Dependency* d)
 {
-	const char* lib_path = library_temp(compiler.output_dir, "glfw");
+	const char* lib_path = library_temp(build.output_dir, "glfw");
 	if (!file_exists(lib_path) || !file_exists(d->include_path))
 	{
 		nob_log(WARNING, "GLFW not found! Installing GLFW...");
@@ -231,12 +174,12 @@ int check_dependencies(void)
 	cmd_append(&fission.include_dirs, "include");
 	iterate (dependencies) {
         Dependency* d = &dependencies[i];
-		if (!(d->targets & compiler.target_os)) continue;
+		if (!(d->targets & build.target_os)) continue;
         if (d->fetch(d)) return 1;
 		cmd_append(&fission.include_dirs, d->include_path);
 	}
 
-	const char* header_only_output = temp_sprintf("%s/header_only" OBJ_EXT, compiler.intermediate_dir);
+	const char* header_only_output = temp_sprintf("%s/header_only" OBJ_EXT, build.intermediate_dir);
 	const char* header_only_source = "src/header_only.cpp";
 	if (needs_rebuild(header_only_output, &header_only_source, 1))
 	{
@@ -246,7 +189,7 @@ int check_dependencies(void)
 			.flags = COMPILE_OBJECT,
 			.include_dirs = fission.include_dirs,
 		};
-		if (!compile(header_only)) return 1;
+		if (compile(header_only)) return Failed;
 	}
 	return 0;
 }
@@ -281,7 +224,7 @@ int generate_embedded_objects(void)
 		if (strcmp(path, "..") == 0) continue;
 		if (sv_end_with(sv_from_cstr(path), ".hpp")) continue;
 		const char* name = file_name_no_exts(path);
-		const char* output_path = temp_sprintf("%s/%s" OBJ_EXT, compiler.intermediate_dir, path);
+		const char* output_path = temp_sprintf("%s/%s" OBJ_EXT, build.intermediate_dir, path);
 		const char* binary_path = temp_sprintf("src/embed/%s", path);
 		const char* symbol_name = identifier_from_file_name(path);
 		cmd_append(&fission.object_files, path);
@@ -308,38 +251,38 @@ int generate_embedded_objects(void)
 	return 0;
 }
 
-int build_fission_all(void)
+Result build_fission_all(void)
 {
-	if (build_fission()) return 1;
+	if (build_fission()) return Failed;
 	
 	Cpp_Program start = {
 		.include_dirs = fission.include_dirs,
 		.flags = fission.flags & (~COMPILE_STATIC_LIBRARY),
 	};
 	
-	cmd_append(&start.library_dirs, compiler.output_dir); 
+	cmd_append(&start.library_dirs, build.output_dir); 
 	cmd_append(&start.libraries, "fission");
 	
     iterate (dependencies) {
         Dependency* d = &dependencies[i];
-		if (!(d->targets & compiler.target_os)) continue;
+		if (!(d->targets & build.target_os)) continue;
 		cmd_append(&start.libraries, d->name);
 		if (d->library_path)
 			cmd_append(&start.library_dirs, d->library_path);
     }
 	
-	int result = 0;
+	Result result = Success;
 	scoped_timer("Build All Examples")
 	{
 		scoped_dir("examples")
-			if (build_all_examples(start))
-				return_defer(1);
+		if (build_all_examples(start))
+			result = Failed;
 	}
 defer:
 	return result;
 }
 
-int build_fission(void)
+Result build_fission(void)
 {
 	create_build_directories();
 	check_cpp_compiler();
@@ -349,12 +292,12 @@ int build_fission(void)
 	
 	cmd_append(&fission.object_files, "header_only");
 	
-	int r = 0;
+	Result r;
 	scoped_timer("Build Fission")
 	{
 		r = compile(fission);
 	}
-	return !r;
+	return r;
 }
 
 int main(int argc, char* argv[])
@@ -369,14 +312,17 @@ int main(int argc, char* argv[])
 		Build_All     = 1,
 		Build_Clean   = 2, //! TODO: remove all generated files
 	} action = Build_Fission;
+	build.target_os = OS;
+	build.company = "dev.lazergenix";
+	home_path = getenv("HOME");
 
 	forn (argc) {
 		if (strcmp(argv[i], "all") == 0) action = Build_All;
 		if (strcmp(argv[i], "debug") == 0) fission.flags |= COMPILE_DEBUG;
+		if (strcmp(argv[i], "android") == 0) build.target_os = OS_ANDROID;
 	}
 	
-	compiler.target_os = OS;
-	int r = 0;
+	Result r = 0;
 	switch (action)
 	{
 		case Build_All: r = build_fission_all(); break;

@@ -592,7 +592,7 @@ namespace fission
 	// Default vector types
 	using vec2 = vector2<f32>;
 	using vec3 = vector3<f32>;
-	using vec4 = vector3<f32>;
+	using vec4 = vector4<f32>;
 } // fission
 
 template <typename T> FISSION_IMPLEMENT_OPERATOR_MULTIPLY_2(fission::vector2<T>, T, x, y)

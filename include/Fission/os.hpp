@@ -60,7 +60,7 @@
 #endif
 #include "vulkan/vulkan.h"
 
-#if defined(OS_LINUX) || defined(OS_ANDROID) || defined(OS_MACOS)
+#if defined(OS_LINUX) || defined(OS_MACOS)
 #   include <pthread.h>
 #   include "GLFW/glfw3.h"
 #elif defined(OS_ANDROID)

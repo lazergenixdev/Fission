@@ -20,6 +20,38 @@ END_NAMESPACE()
 
 BEGIN_NAMESPACE(fission)
 
+void log::write_log_from_logger(int level)
+{
+    static constexpr const char * level_colors [] {
+        "\x1b[90m", "\x1b[96m", "\x1b[0m", "\x1b[93m", "\x1b[91m",
+    };
+	if (logger.backing_file) {
+		fwrite(logger.arena.start, 1, logger.arena.allocated, logger.backing_file);
+		fflush(logger.backing_file);
+	}
+	if (level < logger.minimum_level) return;
+	fputs(level_colors[level], stdout);
+    fwrite(logger.arena.start, 1, logger.arena.allocated, stdout);
+    fputs("\n", stdout);
+    if (level != Info) fputs("\x1b[0m", stdout);
+	fflush(stdout);
+}
+
+auto ticks() -> u64
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return u64(1e9) * u64(ts.tv_sec) + u64(ts.tv_nsec);
+}
+
+auto seconds_elapsed_and_reset(u64& t) -> f64
+{
+    auto now = ticks();
+    auto d = now - t;
+    t = now;
+    return f64(d) / u64(1e9);
+}
+
 void Engine::run() {
 	{
 		scoped_set(logger.prefix, OS_NAME);
@@ -76,17 +108,16 @@ void on_glfw_mouse_button(GLFWwindow* glfw_window, int button, int action, int m
     //    }
     //});
 }
-
+*/
 void on_glfw_key(GLFWwindow* glfw_window, int key, int scancode, int action, int mods) {
-    auto window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
-    //window->event_queue.append({
-    //    .type = u8(action == GLFW_RELEASE? Event_Key_Up : Event_Key_Down),
-    //    .key_down = {
-    //        .key_id = (u32)key,
-    //    }
-    //});
-}
+    NOT_USED(glfw_window, scancode, mods);
 
+    auto& event = engine.window.event_queue[engine.window.event_tail];
+    event.type = (action == GLFW_RELEASE? Event_Key_Up : Event_Key_Down);
+    event.key_down.key_id = u32(key);
+    engine.window.event_tail = (engine.window.event_tail + 1) % array_count(engine.window.event_queue);
+}
+/*
 void on_glfw_character(GLFWwindow* glfw_window, unsigned int codepoint) {
     auto window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
     //log::debug(fmt::format("codepoint: U+{:x}", codepoint));
@@ -115,8 +146,8 @@ auto Window::create(Create_Info const& info) -> Result
     glfwSetWindowUserPointer(_window, this);
     glfwSetFramebufferSizeCallback(_window, on_glfw_frame_buffer_resize);
     glfwSetCursorPosCallback(_window, on_glfw_cursor_position);
+    glfwSetKeyCallback(_window, on_glfw_key);
     //glfwSetMouseButtonCallback(_window, on_glfw_mouse_button);
-    //glfwSetKeyCallback(_window, on_glfw_key);
     //glfwSetCharCallback(_window, on_glfw_character);
 
 	int w, h;

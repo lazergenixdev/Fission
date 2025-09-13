@@ -1,5 +1,4 @@
 #include "Fission/core.hpp"
-#include "embed/test.txt.hpp"
 
 namespace os {
 	auto init() -> fission::Result;
@@ -54,50 +53,6 @@ Logging_Timestamp Logging_Timestamp::now()
     };
 }
 
-void log::write_log_from_logger(int level)
-{
-    static constexpr const char * level_colors [] {
-        "\x1b[90m", "\x1b[96m", "\x1b[0m", "\x1b[93m", "\x1b[91m",
-    };
-	fwrite(logger.arena.start, 1, logger.arena.allocated, logger.backing_file);
-	fflush(logger.backing_file);
-#if defined(OS_WINDOWS) // Also output to debugger (if available)
-    OutputDebugStringA((char*)logger.arena.start);
-#endif
-	if (level < logger.minimum_level) return;
-#if defined(OS_WINDOWS)
-	if (auto handle = os::output_console()) {
-        WORD attr = FOREGROUND_INTENSITY;
-        if (level == Info)  attr |= FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
-        if (level == Debug) attr  = FOREGROUND_BLUE | FOREGROUND_INTENSITY;
-        if (level == Warn)  attr  = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY;
-        if (level == Error) attr  = FOREGROUND_RED | FOREGROUND_INTENSITY;
-        SetConsoleTextAttribute(handle, attr);
-
-		DWORD offset = 0;
-		DWORD count = DWORD(logger.arena.allocated);
-		DWORD written;
-		while (WriteConsoleA(handle, (byte*)logger.arena.start + offset, count, &written, NULL))
-		{
-			offset += written;
-			count -= written;
-			if (offset >= logger.arena.allocated) break;
-		}
-	}
-	else {
-		fputs(level_colors[level], stdout);
-		fwrite(logger.arena.start, 1, logger.arena.allocated, stdout);
-	}
-#else
-	fputs(level_colors[level], stdout);
-    fwrite(logger.arena.start, 1, logger.arena.allocated, stdout);
-#endif
-#if !defined(OS_WINDOWS)
-    if (level != Info) fputs("\x1b[0m", stdout);
-#endif
-	fflush(stdout);
-}
-
 bool stop() {
     engine.flags &= ~Engine::Running;
     return false;
@@ -105,7 +60,7 @@ bool stop() {
 
 auto Engine::create(Defaults const& defaults) -> Result
 {
-//	scoped_set(logger.minimum_level, log::Verbose);
+	//scoped_set(logger.minimum_level, log::Verbose);
 	if (os::init()) return Failed;
     //! TODO: log to same directory as the executable
 	logger.backing_file = os::open_file("fission.log", os::Write);
@@ -113,9 +68,6 @@ auto Engine::create(Defaults const& defaults) -> Result
     log::info("Creating Fission Engine...");
 	engine.temp_arena.create(16_MiB);
 	engine.frame_arena.create(8_MiB);
-
-	log::info("Length: ", u64(embedded::test_txt_end - embedded::test_txt_start));
-	log::info("Important: ", string(embedded::test_txt_start, u64(embedded::test_txt_end - embedded::test_txt_start)));
 
 	//! TODO: setup in-game console here
 
@@ -132,20 +84,35 @@ auto Engine::create(Defaults const& defaults) -> Result
     };
 	if (graphics.create(graphics_info)) return Failed;
 
+	log::verbose("Creating overlay render pass...");
     Render_Pass_Creator{}
         .add_attachment(graphics.format, Attachment_Preset_New_Image_Present)
         .add_subpass({ {0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} })
         .add_external_subpass_dependency(0)
         .create(&overlay_render_pass);
 
-	VkPipelineLayoutCreateInfo pipelineLayoutInfo {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-	};
-	vkCreatePipelineLayout(engine.graphics.device, &pipelineLayoutInfo, nullptr, &pipeline_layout);
+	log::verbose("Creating Pipeline layout...");
+	{
+		VkPushConstantRange push {
+			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+			.offset = 0,
+			.size = sizeof(vec4),
+		};
+		VkPipelineLayoutCreateInfo pipelineLayoutInfo {
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+			.pushConstantRangeCount = 1,
+			.pPushConstantRanges = &push,
+		};
+		vkCreatePipelineLayout(engine.graphics.device, &pipelineLayoutInfo, nullptr, &pipeline_layout);
+	}
+	log::verbose("Creating framebuffers...");
 	create_frame_buffers();
+	log::verbose("Creating draw data...");
 	draw_data.create(graphics);
+	log::verbose("Creating renderer...");
 	renderer.create(overlay_render_pass, pipeline_layout, &draw_data);
-	debug_renderer.create(overlay_render_pass, pipeline_layout, &draw_data, {.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST});
+	log::verbose("Creating line renderer...");
+	line_renderer.create(overlay_render_pass, pipeline_layout, &draw_data, {.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST});
 
     engine.flags |= Engine::Running;
     log::info("Starting render thread...");
@@ -219,7 +186,7 @@ auto Engine::render_frame() -> bool
 	result = VK_ERROR_UNKNOWN;
 	while (result != VK_SUCCESS) {
 		result = vkAcquireNextImageKHR(graphics.device, graphics.swap_chain,
-			UINT64_MAX, image_ready_semaphore, nullptr, &render_context.image_index);
+			UINT64_MAX, image_ready_semaphore, VK_NULL_HANDLE, &render_context.image_index);
 
 		if (result == VK_SUBOPTIMAL_KHR) break;
 		else if (result == VK_ERROR_OUT_OF_DATE_KHR) {
@@ -237,32 +204,19 @@ auto Engine::render_frame() -> bool
 
 	begin(render_context.command_buffer);
 
-	vk::begin(render_context.command_buffer, overlay_render_pass, render_context.frame_buffer, {{0.2f, 0.1f, 0.2f}});
+	vk::begin(render_context.command_buffer, overlay_render_pass, render_context.frame_buffer, {{}});
 	graphics.set_default_scissor(render_context.command_buffer);
 	graphics.set_default_viewport(render_context.command_buffer);
 
-	f64 dt = seconds_elasped_and_reset(last_ticks);
-	array<Event> events;// = window.pop_all_events(frame_arena);
+	f32 aspect = f32(graphics.extent.height) / f32(graphics.extent.width);
+	vec4 scale {aspect, 1.0f, 1.0f, 1.0f};
+	vkCmdPushConstants(render_context.command_buffer, pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vec4), &scale);
+
+	f64 dt = seconds_elapsed_and_reset(last_ticks);
+	array<Event> events = window.pop_all_events(frame_arena);
 	on_update(dt, events, render_context);
 	
-	renderer.draw(render_context);
-    {
-		const u32 n = 100;
-        u32 v = draw_data.current.vertex_count;
-        
-		forn (n-1) {
-			draw_data.push_index(v+i);
-			draw_data.push_index(v+i+1);
-		}
-
-		local_persist f32 t = 0.0f;
-		t += f32(dt);
-		forn (n) {
-			f32 x = (f32(i)/f32(n-1))*2.0f - 1.0f;
-        	draw_data.push_vertex({{x, sinf(x*2.132f+t)}, {}, rgba8(255,255,255)});
-		}
-        debug_renderer.draw(render_context);
-    }
+#ifdef FRAMETIMES
     {
 		const u32 n = 256;
 		local_persist f32 frame_times[n] = {};
@@ -275,8 +229,6 @@ auto Engine::render_frame() -> bool
 			draw_data.push_index(v+i+1);
 		}
 
-		local_persist f32 t = 0.0f;
-		t += f32(dt);
 		forn (n) {
 			f32 x = (f32(i)/f32(n-1))*2.0f - 1.0f;
 			f32 y = frame_times[i] / 0.100f - 0.166f;
@@ -284,8 +236,9 @@ auto Engine::render_frame() -> bool
 			if (k < 0) k = -k;
         	draw_data.push_vertex({{x, y}, {}, rgba8(255,u8(k),u8(k))});
 		}
-        debug_renderer.draw(render_context);
+        line_renderer.draw(render_context);
     }
+#endif
 	draw_data.send(graphics, render_context.frame);
 
 	vkCmdEndRenderPass(render_context.command_buffer);

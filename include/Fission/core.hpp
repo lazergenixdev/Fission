@@ -12,7 +12,6 @@
  */
 #pragma once
 #include "os.hpp"
-//#include "glm/glm.hpp"
 #include "vulkan/vulkan.h"
 DISABLE_ALL_WARNINGS_BEGIN
 #include "vk_mem_alloc.h"
@@ -26,44 +25,6 @@ namespace fission
 	using os::Mutex;
 	using os::File;
 }
- 
-// TODO: refactor
-/*
-namespace fission
-{
-	template <typename T, size_t S>
-	struct thread_safe_queue {
-		// S is ignored for now, but I want to use this to
-		//    limit the number events that can be queued.
-
-		thread_safe_queue() {
-			os_mutex_create(&access_mutex);
-			array.reserve(1000);
-		}
-
-		~thread_safe_queue() {
-			os_mutex_destroy(access_mutex);
-		}
-
-		inline void append(T const& event) {
-			os_mutex_lock(access_mutex);
-			array.emplace_back(event);
-			os_mutex_unlock(access_mutex);
-		}
-
-		inline void pop_all(std::vector<T>& out_array) {
-			out_array.clear();
-			os_mutex_lock(access_mutex);
-			for (auto&& item: array)
-				out_array.emplace_back(item);
-			os_mutex_unlock(access_mutex);
-			array.clear();
-		}
-
-		os::Mutex access_mutex;
-		std::vector<T> array;
-	};
-}*/
 
 // --------------------------------------------------------------------------------
 // Time
@@ -71,7 +32,7 @@ namespace fission
 namespace fission
 {
 	auto ticks() -> u64;
-	auto seconds_elasped_and_reset(u64& ticks) -> f64;
+	auto seconds_elapsed_and_reset(u64& ticks) -> f64;
 
 	struct Logging_Timestamp
 	{
@@ -146,6 +107,7 @@ namespace fission::log
 	template <typename...T>
     inline void log(int level, T&&...args)
 	{
+		using namespace formatting;
 		static const string level_strings [] {
 			"  VERBOSE  ",
 			"    DEBUG  ",
@@ -159,7 +121,7 @@ namespace fission::log
     	format(logger.arena, Logging_Timestamp::now(), level_strings[level]);
 		if (logger.prefix) format(logger.arena, "(", logger.prefix, ") ");
 		(format_single(logger.arena, std::forward<T>(args)), ...);
-		format(logger.arena, "\n\0"); // null terminate in case we use C functions
+		format(logger.arena, null); // null terminate in case we use C functions
 		write_log_from_logger(level);
 		os_mutex_unlock(logger.mutex);
 	}
@@ -224,20 +186,20 @@ namespace fission
 		u8 type;
 
 		union {
-			struct EventKeyDown {
+			struct {
 				u32 key_id;
 				u32 repeat_count;
 			} key_down;
 
-			struct EventKeyUp {
+			struct {
 				u32 key_id;
 			} key_up;
 
-			struct EventCharacterInput {
+			struct {
 				c32 codepoint;
 			} character_input;
 
-			struct EventMouseMove {
+			struct {
 				v2s32 delta;
 			} mouse_move;
 		};
@@ -255,14 +217,13 @@ namespace fission
 		Exclusive_Fullscreen = 0x04,
 		Windowed_Resizeable  = 0x08,
 	};
-
-	using Event_Queue = struct {}; //thread_safe_queue<Event, 64>;
 	
 	struct Window : public os::Window
 	{
 		v2s32        mouse_position       {};
 		Window_Mode  mode                 {Windowed_Fullscreen};
 		bool         use_mouse_deltas     {false};
+		//! TODO: this should be a data structure
 		Event        event_queue   [1024] {};
 		u32          event_head           {};
 		u32          event_tail           {};
@@ -673,7 +634,7 @@ namespace fission
 			current.index_offset += current.index_count;
 			current.vertex_count = 0;
 			current.index_count = 0;
-			current.texture = nullptr;
+			current.texture = VK_NULL_HANDLE;
 		}
 
 		inline void send(Graphics& graphics, u32 frame_index)
@@ -704,10 +665,14 @@ namespace fission
 
         struct Options
         {
-            VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+            VkPrimitiveTopology topology;
         };
 
-		void create(VkRenderPass render_pass, VkPipelineLayout pipeline_layout, Draw_Data_2d* draw_data, Options options = {});
+		static constexpr Options default_options = {
+			.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+		};
+
+		void create(VkRenderPass render_pass, VkPipelineLayout pipeline_layout, Draw_Data_2d* draw_data, Options options = default_options);
 		void draw(Render_Context const& ctx);
 	};
 }
@@ -782,7 +747,7 @@ namespace fission
 		VkPipelineLayout pipeline_layout         {};
 		Draw_Data_2d     draw_data               {};
 		Renderer_2d      renderer                {};
-		Renderer_2d      debug_renderer          {};
+		Renderer_2d      line_renderer          {};
 		u64              last_ticks              {};
 
 	public:

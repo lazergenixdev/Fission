@@ -1,7 +1,7 @@
 #include "../tools/build.h"
 
 //! NOTE: assumes called from "examples/" directory
-int build_all_examples(Cpp_Program start)
+Result build_all_examples(Cpp_Program start)
 {
 	Cpp_Program program = start;
 	
@@ -15,7 +15,7 @@ int build_all_examples(Cpp_Program start)
             continue;
         
 		program.source = temp_sprintf("examples/%s", paths.items[i]);
-		if (!compile(program)) return 1;
+		if (compile(program)) return Failed;
     }
-    return 0;
+    return Success;
 }

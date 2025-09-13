@@ -30,7 +30,8 @@ namespace os
 #elif defined(OS_LINUX)
 #   include "platform_linux.cpp"
 #elif defined(OS_ANDROID)
-#   include "platform_android.cpp"
+// Android platform layer built into application
+// to allow for namespace to be changed per application
 #endif
 
 // --------------------------------------------------------------------------------

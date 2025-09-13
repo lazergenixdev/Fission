@@ -1,5 +1,10 @@
 # Fission
-todo
+
+## Platforms Supported
+- Windows `x86_64`
+- MacOS `arm64`
+- Android `armv7` `arm64`
+
 # Building 🏗️
 ## Prerequisites
 The build program is built with the Clang C compiler, make sure to have clang installed.

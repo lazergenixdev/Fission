@@ -268,6 +268,44 @@ END_NAMESPACE()
 
 BEGIN_NAMESPACE(fission)
 
+void log::write_log_from_logger(int level)
+{
+    static constexpr const char * level_colors [] {
+        "\x1b[90m", "\x1b[96m", "\x1b[0m", "\x1b[93m", "\x1b[91m",
+    };
+	if (logger.backing_file) {
+		fwrite(logger.arena.start, 1, logger.arena.allocated, logger.backing_file);
+		fflush(logger.backing_file);
+	}
+	// Also output to debugger (if available)
+    OutputDebugStringA((char*)logger.arena.start);
+	if (level < logger.minimum_level) return;
+	if (auto handle = os::output_console()) {
+        WORD attr = FOREGROUND_INTENSITY;
+        if (level == Info)  attr |= FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+        if (level == Debug) attr  = FOREGROUND_BLUE | FOREGROUND_INTENSITY;
+        if (level == Warn)  attr  = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY;
+        if (level == Error) attr  = FOREGROUND_RED | FOREGROUND_INTENSITY;
+        SetConsoleTextAttribute(handle, attr);
+
+		DWORD offset = 0;
+		DWORD count = DWORD(logger.arena.allocated);
+		DWORD written;
+		while (WriteConsoleA(handle, (byte*)logger.arena.start + offset, count, &written, NULL))
+		{
+			offset += written;
+			count -= written;
+			if (offset >= logger.arena.allocated) break;
+		}
+	}
+	else {
+		fputs(level_colors[level], stdout);
+		fwrite(logger.arena.start, 1, logger.arena.allocated, stdout);
+		fputs("\n", stdout);
+		fflush(stdout);
+	}
+}
+
 auto ticks() -> u64
 {
 	LARGE_INTEGER perf;
@@ -275,7 +313,7 @@ auto ticks() -> u64
 	return u64(perf.QuadPart);
 }
 
-auto seconds_elasped_and_reset(u64& t) -> f64
+auto seconds_elapsed_and_reset(u64& t) -> f64
 {
 	auto now = ticks();
 	auto dt = now - t;
