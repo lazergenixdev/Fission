@@ -64,10 +64,12 @@ void assert_impl(int cond, const char* info);
 #	define OBJ_EXT ".obj"
 #	define SCRIPT_EXT ".bat"
 #	define SCRIPT_COMMENT ":: "
+#	define setenv(name, value) _putenv_s(name, value)
 #else
 #	define OBJ_EXT ".o"
 #	define SCRIPT_EXT ".sh"
 #	define SCRIPT_COMMENT "# "
+#	define setenv(name, value) setenv(name, value, 1)
 #endif
 
 typedef enum { Success = 0, Failed = 1 } Result;
@@ -133,6 +135,26 @@ void create_build_directories(void);
 Result compile(Cpp_Program program);
 Result write_object_from_binary_file(const char* output_file, const char* binary_file, const char* symbol_name);
 const char* find_file_recursive(const char* search_path, const char* file);
+
+//! TODO: simplify caching API
+const char* cache_file_temp(const char* name)
+{
+	return temp_sprintf("%s/%s", build.cache_dir, name);
+}
+const char* cache_find(const char* name)
+{
+	String_Builder builder = {0};
+	if (read_entire_file(cache_file_temp(name), &builder))
+	{
+		sb_append_null(&builder);
+		return builder.items;
+	}
+	return NULL;
+}
+void cache_set(const char* name, const char* value)
+{
+	check(write_entire_file(cache_file_temp(name), value, strlen(value)));
+}
 
 // Example: "path/to/my/file.ext.ok" => "file.ext"
 const char* file_name_no_exts(const char* path)
@@ -224,11 +246,11 @@ void pushp(const char* path)
 {
 	const char* current = getenv("PATH");
 	da_append(&_path_stack, current);
-	setenv("PATH", temp_sprintf("%s:%s", path, current), 1);
+	setenv("PATH", temp_sprintf("%s:%s", path, current));
 }
 void popp()
 {
-	setenv("PATH", da_last(&_path_stack), 1);
+	setenv("PATH", da_last(&_path_stack));
 	_path_stack.count -= 1;
 }
 
@@ -316,7 +338,7 @@ void check_cpp_compiler_android(void)
 	{
 		String_Builder builder = {0};
 	#if OS == OS_WINDOWS
-		sb_appendf(&builder, "set PATH=%s/platform-tools;%PATH%\n", android_sdk_path);
+		sb_appendf(&builder, "set PATH=%s/platform-tools;%%PATH%%\n", android_sdk_path);
 	#else
 		sb_appendf(&builder, "export PATH=\"%s/platform-tools:$PATH\"\n", android_sdk_path);
 	#endif
@@ -1009,26 +1031,6 @@ const char* library_temp(const char* dir, const char* name)
 #else
 	return temp_sprintf("%s/lib%s.a", dir, name);
 #endif
-}
-
-//! TODO: simplify caching API
-const char* cache_file_temp(const char* name)
-{
-	return temp_sprintf("%s/%s", build.cache_dir, name);
-}
-const char* cache_find(const char* name)
-{
-	String_Builder builder = {0};
-	if (read_entire_file(cache_file_temp(name), &builder))
-	{
-		sb_append_null(&builder);
-		return builder.items;
-	}
-	return NULL;
-}
-void cache_set(const char* name, const char* value)
-{
-	check(write_entire_file(cache_file_temp(name), value, strlen(value)));
 }
 
 bool copy_file_if_not_exists(const char* src_path, const char* dst_path)
