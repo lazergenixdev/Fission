@@ -4,6 +4,7 @@
 - Windows `x86_64`
 - MacOS `arm64`
 - Android `armv7` `arm64`
+- Linux `x86_64` (planned)
 
 # Building 🏗️
 ## Prerequisites

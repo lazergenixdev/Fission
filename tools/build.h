@@ -65,11 +65,15 @@ void assert_impl(int cond, const char* info);
 #	define SCRIPT_EXT ".bat"
 #	define SCRIPT_COMMENT ":: "
 #	define setenv(name, value) _putenv_s(name, value)
+#	define HOME "HOMEPATH"
+#	define PATH_SEP ";"
 #else
 #	define OBJ_EXT ".o"
 #	define SCRIPT_EXT ".sh"
 #	define SCRIPT_COMMENT "# "
 #	define setenv(name, value) setenv(name, value, 1)
+#	define HOME "HOME"
+#	define PATH_SEP ":"
 #endif
 
 typedef enum { Success = 0, Failed = 1 } Result;
@@ -136,7 +140,6 @@ Result compile(Cpp_Program program);
 Result write_object_from_binary_file(const char* output_file, const char* binary_file, const char* symbol_name);
 const char* find_file_recursive(const char* search_path, const char* file);
 
-//! TODO: simplify caching API
 const char* cache_file_temp(const char* name)
 {
 	return temp_sprintf("%s/%s", build.cache_dir, name);
@@ -171,8 +174,8 @@ const char* file_name_no_exts(const char* path)
 const char* path_parent(const char* path)
 {
 	int len = strlen(path);
-	int start = len;
-	for (;start > 0 && path[start-1] != '\\' && path[start-1] != '/'; --start);
+	int start = len - 1;
+	for (;start > 0 && path[start] != '\\' && path[start] != '/'; --start);
 	return temp_sprintf("%.*s", start, path);
 }
 
@@ -220,7 +223,7 @@ struct {
     const char **items;
     size_t count;
     size_t capacity;
-} _directory_stack;
+} _directory_stack = {0};
 
 // Set current directory temporarily
 void pushd(const char* path)
@@ -246,7 +249,7 @@ void pushp(const char* path)
 {
 	const char* current = getenv("PATH");
 	da_append(&_path_stack, current);
-	setenv("PATH", temp_sprintf("%s:%s", path, current));
+	setenv("PATH", temp_sprintf("%s" PATH_SEP "%s", path, current));
 }
 void popp()
 {
@@ -281,8 +284,8 @@ void check_cpp_compiler_android(void)
 	// Determine SDK location (look at default locations)
 	const char* sdk_location = NULL;
 #if OS == OS_WINDOWS
-	const char* app_data = getenv("AppData");
-	const char* path1 = temp_sprintf("%s/Local/Android/Sdk", app_data);
+	const char* app_data = getenv("LOCALAPPDATA");
+	const char* path1 = temp_sprintf("%s/Android/Sdk", app_data);
 	const char* path2 = "C:/Program Files/Android/android-sdk";
 	if (file_exists(path1)) sdk_location = path1;
 	if (!sdk_location && file_exists(path2)) sdk_location = path2;
@@ -302,7 +305,7 @@ void check_cpp_compiler_android(void)
 	android_sdk_path = sdk_location;
 
 	// Check/Install required tools (https://apilevels.com/)
-	const char* sdkmanager = find_file_recursive(sdk_location, "sdkmanager");
+	const char* sdkmanager = find_file_recursive(sdk_location, OS!=OS_WINDOWS? "sdkmanager" : "sdkmanager.bat");
 	const char* sdkroot = temp_sprintf("--sdk_root=%s", sdk_location);
 	scoped_dir(sdk_location)
 	{
@@ -319,7 +322,7 @@ void check_cpp_compiler_android(void)
 	android_platform = temp_sprintf("%s/platforms/android-35", sdk_location);
 	android_build_tools = temp_sprintf("%s/build-tools/35.0.0", sdk_location);
 	const char* ndk_path = temp_sprintf("%s/ndk/28.2.13676358/toolchains/llvm", sdk_location);
-	const char* clang = find_file_recursive(ndk_path, "clang");
+	const char* clang = find_file_recursive(ndk_path, "armv7a-linux-androideabi35-clang++");
 	const char* bin = path_parent(clang);
 	nob_log(INFO, "Found Android toolchain " PATH("%s"), bin);
 	android_toolchain = bin;
@@ -413,12 +416,13 @@ void cmd_append_all_ends_with(Cmd* cmd, const char* path, const char* end)
 Result compile_android(Cpp_Program program)
 {
 	Result result = Success;
-	pushp(android_toolchain);
+	const char* root = get_current_dir_temp();
+
 	Cmd options = {0};
 	cmd_append(&options, CLANG_OPTIONS, "-fPIC"); // need PIC for objects?
-	cmd_append(&options, program.source);
+	cmd_append(&options, temp_sprintf("%s/%s", root, program.source));
 	forn (program.include_dirs.count)
-		cmd_append(&options, temp_sprintf("-I%s", program.include_dirs.items[i]));
+		cmd_append(&options, temp_sprintf("-I%s/%s", root, program.include_dirs.items[i]));
 	if (program.flags & COMPILE_DEBUG)
 		cmd_append(&options, "-g");
 
@@ -432,23 +436,25 @@ Result compile_android(Cpp_Program program)
 	{
 		cmd_append(&options, "-static-libstdc++", "-shared");
 	}
+	
+	pushd(android_toolchain);
 
 	const char* package = temp_sprintf("%s.%s", build.company, program.output_name);
 	const char* namespace = string_replace(package, '.', '_');
 
 	#define _COMPILE_ANDROID(ARCH, COMPILER, ...) \
-		cmd_append(&cmd, COMPILER); \
+		cmd_append(&cmd, COMPILER ".cmd"); \
 		cmd_extend(&cmd, &options); \
 		if (program.flags & (COMPILE_OBJECT|COMPILE_STATIC_LIBRARY)) \
-			cmd_append(&cmd, "-o", temp_sprintf("%s/%s.o/" ARCH ".o", build.intermediate_dir, program.output_name)); \
+			cmd_append(&cmd, "-o", temp_sprintf("%s/%s/%s.o/" ARCH ".o", root, build.intermediate_dir, program.output_name)); \
 		else { \
-			cmd_append(&cmd, "src/platform_android.cpp"); \
+			cmd_append(&cmd, temp_sprintf("%s/src/platform_android.cpp", root)); \
 			cmd_append(&cmd, temp_sprintf("-D__ANDROID_NAMESPACE__=%s", namespace)); \
-			cmd_append(&cmd, temp_sprintf("-L%s/lib/" ARCH, build.output_dir)); \
+			cmd_append(&cmd, temp_sprintf("-L%s/%s/lib/" ARCH, root, build.output_dir)); \
 			forn (program.libraries.count) \
 				cmd_append(&cmd, temp_sprintf("-l%s", program.libraries.items[i])); \
 			cmd_append(&cmd, "-landroid", "-llog", "-lvulkan"); \
-			cmd_append(&cmd, "-o", temp_sprintf("%s/lib/" ARCH "/lib%s.so", build.output_dir, program.output_name)); \
+			cmd_append(&cmd, "-o", temp_sprintf("%s/%s/lib/" ARCH "/lib%s.so", root, build.output_dir, program.output_name)); \
 		} \
 		if (!cmd_run_sync_and_reset(&cmd)) return_defer(Failed);
 	X_ANDROID_ARCHITECTURES(_COMPILE_ANDROID)
@@ -458,14 +464,15 @@ Result compile_android(Cpp_Program program)
 	{
 		#define _LIBRARY_ANDROID(ARCH, ...) \
 		cmd_append(&cmd, "llvm-ar", "rvs"); \
-		cmd_append(&cmd, temp_sprintf("%s/lib/" ARCH "/lib%s.a", build.output_dir, program.output_name)); \
-		cmd_append(&cmd, temp_sprintf("%s/%s.o/" ARCH ".o", build.intermediate_dir, program.output_name)); \
+		cmd_append(&cmd, temp_sprintf("%s/%s/lib/" ARCH "/lib%s.a", root, build.output_dir, program.output_name)); \
+		cmd_append(&cmd, temp_sprintf("%s/%s/%s.o/" ARCH ".o", root, build.intermediate_dir, program.output_name)); \
 		forn (program.object_files.count) { \
-			const char* object_file = temp_sprintf("%s/%s.o", build.intermediate_dir, program.object_files.items[i]); \
-			if (get_file_type(object_file) == FILE_DIRECTORY) \
-				cmd_append(&cmd, temp_sprintf("%s/%s.o/" ARCH ".o", build.intermediate_dir, program.object_files.items[i])); \
-			else \
+			const char* object_file = temp_sprintf("%s/%s/%s" OBJ_EXT "/" ARCH ".o", root, build.intermediate_dir, program.object_files.items[i]); \
+			const char* object_file2 = temp_sprintf("%s/%s/%s.o/" ARCH ".o", root, build.intermediate_dir, program.object_files.items[i]); \
+			if (file_exists(object_file)) \
 				cmd_append(&cmd, object_file); \
+			else \
+				cmd_append(&cmd, object_file2); \
 		} \
 		if (!cmd_run_sync_and_reset(&cmd)) return_defer(Failed);
 		X_ANDROID_ARCHITECTURES(_LIBRARY_ANDROID)
@@ -475,25 +482,25 @@ Result compile_android(Cpp_Program program)
 	if (program.flags & (COMPILE_OBJECT|COMPILE_STATIC_LIBRARY))
 		return_defer(Success);
 
-	popp();
-	pushp(android_build_tools);
-
 	const char* package_path = string_replace(package, '.', '/');
 	
+	popd();
+	pushd(android_build_tools);
+
 	// Generate R.java
 	cmd_append(&cmd, "aapt", "package", "-f", "-m");
-	cmd_append(&cmd, "-S", "src/android/res", "-J", build.intermediate_dir);
-	cmd_append(&cmd, "-M", "src/android/AndroidManifest.xml");
+	cmd_append(&cmd, "-S", temp_sprintf("%s/src/android/res", root), "-J", temp_sprintf("%s/%s", root, build.intermediate_dir));
+	cmd_append(&cmd, "-M", temp_sprintf("%s/src/android/AndroidManifest.xml", root));
 	cmd_append(&cmd, "-I", temp_sprintf("%s/android.jar", android_platform));
 	cmd_append(&cmd, "--custom-package", package);
 	if (!cmd_run_sync_and_reset(&cmd)) return_defer(Failed);
 
 	// Generate MainActivity with correct package declaration
-	const char* activity_path = temp_sprintf("%s/%s/MainActivity.java", build.intermediate_dir, package_path);
+	const char* activity_path = temp_sprintf("%s/%s/%s/MainActivity.java", root, build.intermediate_dir, package_path);
 	{
 		String_Builder builder = {0};
 		sb_appendf(&builder, "package %s.%s;\n\n", build.company, program.output_name);
-		if (!read_entire_file("src/android/dev/lazergenix/fission/MainActivity.java", &builder))
+		if (!read_entire_file(temp_sprintf("%s/src/android/dev/lazergenix/fission/MainActivity.java", root), &builder))
 			return_defer(Failed);
 		if (!write_entire_file(activity_path, builder.items, builder.count))
 			return_defer(Failed);
@@ -501,24 +508,24 @@ Result compile_android(Cpp_Program program)
 
 	// Compile .java -> .class
 	cmd_append(&cmd, "javac", "-classpath", temp_sprintf("%s/android.jar", android_platform));
-	cmd_append(&cmd, "-d", build.intermediate_dir);
+	cmd_append(&cmd, "-d", temp_sprintf("%s/%s", root, build.intermediate_dir));
 	cmd_append(&cmd, activity_path);
-	cmd_append(&cmd, temp_sprintf("%s/%s/R.java", build.intermediate_dir, package_path));
+	cmd_append(&cmd, temp_sprintf("%s/%s/%s/R.java", root, build.intermediate_dir, package_path));
 	if (!cmd_run_sync_and_reset(&cmd)) return_defer(Failed);
 
 	// Generate classes.dex
-	cmd_append(&cmd, "d8", "--min-api", "21");
+	cmd_append(&cmd, "d8.bat", "--min-api", "21");
 	cmd_append(&cmd, "--classpath", temp_sprintf("%s/android.jar", android_platform));
-	cmd_append_all_ends_with(&cmd, temp_sprintf("%s/%s", build.intermediate_dir, package_path), ".class");
-	cmd_append(&cmd, "--output", build.intermediate_dir);
+	cmd_append_all_ends_with(&cmd, temp_sprintf("%s/%s/%s", root, build.intermediate_dir, package_path), ".class");
+	cmd_append(&cmd, "--output", temp_sprintf("%s/%s", root, build.intermediate_dir));
 	if (!cmd_run_sync_and_reset(&cmd)) return_defer(Failed);
 
-	const char* output_apk = temp_sprintf("%s/%s.output.apk", build.intermediate_dir, program.output_name);
+	const char* output_apk = temp_sprintf("%s/%s/%s.output.apk", root, build.intermediate_dir, program.output_name);
 
 	// Generate APK
 	cmd_append(&cmd, "aapt", "package", "-f");
-	cmd_append(&cmd, "-M", "src/android/AndroidManifest.xml");
-	cmd_append(&cmd, "-S", "src/android/res");
+	cmd_append(&cmd, "-M", temp_sprintf("%s/src/android/AndroidManifest.xml", root));
+	cmd_append(&cmd, "-S", temp_sprintf("%s/src/android/res", root));
 	cmd_append(&cmd, "-I", temp_sprintf("%s/android.jar", android_platform));
 	cmd_append(&cmd, "-F", output_apk);
 	cmd_append(&cmd, "--custom-package", package);
@@ -526,11 +533,11 @@ Result compile_android(Cpp_Program program)
 
 	// Add classes.dex
 	cmd_append(&cmd, "zip", "-qj", output_apk);
-	cmd_append(&cmd, temp_sprintf("%s/classes.dex", build.intermediate_dir));
+	cmd_append(&cmd, temp_sprintf("%s/%s/classes.dex", root, build.intermediate_dir));
 	if (!cmd_run_sync_and_reset(&cmd)) return_defer(Failed);
 
 	// Add shared libraries
-	scoped_dir(build.output_dir)
+	scoped_dir(temp_sprintf("%s/%s", root, build.output_dir))
 	{
 		cmd_append(&cmd, "zip", "-qr", temp_sprintf("int/%s.output.apk", program.output_name));
 		#define _ADD_SHARED_LIBRARY(ARCH, ...) \
@@ -541,21 +548,21 @@ Result compile_android(Cpp_Program program)
 	}
 
 	// Align APK
-	const char* unsigned_apk = temp_sprintf("%s/%s.unsigned.apk", build.intermediate_dir, program.output_name);
+	const char* unsigned_apk = temp_sprintf("%s/%s/%s.unsigned.apk", root, build.intermediate_dir, program.output_name);
 	cmd_append(&cmd, "zipalign", "-f", "4", output_apk, unsigned_apk);
 	if (!cmd_run_sync_and_reset(&cmd)) return_defer(Failed);
 
 	// Sign APK
-	cmd_append(&cmd, "apksigner", "sign", "--ks", build.keystore);
+	cmd_append(&cmd, "apksigner.bat", "sign", "--ks", build.keystore);
 	cmd_append(&cmd, "--ks-key-alias", "debug");
 	cmd_append(&cmd, "--ks-pass", "pass:android");
 	cmd_append(&cmd, "--v1-signing-enabled", "true", "--v2-signing-enabled", "true");
-	cmd_append(&cmd, "--out", temp_sprintf("%s/%s.apk", build.output_dir, program.output_name));
+	cmd_append(&cmd, "--out", temp_sprintf("%s/%s/%s.apk", root, build.output_dir, program.output_name));
 	cmd_append(&cmd, unsigned_apk);
 	if (!cmd_run_sync_and_reset(&cmd)) return_defer(Failed);
 
 defer:
-	popp();
+	popd();
 	return result;
 }
 

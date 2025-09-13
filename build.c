@@ -314,7 +314,7 @@ int main(int argc, char* argv[])
 	} action = Build_Fission;
 	build.target_os = OS;
 	build.company = "dev.lazergenix";
-	home_path = getenv("HOME");
+	home_path = getenv(HOME);
 
 	forn (argc) {
 		if (strcmp(argv[i], "all") == 0) action = Build_All;

@@ -67,7 +67,7 @@ extern "C"
         engine.window.mouse_position = {(int)roundf(x), (int)roundf(y)};
         auto& event = engine.window.event_queue[engine.window.event_tail];
         event.type = (action == ACTION_UP? Event_Key_Up : Event_Key_Down);
-        event.key_down.key_id = u32(0);
+        event.key_down.key_id = u32(32);
         engine.window.event_tail = (engine.window.event_tail + 1) % array_count(engine.window.event_queue);
     }
 }

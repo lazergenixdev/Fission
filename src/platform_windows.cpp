@@ -89,6 +89,13 @@ LRESULT CALLBACK _message_callback(HWND hwnd, UINT Msg, WPARAM wParam, LPARAM lP
 	} break;
 #endif
 
+	case WM_MOUSEMOVE:
+	{
+		int x = GET_X_LPARAM(lParam);
+		int y = GET_Y_LPARAM(lParam);
+		engine.window.mouse_position = {x, y};
+	} break;
+
 	case WM_SYSKEYDOWN: case WM_SYSKEYUP:
 	{
         if(wParam != VK_MENU && (wParam < VK_F1 || VK_F24 < wParam || wParam == VK_F4))

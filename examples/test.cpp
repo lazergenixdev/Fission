@@ -2,7 +2,7 @@
 using namespace fission;
 
 #ifndef GLFW_KEY_SPACE
-#define GLFW_KEY_SPACE 0
+#define GLFW_KEY_SPACE 32
 #endif
 
 #ifndef GLFW_KEY_R
