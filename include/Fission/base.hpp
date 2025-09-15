@@ -397,215 +397,244 @@ inline constexpr auto dot(BASE const&left,BASE const&right){return left.X*right.
 // --------------------------------------------------------------------------------
 // Vectors
 
+template <typename type>
+struct vector2
+{
+	type x, y;
+
+	constexpr vector2(vector2 const&) = default;
+	constexpr vector2& operator=(vector2 const&) = default;
+
+	/*! @brief Create default vector: {0,0} */
+	constexpr vector2():x(static_cast<type>(0)),y(static_cast<type>(0)){}
+
+	/*! @brief Create vector with one value for all components. */
+	explicit constexpr vector2(type value):x(value),y(value){}
+
+	/*! @brief Create vector with values X and Y. */
+	constexpr vector2(type X,type Y):x(X),y(Y){}
+
+	/*! @brief Create vector from another vector with different component type. */
+	template <typename from> explicit
+	constexpr vector2(const vector2<from>&v):x(static_cast<type>(v.x)),y(static_cast<type>(v.y)){}
+
+	//! @brief  Construct a vector from a 3rd party vector type.
+	//! @param  v : vector object with public variables x and y.
+	template <typename vector2_type>
+	static constexpr vector2 from(vector2_type const& v){return {v.x,v.y};}
+
+
+	//! @brief Get vector with flipped components.
+	constexpr vector2 yx()const{return {y,x};}
+
+	//! @brief Get the vector that is rotated 90* clockwise from this vector.
+	constexpr vector2 perp()const{return {-y,x};}
+
+	//! @brief Get the squared length of this vector.
+	//! @note This will always be faster than getting the actual length.
+	constexpr type lensq()const{return this->x*this->x+this->y*this->y;}
+
+	//! @brief Get the length of this vector.
+	constexpr type len()const{return std::sqrt(this->x*this->x+this->y*this->y);}
+
+	//! @brief Get the normal vector for this vector.
+	//! @warning UNDEFINED FOR VECTOR {0,0}
+	constexpr vector2 norm()const{auto k=len();return vector2(this->x/k,this->y/k);}
+
+	//! @brief Transform vector so that it has a length of one.
+	//! @warning UNDEFINED FOR VECTOR {0,0}
+	//! @return Reference to this vector.
+	constexpr vector2&normalize(){auto k=len();this->x/=k,this->y/=k;return*this;}
+
+	inline constexpr bool operator==(vector2 const&) const = default;
+
+	FISSION_IMPLEMENT_OPERATORS_2(vector2, type, x, y)
+
+}; // vector2
+
+template <typename type>
+struct vector3
+{
+	using vec2 = vector2<type>;
+
+	type x, y, z;
+
+	constexpr vector3(vector3 const&) = default;
+
+	/*! @brief Create default vector: {0,0,0} */
+	constexpr vector3():x(static_cast<type>(0)),y(static_cast<type>(0)),z(static_cast<type>(0)){}
+
+	/*! @brief Create vector with one value for all components. */
+	explicit constexpr vector3(type value):x(value),y(value),z(value){}
+
+	/*! @brief Create vector with values X, Y, and Z. */
+	constexpr vector3(type X,type Y,type Z):x(X),y(Y),z(Z){}
+
+	/*! @brief Create vector from an XY vector and Z value. */
+	constexpr vector3(vec2 XY,type Z):x(XY.x),y(XY.y),z(Z){}
+
+	/*! @brief Create vector from an X value and YZ vector. */
+	constexpr vector3(type X,vec2 YZ):x(X),y(YZ.x),z(YZ.y){}
+
+	/*! @brief Create vector from another vector with different component type. */
+	template <typename from> explicit
+	constexpr vector3(vector3<from> const&v):x(static_cast<type>(v.x)),y(static_cast<type>(v.y)),z(static_cast<type>(v.z)){}
+
+	//! @brief  Construct a vector from a 3rd party vector type.
+	//! @param  v : vector object with public variables x, y, and z.
+	template <typename vector3_type>
+	static constexpr vector3 from(const vector3_type&v){return {v.x,v.y,v.z};}
+
+
+	//! @brief Get the squared length of this vector.
+	//! @note This will always be faster than getting the actual length.
+	constexpr type lensq()const{return this->x*this->x+this->y*this->y+this->z*this->z;}
+
+	//! @brief Get the length of this vector.
+	constexpr type len()const{return std::sqrt(this->x*this->x+this->y*this->y+this->z*this->z);}
+
+	//! @brief Get the normal vector for this vector.
+	//! @warning UNDEFINED FOR VECTOR {0,0,0}
+	constexpr vector3 norm()const{auto k=len();return vector3(this->x/k,this->y/k,this->z/k);}
+
+	//! @brief Transform vector so that it has a length of one.
+	//! @warning UNDEFINED FOR VECTOR {0,0,0}
+	//! @return Reference to this vector.
+	constexpr vector3&normalize(){auto k=len();this->x/=k,this->y/=k,this->z/=k;return*this;}
+
+
+	inline constexpr bool operator==(vector3 const&) const = default;
+
+	FISSION_IMPLEMENT_OPERATORS_3(vector3, type, x, y, z)
+
+}; // vector3
+
+template <typename type>
+struct vector4
+{
+	using vec2 = vector2<type>;
+	using vec3 = vector3<type>;
+
+	type x, y, z, w;
+
+	constexpr vector4(vector4 const&) = default;
+
+	/*! @brief Create default vector: {0,0,0,0} */
+	constexpr vector4():x(static_cast<type>(0)),y(static_cast<type>(0)),z(static_cast<type>(0)),w(static_cast<type>(0)){}
+
+	/*! @brief Create vector with one value for all components. */
+	explicit constexpr vector4(type value):x(value),y(value),z(value),w(value){}
+
+	/*! @brief Create vector with values X, Y, Z, and W. */
+	constexpr vector4(type X,type Y,type Z,type W):x(X),y(Y),z(Z),w(W){}
+
+	/*! @brief Create vector from an XY vector, Z value, and W value. */
+	constexpr vector4(vec2 XY,type Z,type W):x(XY.x),y(XY.y),z(Z),w(W){}
+	
+	/*! @brief Create vector from an X value, YZ vector, and W value. */
+	constexpr vector4(type X,vec2 YZ,type W):x(X),y(YZ.x),z(YZ.y),w(W){}
+
+	/*! @brief Create vector from an X value, Y value, and ZW vector. */
+	constexpr vector4(type X,type Y,vec2 ZW):x(X),y(Y),z(ZW.x),w(ZW.y){}
+
+	/*! @brief Create vector from an XY vector and ZW vector. */
+	constexpr vector4(vec2 XY,vec2 ZW):x(XY.x),y(XY.y),z(ZW.x),w(ZW.y){}
+
+	/*! @brief Create vector from an XYZ vector and W value. */
+	constexpr vector4(vec3 XYZ,type W):x(XYZ.x),y(XYZ.y),z(XYZ.z),w(W){}
+
+	/*! @brief Create vector from an X value and YZW vector. */
+	constexpr vector4(type X,vec3 YZW):x(X),y(YZW.x),z(YZW.y),w(YZW.z){}
+
+	/*! @brief Create vector from another vector with different component type. */
+	template <typename from> explicit
+	constexpr vector4(vector4<from> const&v):x(static_cast<type>(v.x)),y(static_cast<type>(v.y)),z(static_cast<type>(v.z)),w(static_cast<type>(v.w)){}
+
+	//! @brief  Construct a vector from a 3rd party vector type.
+	//! @param  v : vector object with public variables x, y, z, and w.
+	template <typename vector4_type>
+	static constexpr vector4 from(vector4_type const&v){return {v.x,v.y,v.z,v.w};}
+
+
+	//! @brief Get the squared length of this vector.
+	//! @note This will always be faster than getting the actual length.
+	constexpr type lensq()const{return this->x*this->x+this->y*this->y+this->z*this->z+this->w*this->w;}
+
+	//! @brief Get the length of this vector.
+	constexpr type len()const{return std::sqrt(this->x*this->x+this->y*this->y+this->z*this->z+this->w*this->w);}
+
+	//! @brief Get the normal vector for this vector.
+	//! @warning UNDEFINED FOR VECTOR {0,0,0,0}
+	constexpr vector4 norm()const{auto k=len();return vector4(this->x/k,this->y/k,this->z/k,this->w/k);}
+
+	//! @brief Transform vector so that it has a length of one.
+	//! @warning UNDEFINED FOR VECTOR {0,0,0,0}
+	//! @return Reference to this vector.
+	constexpr vector4&normalize(){auto k=len();this->x/=k,this->y/=k,this->z/=k,this->w/=k;return*this;}
+
+
+	constexpr bool operator==(vector4 const&) const = default;
+
+	FISSION_IMPLEMENT_OPERATORS_4(vector4, type, x, y, z, w)
+
+}; // vector4
+
+template<typename T> using v2 = vector2<T>;
+template<typename T> using v3 = vector3<T>;
+template<typename T> using v4 = vector4<T>;
+
+FISSION_PRIMITIVE_ALIASES(vector2, v2);
+FISSION_PRIMITIVE_ALIASES(vector3, v3);
+FISSION_PRIMITIVE_ALIASES(vector4, v4);
+
+// Default vector types
+using vec2 = vector2<f32>;
+using vec3 = vector3<f32>;
+using vec4 = vector4<f32>;
+
+template <typename T> FISSION_IMPLEMENT_OPERATOR_MULTIPLY_2(vector2<T>, T, x, y)
+template <typename T> FISSION_IMPLEMENT_OPERATOR_MULTIPLY_3(vector3<T>, T, x, y, z)
+template <typename T> FISSION_IMPLEMENT_OPERATOR_MULTIPLY_4(vector4<T>, T, x, y, z, w)
+
+template <typename T> FISSION_IMPLEMENT_OPERATOR_DIVISION_2(vector2<T>, T, x, y)
+template <typename T> FISSION_IMPLEMENT_OPERATOR_DIVISION_3(vector3<T>, T, x, y, z)
+template <typename T> FISSION_IMPLEMENT_OPERATOR_DIVISION_4(vector4<T>, T, x, y, z, w)
+
+template <typename T> FISSION_IMPLEMENT_OPERATOR_DOT_2(vector2<T>, x, y)
+template <typename T> FISSION_IMPLEMENT_OPERATOR_DOT_3(vector3<T>, x, y, z)
+template <typename T> FISSION_IMPLEMENT_OPERATOR_DOT_4(vector4<T>, x, y, z, w)
+
+// --------------------------------------------------------------------------------
+// Version
+
+struct Version
+{
+	u32 x, y, z;
+
+	Version(u32 major, u32 minor, u32 patch)
+	: x(major), y(minor), z(patch)
+	{}
+};
+
+// --------------------------------------------------------------------------------
+// Arrays
+
 namespace fission
 {
-	template <typename type>
-	struct vector2
+	template <typename T, u32 count>
+	u32 array_count(T (&)[count]) { return count; }
+
+	template <typename T>
+	struct array
 	{
-		type x, y;
+		size_t count;
+		T* data;
 
-		constexpr vector2(vector2 const&) = default;
-		constexpr vector2& operator=(vector2 const&) = default;
-
-		/*! @brief Create default vector: {0,0} */
-		constexpr vector2():x(static_cast<type>(0)),y(static_cast<type>(0)){}
-
-		/*! @brief Create vector with one value for all components. */
-		explicit constexpr vector2(type value):x(value),y(value){}
-
-		/*! @brief Create vector with values X and Y. */
-		constexpr vector2(type X,type Y):x(X),y(Y){}
-
-		/*! @brief Create vector from another vector with different component type. */
-		template <typename from> explicit
-		constexpr vector2(const vector2<from>&v):x(static_cast<type>(v.x)),y(static_cast<type>(v.y)){}
-
-		//! @brief  Construct a vector from a 3rd party vector type.
-		//! @param  v : vector object with public variables x and y.
-		template <typename vector2_type>
-		static constexpr vector2 from(vector2_type const& v){return {v.x,v.y};}
-
-
-		//! @brief Get vector with flipped components.
-		constexpr vector2 yx()const{return {y,x};}
-
-		//! @brief Get the vector that is rotated 90* clockwise from this vector.
-		constexpr vector2 perp()const{return {-y,x};}
-
-		//! @brief Get the squared length of this vector.
-		//! @note This will always be faster than getting the actual length.
-		constexpr type lensq()const{return this->x*this->x+this->y*this->y;}
-
-		//! @brief Get the length of this vector.
-		constexpr type len()const{return std::sqrt(this->x*this->x+this->y*this->y);}
-
-		//! @brief Get the normal vector for this vector.
-		//! @warning UNDEFINED FOR VECTOR {0,0}
-		constexpr vector2 norm()const{auto k=len();return vector2(this->x/k,this->y/k);}
-
-		//! @brief Transform vector so that it has a length of one.
-		//! @warning UNDEFINED FOR VECTOR {0,0}
-		//! @return Reference to this vector.
-		constexpr vector2&normalize(){auto k=len();this->x/=k,this->y/=k;return*this;}
-
-		inline constexpr bool operator==(vector2 const&) const = default;
-
-		FISSION_IMPLEMENT_OPERATORS_2(vector2, type, x, y)
-
-	}; // vector2
-
-	template <typename type>
-	struct vector3
-	{
-		using vec2 = vector2<type>;
-
-		type x, y, z;
-
-		constexpr vector3(vector3 const&) = default;
-
-		/*! @brief Create default vector: {0,0,0} */
-		constexpr vector3():x(static_cast<type>(0)),y(static_cast<type>(0)),z(static_cast<type>(0)){}
-
-		/*! @brief Create vector with one value for all components. */
-		explicit constexpr vector3(type value):x(value),y(value),z(value){}
-
-		/*! @brief Create vector with values X, Y, and Z. */
-		constexpr vector3(type X,type Y,type Z):x(X),y(Y),z(Z){}
-
-		/*! @brief Create vector from an XY vector and Z value. */
-		constexpr vector3(vec2 XY,type Z):x(XY.x),y(XY.y),z(Z){}
-
-		/*! @brief Create vector from an X value and YZ vector. */
-		constexpr vector3(type X,vec2 YZ):x(X),y(YZ.x),z(YZ.y){}
-
-		/*! @brief Create vector from another vector with different component type. */
-		template <typename from> explicit
-		constexpr vector3(vector3<from> const&v):x(static_cast<type>(v.x)),y(static_cast<type>(v.y)),z(static_cast<type>(v.z)){}
-
-		//! @brief  Construct a vector from a 3rd party vector type.
-		//! @param  v : vector object with public variables x, y, and z.
-		template <typename vector3_type>
-		static constexpr vector3 from(const vector3_type&v){return {v.x,v.y,v.z};}
-
-
-		//! @brief Get the squared length of this vector.
-		//! @note This will always be faster than getting the actual length.
-		constexpr type lensq()const{return this->x*this->x+this->y*this->y+this->z*this->z;}
-
-		//! @brief Get the length of this vector.
-		constexpr type len()const{return std::sqrt(this->x*this->x+this->y*this->y+this->z*this->z);}
-
-		//! @brief Get the normal vector for this vector.
-		//! @warning UNDEFINED FOR VECTOR {0,0,0}
-		constexpr vector3 norm()const{auto k=len();return vector3(this->x/k,this->y/k,this->z/k);}
-
-		//! @brief Transform vector so that it has a length of one.
-		//! @warning UNDEFINED FOR VECTOR {0,0,0}
-		//! @return Reference to this vector.
-		constexpr vector3&normalize(){auto k=len();this->x/=k,this->y/=k,this->z/=k;return*this;}
-
-
-		inline constexpr bool operator==(vector3 const&) const = default;
-
-		FISSION_IMPLEMENT_OPERATORS_3(vector3, type, x, y, z)
-
-	}; // vector3
-
-	template <typename type>
-	struct vector4
-	{
-		using vec2 = vector2<type>;
-		using vec3 = vector3<type>;
-
-		type x, y, z, w;
-
-		constexpr vector4(vector4 const&) = default;
-
-		/*! @brief Create default vector: {0,0,0,0} */
-		constexpr vector4():x(static_cast<type>(0)),y(static_cast<type>(0)),z(static_cast<type>(0)),w(static_cast<type>(0)){}
-
-		/*! @brief Create vector with one value for all components. */
-		explicit constexpr vector4(type value):x(value),y(value),z(value),w(value){}
-
-		/*! @brief Create vector with values X, Y, Z, and W. */
-		constexpr vector4(type X,type Y,type Z,type W):x(X),y(Y),z(Z),w(W){}
-
-		/*! @brief Create vector from an XY vector, Z value, and W value. */
-		constexpr vector4(vec2 XY,type Z,type W):x(XY.x),y(XY.y),z(Z),w(W){}
-		
-		/*! @brief Create vector from an X value, YZ vector, and W value. */
-		constexpr vector4(type X,vec2 YZ,type W):x(X),y(YZ.x),z(YZ.y),w(W){}
-
-		/*! @brief Create vector from an X value, Y value, and ZW vector. */
-		constexpr vector4(type X,type Y,vec2 ZW):x(X),y(Y),z(ZW.x),w(ZW.y){}
-
-		/*! @brief Create vector from an XY vector and ZW vector. */
-		constexpr vector4(vec2 XY,vec2 ZW):x(XY.x),y(XY.y),z(ZW.x),w(ZW.y){}
-
-		/*! @brief Create vector from an XYZ vector and W value. */
-		constexpr vector4(vec3 XYZ,type W):x(XYZ.x),y(XYZ.y),z(XYZ.z),w(W){}
-
-		/*! @brief Create vector from an X value and YZW vector. */
-		constexpr vector4(type X,vec3 YZW):x(X),y(YZW.x),z(YZW.y),w(YZW.z){}
-
-		/*! @brief Create vector from another vector with different component type. */
-		template <typename from> explicit
-		constexpr vector4(vector4<from> const&v):x(static_cast<type>(v.x)),y(static_cast<type>(v.y)),z(static_cast<type>(v.z)),w(static_cast<type>(v.w)){}
-
-		//! @brief  Construct a vector from a 3rd party vector type.
-		//! @param  v : vector object with public variables x, y, z, and w.
-		template <typename vector4_type>
-		static constexpr vector4 from(vector4_type const&v){return {v.x,v.y,v.z,v.w};}
-
-
-		//! @brief Get the squared length of this vector.
-		//! @note This will always be faster than getting the actual length.
-		constexpr type lensq()const{return this->x*this->x+this->y*this->y+this->z*this->z+this->w*this->w;}
-
-		//! @brief Get the length of this vector.
-		constexpr type len()const{return std::sqrt(this->x*this->x+this->y*this->y+this->z*this->z+this->w*this->w);}
-
-		//! @brief Get the normal vector for this vector.
-		//! @warning UNDEFINED FOR VECTOR {0,0,0,0}
-		constexpr vector4 norm()const{auto k=len();return vector4(this->x/k,this->y/k,this->z/k,this->w/k);}
-
-		//! @brief Transform vector so that it has a length of one.
-		//! @warning UNDEFINED FOR VECTOR {0,0,0,0}
-		//! @return Reference to this vector.
-		constexpr vector4&normalize(){auto k=len();this->x/=k,this->y/=k,this->z/=k,this->w/=k;return*this;}
-
-
-		constexpr bool operator==(vector4 const&) const = default;
-
-		FISSION_IMPLEMENT_OPERATORS_4(vector4, type, x, y, z, w)
-
-	}; // vector4
-
-	template<typename T> using v2 = vector2<T>;
-	template<typename T> using v3 = vector3<T>;
-	template<typename T> using v4 = vector4<T>;
-
-	FISSION_PRIMITIVE_ALIASES(vector2, v2);
-	FISSION_PRIMITIVE_ALIASES(vector3, v3);
-	FISSION_PRIMITIVE_ALIASES(vector4, v4);
-
-	// Default vector types
-	using vec2 = vector2<f32>;
-	using vec3 = vector3<f32>;
-	using vec4 = vector4<f32>;
-} // fission
-
-template <typename T> FISSION_IMPLEMENT_OPERATOR_MULTIPLY_2(fission::vector2<T>, T, x, y)
-template <typename T> FISSION_IMPLEMENT_OPERATOR_MULTIPLY_3(fission::vector3<T>, T, x, y, z)
-template <typename T> FISSION_IMPLEMENT_OPERATOR_MULTIPLY_4(fission::vector4<T>, T, x, y, z, w)
-
-template <typename T> FISSION_IMPLEMENT_OPERATOR_DIVISION_2(fission::vector2<T>, T, x, y)
-template <typename T> FISSION_IMPLEMENT_OPERATOR_DIVISION_3(fission::vector3<T>, T, x, y, z)
-template <typename T> FISSION_IMPLEMENT_OPERATOR_DIVISION_4(fission::vector4<T>, T, x, y, z, w)
-
-template <typename T> FISSION_IMPLEMENT_OPERATOR_DOT_2(fission::vector2<T>, x, y)
-template <typename T> FISSION_IMPLEMENT_OPERATOR_DOT_3(fission::vector3<T>, x, y, z)
-template <typename T> FISSION_IMPLEMENT_OPERATOR_DOT_4(fission::vector4<T>, x, y, z, w)
+		inline constexpr T& last() { return data[count - 1]; }
+		inline constexpr T* begin() const { return const_cast<T*>(data); }
+		inline constexpr T* end() const { return const_cast<T*>(data + count); }
+	};
+}
 
 // --------------------------------------------------------------------------------
 // Result Values
@@ -777,6 +806,8 @@ namespace fission
 	{
 		arena.push(const_cast<char*>(string_literal), size - 1);
 	}
+
+	auto decode_utf8(Arena& arena, string s) -> array<c32>;
 }
 
 // --------------------------------------------------------------------------------
@@ -814,6 +845,14 @@ namespace fission
 			}
 		}
 	}
+
+	// Floating point
+	template <std::floating_point T>
+	inline void format_single(Arena& arena, const T value)
+	{
+		// :/
+		arena.allocated += snprintf(arena.next_ptr<char>(), 10000, "%f", value);
+	}
 	
 	// Pointer Formatting
 	inline void format_single(Arena& arena, const void* pointer)
@@ -830,12 +869,19 @@ namespace fission
 		}
 	}
 
+	// Generic Formatting
 	template <typename...T>
 	inline auto format(Arena& arena, T&&...args) -> string
 	{
 		auto buffer = arena.next_ptr<char>();
 		(format_single(arena, std::forward<T>(args)), ...);
 		return string(buffer, static_cast<u64>(arena.next_ptr<char>() - buffer));
+	}
+
+	// Arena Formatting
+	inline void format_single(Arena& arena, Arena const& a)
+	{
+		format(arena, "Arena[start = ", a.start, ", allocated = ", a.allocated, ", capacity = ", a.capacity, "]");
 	}
 
 	namespace formatting
@@ -1206,26 +1252,6 @@ namespace fission
 	}; // rect
 
 	FISSION_PRIMITIVE_ALIASES(rect, r);
-}
-
-// --------------------------------------------------------------------------------
-// Arrays
-
-namespace fission
-{
-	template <typename T, u32 count>
-	u32 array_count(T (&)[count]) { return count; }
-
-	template <typename T>
-	struct array
-	{
-		size_t count;
-		T* data;
-
-		inline constexpr T& last() { return data[count - 1]; }
-		inline constexpr T* begin() const { return const_cast<T*>(data); }
-		inline constexpr T* end() const { return const_cast<T*>(data + count); }
-	};
 }
 
 /**

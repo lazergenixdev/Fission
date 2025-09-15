@@ -14,4 +14,8 @@ DISABLE_ALL_WARNINGS_BEGIN
 #define CLAY_IMPLEMENTATION
 #include "clay.h"
 
+//#define MA_NO_RUNTIME_LINKING
+#define MA_IMPLEMENTATION
+#include "miniaudio.h"
+
 DISABLE_ALL_WARNINGS_END

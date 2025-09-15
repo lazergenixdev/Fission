@@ -20,33 +20,8 @@
 
 #define NOB_IMPLEMENTATION
 #define NOB_STRIP_PREFIX
-#include "nob.h"
-
-#if OS == OS_MACOS
-#include <mach-o/loader.h>
-#include <mach-o/nlist.h>
-#endif
-#include "android_elf.h"
-
-#define PATH(L) "(\x1b[92m" L "\x1b[0m)"
-
-#ifdef assert
-#undef assert
-#endif
-void assert_impl(int cond, const char* info);
-#define assert(E) assert_impl(E, #E)
-#define check(E) if (!(E)) exit(1)
-#define run(...) do { Cmd C = {0}; cmd_append(&C, __VA_ARGS__); check(cmd_run_sync(C)); cmd_free(C); } while(0)
-#define run_output(output_path, ...) do { Cmd C = {0}; cmd_append(&C, __VA_ARGS__); check(cmd_run_opt(&C, (Cmd_Opt){.stdout_path = output_path, .stderr_path = output_path})); cmd_free(C); } while(0)
-#define len(A) (sizeof(A)/sizeof(A[0]))
-#define forn(N) for (int i = 0; i < (N); ++i)
-#define iterate(A) for (int i = 0; i < len(A); ++i)
-
-#define scoped(start, end) for (int _i = (start, 0); _i < 1; (end), ++_i)
-#define scoped_dir(dir) scoped(pushd(dir), popd())
-#define scoped_log(level) for (int _old = minimal_log_level, _new = level; (minimal_log_level = _new), _new == level; _new = _old)
-#define scoped_temp() for (int _i = (mkdir_if_not_exists("temp"), pushd("temp"), 0); _i < 1; (popd()), ++_i)
-#define scoped_timer(what) for (uint64_t _start_ns = nanos_since_unspecified_epoch(), _done = 0; !_done; nob_log(INFO, what " took \x1b[93m%f\x1b[0m seconds", (double)((nanos_since_unspecified_epoch() - _start_ns)/1000)/1e6), _done = 1)
+#include "tools/nob.h"
+#include "tools/helpers.h"
 
 #define MSVC_OPTIONS "/nologo", "/std:c++20", "/EHsc-", \
 					 "/utf-8", "/GR-", "/MT", \
@@ -54,32 +29,17 @@ void assert_impl(int cond, const char* info);
 #define CLANG_OPTIONS "-std=c++20", "-fno-exceptions", \
 					  "-Wall", "-Wextra", "-Wpedantic", \
 					  "-Wno-nested-anon-types", "-Wno-gnu-anonymous-struct", \
+					  "-Wno-missing-field-initializers", \
 					  "-Wno-missing-designated-field-initializers"
 
+//! TODO: this is insane, replace with array
 #define X_ANDROID_ARCHITECTURES(X) \
-	X("arm64-v8a",   "aarch64-linux-android35-clang++") \
-	X("armeabi-v7a", "armv7a-linux-androideabi35-clang++") \
+	X("arm64-v8a",   "aarch64-linux-android35-clang++", arm32) \
+	X("armeabi-v7a", "armv7a-linux-androideabi35-clang++", arm64) \
 
-#if OS == OS_WINDOWS
-#	define OBJ_EXT ".obj"
-#	define SCRIPT_EXT ".bat"
-#	define SCRIPT_COMMENT ":: "
-#	define setenv(name, value) _putenv_s(name, value)
-#	define HOME "HOMEPATH"
-#	define PATH_SEP ";"
-#else
-#	define OBJ_EXT ".o"
-#	define SCRIPT_EXT ".sh"
-#	define SCRIPT_COMMENT "# "
-#	define setenv(name, value) setenv(name, value, 1)
-#	define HOME "HOME"
-#	define PATH_SEP ":"
-#endif
-
-typedef enum { Success = 0, Failed = 1 } Result;
-
-const char* home_path;
+//! TODO: android dependency?
 const char* android_sdk_path;
+const char* android_ndk_path;
 const char* android_toolchain; // compilers location
 const char* android_tools;     // command-line tools
 const char* android_platform;
@@ -111,8 +71,8 @@ struct Dependency {
 };
 
 typedef enum {
-	Opt_Speed  = 0, // speed is the default
-	Opt_None   = 1,
+	OPT_SPEED  = 0, // speed is the default
+	OPT_NONE   = 1,
 } Optimization;
 
 typedef enum {
@@ -132,19 +92,18 @@ typedef struct {
 	Optimization   optimization;
 } Cpp_Program;
 
-Result build_fission(void);
-Result build_fission_all(void);
-void check_cpp_compiler(void);
-void create_build_directories(void);
-Result compile(Cpp_Program program);
-Result write_object_from_binary_file(const char* output_file, const char* binary_file, const char* symbol_name);
-const char* find_file_recursive(const char* search_path, const char* file);
+static void check_cpp_compiler(void);
+static void create_build_directories(void);
+static Result compile(Cpp_Program program);
+static Result build_fission(void);
+static Result build_fission_all(void);
 
-const char* cache_file_temp(const char* name)
+//! TODO: remove cache api
+static const char* cache_file_temp(const char* name)
 {
 	return temp_sprintf("%s/%s", build.cache_dir, name);
 }
-const char* cache_find(const char* name)
+static const char* cache_find(const char* name)
 {
 	String_Builder builder = {0};
 	if (read_entire_file(cache_file_temp(name), &builder))
@@ -154,110 +113,225 @@ const char* cache_find(const char* name)
 	}
 	return NULL;
 }
-void cache_set(const char* name, const char* value)
+static void cache_set(const char* name, const char* value)
 {
 	check(write_entire_file(cache_file_temp(name), value, strlen(value)));
 }
 
-// Example: "path/to/my/file.ext.ok" => "file.ext"
-const char* file_name_no_exts(const char* path)
+int fetch_vulkan(Dependency* d)
 {
-	int len = strlen(path);
-	int start = len;
-	for (;start > 0 && path[start-1] != '\\' && path[start-1] != '/'; --start);
-	int end = start;
-	for (;end < len && path[end] != '.'; ++end);
-	return temp_sprintf("%.*s", end - start, path + start);
-}
+	//! TODO: don't exit after install
+#if OS == OS_WINDOWS
+	const char* url = "https://sdk.lunarg.com/sdk/download/latest/windows/vulkan_sdk.exe";
+	const char* sdk_location = getenv("VULKAN_SDK");
+	if (sdk_location == NULL) {
+		nob_log(WARNING, "Vulkan SDK not found! Installing Vulkan...");
+		
+		scoped_temp()
+		{
+			if (!file_exists("vulkan_sdk.exe"))
+				run("curl", "-O", url);
 
-// Example: "path/to/my/file.ext.ok" => "path/to/my"
-const char* path_parent(const char* path)
-{
-	int len = strlen(path);
-	int start = len - 1;
-	for (;start > 0 && path[start] != '\\' && path[start] != '/'; --start);
-	return temp_sprintf("%.*s", start, path);
-}
-
-const char* string_replace(const char* s, char from, char to)
-{
-	char* out = temp_strdup(s);
-	for (int i = 0; out[i] != 0; ++i)
-		if (out[i] == from)
-			out[i] = to;
-	return out;
-}
-bool string_ends_with(const char* str, const char* end)
-{
-	return sv_end_with(sv_from_cstr(str), end);
-}
-
-const char* identifier_from_file_name(const char* file_name)
-{
-	char* out = temp_strdup(file_name);
-	for (int i = 0; file_name[i] != 0; ++i)
+			root_run("vulkan_sdk.exe",
+				"--accept-licenses --default-answer --confirm-command install");
+			nob_log(INFO, "Please restart your terminal.");
+		}
+		exit(0);
+	}
+	
+	nob_log(INFO, "Found Vulkan " PATH("%s"), sdk_location);
+	
+    d->include_path = temp_sprintf("%s/include", sdk_location);
+    d->library_path = temp_sprintf("%s/Lib", sdk_location);
+	d->name = "vulkan-1"; // want to link against this library
+#elif OS == OS_MACOS
+	const char* url = "https://sdk.lunarg.com/sdk/download/latest/mac/vulkan_sdk.zip";
+	const char* home = getenv("HOME");
+	const char* sdk_location = find_begins_with_in_directory(temp_sprintf("%s/VulkanSDK", home), "1.");
+    if (sdk_location == NULL)
 	{
-		char ch = file_name[i];
-		if (!('A' <= ch && ch <= 'Z')
-		&&  !('a' <= ch && ch <= 'z')
-		&&  !('0' <= ch && ch <= '9'))
-			ch = '_';
-		out[i] = ch;
+		nob_log(WARNING, "Vulkan SDK not found! Installing Vulkan...");
+		
+		scoped_temp()
+		{
+			if (!file_exists("vulkan_sdk.zip"))
+				run("curl", "-O", url);
+
+			const char* installer = find_begins_with_in_directory(".", "vulkansdk-macOS");
+			if (installer == NULL) {
+    			run("unzip", "vulkan_sdk.zip");
+				installer = find_begins_with_in_directory(".", "vulkansdk-macOS");
+			}
+
+			nob_log(INFO, "installer: %s", installer);
+
+			run("open", temp_sprintf("%s/", installer), "--args",
+				"--accept-licenses", "--default-answer", "--confirm-command", "install");
+			exit(0);
+		}
+    }
+    else nob_log(INFO, "Found Vulkan SDK " PATH("%s"), sdk_location);
+	d->version = sdk_location;
+	sdk_location = temp_sprintf("%s/VulkanSDK/%s", home, sdk_location);
+
+    d->include_path = temp_sprintf("%s/macOS/include", sdk_location);
+    d->library_path = temp_sprintf("%s/macOS/lib", sdk_location);
+#endif
+
+	assert(file_exists(d->include_path));
+	assert(file_exists(d->library_path));
+	return 0;
+}
+
+int build_freetype_android(Dependency* d, const char* source_dir)
+{
+	#define _BUILD_FREETYPE_ANDROID(ARCH, COMPILER, ID) \
+		const char* dst_ ## ID = temp_sprintf("../%s/lib/" ARCH "/libfreetype.a", build.output_dir); \
+		const char* build_ ## ID = temp_sprintf("%s/build-" ARCH, source_dir); \
+		if (!file_exists(dst_ ## ID)) { run_output("freetype.cmake-" ARCH ".log", "cmake", \
+			"-S", source_dir, "-B", build_ ## ID, \
+			temp_sprintf("-DCMAKE_TOOLCHAIN_FILE='%s/build/cmake/android.toolchain.cmake'", android_ndk_path), \
+			"-DANDROID_ABI=" ARCH, \
+			"-DANDROID_PLATFORM=\"android-35\"", \
+			"-DCMAKE_BUILD_TYPE=Release", \
+			"-DFT_DISABLE_ZLIB=TRUE", \
+			"-DFT_DISABLE_BZIP2=TRUE", \
+			"-DFT_DISABLE_PNG=TRUE", \
+			"-DFT_DISABLE_HARFBUZZ=TRUE", \
+			"-DFT_DISABLE_BROTLI=TRUE", \
+		); \
+		run_output("freetype.build-" ARCH ".log", "cmake", "--build", build_ ## ID, "-j", "--config", "Release"); \
+		if (!file_exists(dst_ ## ID)) \
+		check(copy_file( \
+			library_temp(build_ ## ID, "freetype"), \
+			dst_ ## ID \
+		)); }
+	X_ANDROID_ARCHITECTURES(_BUILD_FREETYPE_ANDROID)
+	#undef _BUILD_FREETYPE_ANDROID
+
+	const char* dst_include_path = temp_sprintf("../%s", d->include_path);
+	if (!file_exists(dst_include_path))
+	check(copy_directory_recursively(
+		temp_sprintf("%s/include", source_dir),
+		dst_include_path
+	));
+
+	return 0;
+}
+
+int fetch_freetype(Dependency* d)
+{
+	int result = 0;
+	const char* lib_path = library_temp(build.output_dir, "freetype");
+	if (build.target_os == OS_ANDROID)
+	{
+		bool lib1 = file_exists(temp_sprintf("%s/lib/arm64-v8a/libfreetype.a", build.output_dir));
+		bool lib2 = file_exists(temp_sprintf("%s/lib/armeabi-v7a/libfreetype.a", build.output_dir));
+
+		if (lib1 && lib2)
+		{
+			nob_log(INFO, "Found %s " PATH("%s"), d->display_name, d->version);
+			return 0;
+		}
 	}
-	return out;
+	if (!file_exists(lib_path) || !file_exists(d->include_path))
+	{
+		nob_log(WARNING, "FreeType not found! Installing FreeType...");
+
+		scoped_temp()
+		{
+			const char* zip_name = temp_sprintf("freetype-VER-%s.zip", d->version);
+			const char* source_dir = temp_sprintf("freetype-VER-%s", d->version);
+			if (!file_exists(zip_name))
+				run("curl", "-sO", temp_sprintf(d->url, d->version, d->version));
+			if (!file_exists(source_dir))
+				run("unzip", "-q", zip_name);
+
+			if (build.target_os == OS_ANDROID)
+			{
+				result = build_freetype_android(d, source_dir);
+				continue;
+			}
+			
+			const char* build_dir = temp_sprintf("%s/build", source_dir);
+			run_output("freetype.cmake.log", "cmake",
+				"-S", source_dir, "-B", build_dir,
+				"-DCMAKE_BUILD_TYPE=Release",
+				"-D", "FT_DISABLE_ZLIB=TRUE",
+				"-D", "FT_DISABLE_BZIP2=TRUE",
+				"-D", "FT_DISABLE_PNG=TRUE",
+				"-D", "FT_DISABLE_HARFBUZZ=TRUE",
+				"-D", "FT_DISABLE_BROTLI=TRUE",
+			);
+			run_output("freetype.build.log", "cmake", "--build", build_dir, "-j", "--config", "Release");
+#if OS == OS_WINDOWS
+			build_dir = temp_sprintf("%s/Release", build_dir);
+#endif
+			const char* dst_lib_path = temp_sprintf("../%s", lib_path);
+			if (!file_exists(dst_lib_path))
+			check(copy_file(
+				library_temp(build_dir, "freetype"),
+				dst_lib_path
+			));
+
+			const char* dst_include_path = temp_sprintf("../%s", d->include_path);
+			if (!file_exists(dst_include_path))
+			check(copy_directory_recursively(
+				temp_sprintf("%s/include", source_dir),
+				dst_include_path
+			));
+		}
+    }
+	else nob_log(INFO, "Found %s " PATH("%s"), d->display_name, d->version);
+	return result;
 }
 
-const char* target_name(int os)
+int fetch_glfw(Dependency* d)
 {
-	switch (os) {
-		case OS_WINDOWS: return "windows";
-		case OS_MACOS:   return "macos";
-		case OS_LINUX:   return "linux";
-		case OS_ANDROID: return "android";
-		case OS_IOS:     return "ios";
+	const char* lib_path = library_temp(build.output_dir, "glfw");
+	if (!file_exists(lib_path) || !file_exists(d->include_path))
+	{
+		nob_log(WARNING, "GLFW not found! Installing GLFW...");
+
+		scoped_temp()
+		{
+			if (!file_exists("glfw"))
+				run("git", "clone", "-q", "--depth=1", "--branch", d->version, d->url);
+
+			const char* build_dir = "glfw/build";
+			run_output("glfw.cmake.log", "cmake",
+				"-S", "glfw", "-B", build_dir,
+				"-DCMAKE_BUILD_TYPE=Release",
+			);
+			run_output("glfw.build.log", "cmake", "--build", build_dir, "-j", "--config", "Release");
+
+			const char* dst_lib_path = temp_sprintf("../%s", lib_path);
+			if (!file_exists(dst_lib_path))
+			check(copy_file(
+				library_temp(temp_sprintf("%s/src", build_dir), "glfw3"),
+				dst_lib_path
+			));
+
+			const char* dst_include_path = temp_sprintf("../%s", d->include_path);
+			if (!file_exists(dst_include_path))
+			check(copy_directory_recursively("glfw/include", dst_include_path));
+		}
 	}
-	return NULL;
+	else nob_log(INFO, "Found %s " PATH("%s"), d->display_name, d->version);
+	return 0;
 }
 
-struct {
-    const char **items;
-    size_t count;
-    size_t capacity;
-} _directory_stack = {0};
+Dependency dependencies[] = {
+#   include "dependencies.h"
+};
 
-// Set current directory temporarily
-void pushd(const char* path)
-{
-	const char* current = get_current_dir_temp();
-	da_append(&_directory_stack, current);
-	set_current_dir(path);
-}
-void popd()
-{
-	set_current_dir(da_last(&_directory_stack));
-	_directory_stack.count -= 1;
-}
+Cpp_Program fission = {
+	.source = "src/main.cpp",
+	.output_name = "fission",
+	.flags = COMPILE_STATIC_LIBRARY,
+};
 
-struct {
-    const char **items;
-    size_t count;
-    size_t capacity;
-} _path_stack;
-
-// Push onto $PATH temporarily
-void pushp(const char* path)
-{
-	const char* current = getenv("PATH");
-	da_append(&_path_stack, current);
-	setenv("PATH", temp_sprintf("%s" PATH_SEP "%s", path, current));
-}
-void popp()
-{
-	setenv("PATH", da_last(&_path_stack));
-	_path_stack.count -= 1;
-}
-
-void create_build_directories(void)
+static void create_build_directories(void)
 {
 	scoped_log(WARNING) {
 		check(mkdir_if_not_exists("bin"));
@@ -279,27 +353,39 @@ void create_build_directories(void)
 	}
 }
 
-void check_cpp_compiler_android(void)
+static void check_cpp_compiler_android(void)
 {
 	// Determine SDK location (look at default locations)
 	const char* sdk_location = NULL;
 #if OS == OS_WINDOWS
+	const char* zip = "commandlinetools-win-13114758_latest.zip";
 	const char* app_data = getenv("LOCALAPPDATA");
-	const char* path1 = temp_sprintf("%s/Android/Sdk", app_data);
+	const char* path1 = temp_sprintf("%s/Android/sdk", app_data);
 	const char* path2 = "C:/Program Files/Android/android-sdk";
 	if (file_exists(path1)) sdk_location = path1;
 	if (!sdk_location && file_exists(path2)) sdk_location = path2;
 #elif OS == OS_MACOS
-	const char* path1 = temp_sprintf("%s/Library/Android/sdk", home_path);
+	const char* zip = "commandlinetools-mac-13114758_latest.zip";
+	const char* path1 = temp_sprintf("%s/Library/Android/sdk", home_directory());
 	if (file_exists(path1)) sdk_location = path1;
 #elif OS == OS_LINUX
-	const char* path1 = temp_sprintf("%s/Android/Sdk", home_path);
+	const char* zip = "commandlinetools-linux-13114758_latest.zip";
+	const char* path1 = temp_sprintf("%s/Android/Sdk", home_directory());
 	if (file_exists(path1)) sdk_location = path1;
 #endif
 	if (!sdk_location) {
 		// Install Android SDK
 		nob_log(INFO, "Android SDK not found! Installing Android SDK...");
-		exit(1); // TODO
+		sdk_location = path1; // use default location
+
+		scoped_temp()
+		{
+			if (!file_exists(zip))
+				run("curl", "-sO", temp_sprintf("https://dl.google.com/android/repository/%s", zip));
+			
+			mkdir_recursive(path1);
+			run("unzip", "-d", path1, zip);
+		}
 	}
 	else nob_log(INFO, "Found Android SDK " PATH("%s"), sdk_location);
 	android_sdk_path = sdk_location;
@@ -319,16 +405,18 @@ void check_cpp_compiler_android(void)
 			run(sdkmanager, sdkroot, "--install", "platform-tools");
 	}
 	android_tools = path_parent(sdkmanager);
+	android_ndk_path = temp_sprintf("%s/ndk/28.2.13676358", sdk_location);
 	android_platform = temp_sprintf("%s/platforms/android-35", sdk_location);
 	android_build_tools = temp_sprintf("%s/build-tools/35.0.0", sdk_location);
-	const char* ndk_path = temp_sprintf("%s/ndk/28.2.13676358/toolchains/llvm", sdk_location);
-	const char* clang = find_file_recursive(ndk_path, "armv7a-linux-androideabi35-clang++");
+	const char* toolchain_path = temp_sprintf("%s/ndk/28.2.13676358/toolchains/llvm", sdk_location);
+	const char* clang = find_file_recursive(toolchain_path, "armv7a-linux-androideabi35-clang++");
 	const char* bin = path_parent(clang);
 	nob_log(INFO, "Found Android toolchain " PATH("%s"), bin);
 	android_toolchain = bin;
 
 	// Check if there is a keystore available
-	build.keystore = temp_sprintf("%s/.keystore", home_path);
+	//! TODO: how to properly handle keystores?
+	build.keystore = temp_sprintf("%s/.keystore", home_directory());
 	if (!file_exists(build.keystore)) {
 		nob_log(WARNING, "Could not locate keystore at " PATH("%s"), build.keystore);
 		cmd_append(&cmd, "keytool", "-genkeypair", "-v", "-keystore", build.keystore);
@@ -341,6 +429,7 @@ void check_cpp_compiler_android(void)
 	{
 		String_Builder builder = {0};
 	#if OS == OS_WINDOWS
+		//! TODO: fix this
 		sb_appendf(&builder, "set PATH=%s/platform-tools;%%PATH%%\n", android_sdk_path);
 	#else
 		sb_appendf(&builder, "export PATH=\"%s/platform-tools:$PATH\"\n", android_sdk_path);
@@ -355,7 +444,7 @@ void check_cpp_compiler_android(void)
 	}
 }
 
-void check_cpp_compiler(void)
+static void check_cpp_compiler(void)
 {
 	if (build.target_os == OS_ANDROID)
 		return check_cpp_compiler_android();
@@ -401,19 +490,7 @@ void check_cpp_compiler(void)
 #endif
 }
 
-void cmd_append_all_ends_with(Cmd* cmd, const char* path, const char* end)
-{
-	File_Paths children = {0};
-	if (!read_entire_dir(path, &children))
-		return;
-	forn (children.count) {
-		const char* child = children.items[i];
-		if (string_ends_with(child, end))
-			cmd_append(cmd, temp_sprintf("%s/%s", path, child));
-	}
-}
-
-Result compile_android(Cpp_Program program)
+static Result compile_android(Cpp_Program program)
 {
 	Result result = Success;
 	const char* root = get_current_dir_temp();
@@ -443,7 +520,7 @@ Result compile_android(Cpp_Program program)
 	const char* namespace = string_replace(package, '.', '_');
 
 	#define _COMPILE_ANDROID(ARCH, COMPILER, ...) \
-		cmd_append(&cmd, COMPILER ".cmd"); \
+		cmd_append(&cmd, "./" COMPILER); \
 		cmd_extend(&cmd, &options); \
 		if (program.flags & (COMPILE_OBJECT|COMPILE_STATIC_LIBRARY)) \
 			cmd_append(&cmd, "-o", temp_sprintf("%s/%s/%s.o/" ARCH ".o", root, build.intermediate_dir, program.output_name)); \
@@ -463,7 +540,7 @@ Result compile_android(Cpp_Program program)
 	if (program.flags & COMPILE_STATIC_LIBRARY)
 	{
 		#define _LIBRARY_ANDROID(ARCH, ...) \
-		cmd_append(&cmd, "llvm-ar", "rvs"); \
+		cmd_append(&cmd, "./llvm-ar", "rvs"); \
 		cmd_append(&cmd, temp_sprintf("%s/%s/lib/" ARCH "/lib%s.a", root, build.output_dir, program.output_name)); \
 		cmd_append(&cmd, temp_sprintf("%s/%s/%s.o/" ARCH ".o", root, build.intermediate_dir, program.output_name)); \
 		forn (program.object_files.count) { \
@@ -488,7 +565,7 @@ Result compile_android(Cpp_Program program)
 	pushd(android_build_tools);
 
 	// Generate R.java
-	cmd_append(&cmd, "aapt", "package", "-f", "-m");
+	cmd_append(&cmd, "./aapt", "package", "-f", "-m");
 	cmd_append(&cmd, "-S", temp_sprintf("%s/src/android/res", root), "-J", temp_sprintf("%s/%s", root, build.intermediate_dir));
 	cmd_append(&cmd, "-M", temp_sprintf("%s/src/android/AndroidManifest.xml", root));
 	cmd_append(&cmd, "-I", temp_sprintf("%s/android.jar", android_platform));
@@ -514,7 +591,7 @@ Result compile_android(Cpp_Program program)
 	if (!cmd_run_sync_and_reset(&cmd)) return_defer(Failed);
 
 	// Generate classes.dex
-	cmd_append(&cmd, "d8.bat", "--min-api", "21");
+	cmd_append(&cmd, "./d8", "--min-api", "21");
 	cmd_append(&cmd, "--classpath", temp_sprintf("%s/android.jar", android_platform));
 	cmd_append_all_ends_with(&cmd, temp_sprintf("%s/%s/%s", root, build.intermediate_dir, package_path), ".class");
 	cmd_append(&cmd, "--output", temp_sprintf("%s/%s", root, build.intermediate_dir));
@@ -523,7 +600,7 @@ Result compile_android(Cpp_Program program)
 	const char* output_apk = temp_sprintf("%s/%s/%s.output.apk", root, build.intermediate_dir, program.output_name);
 
 	// Generate APK
-	cmd_append(&cmd, "aapt", "package", "-f");
+	cmd_append(&cmd, "./aapt", "package", "-f");
 	cmd_append(&cmd, "-M", temp_sprintf("%s/src/android/AndroidManifest.xml", root));
 	cmd_append(&cmd, "-S", temp_sprintf("%s/src/android/res", root));
 	cmd_append(&cmd, "-I", temp_sprintf("%s/android.jar", android_platform));
@@ -549,11 +626,11 @@ Result compile_android(Cpp_Program program)
 
 	// Align APK
 	const char* unsigned_apk = temp_sprintf("%s/%s/%s.unsigned.apk", root, build.intermediate_dir, program.output_name);
-	cmd_append(&cmd, "zipalign", "-f", "4", output_apk, unsigned_apk);
+	cmd_append(&cmd, "./zipalign", "-f", "4", output_apk, unsigned_apk);
 	if (!cmd_run_sync_and_reset(&cmd)) return_defer(Failed);
 
 	// Sign APK
-	cmd_append(&cmd, "apksigner.bat", "sign", "--ks", build.keystore);
+	cmd_append(&cmd, "./apksigner", "sign", "--ks", build.keystore);
 	cmd_append(&cmd, "--ks-key-alias", "debug");
 	cmd_append(&cmd, "--ks-pass", "pass:android");
 	cmd_append(&cmd, "--v1-signing-enabled", "true", "--v2-signing-enabled", "true");
@@ -566,13 +643,13 @@ defer:
 	return result;
 }
 
-Result compile_windows(Cpp_Program program)
+static Result compile_windows(Cpp_Program program)
 {
 	cmd_append(&cmd, "cl.exe", MSVC_OPTIONS);
 	if (!(program.flags & COMPILE_DEBUG)) // Debug symbols are terrible with Optimizations
 	switch (program.optimization) {
 		default: cmd_append(&cmd, "/O2"); break;
-		case Opt_None: cmd_append(&cmd, "/Od"); break;
+		case OPT_NONE: cmd_append(&cmd, "/Od"); break;
 	}
 	else cmd_append(&cmd, "/Od");
 	if ((program.flags & COMPILE_STATIC_LIBRARY) || (program.flags & COMPILE_OBJECT))
@@ -608,12 +685,61 @@ Result compile_windows(Cpp_Program program)
 	return Success;
 }
 
-Result compile_macos(Cpp_Program program)
+static Result compile_macos(Cpp_Program program)
 {
+	const char* output = NULL;
+
+	// App
+	if (!(program.flags & (COMPILE_OBJECT|COMPILE_STATIC_LIBRARY)))
+	scoped_log(WARNING)
+	{
+		String_Builder builder = {0};
+		if (!mkdir_if_not_exists(temp_sprintf("%s/%s.app", build.output_dir, program.output_name)))
+			return Failed;
+
+		const char* contents_dir = temp_sprintf("%s/%s.app/Contents", build.output_dir, program.output_name);
+
+		if (!mkdir_if_not_exists(contents_dir)) return Failed;
+		if (!mkdir_if_not_exists(temp_sprintf("%s/MacOS", contents_dir))) return Failed;
+		if (!mkdir_if_not_exists(temp_sprintf("%s/Resources", contents_dir))) return Failed;
+		if (!mkdir_if_not_exists(temp_sprintf("%s/Frameworks", contents_dir))) return Failed;
+
+		// Vulkan Loader
+		if (!mkdir_if_not_exists(temp_sprintf("%s/Resources/vulkan", contents_dir))) return Failed;
+		if (!mkdir_if_not_exists(temp_sprintf("%s/Resources/vulkan/icd.d", contents_dir))) return Failed;
+		assert(strcmp(dependencies[0].name, "vulkan") == 0);
+		Dependency* vulkan = &dependencies[0];
+		const char* shared1 = temp_sprintf("libvulkan.%.*s.dylib", truncate_version(vulkan->version, 1), vulkan->version);
+		const char* shared3 = temp_sprintf("libvulkan.%.*s.dylib", truncate_version(vulkan->version, 3), vulkan->version);
+		check(copy_file_if_not_exists(temp_sprintf("%s/%s", vulkan->library_path, shared1), temp_sprintf("%s/Frameworks/%s", contents_dir, shared1)));
+		check(copy_file_if_not_exists(temp_sprintf("%s/%s", vulkan->library_path, shared3), temp_sprintf("%s/Frameworks/%s", contents_dir, shared3)));
+		check(copy_file_if_not_exists(temp_sprintf("%s/libMoltenVK.dylib", vulkan->library_path), temp_sprintf("%s/Frameworks/libMoltenVK.dylib", contents_dir)));
+		if (!write_entire_file(temp_sprintf("%s/Resources/vulkan/icd.d/MoltenVK_icd.json", contents_dir), VULKAN_ICD_MACOS, sizeof(VULKAN_ICD_MACOS)-1))
+			return Failed;
+
+		output = temp_sprintf("%s/MacOS/%s", contents_dir, program.output_name);
+
+		const char* plist_contents = INFO_PLIST_HEADER
+		"<dict>\n"
+		"    <key>CFBundleExecutable</key>\n"
+		"    <string>%s</string>\n"
+		"    <key>CFBundleIdentifier</key>\n"
+		"    <string>com.example.myapp</string>\n"
+		"    <key>CFBundleName</key>\n"
+		"    <string>MyApp</string>\n"
+		"    <key>CFBundleVersion</key>\n"
+		"    <string>1.0</string>\n"
+		"</dict>\n" INFO_PLIST_FOOTER;
+
+		sb_appendf(&builder, plist_contents, program.output_name);
+		if (!write_entire_file(temp_sprintf("%s/Info.plist", contents_dir), builder.items, builder.count))
+			return Failed;
+	}
+
 	cmd_append(&cmd, "clang++", CLANG_OPTIONS);
 	switch (program.optimization) {
 		default: cmd_append(&cmd, "-O2"); break;
-		case Opt_None: break;
+		case OPT_NONE: break;
 	}
 	if ((program.flags & COMPILE_STATIC_LIBRARY) || (program.flags & COMPILE_OBJECT))
 		cmd_append(&cmd, "-c");
@@ -628,14 +754,16 @@ Result compile_macos(Cpp_Program program)
 
 	if (!(program.flags & COMPILE_STATIC_LIBRARY) && !(program.flags & COMPILE_OBJECT))
 	{	
-		cmd_append(&cmd, "-o", temp_sprintf("%s/%s", build.output_dir, program.output_name));
+		cmd_append(&cmd, "-o", output);
 		forn (program.library_dirs.count)
 			cmd_append(&cmd, temp_sprintf("-L%s", program.library_dirs.items[i]));
 		forn (program.libraries.count)
 			cmd_append(&cmd, temp_sprintf("-l%s", program.libraries.items[i]));
 		// System Libraries
-		cmd_append(&cmd, "-rpath", "@executable_path/");
-		cmd_append(&cmd, "-framework", "OpenGL", "-framework", "Cocoa",
+		cmd_append(&cmd, "-lpthread");
+		cmd_append(&cmd, "-rpath", "@executable_path/../Frameworks");
+		cmd_append(&cmd, "-framework", "Cocoa", "-framework", "CoreFoundation",
+						 "-framework", "CoreAudio", "-framework", "AudioToolbox",
 						 "-framework", "IOKit", "-framework", "CoreVideo");
 	}
     if (!cmd_run_sync_and_reset(&cmd)) return Failed;
@@ -651,7 +779,7 @@ Result compile_macos(Cpp_Program program)
 	return Success;
 }
 
-Result compile(Cpp_Program program)
+static Result compile(Cpp_Program program)
 {
 	if (program.output_name == NULL)
 		program.output_name = file_name_no_exts(program.source);
@@ -664,194 +792,7 @@ Result compile(Cpp_Program program)
 	}
 }
 
-Result write_object_from_binary_file_android_armv7(const char* output_file, String_Builder input, const char* symbol_name)
-{
-	String_Builder output = {0};
-
-    const char strtab_data[] = "\0.strtab\0.symtab\0.data\0.ARM.attributes";
-	const char* sym_start = temp_sprintf("%s_start", symbol_name);
-	const char* sym_end   = temp_sprintf("%s_end", symbol_name);
-	uint32_t strtab_size = sizeof(strtab_data) + strlen(sym_start) + strlen(sym_end) + 2;
-
-	// Symbol Table
-	Elf32_Sym syms[3] = {0};
-	syms[1].st_name = sizeof(strtab_data);
-	syms[1].st_value = 0;
-	syms[1].st_size = 0;
-	syms[1].st_shndx = 3;
-	syms[1].st_info = STB_GLOBAL << 4;
-	syms[2].st_name = sizeof(strtab_data) + strlen(sym_start) + 1;
-	syms[2].st_value = input.count;
-	syms[2].st_size = 0;
-	syms[2].st_shndx = 3;
-	syms[2].st_info = STB_GLOBAL << 4;
-
-    // ---- ELF Header ----
-    Elf32_Ehdr ehdr = {0};
-    memcpy(ehdr.e_ident, ELFMAG, SELFMAG);
-    ehdr.e_ident[EI_CLASS] = ELFCLASS32;
-    ehdr.e_ident[EI_DATA]  = ELFDATA2LSB;
-    ehdr.e_ident[EI_VERSION] = EV_CURRENT;
-
-	ehdr.e_flags = 0x05000000;
-    ehdr.e_type = ET_REL;              // relocatable
-    ehdr.e_machine = EM_ARM;       // for Android ARM64
-    ehdr.e_version = EV_CURRENT;
-    ehdr.e_ehsize = sizeof(Elf32_Ehdr);
-    ehdr.e_shentsize = sizeof(Elf32_Shdr);
-    ehdr.e_shnum = 5;                  // 4 sections (null, .data, .shstrtab, .strtab)
-    ehdr.e_shstrndx = 1;               // .shstrtab index
-	ehdr.e_shoff = sizeof(ehdr) + sizeof(syms) + strtab_size + input.count
-	             + sizeof(ehdr) + 8;
-
-	sb_append_buf(&output, &ehdr, sizeof(ehdr));
-
-    // section string table -> symbol table -> write data 
-	sb_append_buf(&output, strtab_data, sizeof(strtab_data));
-	sb_append_cstr(&output, sym_start);
-	sb_append_null(&output);
-	sb_append_cstr(&output, sym_end);
-	sb_append_null(&output);
-	sb_append_buf(&output, syms, sizeof(syms));
-	sb_append_buf(&output, input.items, input.count);
-
-	sb_append_buf(&output, &ehdr, sizeof(ehdr));
-	sb_append_buf(&output, "\xff\xff\x00\xff\x00\xff\x00\xff", 8);
-
-    // ---- Section headers ----
-    Elf32_Shdr shdr_null = {0};
-	sb_append_buf(&output, &shdr_null, sizeof(shdr_null));
-
-    Elf32_Shdr strtab = {0}; // .shstrtab
-    strtab.sh_name = 1; // offset in shstrtab
-    strtab.sh_type = SHT_STRTAB;
-    strtab.sh_offset = sizeof(ehdr);
-    strtab.sh_size = strtab_size;
-	strtab.sh_addralign = 1;
-	sb_append_buf(&output, &strtab, sizeof(strtab));
-
-    Elf32_Shdr symtab = {0}; // .symtab
-    symtab.sh_name = strtab.sh_name + 7 + 1;
-	symtab.sh_entsize = sizeof(syms[0]);
-    symtab.sh_type = SHT_SYMTAB;
-    symtab.sh_offset = strtab.sh_offset + strtab.sh_size;
-    symtab.sh_size = sizeof(syms);
-	symtab.sh_link = 1;
-	symtab.sh_info = 1; // no idea why this is 1
-	symtab.sh_addralign = 4;
-	sb_append_buf(&output, &symtab, sizeof(symtab));
-
-    Elf32_Shdr data = {0}; // .data
-    data.sh_name = symtab.sh_name + 7 + 1;
-    data.sh_type = SHT_PROGBITS;
-    data.sh_flags = SHF_WRITE | SHF_ALLOC;
-    data.sh_offset = symtab.sh_offset + symtab.sh_size;
-    data.sh_size = input.count;
-	data.sh_addralign = 4;
-	sb_append_buf(&output, &data, sizeof(data));
-
-    Elf32_Shdr arm_attributes = {0}; // .data
-    arm_attributes.sh_name = data.sh_name + 5 + 1;
-    arm_attributes.sh_type = 0x70000003; // https://github.com/ARM-software/abi-aa/blob/main/addenda32/addenda32.rst#3352the-target-related-attributes
-    arm_attributes.sh_offset = data.sh_offset + data.sh_size;
-    arm_attributes.sh_size = 60;
-	arm_attributes.sh_addralign = 1;
-	sb_append_buf(&output, &arm_attributes, sizeof(arm_attributes));
-
-	if (!write_entire_file(output_file, output.items, output.count))
-		return Failed;
-
-	return Success;
-}
-
-Result write_object_from_binary_file_android_arm64(const char* output_file, String_Builder input, const char* symbol_name)
-{
-	String_Builder output = {0};
-
-    const char strtab_data[] = "\0.strtab\0.symtab\0.data";
-	const char* sym_start = temp_sprintf("%s_start", symbol_name);
-	const char* sym_end   = temp_sprintf("%s_end", symbol_name);
-	uint32_t strtab_size = sizeof(strtab_data) + strlen(sym_start) + strlen(sym_end) + 2;
-
-	// Symbol Table
-	Elf64_Sym syms[3] = {0};
-	syms[1].st_name = sizeof(strtab_data);
-	syms[1].st_value = 0;
-	syms[1].st_size = 0;
-	syms[1].st_shndx = 3;
-	syms[1].st_info = STB_GLOBAL << 4;
-	syms[2].st_name = sizeof(strtab_data) + strlen(sym_start) + 1;
-	syms[2].st_value = input.count;
-	syms[2].st_size = 0;
-	syms[2].st_shndx = 3;
-	syms[2].st_info = STB_GLOBAL << 4;
-
-    // ---- ELF Header ----
-    Elf64_Ehdr ehdr = {0};
-    memcpy(ehdr.e_ident, ELFMAG, SELFMAG);
-    ehdr.e_ident[EI_CLASS] = ELFCLASS64;
-    ehdr.e_ident[EI_DATA]  = ELFDATA2LSB;
-    ehdr.e_ident[EI_VERSION] = EV_CURRENT;
-
-    ehdr.e_type = ET_REL;              // relocatable
-    ehdr.e_machine = EM_AARCH64;       // for Android ARM64
-    ehdr.e_version = EV_CURRENT;
-    ehdr.e_ehsize = sizeof(Elf64_Ehdr);
-    ehdr.e_shentsize = sizeof(Elf64_Shdr);
-    ehdr.e_shnum = 4;                  // 4 sections (null, .data, .shstrtab, .strtab)
-    ehdr.e_shstrndx = 1;               // .shstrtab index
-	ehdr.e_shoff = sizeof(ehdr) + sizeof(syms) + strtab_size + input.count;
-
-	sb_append_buf(&output, &ehdr, sizeof(ehdr));
-
-    // section string table -> symbol table -> write data 
-	sb_append_buf(&output, strtab_data, sizeof(strtab_data));
-	sb_append_cstr(&output, sym_start);
-	sb_append_null(&output);
-	sb_append_cstr(&output, sym_end);
-	sb_append_null(&output);
-	sb_append_buf(&output, syms, sizeof(syms));
-	sb_append_buf(&output, input.items, input.count);
-
-    // ---- Section headers ----
-    Elf64_Shdr shdr_null = {0};
-	sb_append_buf(&output, &shdr_null, sizeof(shdr_null));
-
-    Elf64_Shdr strtab = {0}; // .shstrtab
-    strtab.sh_name = 1; // offset in shstrtab
-    strtab.sh_type = SHT_STRTAB;
-    strtab.sh_offset = sizeof(ehdr);
-    strtab.sh_size = strtab_size;
-	strtab.sh_addralign = 1;
-	sb_append_buf(&output, &strtab, sizeof(strtab));
-
-    Elf64_Shdr symtab = {0}; // .symtab
-    symtab.sh_name = 9; // offset in shstrtab
-	symtab.sh_entsize = sizeof(syms[0]);
-    symtab.sh_type = SHT_SYMTAB;
-    symtab.sh_offset = strtab.sh_offset + strtab.sh_size;
-    symtab.sh_size = sizeof(syms);
-	symtab.sh_link = 1;
-	symtab.sh_info = 1; // no idea why this is 1
-	symtab.sh_addralign = 1;
-	sb_append_buf(&output, &symtab, sizeof(symtab));
-
-    Elf64_Shdr data = {0}; // .data
-    data.sh_name = 9+8; // offset in shstrtab
-    data.sh_type = SHT_PROGBITS;
-    data.sh_flags = SHF_WRITE | SHF_ALLOC | SHF_RO_AFTER_INIT;
-    data.sh_offset = symtab.sh_offset + symtab.sh_size;
-    data.sh_size = input.count;
-	data.sh_addralign = 4;
-	sb_append_buf(&output, &data, sizeof(data));
-
-	if (!write_entire_file(output_file, output.items, output.count))
-		return Failed;
-
-	return Success;
-}
-
-Result write_object_from_binary_file(const char* output_file, const char* binary_file, const char* symbol_name)
+static Result write_object_from_binary_file(const char* output_file, const char* binary_file, const char* symbol_name)
 {
 	nob_log(INFO, "Generating binary object file %s -> %s", binary_file, output_file);
 	
@@ -1024,147 +965,155 @@ Result write_object_from_binary_file(const char* output_file, const char* binary
 	return Success;
 }
 
-bool string_begins_with(const char* input, const char* begin)
+int check_dependencies(void)
 {
-	int m = 0;
-	for (; input[m] == begin[m]; ++m);
-	return begin[m] == 0;
+	cmd_append(&fission.include_dirs, "include");
+	iterate (dependencies) {
+        Dependency* d = &dependencies[i];
+		if (!(d->targets & build.target_os)) continue;
+        if (d->fetch(d)) return 1;
+		cmd_append(&fission.include_dirs, d->include_path);
+	}
+
+	const char* header_only_output = temp_sprintf("%s/header_only" OBJ_EXT, build.intermediate_dir);
+	const char* header_only_source = "src/header_only.cpp";
+	if (needs_rebuild(header_only_output, &header_only_source, 1))
+	{
+		Cpp_Program header_only = {
+			.source = header_only_source,
+			.output_name = "header_only",
+			.flags = COMPILE_OBJECT,
+			.include_dirs = fission.include_dirs,
+		};
+		if (compile(header_only)) return Failed;
+	}
+	return 0;
 }
 
-const char* library_temp(const char* dir, const char* name)
+int compile_shaders(void)
 {
-#if OS == OS_WINDOWS
-	return temp_sprintf("%s/%s.lib", dir, name);
-#else
-	return temp_sprintf("%s/lib%s.a", dir, name);
-#endif
+	File_Paths shader_files = {0};
+	check(read_entire_dir("src/shaders", &shader_files));
+
+	forn (shader_files.count) {
+		const char* path = shader_files.items[i];
+		if (strcmp(path, ".")  == 0) continue;
+		if (strcmp(path, "..") == 0) continue;
+		const char* name = file_name_no_exts(path);
+		const char* binary_path = temp_sprintf("src/embed/%s.spv", name);
+		const char* source_path = temp_sprintf("src/shaders/%s", path);
+		if (!needs_rebuild(binary_path, &source_path, 1))
+			continue;
+		run("slangc", "-target", "spirv", source_path, "-o", binary_path);
+	}
+	return 0;
 }
 
-bool copy_file_if_not_exists(const char* src_path, const char* dst_path)
+int generate_embedded_objects(void)
 {
-    if (file_exists(dst_path)) {
-        nob_log(INFO, "file `%s` already exists", dst_path);
-        return 1;
-    }
-    return copy_file(src_path, dst_path);
-}
+	File_Paths embed_files = {0};
+	check(read_entire_dir("src/embed", &embed_files));
 
-void root_run(const char* program, const char* args)
-{
-#if OS == OS_WINDOWS
-#	pragma comment (lib, "shell32.lib")
-	SHELLEXECUTEINFO sei = { sizeof(sei) };
-	sei.lpVerb = "runas";
-	sei.lpFile = program;
-	sei.lpParameters = args;
-	sei.nShow = 1;
+	forn (embed_files.count) {
+		const char* path = embed_files.items[i];
+		if (strcmp(path, ".")  == 0) continue;
+		if (strcmp(path, "..") == 0) continue;
+		if (sv_end_with(sv_from_cstr(path), ".hpp")) continue;
+		const char* name = file_name_no_exts(path);
+		const char* output_path = temp_sprintf("%s/%s" OBJ_EXT, build.intermediate_dir, path);
+		const char* binary_path = temp_sprintf("src/embed/%s", path);
+		const char* symbol_name = identifier_from_file_name(path);
+		cmd_append(&fission.object_files, path);
 
-	nob_log(INFO, "CMD: runas %s %s", program, args);
-	if (!ShellExecuteExA(&sei)) {
-		DWORD err = GetLastError();
-		if (err == ERROR_CANCELLED) {
-			nob_log(ERROR, "User refused elevation.");
-		} else {
-			nob_log(ERROR, "Failed to launch, error %lu\n", err);
+		// Generate binary object
+		if (needs_rebuild(output_path, &binary_path, 1))
+		{
+			if (write_object_from_binary_file(output_path, binary_path, symbol_name))
+				return 1;
 		}
-		exit(1);
+
+		// Generate include file
+		const char* header_path = temp_sprintf("src/embed/%s.hpp", path);
+		if (!file_exists(header_path))
+		{
+			String_Builder builder = {0};
+			sb_append_cstr(&builder, "namespace embedded\n{\n");
+			sb_appendf(&builder, "\textern \"C\" const uint8_t %s_start[];\n", symbol_name);
+			sb_appendf(&builder, "\textern \"C\" const uint8_t %s_end[];\n", symbol_name);
+			sb_appendf(&builder, "}\n");
+			check(write_entire_file(header_path, builder.items, builder.count));
+		}
 	}
-#endif
+	return 0;
 }
 
-const char* find_file_recursive(const char* search_path, const char* file)
+//! NOTE: assumes called from "examples/" directory
+Result fission_build_all_examples(Cpp_Program start)
 {
-	static char full_path[512];
-	static int full_path_length = 0;
+	Cpp_Program program = start;
 	
-	const char* result = NULL;
-	File_Paths children = {0};
-	int k = 0;
-	
-	// Add to full path
-	for (; search_path[k] != 0; ++k) {
-		full_path[full_path_length++] = search_path[k];
-	}
-	assert(full_path_length < sizeof(full_path));
-	full_path[full_path_length] = 0; // null terminate
-	
-	File_Type type = get_file_type(full_path);
-	assert(type != -1);
-	if (type != FILE_DIRECTORY)
-		return_defer(NULL);
-	
-	k += 1;
-	full_path[full_path_length++] = '/'; // add separator
-	assert(full_path_length < sizeof(full_path));
-	full_path[full_path_length] = 0; // null terminate
-	
-	check(read_entire_dir(full_path, &children));
-	forn (children.count) {
-		const char* child = children.items[i];
-		if (strcmp(child, ".")  == 0) continue;
-		if (strcmp(child, "..") == 0) continue;
-		if (strcmp(child, file) == 0)
-			return_defer(temp_sprintf("%.*s%s", full_path_length, full_path, child));
-		
-		const char* found = find_file_recursive(child, file);
-		if (found != NULL)
-			return_defer(found);
-	}
-defer:
-	da_free(children); // strings stored in temp memory
-	full_path_length -= k;
-	return result;
-}
-const char* find_begins_with_in_directory(const char* path, const char* begin)
-{
-	const char* result = NULL;
-	File_Paths children = {0};
-	check(read_entire_dir(path, &children));
-	forn (children.count) {
-		const char* child = children.items[i];
-		if (string_begins_with(child, begin))
-			return_defer(child);
-	}
-defer:
-	da_free(children); // strings stored in temp memory
-	return result;
-}
-
-const char* find_any_in_directory(const char* path)
-{
-	const char* result = NULL;
-	File_Paths children = {0};
-	if (!read_entire_dir(path, &children))
-		return_defer(NULL);
-	forn (children.count) {
-		const char* child = children.items[i];
-		if (strcmp(child, ".")  == 0) continue;
-		if (strcmp(child, "..") == 0) continue;
-		return_defer(child);
-	}
-defer:
-	da_free(children); // strings stored in temp memory
-	return result;
-}
-
-//! @param n: how many digits to include (Example: n=2 => "1.2")
-//! @returns: length of the resulting string
-int truncate_version(const char* version, int n)
-{
-    int i = 0, k = 0;
-    while (version[i] != 0) {
-        if (version[i] == '.') k += 1;
-        if (k >= n) break;
-        i += 1;
+    File_Paths paths = {0};
+    check(read_entire_dir(".", &paths));
+    check(nob_set_current_dir(".."));
+    for (int i = 0; i < paths.count; ++i)
+    {
+        String_View path = sv_from_cstr(paths.items[i]);
+        if (!sv_end_with(path, ".cpp"))
+            continue;
+        
+		program.source = temp_sprintf("examples/%s", paths.items[i]);
+		if (compile(program)) return Failed;
     }
-    return i;
+    return Success;
 }
 
-void assert_impl(int cond, const char* info)
+Result build_fission_all(void)
 {
-	if (cond == true) return;
-	nob_log(ERROR, "Assertion Failed: %s", info);
-	exit(1);
+	if (build_fission()) return Failed;
+	
+	Cpp_Program start = {
+		.include_dirs = fission.include_dirs,
+		.flags = fission.flags & (~COMPILE_STATIC_LIBRARY),
+	};
+	
+	cmd_append(&start.library_dirs, build.output_dir); 
+	cmd_append(&start.libraries, "fission");
+	
+    iterate (dependencies) {
+        Dependency* d = &dependencies[i];
+		if (!(d->targets & build.target_os)) continue;
+		cmd_append(&start.libraries, d->name);
+		if (d->library_path)
+			cmd_append(&start.library_dirs, d->library_path);
+    }
+	
+	Result result = Success;
+	scoped_timer("Build All Examples")
+	{
+		scoped_dir("examples")
+		if (fission_build_all_examples(start))
+			result = Failed;
+	}
+defer:
+	return result;
+}
+
+Result build_fission(void)
+{
+	create_build_directories();
+	check_cpp_compiler();
+	if (check_dependencies()) return 1;
+	if (compile_shaders()) return 1;
+	if (generate_embedded_objects()) return 1;
+	
+	cmd_append(&fission.object_files, "header_only");
+	
+	Result r;
+	scoped_timer("Build Fission")
+	{
+		r = compile(fission);
+	}
+	return r;
 }
 
 #endif // BUILD_H

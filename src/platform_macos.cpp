@@ -13,6 +13,7 @@ int fatal_error(string error, string message, source_location location)
     printf("\x1b[91m%.*s\x1b[0m: %.*s (\x1b[92m%s\x1b[0m in \x1b[93m%s:%i\x1b[0m)\n",
         (int)error.count, (char*)error.data, (int)message.count, (char*)message.data,
         location.function, location.file, location.line);
+    __builtin_trap(); // DEBUG
     _exit(1); // Syscall, don't want to continue any execution after this
 }
 
@@ -90,25 +91,16 @@ void on_glfw_cursor_position(GLFWwindow* glfw_window, double x, double y) {
     //lastX = x;
     //lastY = y;
 }
-/*
+
 void on_glfw_mouse_button(GLFWwindow* glfw_window, int button, int action, int mods) {
-    auto window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
-    //if (action == GLFW_PRESS)
-    //window->event_queue.append({
-    //    .type = fs::EventType::Event_Key_Down,
-    //    .key_down = {
-    //        .key_id = (u32)button,
-    //    }
-    //});
-    //else if (action == GLFW_RELEASE)
-    //window->event_queue.append({
-    //    .type = fs::EventType::Event_Key_Up,
-    //    .key_down = {
-    //        .key_id = (u32)button,
-    //    }
-    //});
+    NOT_USED(glfw_window, button, mods);
+
+    auto& event = engine.window.event_queue[engine.window.event_tail];
+    event.type = (action == GLFW_RELEASE? Event_Key_Up : Event_Key_Down);
+    event.key_down.key_id = u32(0);
+    engine.window.event_tail = (engine.window.event_tail + 1) % array_count(engine.window.event_queue);
 }
-*/
+
 void on_glfw_key(GLFWwindow* glfw_window, int key, int scancode, int action, int mods) {
     NOT_USED(glfw_window, scancode, mods);
 
@@ -147,7 +139,7 @@ auto Window::create(Create_Info const& info) -> Result
     glfwSetFramebufferSizeCallback(_window, on_glfw_frame_buffer_resize);
     glfwSetCursorPosCallback(_window, on_glfw_cursor_position);
     glfwSetKeyCallback(_window, on_glfw_key);
-    //glfwSetMouseButtonCallback(_window, on_glfw_mouse_button);
+    glfwSetMouseButtonCallback(_window, on_glfw_mouse_button);
     //glfwSetCharCallback(_window, on_glfw_character);
 
 	int w, h;

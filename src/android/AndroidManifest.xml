@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="dev.lazergenix.test">
 
-    <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="35"/>
+    <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35"/>
 
     <application android:label="Test" android:icon="@mipmap/ic_launcher">
         <activity android:name=".MainActivity"

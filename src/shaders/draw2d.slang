@@ -14,20 +14,24 @@ struct VOut
 }
 
 [vk::push_constant]
-float4 scale;
+float4 offset_scale;
 
 [shader("vertex")]
-VOut vertexMain(Vertex input)
+VOut main(Vertex input)
 {
     VOut output;
-    output.position = float4(input.position.x, -input.position.y, 0.0, 1.0) * scale;
+    output.position = float4(input.position.xy * offset_scale.zw + offset_scale.xy, 0, 1);
     output.texcoord = input.texcoord;
     output.color = input.color;
     return output;
 }
 
+Sampler2D texture;
+SamplerState sampler;
+
 [shader("fragment")]
-float4 fragmentMain(VOut input) : SV_Target
+float4 main(VOut input) : SV_Target
 {
-    return input.color + float4(input.texcoord, 0, 0);
+    return input.color * texture.Sample(input.texcoord);
+    //return input.color * float4(input.texcoord, 1, 1);
 }

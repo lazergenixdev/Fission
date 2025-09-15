@@ -15,6 +15,7 @@
 #include "vulkan/vulkan.h"
 DISABLE_ALL_WARNINGS_BEGIN
 #include "vk_mem_alloc.h"
+#include "freetype/freetype.h"
 DISABLE_ALL_WARNINGS_END
 
 // --------------------------------------------------------------------------------
@@ -342,7 +343,6 @@ namespace fission
 		VkDebugUtilsMessengerEXT       debug_messenger             {};
 		Queue_Families                 queue_family                {};
 
-
 		Graphics() = default;
 		Graphics(Graphics const&) = delete;
 
@@ -441,6 +441,127 @@ namespace fission
 	template <>	struct _vk_format_of<u32>   { static constexpr VkFormat value = VK_FORMAT_R32_UINT;            };
 
 	template <typename T> static constexpr VkFormat vk_format_of = _vk_format_of<T>::value;
+
+	static constexpr uint32_t vk_size_of(VkFormat format)
+	{
+		switch (format)
+		{
+		case VK_FORMAT_UNDEFINED:
+			return 0;
+		case VK_FORMAT_R8_UNORM:
+		case VK_FORMAT_R8_SNORM:
+		case VK_FORMAT_R8_USCALED:
+		case VK_FORMAT_R8_SSCALED:
+		case VK_FORMAT_R8_UINT:
+		case VK_FORMAT_R8_SINT:
+		case VK_FORMAT_R8_SRGB:
+			return 1;
+		case VK_FORMAT_R8G8_UNORM:
+		case VK_FORMAT_R8G8_SNORM:
+		case VK_FORMAT_R8G8_USCALED:
+		case VK_FORMAT_R8G8_SSCALED:
+		case VK_FORMAT_R8G8_UINT:
+		case VK_FORMAT_R8G8_SINT:
+		case VK_FORMAT_R8G8_SRGB:
+		case VK_FORMAT_R16_UNORM:
+		case VK_FORMAT_R16_SNORM:
+		case VK_FORMAT_R16_USCALED:
+		case VK_FORMAT_R16_SSCALED:
+		case VK_FORMAT_R16_UINT:
+		case VK_FORMAT_R16_SINT:
+		case VK_FORMAT_R16_SFLOAT:
+			return 2;
+		case VK_FORMAT_R8G8B8_UNORM:
+		case VK_FORMAT_R8G8B8_SNORM:
+		case VK_FORMAT_R8G8B8_USCALED:
+		case VK_FORMAT_R8G8B8_SSCALED:
+		case VK_FORMAT_R8G8B8_UINT:
+		case VK_FORMAT_R8G8B8_SINT:
+		case VK_FORMAT_R8G8B8_SRGB:
+		case VK_FORMAT_B8G8R8_UNORM:
+		case VK_FORMAT_B8G8R8_SNORM:
+		case VK_FORMAT_B8G8R8_USCALED:
+		case VK_FORMAT_B8G8R8_SSCALED:
+		case VK_FORMAT_B8G8R8_UINT:
+		case VK_FORMAT_B8G8R8_SINT:
+		case VK_FORMAT_B8G8R8_SRGB:
+			return 3;
+		case VK_FORMAT_R8G8B8A8_UNORM:
+		case VK_FORMAT_R8G8B8A8_SNORM:
+		case VK_FORMAT_R8G8B8A8_USCALED:
+		case VK_FORMAT_R8G8B8A8_SSCALED:
+		case VK_FORMAT_R8G8B8A8_UINT:
+		case VK_FORMAT_R8G8B8A8_SINT:
+		case VK_FORMAT_R8G8B8A8_SRGB:
+		case VK_FORMAT_B8G8R8A8_UNORM:
+		case VK_FORMAT_B8G8R8A8_SNORM:
+		case VK_FORMAT_B8G8R8A8_USCALED:
+		case VK_FORMAT_B8G8R8A8_SSCALED:
+		case VK_FORMAT_B8G8R8A8_UINT:
+		case VK_FORMAT_B8G8R8A8_SINT:
+		case VK_FORMAT_B8G8R8A8_SRGB:
+		case VK_FORMAT_R16G16_UNORM:
+		case VK_FORMAT_R16G16_SNORM:
+		case VK_FORMAT_R16G16_USCALED:
+		case VK_FORMAT_R16G16_SSCALED:
+		case VK_FORMAT_R16G16_UINT:
+		case VK_FORMAT_R16G16_SINT:
+		case VK_FORMAT_R16G16_SFLOAT:
+		case VK_FORMAT_R32_UINT:
+		case VK_FORMAT_R32_SINT:
+		case VK_FORMAT_R32_SFLOAT:
+			return 4;
+		case VK_FORMAT_R16G16B16_UNORM:
+		case VK_FORMAT_R16G16B16_SNORM:
+		case VK_FORMAT_R16G16B16_USCALED:
+		case VK_FORMAT_R16G16B16_SSCALED:
+		case VK_FORMAT_R16G16B16_UINT:
+		case VK_FORMAT_R16G16B16_SINT:
+		case VK_FORMAT_R16G16B16_SFLOAT:
+			return 6;
+		case VK_FORMAT_R16G16B16A16_UNORM:
+		case VK_FORMAT_R16G16B16A16_SNORM:
+		case VK_FORMAT_R16G16B16A16_USCALED:
+		case VK_FORMAT_R16G16B16A16_SSCALED:
+		case VK_FORMAT_R16G16B16A16_UINT:
+		case VK_FORMAT_R16G16B16A16_SINT:
+		case VK_FORMAT_R16G16B16A16_SFLOAT:
+		case VK_FORMAT_R32G32_UINT:
+		case VK_FORMAT_R32G32_SINT:
+		case VK_FORMAT_R32G32_SFLOAT:
+		case VK_FORMAT_R64_UINT:
+		case VK_FORMAT_R64_SINT:
+		case VK_FORMAT_R64_SFLOAT:
+			return 8;
+		case VK_FORMAT_R32G32B32_UINT:
+		case VK_FORMAT_R32G32B32_SINT:
+		case VK_FORMAT_R32G32B32_SFLOAT:
+			return 12;
+		case VK_FORMAT_R32G32B32A32_UINT:
+		case VK_FORMAT_R32G32B32A32_SINT:
+		case VK_FORMAT_R32G32B32A32_SFLOAT:
+		case VK_FORMAT_R64G64_UINT:
+		case VK_FORMAT_R64G64_SINT:
+		case VK_FORMAT_R64G64_SFLOAT:
+			return 16;
+		case VK_FORMAT_R64G64B64_UINT:
+		case VK_FORMAT_R64G64B64_SINT:
+		case VK_FORMAT_R64G64B64_SFLOAT:
+			return 24;
+		case VK_FORMAT_R64G64B64A64_UINT:
+		case VK_FORMAT_R64G64B64A64_SINT:
+		case VK_FORMAT_R64G64B64A64_SFLOAT:
+			return 32;
+		case VK_FORMAT_D16_UNORM:
+		case VK_FORMAT_D32_SFLOAT:
+		case VK_FORMAT_S8_UINT:
+		case VK_FORMAT_D16_UNORM_S8_UINT:
+		case VK_FORMAT_D24_UNORM_S8_UINT:
+		case VK_FORMAT_D32_SFLOAT_S8_UINT:
+		default:
+			return 0;
+		}
+	}
 
 // --------------------------------------------------------------------------------
 // Vertex Layout
@@ -556,6 +677,32 @@ namespace fission
 		VkResult create(VkPipeline* pPipeline, VkPipelineLayout layout, VkRenderPass render_pass);
 	};
 
+	struct Glyph
+	{
+		rf32 uv; // Location in font atlas
+		rf32 rc; // Location in pixels
+		f32 advance;
+	};
+
+	struct Font
+	{
+		VkDescriptorSet set {};
+		VkImage         image {};
+		VkImageView     image_view {};
+		VmaAllocation   image_allocation {};
+
+		Glyph fallback {};
+		std::unordered_map<c32, Glyph> glyph_map;
+
+		struct Create_Info {
+			string     font_family;
+			int        font_size;
+			array<c32> codepoints;
+		};
+
+		auto create(Create_Info const& info) -> Result;
+	};
+
 // --------------------------------------------------------------------------------
 // Draw Data 2D
 
@@ -622,6 +769,31 @@ namespace fission
 			vertex_arena.push<vertex>({.position = p1, .color = color});
 			vertex_arena.push<vertex>({.position = p2, .color = color});
 			current.vertex_count += 3;
+		}
+
+		inline void add_rect_textured(rf32 rect, rf32 uv, rgba8 color = rgba8(255,255,255))
+		{
+			u32 v = current.vertex_count;
+			index_arena.push<v3u32>({v, v+1, v+2});
+			index_arena.push<v3u32>({v+3, v, v+2});
+			current.index_count += 6;
+
+			vertex_arena.push<vertex>({{rect.x.low,  rect.y.high}, {uv.x.low,  uv.y.high}, color});
+			vertex_arena.push<vertex>({{rect.x.low,  rect.y.low }, {uv.x.low,  uv.y.low }, color});
+			vertex_arena.push<vertex>({{rect.x.high, rect.y.low }, {uv.x.high, uv.y.low }, color});
+			vertex_arena.push<vertex>({{rect.x.high, rect.y.high}, {uv.x.high, uv.y.high}, color});
+			current.vertex_count += 4;
+		}
+
+		inline void add_glyph(Glyph const *g, v2f32 origin, f32 scale, rgba8 color)
+		{
+			rf32 rect {
+				/* roundf */(origin.x + scale * g->rc.x.low),
+				/* roundf */(origin.x + scale * g->rc.x.high),
+				/* roundf */(origin.y + scale * g->rc.y.low),
+				/* roundf */(origin.y + scale * g->rc.y.high),
+			};
+			add_rect_textured(rect, g->uv, color);
 		}
 
 		inline void flush_batch(VkCommandBuffer cmd, u32 frame_index)
@@ -696,32 +868,25 @@ namespace fission
 			fEnable_Graphics_Debugging = 1 << 0,
 		};
 	};
+
+	struct App_Info {
+		string   name;
+		Version  version     { 0,1,0 };
+		string   version_tag { "dev" };
+
+		App_Info();
+	};
 }
 
 // --------------------------------------------------------------------------------
 // User implemented functions
 
+// fission::App_Info::App_Info()
 auto on_create() -> struct fission::Defaults;
 void on_update(f64 dt, fission::array<fission::Event> events, fission::Render_Context const&);
 
-// ******************************************************************
-// - App_Info()
-// - on_create()
-// - on_create_scene()
-
 namespace fission
-{	
-	struct App_Info
-	{
-	//	compressed_version version      = fs::make_compressed_version<0,1,0>;
-		string  version_info = "dev";
-		string  name         = "app name";
-
-		App_Info();
-	};
-
-//	extern auto OS_CALL render_main(void*) -> os::Thread_Result;
-	 
+{ 
 	struct Engine
 	{
 		enum Flag: u64 {
@@ -737,6 +902,7 @@ namespace fission
 		int              exit_code               {EXIT_SUCCESS};
 		u64              flags                   {};
 		Arena            temp_arena              {};
+		FT_Library 	     freetype_library        {};
 		Window           window                  {};
 		Graphics         graphics                {};
 		os::Thread       render_thread           {};
@@ -747,8 +913,14 @@ namespace fission
 		VkPipelineLayout pipeline_layout         {};
 		Draw_Data_2d     draw_data               {};
 		Renderer_2d      renderer                {};
-		Renderer_2d      line_renderer          {};
+		Renderer_2d      line_renderer           {};
 		u64              last_ticks              {};
+
+		// DEBUG
+		App_Info app_info;
+		VkSampler sampler {};
+		VkDescriptorPool descriptor_pool {};
+		VkDescriptorSetLayout descriptor_set_layout {};
 
 	public:
 		auto version_string  () -> string;

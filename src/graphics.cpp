@@ -301,24 +301,24 @@ void log_layers_and_extensions()
 
 auto Graphics::create_instance(bool debug) -> Result
 {
+	setenv("VK_LAYER_PATH", "/Users/mbz/VulkanSDK/1.4.321.0/macOS/share/vulkan/explicit_layer.d", 1);
+
     log::verbose("Creating Vulkan instance...");
     log::verbose("Graphics debugging enabled: ", debug);
 	if (debug) log_layers_and_extensions();
 
-	debug = false;
 	VkApplicationInfo application_info {
 		.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
 		.pApplicationName = "How did you find this?",
-		.applicationVersion = VK_MAKE_API_VERSION(1, 0, 0, 69),
+		.applicationVersion = VK_MAKE_API_VERSION(0,0,1,0),
 		.pEngineName = "Fission",
-		//! TODO: engine version
-	//	.engineVersion = vk::make_api_version<1,version_major,version_minor,version_patch>,
+		.engineVersion = VK_MAKE_API_VERSION(0,0,1,0),
 		.apiVersion = VK_API_VERSION_1_3,
 	};
 
 	const char* extension_names[] = {
     #if defined(OS_MACOS)
-        VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
+        "VK_KHR_portability_enumeration",
     #endif
 		VK_KHR_SURFACE_EXTENSION_NAME,
 	#if defined(OS_WINDOWS)
@@ -371,6 +371,15 @@ auto Graphics::create_instance(bool debug) -> Result
 		else if (vkCreateDebugUtilsMessengerEXT(instance, &debug_utils_info, nullptr, &debug_messenger) < VK_SUCCESS)
 			log::error("Failed to create debug messenger");
 	}
+
+	uint32_t api_version;
+	vkEnumerateInstanceVersion(&api_version);
+	log::info("Vulkan version ",
+		VK_API_VERSION_MAJOR(api_version), ".",
+		VK_API_VERSION_MINOR(api_version), ".",
+		VK_API_VERSION_PATCH(api_version)
+	);
+
     return Success;
 }
 
@@ -873,8 +882,8 @@ void Graphics::upload(VkBuffer dstBuffer, void const* inData, VkDeviceSize inSiz
 	}
 	vkFreeCommandBuffers(device, transfer_command_pool, 1, &cmd);
 }
+#endif
 
-// TODO: errors? they exist right??
 void Graphics::upload (
 	VkImage       destination,
 	void const*   image_data,
@@ -883,9 +892,28 @@ void Graphics::upload (
 	VkImageLayout final_layout,
 	u32           layer
 ) {
-    VkDeviceSize  data_size = extent.width * extent.height * extent.depth * vk::size_of(format);
+    VkDeviceSize  data_size = extent.width * extent.height * extent.depth * vk_size_of(format);
     VkBuffer      buffer;
     VmaAllocation allocation;
+
+	auto image_barrier = [](
+		VkCommandBuffer cmd,
+		VkImage image,
+		VkImageLayout src_layout, VkAccessFlags src_access, VkPipelineStageFlags src_stage,
+		VkImageLayout dst_layout, VkAccessFlags dst_access, VkPipelineStageFlags dst_stage,
+		VkImageSubresourceRange range
+	) {
+		VkImageMemoryBarrier barrier {
+			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+			.srcAccessMask = src_access,
+			.dstAccessMask = dst_access,
+			.oldLayout = src_layout,
+			.newLayout = dst_layout,
+			.image = image,
+			.subresourceRange = range,
+		};
+		return vkCmdPipelineBarrier(cmd, src_stage, dst_stage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+	};
 
     // 1. Create Staging Buffer
     VmaAllocationCreateInfo allocation_info {
@@ -918,12 +946,18 @@ void Graphics::upload (
 	};
     vkAllocateCommandBuffers(device, &command_buffer_info, &command_buffer);
 
-	vk::begin(command_buffer, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+	begin(command_buffer, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     {
-		auto range = vk::color_image_range(layer);
+		VkImageSubresourceRange range {
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.baseMipLevel = 0,
+			.levelCount = 1,
+			.baseArrayLayer = layer,
+			.layerCount = 1,
+		};
 
         // 4. Set Image Layout for transfer
-		vk::image_barrier (
+		image_barrier (
 			command_buffer, destination,
 			VK_IMAGE_LAYOUT_UNDEFINED,            VK_ACCESS_NONE,               VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -944,14 +978,14 @@ void Graphics::upload (
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
         // 6. Set Image Layout to the Final Layout
-		vk::image_barrier (
+		image_barrier (
 			command_buffer, destination,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 			final_layout,                         VK_ACCESS_SHADER_READ_BIT,    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 			range
 		);
     }
-    vk::end(command_buffer);
+	vkEndCommandBuffer(command_buffer);
 
     // 7. Sumbit commands to GPU and wait for them to complete
 	VkSubmitInfo submit_info {
@@ -967,6 +1001,7 @@ void Graphics::upload (
     vmaDestroyBuffer(allocator, buffer, allocation);
 }
 
+#if 0
 version Graphics::api_version()
 {
 	if (physical_device == VK_NULL_HANDLE) {
@@ -1267,13 +1302,8 @@ Pipeline_Creator& Pipeline_Creator::add_shader(VkShaderStageFlagBits stage, VkSh
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 		.stage = stage,
 		.module = shader,
+		.pName = "main",
 	};
-	switch (stage) {
-		case VK_SHADER_STAGE_COMPUTE_BIT:  info.pName = "computeMain"; break;
-		case VK_SHADER_STAGE_VERTEX_BIT:   info.pName = "vertexMain"; break;
-		case VK_SHADER_STAGE_FRAGMENT_BIT: info.pName = "fragmentMain"; break;
-		default: info.pName = "main"; break;
-	}
 	shaders.emplace_back(info);
 	return *this;
 }
@@ -1363,6 +1393,13 @@ void Renderer_2d::create(VkRenderPass render_pass, VkPipelineLayout pipeline_lay
 		.add_dynamic_state(VK_DYNAMIC_STATE_SCISSOR)
 		.add_shader(VK_SHADER_STAGE_VERTEX_BIT, shader_module)
 		.add_shader(VK_SHADER_STAGE_FRAGMENT_BIT, shader_module);
+	pc.blend_attachment.blendEnable         = VK_TRUE;
+	pc.blend_attachment.colorBlendOp        = VK_BLEND_OP_ADD;
+	pc.blend_attachment.alphaBlendOp        = VK_BLEND_OP_ADD;
+	pc.blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+	pc.blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	pc.blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	pc.blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
     pc.input_assembly_state.topology = options.topology;
 	pc.create(&pipeline, pipeline_layout, render_pass);
 

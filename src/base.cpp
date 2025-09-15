@@ -6,7 +6,7 @@ BEGIN_NAMESPACE(fission);
 auto Arena::create(size_t max_size) -> Result
 {
     //! TODO: own alloc
-    start = malloc(max_size);
+    start = calloc(max_size, 1);
     capacity = max_size;
     return Success;
 }

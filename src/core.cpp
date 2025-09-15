@@ -1,4 +1,6 @@
 #include "Fission/core.hpp"
+#include "MaxRectsBinPack.hpp"
+#include "embed/NotoSansKR-Regular.ttf.hpp"
 
 namespace os {
 	auto init() -> fission::Result;
@@ -8,6 +10,165 @@ namespace os {
 BEGIN_NAMESPACE(fission)
 
 #define check(Result, ...) if ((result = (Result)) < VK_SUCCESS) { log::error(__VA_ARGS__); return stop(); } (void)0
+#define for_(itr, N) for (decltype(N) itr = 0; itr < (N); ++itr)
+
+auto decode_utf8(Arena& arena, string s) -> array<c32>
+{
+	c32* start = arena.next_ptr<c32>();
+	size_t i = 0;
+
+	next: while (i < s.count) {
+		c8 c = s.data[i];
+		c32 codepoint = 0;
+		int extra_bytes = 0;
+
+		if (c <= 0x7F) { // 1-byte (ASCII)
+			codepoint = c;
+			extra_bytes = 0;
+		} else if ((c >> 5) == 0x6) { // 2-byte
+			codepoint = c & 0x1F;
+			extra_bytes = 1;
+		} else if ((c >> 4) == 0xE) { // 3-byte
+			codepoint = c & 0x0F;
+			extra_bytes = 2;
+		} else if ((c >> 3) == 0x1E) { // 4-byte
+			codepoint = c & 0x07;
+			extra_bytes = 3;
+		} else {
+			// Error: Invalid UTF-8 start byte
+			{ i++; continue; }
+		}
+
+		// Error: Truncated UTF-8 sequence
+		if (i + extra_bytes >= s.count)
+			break;
+
+		for (int j = 0; j < extra_bytes; ++j) {
+			c8 cc = s.data[i + j + 1];
+			// Error: Invalid UTF-8 continuation byte
+			if ((cc >> 6) != 0x2)
+				{ i++; goto next; }
+			codepoint = (codepoint << 6) | (cc & 0x3F);
+		}
+
+		i += extra_bytes + 1;
+
+		// Encode as UTF-32
+		arena.push(codepoint);
+	}
+
+	return {size_t(arena.next_ptr<c32>() - start), start};
+}
+
+auto Font::create(Create_Info const& info) -> Result
+{
+	auto& graphics = engine.graphics;
+
+	VkDescriptorSetAllocateInfo set_info {
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+		.descriptorPool = engine.descriptor_pool,
+		.descriptorSetCount = 1,
+		.pSetLayouts = &engine.descriptor_set_layout,
+	};
+	vkAllocateDescriptorSets(graphics.device, &set_info, &set);
+
+	FT_Face face;
+	FT_Long ttf_size = embedded::NotoSansKR_Regular_ttf_end - embedded::NotoSansKR_Regular_ttf_start;
+	ASSERT(!FT_New_Memory_Face(engine.freetype_library, (FT_Byte const*)embedded::NotoSansKR_Regular_ttf_start, ttf_size, 0, &face));
+	ASSERT(!FT_Set_Pixel_Sizes(face, 0, (FT_UInt)info.font_size));
+	
+	float yMax = float(face->size->metrics.ascender >> 6);
+	auto _h = u32(face->size->metrics.height >> 6);
+	v2u32 size = { _h * 12, _h * 12 };
+	auto pixel_data = (rgba8*)calloc(sizeof(rgba8), size.x * size.y);
+	auto pack = rbp::MaxRectsBinPack(size.x, size.y, false);
+
+	auto generate_glyph = [&]() -> Glyph {
+		Glyph g;
+
+		auto offsetx = (float)(face->glyph->bitmap_left);
+		auto offsety = (float)(-face->glyph->bitmap_top) + yMax;
+		auto sizex = (float)(face->glyph->metrics.width >> 6);
+		auto sizey = (float)(face->glyph->metrics.height >> 6);
+
+		g.rc = rf32::from_topleft(offsetx, offsety, sizex, sizey);
+		g.advance = (float)(face->glyph->metrics.horiAdvance >> 6);
+
+		auto bitmap = face->glyph->bitmap;
+
+		auto rect = pack.Insert(bitmap.width+1, bitmap.rows+1, rbp::MaxRectsBinPack::RectBestAreaFit);
+
+		/* now, copy to our target surface */
+		for_(y, bitmap.rows) {
+			for_(x, bitmap.width) {
+				pixel_data[(rect.y + y) * size.x + (rect.x + x)]
+					= rgba8(255, 255, 255, bitmap.buffer[y * bitmap.width + x]);
+			}
+		}
+
+		g.uv.x = { (float)rect.x, (float)(rect.x + bitmap.width) };
+		g.uv.x /= (float)size.x;
+		g.uv.y = { (float)rect.y, (float)(rect.y + bitmap.rows) };
+		g.uv.y /= (float)size.y;
+		return g;
+	};
+
+	// Set Fallback glyph
+	ASSERT(!FT_Load_Glyph(face, 0, FT_LOAD_RENDER));
+	fallback = generate_glyph();
+
+	for (auto c: info.codepoints)
+	{
+		ASSERT(!FT_Load_Char(face, c, FT_LOAD_RENDER));
+		//! TODO: don't look for repeats
+		if (glyph_map.contains(c)) continue;
+		glyph_map.emplace(c, generate_glyph());
+	}
+
+	{
+		VmaAllocationCreateInfo allocInfo = {};
+		allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+		VkImageCreateInfo imageInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+		imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		imageInfo.arrayLayers = 1;
+		imageInfo.extent = { .width = size.x, .height = size.y, .depth = 1 };
+		imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+		imageInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageInfo.mipLevels = 1;
+		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		vmaCreateImage(graphics.allocator, &imageInfo, &allocInfo, &image, &image_allocation, nullptr);
+		graphics.upload(image, pixel_data, imageInfo.extent, VK_FORMAT_R8G8B8A8_UNORM);
+	}
+
+	VkImageViewCreateInfo image_view_info {
+		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+		.image = image,
+		.viewType = VK_IMAGE_VIEW_TYPE_2D,
+		.format = VK_FORMAT_R8G8B8A8_UNORM,
+		.subresourceRange = {
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.baseMipLevel = 0,
+			.levelCount = 1,
+			.baseArrayLayer = 0,
+			.layerCount = 1,
+		}
+	};
+	vkCreateImageView(graphics.device, &image_view_info, nullptr, &image_view);
+
+	VkDescriptorImageInfo imageInfo;
+	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	imageInfo.imageView = image_view;
+	VkWriteDescriptorSet write{ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+	write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	write.descriptorCount = 1;
+	write.dstBinding = 0;
+	write.dstSet = set;
+	write.pImageInfo = &imageInfo;
+	vkUpdateDescriptorSets(engine.graphics.device, 1, &write, 0, nullptr);
+
+	return Success;
+}
 
 auto Window::pop_all_events(Arena& arena) -> array<Event>
 {
@@ -60,14 +221,20 @@ bool stop() {
 
 auto Engine::create(Defaults const& defaults) -> Result
 {
-	//scoped_set(logger.minimum_level, log::Verbose);
+	logger.minimum_level = log::Debug;
+//	scoped_set(logger.minimum_level, log::Verbose);
 	if (os::init()) return Failed;
-    //! TODO: log to same directory as the executable
+    //! TODO: place log file in same directory as the executable
 	logger.backing_file = os::open_file("fission.log", os::Write);
     os_mutex_create(&logger.mutex);
     log::info("Creating Fission Engine...");
 	engine.temp_arena.create(16_MiB);
 	engine.frame_arena.create(8_MiB);
+
+	FT_Init_FreeType(&freetype_library);
+	FT_Int x, y, z;
+	FT_Library_Version(freetype_library, &x, &y, &z);
+	log::info("Using FreeType version ", x, ".", y, ".", z);
 
 	//! TODO: setup in-game console here
 
@@ -80,7 +247,12 @@ auto Engine::create(Defaults const& defaults) -> Result
     
     Graphics::Create_Info graphics_info {
 		.window = &window,
+	//! TODO: need to download validation layers for Android
+	#if defined(OS_ANDROID)
+        .debug = false,
+	#else
         .debug = true,
+	#endif
     };
 	if (graphics.create(graphics_info)) return Failed;
 
@@ -93,6 +265,47 @@ auto Engine::create(Defaults const& defaults) -> Result
 
 	log::verbose("Creating Pipeline layout...");
 	{
+		auto make_sampler_info = [](VkFilter filter, VkSamplerAddressMode address_mode) {
+			return VkSamplerCreateInfo {
+				.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+				.magFilter = filter,
+				.minFilter = filter,
+				.addressModeU = address_mode,
+				.addressModeV = address_mode,
+				.addressModeW = address_mode,
+				.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
+			};
+		};
+
+		VkSamplerCreateInfo sampler_info = make_sampler_info(VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER);
+		vkCreateSampler(graphics.device, &sampler_info, nullptr, &sampler);
+
+		VkDescriptorSetLayoutBinding binding {
+			.binding = 0,
+			.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			.descriptorCount = 1,
+			.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+			.pImmutableSamplers = &sampler,
+		};
+		VkDescriptorSetLayoutCreateInfo descriptor_set_layout_info {
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+			.bindingCount = 1,
+			.pBindings = &binding,
+		};
+		vkCreateDescriptorSetLayout(graphics.device, &descriptor_set_layout_info, nullptr, &descriptor_set_layout);
+
+		VkDescriptorPoolSize pool_size {
+			.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			.descriptorCount = 64,
+		};
+		VkDescriptorPoolCreateInfo descriptor_pool_info {
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			.maxSets = 64,
+			.poolSizeCount = 1,
+			.pPoolSizes = &pool_size,
+		};
+		vkCreateDescriptorPool(graphics.device, &descriptor_pool_info, nullptr, &descriptor_pool);
+
 		VkPushConstantRange push {
 			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
 			.offset = 0,
@@ -100,10 +313,12 @@ auto Engine::create(Defaults const& defaults) -> Result
 		};
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo {
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+			.setLayoutCount = 1,
+			.pSetLayouts = &descriptor_set_layout,
 			.pushConstantRangeCount = 1,
 			.pPushConstantRanges = &push,
 		};
-		vkCreatePipelineLayout(engine.graphics.device, &pipelineLayoutInfo, nullptr, &pipeline_layout);
+		vkCreatePipelineLayout(graphics.device, &pipelineLayoutInfo, nullptr, &pipeline_layout);
 	}
 	log::verbose("Creating framebuffers...");
 	create_frame_buffers();
@@ -125,7 +340,8 @@ void Engine::destroy()
 {
     log::verbose(__PRETTY_FUNCTION__);
 	os_thread_join(render_thread);
-//	graphics.destroy();
+	FT_Done_FreeType(freetype_library);
+	graphics.destroy();
 }
 
 auto Engine::setup() -> Result
@@ -208,15 +424,14 @@ auto Engine::render_frame() -> bool
 	graphics.set_default_scissor(render_context.command_buffer);
 	graphics.set_default_viewport(render_context.command_buffer);
 
-	f32 aspect = f32(graphics.extent.height) / f32(graphics.extent.width);
-	vec4 scale {aspect, 1.0f, 1.0f, 1.0f};
+	vec4 scale {-1.0f, -1.0f, 2.0f / (float)graphics.extent.width, 2.0f / (float)graphics.extent.height};
 	vkCmdPushConstants(render_context.command_buffer, pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vec4), &scale);
 
 	f64 dt = seconds_elapsed_and_reset(last_ticks);
 	array<Event> events = window.pop_all_events(frame_arena);
 	on_update(dt, events, render_context);
 	
-#ifdef FRAMETIMES
+#if 1
     {
 		const u32 n = 256;
 		local_persist f32 frame_times[n] = {};
@@ -230,11 +445,11 @@ auto Engine::render_frame() -> bool
 		}
 
 		forn (n) {
-			f32 x = (f32(i)/f32(n-1))*2.0f - 1.0f;
-			f32 y = frame_times[i] / 0.100f - 0.166f;
+			f32 x = (f32(i)/f32(n-1))*f32(graphics.extent.width);
+			f32 y = (frame_times[i] / 0.016f) * 100.0f + f32(graphics.extent.height/2);
 			s32 k = (pos - i) % n;
 			if (k < 0) k = -k;
-        	draw_data.push_vertex({{x, y}, {}, rgba8(255,u8(k),u8(k))});
+        	draw_data.push_vertex({{x, y}, vec2(-1.0f), rgba8(255,u8(k),u8(k))});
 		}
         line_renderer.draw(render_context);
     }
