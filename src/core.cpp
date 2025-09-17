@@ -1,6 +1,7 @@
 #include "Fission/core.hpp"
 #include "MaxRectsBinPack.hpp"
 #include "embed/NotoSansKR-Regular.ttf.hpp"
+#include <freetype/freetype.h>
 
 namespace os {
 	auto init() -> fission::Result;
@@ -73,7 +74,7 @@ auto Font::create(Create_Info const& info) -> Result
 	vkAllocateDescriptorSets(graphics.device, &set_info, &set);
 
 	FT_Face face;
-	FT_Long ttf_size = embedded::NotoSansKR_Regular_ttf_end - embedded::NotoSansKR_Regular_ttf_start;
+	FT_Long ttf_size = (FT_Long)(embedded::NotoSansKR_Regular_ttf_end - embedded::NotoSansKR_Regular_ttf_start);
 	ASSERT(!FT_New_Memory_Face(engine.freetype_library, (FT_Byte const*)embedded::NotoSansKR_Regular_ttf_start, ttf_size, 0, &face));
 	ASSERT(!FT_Set_Pixel_Sizes(face, 0, (FT_UInt)info.font_size));
 	
@@ -258,14 +259,30 @@ auto Engine::create(Defaults const& defaults) -> Result
 
 	log::verbose("Creating overlay render pass...");
     Render_Pass_Creator{}
-        .add_attachment(graphics.format, Attachment_Preset_New_Image_Present)
+        .add_attachment(graphics.format, Attachment_Preset_Clear_Image_Present)
         .add_subpass({ {0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} })
         .add_external_subpass_dependency(0)
         .create(&overlay_render_pass);
+		
+	log::verbose("Creating render pass...");
+    Render_Pass_Creator{}
+        .add_attachment(VK_FORMAT_R32G32B32A32_SFLOAT, Attachment_Preset_Clear_Image)
+        .add_subpass({ {0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} })
+        .add_external_subpass_dependency(0)
+        .create(&render_pass);
+
+	render_image.create({
+		.width = graphics.extent.width,
+		.height = graphics.extent.height,
+		.format = VK_FORMAT_R32G32B32A32_SFLOAT,
+		.render_pass = render_pass,
+		.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+	});
 
 	log::verbose("Creating Pipeline layout...");
 	{
-		auto make_sampler_info = [](VkFilter filter, VkSamplerAddressMode address_mode) {
+		auto make_sampler_info = [](VkFilter filter, VkSamplerAddressMode address_mode,
+			VkBorderColor border_color = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE) {
 			return VkSamplerCreateInfo {
 				.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
 				.magFilter = filter,
@@ -273,10 +290,9 @@ auto Engine::create(Defaults const& defaults) -> Result
 				.addressModeU = address_mode,
 				.addressModeV = address_mode,
 				.addressModeW = address_mode,
-				.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
+				.borderColor = border_color,
 			};
 		};
-
 		VkSamplerCreateInfo sampler_info = make_sampler_info(VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER);
 		vkCreateSampler(graphics.device, &sampler_info, nullptr, &sampler);
 
@@ -305,7 +321,7 @@ auto Engine::create(Defaults const& defaults) -> Result
 			.pPoolSizes = &pool_size,
 		};
 		vkCreateDescriptorPool(graphics.device, &descriptor_pool_info, nullptr, &descriptor_pool);
-
+	
 		VkPushConstantRange push {
 			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
 			.offset = 0,
@@ -325,9 +341,35 @@ auto Engine::create(Defaults const& defaults) -> Result
 	log::verbose("Creating draw data...");
 	draw_data.create(graphics);
 	log::verbose("Creating renderer...");
-	renderer.create(overlay_render_pass, pipeline_layout, &draw_data);
+	renderer.create(render_pass, pipeline_layout, &draw_data);
 	log::verbose("Creating line renderer...");
-	line_renderer.create(overlay_render_pass, pipeline_layout, &draw_data, {.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST});
+	line_renderer.create(render_pass, pipeline_layout, &draw_data, {.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST});
+
+	blur_post.create({
+		.render_pass = overlay_render_pass,
+		.source_attachment = render_image.image_view,
+	});
+	
+	{
+		VkDescriptorSetAllocateInfo set_info {
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			.descriptorPool = engine.descriptor_pool,
+			.descriptorSetCount = 1,
+			.pSetLayouts = &blur_post.descriptor_set_layout,
+		};
+		vkAllocateDescriptorSets(graphics.device, &set_info, &render_image_set);
+		
+		VkDescriptorImageInfo imageInfo;
+		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		imageInfo.imageView = render_image.image_view;
+		VkWriteDescriptorSet write{ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+		write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		write.descriptorCount = 1;
+		write.dstBinding = 0;
+		write.dstSet = render_image_set;
+		write.pImageInfo = &imageInfo;
+		vkUpdateDescriptorSets(graphics.device, 1, &write, 0, nullptr);
+	}
 
     engine.flags |= Engine::Running;
     log::info("Starting render thread...");
@@ -349,24 +391,6 @@ auto Engine::setup() -> Result
 	log::verbose("Setting up render thread...");
 	last_ticks = ticks();
     return Success;
-}
-
-//! TODO: move this out
-namespace vk
-{
-    void begin(VkCommandBuffer command_buffer, VkRenderPass render_pass, VkFramebuffer frame_buffer, VkClearColorValue color)
-    {
-        VkClearValue clear_color = { color };
-        VkRenderPassBeginInfo begin_info {
-            .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-            .renderPass = render_pass,
-            .framebuffer = frame_buffer,
-            .renderArea = { {0, 0}, engine.graphics.extent },
-            .clearValueCount = 1,
-            .pClearValues = &clear_color,
-        };
-        vkCmdBeginRenderPass(command_buffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
-    }
 }
 
 auto Engine::render_frame() -> bool
@@ -418,9 +442,9 @@ auto Engine::render_frame() -> bool
 	render_context.command_buffer = graphics.command_buffers[render_context.frame];
 	render_context.frame_buffer = frame_buffers[render_context.image_index];
 
-	begin(render_context.command_buffer);
+	BeginCommandBuffer(render_context.command_buffer);
 
-	vk::begin(render_context.command_buffer, overlay_render_pass, render_context.frame_buffer, {{}});
+	CmdBeginRenderPass(render_context.command_buffer, render_pass, render_image.frame_buffer, {});
 	graphics.set_default_scissor(render_context.command_buffer);
 	graphics.set_default_viewport(render_context.command_buffer);
 
@@ -436,7 +460,7 @@ auto Engine::render_frame() -> bool
 		const u32 n = 256;
 		local_persist f32 frame_times[n] = {};
 		u32 pos = frame_count % n;
-		frame_times[pos] = dt;
+		frame_times[pos] = f32(dt);
         u32 v = draw_data.current.vertex_count;
         
 		forn (n-1) {
@@ -449,14 +473,15 @@ auto Engine::render_frame() -> bool
 			f32 y = (frame_times[i] / 0.016f) * 100.0f + f32(graphics.extent.height/2);
 			s32 k = (pos - i) % n;
 			if (k < 0) k = -k;
-        	draw_data.push_vertex({{x, y}, vec2(-1.0f), rgba8(255,u8(k),u8(k))});
+        	draw_data.push_vertex({{x, y}, vec2(-1.0f), vec4(1.0f,f32(k)/255.0f,f32(k)/255.0f,1.0f)});
 		}
         line_renderer.draw(render_context);
     }
 #endif
+	vkCmdEndRenderPass(render_context.command_buffer);
+	blur_post.process(render_context, render_image.image, render_image_set);
 	draw_data.send(graphics, render_context.frame);
 
-	vkCmdEndRenderPass(render_context.command_buffer);
 	vkEndCommandBuffer(render_context.command_buffer);
 
 	VkSemaphore present_ready_semaphore = graphics.present_ready_semaphore[render_context.image_index];

@@ -89,6 +89,14 @@ LRESULT CALLBACK _message_callback(HWND hwnd, UINT Msg, WPARAM wParam, LPARAM lP
 	} break;
 #endif
 
+	case WM_LBUTTONDOWN:
+	{
+		auto& event = engine.window.event_queue[engine.window.event_tail];
+		event.type = Event_Key_Down;
+		event.key_down.key_id = u32(0);
+		engine.window.event_tail = (engine.window.event_tail + 1) % array_count(engine.window.event_queue);
+	} break;
+
 	case WM_MOUSEMOVE:
 	{
 		int x = GET_X_LPARAM(lParam);

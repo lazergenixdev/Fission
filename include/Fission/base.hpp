@@ -34,7 +34,6 @@
 #define TEMP_VAR MACRO_JOIN_EXPAND(_, __LINE__)
 #define NOT_USED(...) (void)sizeof(__VA_ARGS__)
 #define global extern
-#define internal static
 #define local_persist static
 #define forn(N) for (std::remove_const_t<decltype(N)> i = 0; i < (N); ++i)
 
@@ -819,29 +818,32 @@ namespace fission
 	template <std::integral T>
 	inline void format_single(Arena& arena, const T value)
 	{
-		if (value == 0) { arena.push('0'); return; }
 		if constexpr (std::is_same<T, bool>::value)
 		{
 			if (value) arena.push("true", 4);
 			else       arena.push("false", 5);
 		}
-		else if constexpr (std::is_signed<T>::value)
-		{
-			if (value < 0) arena.push('-');
-			format_single(arena, u64(value < 0? -value : value));
-		}
-		else if constexpr (std::is_unsigned<T>::value)
-		{
-			u64 x = value, p = 10000000000000000000ULL;
-			bool show = false;
-			while (p != 0) {
-				u64 d = x / p;
-				if (show || d != 0) {
-					arena.push_byte(byte('0' + d));
-					x -= d * p;
-					show = true;
+		else {
+			if constexpr (std::is_signed<T>::value)
+			{
+				if (value == 0) { arena.push('0'); return; }
+				if (value < 0) arena.push('-');
+				format_single(arena, u64(value < 0? -value : value));
+			}
+			if constexpr (std::is_unsigned<T>::value)
+			{
+				if (value == 0) { arena.push('0'); return; }
+				u64 x = value, p = 10000000000000000000ULL;
+				bool show = false;
+				while (p != 0) {
+					u64 d = x / p;
+					if (show || d != 0) {
+						arena.push_byte(byte('0' + d));
+						x -= d * p;
+						show = true;
+					}
+					p /= 10;
 				}
-				p /= 10;
 			}
 		}
 	}

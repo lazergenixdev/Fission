@@ -15,8 +15,8 @@
 #include "vulkan/vulkan.h"
 DISABLE_ALL_WARNINGS_BEGIN
 #include "vk_mem_alloc.h"
-#include "freetype/freetype.h"
 DISABLE_ALL_WARNINGS_END
+typedef struct FT_LibraryRec_  *FT_Library;
 
 // --------------------------------------------------------------------------------
 // OS Types
@@ -105,6 +105,7 @@ namespace fission::log
 
 	void write_log_from_logger(int level);
 
+	//! TODO: fix logging for all platforms
 	template <typename...T>
     inline void log(int level, T&&...args)
 	{
@@ -167,6 +168,29 @@ namespace fission
 		
 		auto revert_display_mode() -> Result;
 	};
+}
+
+// --------------------------------------------------------------------------------
+// Keys
+
+#if   defined(OS_WINDOWS)
+#	define FISSION_KEY(WINDOWS, MACOS, ANDROID) WINDOWS
+#elif defined(OS_MACOS)
+#	define FISSION_KEY(WINDOWS, MACOS, ANDROID) MACOS
+#elif defined(OS_ANDROID)
+#	define FISSION_KEY(WINDOWS, MACOS, ANDROID) ANDROID
+#endif
+
+namespace fission
+{
+	namespace key
+	{
+		enum Key: u32 {
+			R = FISSION_KEY('R', GLFW_KEY_R, 0),
+			J = FISSION_KEY('J', GLFW_KEY_J, 0),
+			K = FISSION_KEY('K', GLFW_KEY_K, 0),
+		};
+	}
 }
 
 // --------------------------------------------------------------------------------
@@ -370,7 +394,27 @@ namespace fission
 		auto create_sync_objects    () -> Result;
 	};
 
-	inline auto begin(VkCommandBuffer command_buffer, VkCommandBufferUsageFlags flags = 0) -> VkResult
+	
+	inline void cmd_image_barrier(
+		VkCommandBuffer cmd,
+		VkImage image,
+		VkImageLayout src_layout, VkAccessFlags src_access, VkPipelineStageFlags src_stage,
+		VkImageLayout dst_layout, VkAccessFlags dst_access, VkPipelineStageFlags dst_stage,
+		VkImageSubresourceRange range
+	) {
+		VkImageMemoryBarrier barrier {
+			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+			.srcAccessMask = src_access,
+			.dstAccessMask = dst_access,
+			.oldLayout = src_layout,
+			.newLayout = dst_layout,
+			.image = image,
+			.subresourceRange = range,
+		};
+		vkCmdPipelineBarrier(cmd, src_stage, dst_stage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+	};
+
+	inline auto BeginCommandBuffer(VkCommandBuffer command_buffer, VkCommandBufferUsageFlags flags = 0) -> VkResult
 	{
 		VkCommandBufferBeginInfo begin_info {
 			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -378,12 +422,48 @@ namespace fission
 		};
 		return vkBeginCommandBuffer(command_buffer, &begin_info);
 	}
+	
+	void CmdBeginRenderPass(VkCommandBuffer command_buffer, VkRenderPass render_pass, VkFramebuffer frame_buffer);
+	void CmdBeginRenderPass(VkCommandBuffer command_buffer, VkRenderPass render_pass, VkFramebuffer frame_buffer, VkClearColorValue color);
+
+	enum Blend_Mode {
+		Blend_Normal,
+		Blend_Add,
+	};
+
+	inline void set_blend_mode(Blend_Mode mode, VkPipelineColorBlendAttachmentState& attachment)
+	{
+		attachment.blendEnable = VK_TRUE;
+		switch (mode)
+		{
+		default:
+		break; case Blend_Normal:
+			attachment.colorBlendOp = VK_BLEND_OP_ADD;
+			attachment.alphaBlendOp = VK_BLEND_OP_MAX;
+			attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+			attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+			attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		break; case Blend_Add:
+			attachment.colorBlendOp = VK_BLEND_OP_ADD;
+			attachment.alphaBlendOp = VK_BLEND_OP_ADD;
+			attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+			attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+			attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+			attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		break;
+		}
+	}
 
 	enum Attachment_Preset {
 		// Use this for Depth and Color images that we want to write to
-		Attachment_Preset_New_Image_Present, // load = CLEAR, store = STORE, stencil = DONT CARE, inital = UNDEFINED, final = PRESENT_SRC_KHR
-		Attachment_Preset_New_Image,         // load = CLEAR, store = STORE, stencil = DONT CARE, inital = UNDEFINED
-		Attachment_Preset_Cumulative_Image,  // load = LOAD , store = STORE, stencil = DONT CARE, inital = UNDEFINED
+		Attachment_Preset_Clear_Image_Present, // load = CLEAR,     store = STORE, stencil = DONT CARE, inital = UNDEFINED, final = PRESENT_SRC_KHR
+		Attachment_Preset_Clear_Image,         // load = CLEAR,     store = STORE, stencil = DONT CARE, inital = UNDEFINED
+		Attachment_Preset_New_Image_Present,   // load = DONT CARE, store = STORE, stencil = DONT CARE, inital = UNDEFINED, final = PRESENT_SRC_KHR
+		Attachment_Preset_New_Image,           // load = DONT CARE, store = STORE, stencil = DONT CARE, inital = UNDEFINED
+		Attachment_Preset_Transient,           // load = DONT CARE, store = STORE, stencil = DONT CARE, inital = UNDEFINED, final = UNDEFINED
+		Attachment_Preset_Shader_Input,        // load = LOAD,      store = STORE, stencil = DONT CARE, inital = SHADER_READ_ONLY
+		Attachment_Preset_Cumulative_Image,    // load = LOAD,      store = STORE, stencil = DONT CARE, inital = UNDEFINED
 	};
 
 // --------------------------------------------------------------------------------
@@ -405,6 +485,7 @@ namespace fission
 		Render_Pass_Creator(Arena& arena = temp_arena());
 
 		Render_Pass_Creator& add_external_subpass_dependency(uint32_t subpass);
+		Render_Pass_Creator& add_subpass_dependency(VkSubpassDependency dependency);
 		Render_Pass_Creator& add_dependency(uint32_t src_subpass, uint32_t dst_subpass, VkAccessFlags src_access, VkAccessFlags dst_access);
 		Render_Pass_Creator& add_subpass(std::initializer_list<VkAttachmentReference> const& refs);
 		Render_Pass_Creator& add_attachment(VkFormat format, Attachment_Preset preset, VkSampleCountFlagBits sample_count = VK_SAMPLE_COUNT_1_BIT);
@@ -616,7 +697,7 @@ namespace fission
 		std::vector<VkDynamicState> dynamic_states;
 		std::vector<VkPipelineShaderStageCreateInfo> shaders;
 		VkPipelineColorBlendAttachmentState blend_attachment {
-			.colorWriteMask = 0b1111,
+			.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
 		};
 		VkPipelineVertexInputStateCreateInfo const* vertex_input_state;
 		VkPipelineInputAssemblyStateCreateInfo input_assembly_state {
@@ -676,6 +757,48 @@ namespace fission
 
 		VkResult create(VkPipeline* pPipeline, VkPipelineLayout layout, VkRenderPass render_pass);
 	};
+	
+// --------------------------------------------------------------------------------
+// Render Image
+
+	struct Render_Image
+	{
+		VkFramebuffer   frame_buffer {};
+		VkImageView     image_view   {};
+		VkImage         image        {};
+		VmaAllocation   allocation   {};
+
+		struct Create_Info
+		{
+			u32          width, height;
+			VkFormat     format;
+			VkRenderPass render_pass;
+			VkImageUsageFlags usage;
+			VkImageView  attachments[1];
+			u32          attachment_count;
+		};
+
+		auto create(Create_Info const& info) -> Result;
+	};
+	
+// --------------------------------------------------------------------------------
+// Shader Image
+
+	struct Shader_Image
+	{
+		VkImageView     image_view   {};
+		VkImage         image        {};
+		VmaAllocation   allocation   {};
+
+		struct Create_Info
+		{
+			u32               width, height;
+			VkFormat          format;
+			VkImageUsageFlags usage;
+		};
+
+		auto create(Create_Info const& info) -> Result;
+	};
 
 	struct Glyph
 	{
@@ -703,18 +826,15 @@ namespace fission
 		auto create(Create_Info const& info) -> Result;
 	};
 
-// --------------------------------------------------------------------------------
-// Draw Data 2D
-
 	struct Draw_Data_2d
 	{
 		struct vertex
 		{
 			v2f32 position;
 			v2f32 texcoord;
-			rgba8 color;
+			v4f32 color;
 
-			using Layout = Vertex_Layout<vertex, v2f32, v2f32, rgba8>;
+			using Layout = Vertex_Layout<vertex, v2f32, v2f32, v4f32>;
 		};
 
 		struct Batch
@@ -760,7 +880,7 @@ namespace fission
 		inline void push_vertex(vertex const& vtx) { vertex_arena.push(vtx); current.vertex_count += 1; }
 		inline void push_index(u32 idx)            { index_arena.push(idx); current.index_count += 1; }
 
-		inline void add_triangle(vec2 p0, vec2 p1, vec2 p2, rgba8 color)
+		inline void add_triangle(vec2 p0, vec2 p1, vec2 p2, vec4 color)
 		{
 			u32 v = current.vertex_count;
 			index_arena.push<v3u32>({v, v+1, v+2});
@@ -771,7 +891,7 @@ namespace fission
 			current.vertex_count += 3;
 		}
 
-		inline void add_rect_textured(rf32 rect, rf32 uv, rgba8 color = rgba8(255,255,255))
+		inline void add_rect_textured(rf32 rect, rf32 uv, vec4 color = vec4(1.0f))
 		{
 			u32 v = current.vertex_count;
 			index_arena.push<v3u32>({v, v+1, v+2});
@@ -785,7 +905,7 @@ namespace fission
 			current.vertex_count += 4;
 		}
 
-		inline void add_glyph(Glyph const *g, v2f32 origin, f32 scale, rgba8 color)
+		inline void add_glyph(Glyph const *g, v2f32 origin, f32 scale, vec4 color)
 		{
 			rf32 rect {
 				/* roundf */(origin.x + scale * g->rc.x.low),
@@ -827,9 +947,6 @@ namespace fission
 		}
 	};
 	
-// --------------------------------------------------------------------------------
-// Renderer 2D
-
 	struct Renderer_2d
 	{
 		VkPipeline     pipeline;
@@ -847,6 +964,44 @@ namespace fission
 		void create(VkRenderPass render_pass, VkPipelineLayout pipeline_layout, Draw_Data_2d* draw_data, Options options = default_options);
 		void draw(Render_Context const& ctx);
 	};
+	
+// --------------------------------------------------------------------------------
+
+	template <int pass_count>
+	struct Blur_Post_Process
+	{
+		VkRenderPass           render_pass;
+		VkImage                temp_image;
+		VkImage                image;
+		VmaAllocation          temp_image_allocation;
+		VmaAllocation          image_allocation;
+		VkImageView            temp_image_views   [pass_count];
+		VkImageView            image_views        [pass_count];
+		VkDescriptorSet        temp_image_sets    [pass_count];
+		VkDescriptorSet        image_sets         [pass_count];
+		VkFramebuffer          temp_frame_buffers [pass_count];
+		VkFramebuffer          frame_buffers      [pass_count];
+		VkDescriptorSetLayout  descriptor_set_layout;
+		VkSampler              sampler;
+		VkPipelineLayout       pipeline_layout;
+		VkPipeline             pipeline;
+		VkPipeline             combine_pipeline;
+		VkRenderPass           combine_render_pass;
+
+		struct Uniforms {
+			vec2 direction;
+			vec2 size;
+		};
+
+		struct Create_Info {
+			VkRenderPass render_pass;
+			VkImageView  source_attachment;
+		};
+
+		auto create(Create_Info const& info) -> Result;
+		void process(Render_Context const& render_context, VkImage source, VkDescriptorSet source_set);
+	};
+
 }
 
 // --------------------------------------------------------------------------------
@@ -915,12 +1070,20 @@ namespace fission
 		Renderer_2d      renderer                {};
 		Renderer_2d      line_renderer           {};
 		u64              last_ticks              {};
-
+		
 		// DEBUG
 		App_Info app_info;
-		VkSampler sampler {};
+		VkPipeline blur_pipeline {};
 		VkDescriptorPool descriptor_pool {};
+		VkSampler sampler {};
 		VkDescriptorSetLayout descriptor_set_layout {};
+		VkRenderPass render_pass {};
+
+		Blur_Post_Process<5> blur_post;
+		
+		//! TODO: need 1 per frames in flight
+		Render_Image    render_image {};
+		VkDescriptorSet render_image_set {};
 
 	public:
 		auto version_string  () -> string;

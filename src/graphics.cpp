@@ -1,5 +1,6 @@
 #include "Fission/core.hpp"
 #include "embed/draw2d.spv.hpp"
+#include "embed/blur.spv.hpp"
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/rotate_normalized_axis.hpp"
 #include <bit>
@@ -301,8 +302,6 @@ void log_layers_and_extensions()
 
 auto Graphics::create_instance(bool debug) -> Result
 {
-	setenv("VK_LAYER_PATH", "/Users/mbz/VulkanSDK/1.4.321.0/macOS/share/vulkan/explicit_layer.d", 1);
-
     log::verbose("Creating Vulkan instance...");
     log::verbose("Graphics debugging enabled: ", debug);
 	if (debug) log_layers_and_extensions();
@@ -887,12 +886,12 @@ void Graphics::upload(VkBuffer dstBuffer, void const* inData, VkDeviceSize inSiz
 void Graphics::upload (
 	VkImage       destination,
 	void const*   image_data,
-	VkExtent3D    extent,
-	VkFormat      format,
+	VkExtent3D    image_extent,
+	VkFormat      image_format,
 	VkImageLayout final_layout,
 	u32           layer
 ) {
-    VkDeviceSize  data_size = extent.width * extent.height * extent.depth * vk_size_of(format);
+    VkDeviceSize  data_size = image_extent.width * image_extent.height * image_extent.depth * vk_size_of(image_format);
     VkBuffer      buffer;
     VmaAllocation allocation;
 
@@ -946,7 +945,7 @@ void Graphics::upload (
 	};
     vkAllocateCommandBuffers(device, &command_buffer_info, &command_buffer);
 
-	begin(command_buffer, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+	BeginCommandBuffer(command_buffer, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     {
 		VkImageSubresourceRange range {
 			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -972,7 +971,7 @@ void Graphics::upload (
 				.baseArrayLayer = layer,
 				.layerCount = 1,
 			},
-			.imageExtent = extent,
+			.imageExtent = image_extent,
 		};
 		vkCmdCopyBufferToImage(command_buffer, buffer, destination,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
@@ -1197,6 +1196,15 @@ Render_Pass_Creator& Render_Pass_Creator::add_external_subpass_dependency(uint32
 	return *this;
 }
 
+Render_Pass_Creator& Render_Pass_Creator::add_subpass_dependency(VkSubpassDependency dependency)
+{
+	auto ptr = arena.push<VkSubpassDependency>(dependency);
+	if (subpass_dependencies.data == nullptr)
+		subpass_dependencies.data = ptr;
+	subpass_dependencies.count += 1;
+	return *this;
+}
+
 Render_Pass_Creator& Render_Pass_Creator::add_dependency(uint32_t src_subpass, uint32_t dst_subpass, VkAccessFlags src_access, VkAccessFlags dst_access)
 {
 	auto ptr = arena.push<VkSubpassDependency>({
@@ -1246,11 +1254,25 @@ Render_Pass_Creator& Render_Pass_Creator::add_attachment(VkFormat format, Attach
 		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 	};
 	switch (preset) {
+		break; case Attachment_Preset_Clear_Image_Present:
+			attachment.loadOp        = VK_ATTACHMENT_LOAD_OP_CLEAR;
+			attachment.finalLayout   = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		break; case Attachment_Preset_Clear_Image:
+			attachment.loadOp        = VK_ATTACHMENT_LOAD_OP_CLEAR;
+			attachment.finalLayout   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		break; case Attachment_Preset_New_Image_Present:
-			attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-			attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+			attachment.loadOp        = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			attachment.finalLayout   = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 		break; case Attachment_Preset_New_Image:
-			ASSERT(false);
+			attachment.loadOp        = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			attachment.finalLayout   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		break; case Attachment_Preset_Shader_Input:
+			attachment.loadOp        = VK_ATTACHMENT_LOAD_OP_LOAD;
+			attachment.initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			attachment.finalLayout   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		break; case Attachment_Preset_Transient:
+			attachment.loadOp        = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			attachment.finalLayout   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		break; case Attachment_Preset_Cumulative_Image:
 			ASSERT(false);
 		break;
@@ -1333,6 +1355,62 @@ VkResult Pipeline_Creator::create(VkPipeline* pPipeline, VkPipelineLayout layout
 	return vkCreateGraphicsPipelines(engine.graphics.device, 0, 1, &info, nullptr, pPipeline);
 }
 
+// --------------------------------------------------------------------------------
+// Render Image
+
+auto Render_Image::create(Create_Info const& info) -> Result
+{
+	auto& graphics = engine.graphics;
+
+	VmaAllocationCreateInfo allocation_ci {
+		.usage = VMA_MEMORY_USAGE_AUTO,
+	};
+	VkImageCreateInfo image_ci {
+		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+		.imageType = VK_IMAGE_TYPE_2D,
+		.format = info.format,
+		.extent = { .width = info.width, .height = info.height, .depth = 1 },
+		.mipLevels = 1,
+		.arrayLayers = 1,
+		.samples = VK_SAMPLE_COUNT_1_BIT,
+		.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | info.usage,
+	};
+	vmaCreateImage(graphics.allocator, &image_ci, &allocation_ci, &image, &allocation, nullptr);
+
+	VkImageViewCreateInfo image_view_ci {
+		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+		.image = image,
+		.viewType = VK_IMAGE_VIEW_TYPE_2D,
+		.format = info.format,
+		.subresourceRange = {
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.baseMipLevel = 0,
+			.levelCount = 1,
+			.baseArrayLayer = 0,
+			.layerCount = 1,
+		}
+	};
+	vkCreateImageView(graphics.device, &image_view_ci, nullptr, &image_view);
+
+	VkImageView attachments[2] = {
+		image_view, info.attachments[0],
+	};
+	VkFramebufferCreateInfo frame_buffer_ci {
+		.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+		.renderPass = info.render_pass,
+		.attachmentCount = 1 + info.attachment_count,
+		.pAttachments = attachments,
+		.width  = graphics.extent.width,
+		.height = graphics.extent.height,
+		.layers = 1,
+	};
+	vkCreateFramebuffer(graphics.device, &frame_buffer_ci, nullptr, &frame_buffer);
+
+	return Success;
+}
+
+// --------------------------------------------------------------------------------
+
 void Graphics::set_default_viewport(VkCommandBuffer cmd) {
     VkViewport viewport {
         .x = 0.0f,
@@ -1371,6 +1449,31 @@ void set_viewport_and_scissor(VkCommandBuffer cmd, rf32 rect) {
 	vkCmdSetViewport(cmd, 0, 1, &viewport);
 }
 
+void CmdBeginRenderPass(VkCommandBuffer command_buffer, VkRenderPass render_pass, VkFramebuffer frame_buffer)
+{
+	VkRenderPassBeginInfo begin_info {
+		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+		.renderPass = render_pass,
+		.framebuffer = frame_buffer,
+		.renderArea = { {0, 0}, engine.graphics.extent },
+	};
+	vkCmdBeginRenderPass(command_buffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
+}
+
+void CmdBeginRenderPass(VkCommandBuffer command_buffer, VkRenderPass render_pass, VkFramebuffer frame_buffer, VkClearColorValue color)
+{
+	VkClearValue clear_color = { color };
+	VkRenderPassBeginInfo begin_info {
+		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+		.renderPass = render_pass,
+		.framebuffer = frame_buffer,
+		.renderArea = { {0, 0}, engine.graphics.extent },
+		.clearValueCount = 1,
+		.pClearValues = &clear_color,
+	};
+	vkCmdBeginRenderPass(command_buffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
+}
+
 // --------------------------------------------------------------------------------
 // Renderer_2d
 
@@ -1393,13 +1496,7 @@ void Renderer_2d::create(VkRenderPass render_pass, VkPipelineLayout pipeline_lay
 		.add_dynamic_state(VK_DYNAMIC_STATE_SCISSOR)
 		.add_shader(VK_SHADER_STAGE_VERTEX_BIT, shader_module)
 		.add_shader(VK_SHADER_STAGE_FRAGMENT_BIT, shader_module);
-	pc.blend_attachment.blendEnable         = VK_TRUE;
-	pc.blend_attachment.colorBlendOp        = VK_BLEND_OP_ADD;
-	pc.blend_attachment.alphaBlendOp        = VK_BLEND_OP_ADD;
-	pc.blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-	pc.blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-	pc.blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-	pc.blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+	set_blend_mode(Blend_Normal, pc.blend_attachment);
     pc.input_assembly_state.topology = options.topology;
 	pc.create(&pipeline, pipeline_layout, render_pass);
 
@@ -1410,6 +1507,388 @@ void Renderer_2d::draw(Render_Context const& ctx)
 {
 	vkCmdBindPipeline(ctx.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 	draw_data->flush_batch(ctx.command_buffer, ctx.frame);
+}
+
+// --------------------------------------------------------------------------------
+
+template <int N>
+auto Blur_Post_Process<N>::create(Create_Info const& info) -> Result
+{
+	log::info("Creating Blur Post Process...");
+	combine_render_pass = info.render_pass;
+	auto& graphics = engine.graphics;
+	const VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT;
+	{
+		Render_Pass_Creator{}
+		.add_attachment(format, Attachment_Preset_Transient)
+		.add_subpass({ {0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} })
+		.add_subpass_dependency({
+			.srcSubpass = VK_SUBPASS_EXTERNAL,
+			.dstSubpass = 0,
+			.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+			.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+			.srcAccessMask = VK_ACCESS_NONE,
+			.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+		})
+		.create(&render_pass);
+	}
+	{
+		u32 width = graphics.extent.width;
+		u32 height = graphics.extent.height;
+			
+		VmaAllocationCreateInfo allocation_ci {
+			.usage = VMA_MEMORY_USAGE_AUTO,
+		};
+		VkImageCreateInfo image_ci {
+			.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+			.imageType = VK_IMAGE_TYPE_2D,
+			.format = format,
+			.extent = { .width = width, .height = height, .depth = 1 },
+			.mipLevels = N,
+			.arrayLayers = 1,
+			.samples = VK_SAMPLE_COUNT_1_BIT,
+		};
+		image_ci.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		vmaCreateImage(graphics.allocator, &image_ci, &allocation_ci, &image, &image_allocation, nullptr);
+		image_ci.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		vmaCreateImage(graphics.allocator, &image_ci, &allocation_ci, &temp_image, &temp_image_allocation, nullptr);
+
+		VkImageViewCreateInfo image_view_ci {
+			.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+			.viewType = VK_IMAGE_VIEW_TYPE_2D,
+			.format = format,
+			.subresourceRange = {
+				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+				.levelCount = 1,
+				.baseArrayLayer = 0,
+				.layerCount = 1,
+			}
+		};
+		forn (N) {
+			image_view_ci.subresourceRange.baseMipLevel = i;
+
+			image_view_ci.image = image;
+			vkCreateImageView(graphics.device, &image_view_ci, nullptr, &image_views[i]);
+
+			image_view_ci.image = temp_image;
+			vkCreateImageView(graphics.device, &image_view_ci, nullptr, &temp_image_views[i]);
+		}
+
+		VkFramebufferCreateInfo frame_buffer_ci {
+			.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+			.renderPass = render_pass,
+			.attachmentCount = 1,
+			.width  = graphics.extent.width,
+			.height = graphics.extent.height,
+			.layers = 1,
+		};
+		forn (N) {
+			frame_buffer_ci.pAttachments = &image_views[i];
+			vkCreateFramebuffer(graphics.device, &frame_buffer_ci, nullptr, &frame_buffers[i]);
+			
+			frame_buffer_ci.pAttachments = &temp_image_views[i];
+			vkCreateFramebuffer(graphics.device, &frame_buffer_ci, nullptr, &temp_frame_buffers[i]);
+		
+			frame_buffer_ci.width  /= 2;
+			frame_buffer_ci.height /= 2;
+		}
+	}
+	{
+		VkFilter filter = VK_FILTER_LINEAR;
+		VkSamplerAddressMode address_mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+		VkSamplerCreateInfo sampler_ci {
+			.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+			.magFilter = filter,
+			.minFilter = filter,
+			.addressModeU = address_mode,
+			.addressModeV = address_mode,
+			.addressModeW = address_mode,
+		};
+		vkCreateSampler(graphics.device, &sampler_ci, nullptr, &sampler);
+	}
+	{
+		VkDescriptorSetLayoutBinding binding {
+			.binding = 0,
+			.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			.descriptorCount = 1,
+			.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+			.pImmutableSamplers = &sampler,
+		};
+		VkDescriptorSetLayoutCreateInfo descriptor_set_layout_ci {
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+			.bindingCount = 1,
+			.pBindings = &binding,
+		};
+		vkCreateDescriptorSetLayout(graphics.device, &descriptor_set_layout_ci, nullptr, &descriptor_set_layout);
+	}
+	{
+		VkPushConstantRange push {
+			.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+			.offset = 0,
+			.size = sizeof(Uniforms),
+		};
+		VkPipelineLayoutCreateInfo pipelineLayoutInfo {
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+			.setLayoutCount = 1,
+			.pSetLayouts = &descriptor_set_layout,
+			.pushConstantRangeCount = 1,
+			.pPushConstantRanges = &push,
+		};
+		vkCreatePipelineLayout(graphics.device, &pipelineLayoutInfo, nullptr, &pipeline_layout);
+	}
+	{
+		VkShaderModule shader_module;
+		VkShaderModuleCreateInfo info {
+			.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+			.codeSize = size_t(embedded::blur_spv_end - embedded::blur_spv_start),
+			.pCode = (u32*)embedded::blur_spv_start,
+		};
+		vkCreateShaderModule(graphics.device, &info, nullptr, &shader_module);
+		
+		auto vertex_layout = Vertex_Layout<void>{};
+		auto pc = Pipeline_Creator{}
+			.vertex_layout(vertex_layout)
+			.add_dynamic_state(VK_DYNAMIC_STATE_VIEWPORT)
+			.add_dynamic_state(VK_DYNAMIC_STATE_SCISSOR)
+			.add_shader(VK_SHADER_STAGE_VERTEX_BIT, shader_module)
+			.add_shader(VK_SHADER_STAGE_FRAGMENT_BIT, shader_module);
+		pc.create(&pipeline, pipeline_layout, render_pass);
+		set_blend_mode(Blend_Add, pc.blend_attachment);
+		pc.create(&combine_pipeline, pipeline_layout, combine_render_pass);
+	}
+	{
+		VkDescriptorSetLayout layouts[N];
+		forn (N) layouts[i] = descriptor_set_layout;
+		VkDescriptorSetAllocateInfo set_info {
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			.descriptorPool = engine.descriptor_pool,
+			.descriptorSetCount = (u32)std::size(layouts),
+			.pSetLayouts = layouts,
+		};
+		vkAllocateDescriptorSets(graphics.device, &set_info, image_sets);
+		vkAllocateDescriptorSets(graphics.device, &set_info, temp_image_sets);
+	}
+	{
+		VkDescriptorImageInfo image_infos[N];
+		VkWriteDescriptorSet writes[N];
+		forn (N) {
+			image_infos[i] = {
+				.imageView = image_views[i],
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			};
+			writes[i] = {
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.dstSet = image_sets[i],
+				.dstBinding = 0,
+				.descriptorCount = 1,
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.pImageInfo = &image_infos[i],
+			};
+		}
+		vkUpdateDescriptorSets(graphics.device, N, writes, 0, nullptr);
+		forn (N) {
+			image_infos[i].imageView = temp_image_views[i];
+			writes[i].dstSet = temp_image_sets[i];
+		}
+		vkUpdateDescriptorSets(graphics.device, N, writes, 0, nullptr);
+	}
+	return Success;
+}
+
+template <int N>
+void Blur_Post_Process<N>::process(Render_Context const& render_context, VkImage source, VkDescriptorSet source_set)
+{
+	auto cmd = render_context.command_buffer;
+	f32 width  = f32(engine.graphics.extent.width);
+	f32 height = f32(engine.graphics.extent.height);
+	u32 mipWidth  = engine.graphics.extent.width;
+	u32 mipHeight = engine.graphics.extent.height;
+
+	{
+		VkImageSubresourceRange range {
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.baseMipLevel = 0,
+			.levelCount = 1,
+			.baseArrayLayer = 0,
+			.layerCount = 1,
+		};
+		cmd_image_barrier(cmd, source,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_NONE,              VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,     VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			range
+		);
+		cmd_image_barrier(cmd, image,
+			VK_IMAGE_LAYOUT_UNDEFINED,            VK_ACCESS_NONE,               VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			range
+		);
+		VkImageSubresourceLayers subresource = {
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.mipLevel = 0,
+			.baseArrayLayer = 0,
+			.layerCount = 1,
+		};
+		VkImageCopy copy {
+    		.srcSubresource = subresource,
+    		.dstSubresource = subresource,
+   			.extent = { mipWidth, mipHeight, 1 },
+		};
+		vkCmdCopyImage(cmd, source, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+	
+		cmd_image_barrier(cmd, image,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_TRANSFER_READ_BIT,  VK_PIPELINE_STAGE_TRANSFER_BIT,
+			range
+		);
+		cmd_image_barrier(cmd, source,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,     VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_NONE,              VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+			range
+		);
+	}
+			
+	for (u32 i = 1; i < N; ++i)
+    {
+		VkImageSubresourceRange range {
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.baseMipLevel = i-1,
+			.levelCount = 1,
+			.baseArrayLayer = 0,
+			.layerCount = 1,
+		};
+		VkImageSubresourceRange dst_range {
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.baseMipLevel = i,
+			.levelCount = 1,
+			.baseArrayLayer = 0,
+			.layerCount = 1,
+		};
+
+		if (i != 1)
+		cmd_image_barrier(cmd, image,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_READ_BIT,  VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			range
+		);
+		cmd_image_barrier(cmd, image,
+			VK_IMAGE_LAYOUT_UNDEFINED,            VK_ACCESS_NONE,               VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			dst_range
+		);
+
+		VkImageBlit blit = {};
+		blit.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+		blit.srcSubresource.mipLevel       = i - 1;
+		blit.srcSubresource.baseArrayLayer = 0;
+		blit.srcSubresource.layerCount     = 1;
+		blit.srcOffsets[0] = {0, 0, 0};
+		blit.srcOffsets[1] = {int32_t(mipWidth), int32_t(mipHeight), 1};
+
+		blit.dstSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+		blit.dstSubresource.mipLevel       = i;
+		blit.dstSubresource.baseArrayLayer = 0;
+		blit.dstSubresource.layerCount     = 1;
+		blit.dstOffsets[0] = {0, 0, 0};
+		blit.dstOffsets[1] = {int32_t(mipWidth/2), int32_t(mipHeight/2), 1};
+
+		vkCmdBlitImage(cmd,
+			image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			1, &blit,
+			VK_FILTER_LINEAR);
+
+		cmd_image_barrier(cmd, image,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,     VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT,    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+			range
+		);
+
+		mipWidth  /= 2;
+		mipHeight /= 2;
+    }
+	
+	{
+		VkImageSubresourceRange range {
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.baseMipLevel = N-1,
+			.levelCount = 1,
+			.baseArrayLayer = 0,
+			.layerCount = 1,
+		};
+		cmd_image_barrier(cmd, image,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,     VK_ACCESS_TRANSFER_READ_BIT,  VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ACCESS_SHADER_READ_BIT,    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+			range
+		);
+	}
+
+	mipWidth  = engine.graphics.extent.width;
+	mipHeight = engine.graphics.extent.height;
+	forn (N)
+	{
+		auto CmdBeginRenderPass = [&](VkFramebuffer frame_buffer, u32 width, u32 height)
+		{
+			VkRenderPassBeginInfo begin_info {
+				.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+				.renderPass = render_pass,
+				.framebuffer = frame_buffer,
+				.renderArea = { {0, 0}, {width, height} },
+			};
+			vkCmdBeginRenderPass(cmd, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
+		};
+
+		set_viewport_and_scissor(cmd, {0.0f, f32(mipWidth), 0.0f, f32(mipHeight)});
+		
+		Uniforms vert {
+			.direction = {0.0f, 1.0f},
+			.size = {f32(mipWidth), f32(mipHeight)},
+		};
+		CmdBeginRenderPass(temp_frame_buffers[i], mipWidth, mipHeight);
+		vkCmdBindPipeline(render_context.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		vkCmdPushConstants(render_context.command_buffer, pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Uniforms), &vert);
+		vkCmdBindDescriptorSets(render_context.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &image_sets[i], 0, nullptr);
+		vkCmdDraw(render_context.command_buffer, 3, 1, 0, 0);
+		vkCmdEndRenderPass(render_context.command_buffer);
+		
+		Uniforms horz {
+			.direction = {1.0f, 0.0f},
+			.size = {f32(mipWidth), f32(mipHeight)},
+		};
+		CmdBeginRenderPass(frame_buffers[i], mipWidth, mipHeight);
+		vkCmdBindPipeline(render_context.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		vkCmdPushConstants(render_context.command_buffer, pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Uniforms), &horz);
+		vkCmdBindDescriptorSets(render_context.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &temp_image_sets[i], 0, nullptr);
+		vkCmdDraw(render_context.command_buffer, 3, 1, 0, 0);
+		vkCmdEndRenderPass(render_context.command_buffer);
+
+		mipWidth  /= 2;
+		mipHeight /= 2;
+	}
+	
+	CmdBeginRenderPass(cmd, combine_render_pass, render_context.frame_buffer, {});
+	{
+		engine.graphics.set_default_scissor(cmd);
+		engine.graphics.set_default_viewport(cmd);
+
+		Uniforms push {
+			.direction = {0.0f, 0.0f},
+		};
+		vkCmdBindPipeline(render_context.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, combine_pipeline);
+		f32 m = 1.0f;
+		forn (N)
+		{
+			push.size.x = m;
+			vkCmdPushConstants(render_context.command_buffer, pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Uniforms), &push);
+			vkCmdBindDescriptorSets(render_context.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &image_sets[i], 0, nullptr);
+			vkCmdDraw(render_context.command_buffer, 3, 1, 0, 0);
+			m *= 0.75f;
+		}
+		push.size.x = 1.0f;
+		vkCmdPushConstants(render_context.command_buffer, pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Uniforms), &push);
+		vkCmdBindDescriptorSets(render_context.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &source_set, 0, nullptr);
+		vkCmdDraw(render_context.command_buffer, 3, 1, 0, 0);
+	}
+	vkCmdEndRenderPass(render_context.command_buffer);
 }
 
 END_NAMESPACE()

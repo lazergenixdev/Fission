@@ -185,11 +185,17 @@ int fetch_vulkan(Dependency* d)
 
 int build_freetype_android(Dependency* d, const char* source_dir)
 {
+	#if OS == OS_WINDOWS
+	#	define _BUILD_FREETYPE_ANDROID_OPTIONS "-G", "Ninja",
+	#else
+	#	define _BUILD_FREETYPE_ANDROID_OPTIONS
+	#endif
 	#define _BUILD_FREETYPE_ANDROID(ARCH, COMPILER, ID) \
 		const char* dst_ ## ID = temp_sprintf("../%s/lib/" ARCH "/libfreetype.a", build.output_dir); \
 		const char* build_ ## ID = temp_sprintf("%s/build-" ARCH, source_dir); \
 		if (!file_exists(dst_ ## ID)) { run_output("freetype.cmake-" ARCH ".log", "cmake", \
 			"-S", source_dir, "-B", build_ ## ID, \
+			_BUILD_FREETYPE_ANDROID_OPTIONS \
 			temp_sprintf("-DCMAKE_TOOLCHAIN_FILE='%s/build/cmake/android.toolchain.cmake'", android_ndk_path), \
 			"-DANDROID_ABI=" ARCH, \
 			"-DANDROID_PLATFORM=\"android-35\"", \
@@ -203,7 +209,7 @@ int build_freetype_android(Dependency* d, const char* source_dir)
 		run_output("freetype.build-" ARCH ".log", "cmake", "--build", build_ ## ID, "-j", "--config", "Release"); \
 		if (!file_exists(dst_ ## ID)) \
 		check(copy_file( \
-			library_temp(build_ ## ID, "freetype"), \
+			temp_sprintf("%s/libfreetype.a", build_ ## ID), \
 			dst_ ## ID \
 		)); }
 	X_ANDROID_ARCHITECTURES(_BUILD_FREETYPE_ANDROID)
@@ -256,6 +262,9 @@ int fetch_freetype(Dependency* d)
 			const char* build_dir = temp_sprintf("%s/build", source_dir);
 			run_output("freetype.cmake.log", "cmake",
 				"-S", source_dir, "-B", build_dir,
+			#if OS == OS_WINDOWS
+				"-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded",
+			#endif
 				"-DCMAKE_BUILD_TYPE=Release",
 				"-D", "FT_DISABLE_ZLIB=TRUE",
 				"-D", "FT_DISABLE_BZIP2=TRUE",
@@ -335,7 +344,7 @@ static void create_build_directories(void)
 {
 	scoped_log(WARNING) {
 		check(mkdir_if_not_exists("bin"));
-		build.output_dir = temp_sprintf("bin/%s", target_name(build.target_os));
+		build.output_dir = temp_sprintf("bin/%s", os_name(build.target_os));
 		check(mkdir_if_not_exists(build.output_dir));
 		build.intermediate_dir = temp_sprintf("%s/int", build.output_dir);
 		check(mkdir_if_not_exists(build.intermediate_dir));
@@ -429,16 +438,16 @@ static void check_cpp_compiler_android(void)
 	{
 		String_Builder builder = {0};
 	#if OS == OS_WINDOWS
-		//! TODO: fix this
-		sb_appendf(&builder, "set PATH=%s/platform-tools;%%PATH%%\n", android_sdk_path);
+		sb_appendf(&builder, "$Env:PATH += ';%s/platform-tools'\n", android_sdk_path);
 	#else
 		sb_appendf(&builder, "export PATH=\"%s/platform-tools:$PATH\"\n", android_sdk_path);
 	#endif
+		//! TODO: echo information out
 		sb_appendf(&builder,
-			SCRIPT_COMMENT "Start debugging by using `adb`\n"
-			SCRIPT_COMMENT "`adb install test.apk`\n"
-			SCRIPT_COMMENT "`adb shell am start -n dev.lazergenix.test/.MainActivity`\n"
-			SCRIPT_COMMENT "`adb logcat`\n"
+			"# Start debugging by using `adb`\n"
+			"# `adb install test.apk`\n"
+			"# `adb shell am start -n dev.lazergenix.test/.MainActivity`\n"
+			"# `adb logcat FissionEngine:D *:S`\n"
 		);
 		write_entire_file(setup_env, builder.items, builder.count);
 	}
@@ -520,7 +529,7 @@ static Result compile_android(Cpp_Program program)
 	const char* namespace = string_replace(package, '.', '_');
 
 	#define _COMPILE_ANDROID(ARCH, COMPILER, ...) \
-		cmd_append(&cmd, "./" COMPILER); \
+		cmd_append(&cmd, ANDROID_COMPILER(COMPILER)); \
 		cmd_extend(&cmd, &options); \
 		if (program.flags & (COMPILE_OBJECT|COMPILE_STATIC_LIBRARY)) \
 			cmd_append(&cmd, "-o", temp_sprintf("%s/%s/%s.o/" ARCH ".o", root, build.intermediate_dir, program.output_name)); \
@@ -591,7 +600,7 @@ static Result compile_android(Cpp_Program program)
 	if (!cmd_run_sync_and_reset(&cmd)) return_defer(Failed);
 
 	// Generate classes.dex
-	cmd_append(&cmd, "./d8", "--min-api", "21");
+	cmd_append(&cmd, ANDROID_D8, "--min-api", "21");
 	cmd_append(&cmd, "--classpath", temp_sprintf("%s/android.jar", android_platform));
 	cmd_append_all_ends_with(&cmd, temp_sprintf("%s/%s/%s", root, build.intermediate_dir, package_path), ".class");
 	cmd_append(&cmd, "--output", temp_sprintf("%s/%s", root, build.intermediate_dir));
@@ -630,7 +639,7 @@ static Result compile_android(Cpp_Program program)
 	if (!cmd_run_sync_and_reset(&cmd)) return_defer(Failed);
 
 	// Sign APK
-	cmd_append(&cmd, "./apksigner", "sign", "--ks", build.keystore);
+	cmd_append(&cmd, ANDROID_APKSIGNER, "sign", "--ks", build.keystore);
 	cmd_append(&cmd, "--ks-key-alias", "debug");
 	cmd_append(&cmd, "--ks-pass", "pass:android");
 	cmd_append(&cmd, "--v1-signing-enabled", "true", "--v2-signing-enabled", "true");
@@ -975,7 +984,9 @@ int check_dependencies(void)
 		cmd_append(&fission.include_dirs, d->include_path);
 	}
 
-	const char* header_only_output = temp_sprintf("%s/header_only" OBJ_EXT, build.intermediate_dir);
+	const char* header_only_output = temp_sprintf("%s/header_only%s", build.intermediate_dir, obj_ext(build.target_os));
+	if (build.target_os == OS_ANDROID)
+		header_only_output = temp_sprintf("%s/arm64-v8a.o", header_only_output);	
 	const char* header_only_source = "src/header_only.cpp";
 	if (needs_rebuild(header_only_output, &header_only_source, 1))
 	{
@@ -1025,8 +1036,12 @@ int generate_embedded_objects(void)
 		const char* symbol_name = identifier_from_file_name(path);
 		cmd_append(&fission.object_files, path);
 
+		const char* full_output_path = output_path;
+		if (build.target_os == OS_ANDROID)
+			full_output_path = temp_sprintf("%s/arm64-v8a.o", output_path);
+
 		// Generate binary object
-		if (needs_rebuild(output_path, &binary_path, 1))
+		if (needs_rebuild(full_output_path, &binary_path, 1))
 		{
 			if (write_object_from_binary_file(output_path, binary_path, symbol_name))
 				return 1;

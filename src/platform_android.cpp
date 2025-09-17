@@ -27,7 +27,7 @@ BEGIN_NAMESPACE(fission)
 
 void log::write_log_from_logger(int level)
 {
-    __android_log_write(level + ANDROID_LOG_VERBOSE, "Fission Engine", (char*)logger.arena.start);
+    __android_log_write(level + ANDROID_LOG_VERBOSE, "FissionEngine", (char*)logger.arena.start);
 }
 
 auto ticks() -> u64

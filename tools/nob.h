@@ -2095,7 +2095,6 @@ NOBDEF bool nob_set_current_dir(const char *path)
         nob_log(NOB_ERROR, "could not set current directory to %s: %s", path, nob_win32_error_message(GetLastError()));
         return false;
     }
-	nob_log(NOB_INFO, "Current working directory: %s", path);
     return true;
 #else
     if (chdir(path) < 0) {

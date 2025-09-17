@@ -25,16 +25,21 @@
 	"    }\n" \
 	"}\n"
 
+	
 #if OS == OS_WINDOWS
-#	define OBJ_EXT ".obj"\
-#	define SCRIPT_EXT ".bat"
-#	define SCRIPT_COMMENT ":: "
+#	define ANDROID_COMPILER(X) X ".cmd" // thanks Android, very cool
+#	define ANDROID_D8 "d8.bat" // I am disappointed
+#	define ANDROID_APKSIGNER "apksigner.bat" // ._.
+#	define OBJ_EXT ".obj"
+#	define SCRIPT_EXT ".ps1"
 #	define setenv(name, value) _putenv_s(name, value)
 #	define PATH_SEP ";"
 #else
+#	define ANDROID_COMPILER(X) "./" X
+#	define ANDROID_D8 "./d8"
+#	define ANDROID_APKSIGNER "./apksigner"
 #	define OBJ_EXT ".o"
 #	define SCRIPT_EXT ".sh"
-#	define SCRIPT_COMMENT "# "
 #	define setenv(name, value) setenv(name, value, 1)
 #	define PATH_SEP ":"
 #endif
@@ -133,7 +138,7 @@ static const char* home_directory()
 	return path;
 }
 
-static const char* target_name(int os)
+static const char* os_name(int os)
 {
 	switch (os) {
 		case OS_WINDOWS: return "windows";
@@ -144,6 +149,14 @@ static const char* target_name(int os)
 	}
 	assert_impl(false, "OS not valid");
 	return NULL;
+}
+
+static const char* obj_ext(int os)
+{
+	switch (os) {
+		case OS_WINDOWS: return ".obj";
+		default:         return ".o";
+	}
 }
 
 static const char* library_temp(const char* dir, const char* name)

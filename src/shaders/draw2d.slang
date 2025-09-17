@@ -27,7 +27,6 @@ VOut main(Vertex input)
 }
 
 Sampler2D texture;
-SamplerState sampler;
 
 [shader("fragment")]
 float4 main(VOut input) : SV_Target
