@@ -1,17 +1,12 @@
 #include "Fission/core.hpp"
 #include "embed/draw2d.spv.hpp"
 #include "embed/blur.spv.hpp"
+#include "embed/bg.spv.hpp"
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/rotate_normalized_axis.hpp"
 #include <bit>
 using std::popcount;
 #define TAB "   "
-
-//constexpr auto popcount(unsigned x) {
-//    unsigned num{};
-//    for (; x; ++num, x &= (x - 1));
-//    return num;
-//};
 
 namespace vk
 {
@@ -167,8 +162,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debug_utils_callback(
     NOT_USED(user, type);
 
     auto level = severity <= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
-        ? log::Warn
-        : log::Error;
+        ? log::Warn : log::Error;
 
 	if (severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
     	log::log(level, data->pMessage);
@@ -201,6 +195,7 @@ void check_layers_and_extensions();
 auto Graphics::create (Create_Info const& info) -> Result
 {
 	log::info("Creating Graphics Context...");
+    log::verbose("Graphics debugging enabled: ", info.debug);
     if (create_instance(info.debug))    return Failed;
     if (create_surface(info.window))    return Failed;
     if (pick_physical_device())         return Failed;
@@ -303,7 +298,6 @@ void log_layers_and_extensions()
 auto Graphics::create_instance(bool debug) -> Result
 {
     log::verbose("Creating Vulkan instance...");
-    log::verbose("Graphics debugging enabled: ", debug);
 	if (debug) log_layers_and_extensions();
 
 	VkApplicationInfo application_info {
@@ -373,7 +367,7 @@ auto Graphics::create_instance(bool debug) -> Result
 
 	uint32_t api_version;
 	vkEnumerateInstanceVersion(&api_version);
-	log::info("Vulkan version ",
+	log::info("Using Vulkan version ",
 		VK_API_VERSION_MAJOR(api_version), ".",
 		VK_API_VERSION_MINOR(api_version), ".",
 		VK_API_VERSION_PATCH(api_version)
@@ -883,14 +877,13 @@ void Graphics::upload(VkBuffer dstBuffer, void const* inData, VkDeviceSize inSiz
 }
 #endif
 
-void Graphics::upload (
-	VkImage       destination,
-	void const*   image_data,
-	VkExtent3D    image_extent,
-	VkFormat      image_format,
-	VkImageLayout final_layout,
-	u32           layer
-) {
+void Graphics::upload(
+	VkImage     destination,
+	void const* image_data,
+	VkExtent3D  image_extent,
+	VkFormat    image_format,
+	Image_Upload_Options const& options)
+{
     VkDeviceSize  data_size = image_extent.width * image_extent.height * image_extent.depth * vk_size_of(image_format);
     VkBuffer      buffer;
     VmaAllocation allocation;
@@ -951,7 +944,7 @@ void Graphics::upload (
 			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
 			.baseMipLevel = 0,
 			.levelCount = 1,
-			.baseArrayLayer = layer,
+			.baseArrayLayer = options.layer,
 			.layerCount = 1,
 		};
 
@@ -968,7 +961,7 @@ void Graphics::upload (
 			.imageSubresource = {
 				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
 				.mipLevel = 0,
-				.baseArrayLayer = layer,
+				.baseArrayLayer = options.layer,
 				.layerCount = 1,
 			},
 			.imageExtent = image_extent,
@@ -980,7 +973,7 @@ void Graphics::upload (
 		image_barrier (
 			command_buffer, destination,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-			final_layout,                         VK_ACCESS_SHADER_READ_BIT,    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+			options.final_layout,                 VK_ACCESS_SHADER_READ_BIT,    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 			range
 		);
     }
@@ -1144,6 +1137,17 @@ VkResult vk::Pipeline_Layout_Creator::create(VkPipelineLayout* p_pipeline_layout
 		nullptr, p_pipeline_layout);
 }
 #endif
+
+auto Graphics::on_resize(Window* window) -> u32
+{
+	u32 old_image_count = image_count;
+    vkDestroySwapchainKHR(device, swap_chain, nullptr);
+    forn (image_count)
+		vkDestroyImageView(device, image_views[i], nullptr);
+    create_swap_chain(window);
+    create_sc_image_views();
+	return old_image_count;
+}
 
 // --------------------------------------------------------------------------------
 // Render Pass Creator
@@ -1405,8 +1409,15 @@ auto Render_Image::create(Create_Info const& info) -> Result
 		.layers = 1,
 	};
 	vkCreateFramebuffer(graphics.device, &frame_buffer_ci, nullptr, &frame_buffer);
-
 	return Success;
+}
+
+void Render_Image::destroy()
+{
+	auto& g = engine.graphics;
+	vmaDestroyImage(g.allocator, image, allocation);
+	vkDestroyImageView(g.device, image_view, nullptr);
+	vkDestroyFramebuffer(g.device, frame_buffer, nullptr);
 }
 
 // --------------------------------------------------------------------------------
@@ -1533,67 +1544,6 @@ auto Blur_Post_Process<N>::create(Create_Info const& info) -> Result
 		.create(&render_pass);
 	}
 	{
-		u32 width = graphics.extent.width;
-		u32 height = graphics.extent.height;
-			
-		VmaAllocationCreateInfo allocation_ci {
-			.usage = VMA_MEMORY_USAGE_AUTO,
-		};
-		VkImageCreateInfo image_ci {
-			.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-			.imageType = VK_IMAGE_TYPE_2D,
-			.format = format,
-			.extent = { .width = width, .height = height, .depth = 1 },
-			.mipLevels = N,
-			.arrayLayers = 1,
-			.samples = VK_SAMPLE_COUNT_1_BIT,
-		};
-		image_ci.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-		vmaCreateImage(graphics.allocator, &image_ci, &allocation_ci, &image, &image_allocation, nullptr);
-		image_ci.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-		vmaCreateImage(graphics.allocator, &image_ci, &allocation_ci, &temp_image, &temp_image_allocation, nullptr);
-
-		VkImageViewCreateInfo image_view_ci {
-			.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-			.viewType = VK_IMAGE_VIEW_TYPE_2D,
-			.format = format,
-			.subresourceRange = {
-				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-				.levelCount = 1,
-				.baseArrayLayer = 0,
-				.layerCount = 1,
-			}
-		};
-		forn (N) {
-			image_view_ci.subresourceRange.baseMipLevel = i;
-
-			image_view_ci.image = image;
-			vkCreateImageView(graphics.device, &image_view_ci, nullptr, &image_views[i]);
-
-			image_view_ci.image = temp_image;
-			vkCreateImageView(graphics.device, &image_view_ci, nullptr, &temp_image_views[i]);
-		}
-
-		VkFramebufferCreateInfo frame_buffer_ci {
-			.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-			.renderPass = render_pass,
-			.attachmentCount = 1,
-			.width  = graphics.extent.width,
-			.height = graphics.extent.height,
-			.layers = 1,
-		};
-		forn (N) {
-			frame_buffer_ci.pAttachments = &image_views[i];
-			vkCreateFramebuffer(graphics.device, &frame_buffer_ci, nullptr, &frame_buffers[i]);
-			
-			frame_buffer_ci.pAttachments = &temp_image_views[i];
-			vkCreateFramebuffer(graphics.device, &frame_buffer_ci, nullptr, &temp_frame_buffers[i]);
-		
-			frame_buffer_ci.width  /= 2;
-			frame_buffer_ci.height /= 2;
-		}
-	}
-	{
 		VkFilter filter = VK_FILTER_LINEAR;
 		VkSamplerAddressMode address_mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
 		VkSamplerCreateInfo sampler_ci {
@@ -1645,9 +1595,9 @@ auto Blur_Post_Process<N>::create(Create_Info const& info) -> Result
 		};
 		vkCreateShaderModule(graphics.device, &info, nullptr, &shader_module);
 		
-		auto vertex_layout = Vertex_Layout<void>{};
+		VkPipelineVertexInputStateCreateInfo vertex_layout { VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
 		auto pc = Pipeline_Creator{}
-			.vertex_layout(vertex_layout)
+			.vertex_layout(&vertex_layout)
 			.add_dynamic_state(VK_DYNAMIC_STATE_VIEWPORT)
 			.add_dynamic_state(VK_DYNAMIC_STATE_SCISSOR)
 			.add_shader(VK_SHADER_STAGE_VERTEX_BIT, shader_module)
@@ -1667,6 +1617,142 @@ auto Blur_Post_Process<N>::create(Create_Info const& info) -> Result
 		};
 		vkAllocateDescriptorSets(graphics.device, &set_info, image_sets);
 		vkAllocateDescriptorSets(graphics.device, &set_info, temp_image_sets);
+	}
+	create_images();
+	return Success;
+}
+
+struct REMOVE
+{
+	VkPipeline pipeline;
+	VkPipelineLayout pipeline_layout;
+
+	REMOVE(VkRenderPass rp)
+	{
+		VkPushConstantRange push {
+			.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+			.offset = 0,
+			.size = sizeof(vec4),
+		};
+		VkPipelineLayoutCreateInfo pipelineLayoutInfo {
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+			.setLayoutCount = 0,
+			.pushConstantRangeCount = 1,
+			.pPushConstantRanges = &push,
+		};
+		vkCreatePipelineLayout(engine.graphics.device, &pipelineLayoutInfo, nullptr, &pipeline_layout);
+
+		VkShaderModule shader_module;
+		VkShaderModuleCreateInfo info {
+			.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+			.codeSize = size_t(embedded::bg_spv_end - embedded::bg_spv_start),
+			.pCode = (u32*)embedded::bg_spv_start,
+		};
+		vkCreateShaderModule(engine.graphics.device, &info, nullptr, &shader_module);
+		
+		VkPipelineVertexInputStateCreateInfo vertex_layout { VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
+		auto pc = Pipeline_Creator{}
+			.vertex_layout(&vertex_layout)
+			.add_dynamic_state(VK_DYNAMIC_STATE_VIEWPORT)
+			.add_dynamic_state(VK_DYNAMIC_STATE_SCISSOR)
+			.add_shader(VK_SHADER_STAGE_VERTEX_BIT, shader_module)
+			.add_shader(VK_SHADER_STAGE_FRAGMENT_BIT, shader_module);
+		pc.create(&pipeline, pipeline_layout, rp);
+	}
+
+	void draw(Render_Context const& r)
+	{
+		local_persist f32 t = 0.0f;
+		vec4 u = { f32(engine.graphics.extent.width), f32(engine.graphics.extent.height), t += 0.01f, 0.0f };
+		vkCmdBindPipeline(r.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		vkCmdPushConstants(r.command_buffer, pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(vec4), &u);
+		vkCmdDraw(r.command_buffer, 3, 1, 0, 0);	
+	}
+};
+
+template <int N>
+void Blur_Post_Process<N>::on_resize(u32)
+{
+	auto& graphics = engine.graphics;
+	vmaDestroyImage(graphics.allocator, temp_image, temp_image_allocation);
+	vmaDestroyImage(graphics.allocator, image, image_allocation);
+	forn (N) {
+		vkDestroyImageView(graphics.device, temp_image_views[i], nullptr);
+		vkDestroyImageView(graphics.device, image_views[i], nullptr);
+	}
+	forn (N) {
+		vkDestroyFramebuffer(graphics.device, temp_frame_buffers[i], nullptr);
+		vkDestroyFramebuffer(graphics.device, frame_buffers[i], nullptr);
+	}
+	create_images();
+}
+
+template <int N>
+auto Blur_Post_Process<N>::create_images() -> Result
+{
+	auto& graphics = engine.graphics;
+	const VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT;
+	{
+		u32 width = graphics.extent.width;
+		u32 height = graphics.extent.height;
+			
+		VmaAllocationCreateInfo allocation_ci {
+			.usage = VMA_MEMORY_USAGE_AUTO,
+		};
+		VkImageCreateInfo image_ci {
+			.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+			.imageType = VK_IMAGE_TYPE_2D,
+			.format = format,
+			.extent = { .width = width, .height = height, .depth = 1 },
+			.mipLevels = N,
+			.arrayLayers = 1,
+			.samples = VK_SAMPLE_COUNT_1_BIT,
+		};
+		image_ci.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		vmaCreateImage(graphics.allocator, &image_ci, &allocation_ci, &image, &image_allocation, nullptr);
+		image_ci.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		vmaCreateImage(graphics.allocator, &image_ci, &allocation_ci, &temp_image, &temp_image_allocation, nullptr);
+
+		VkImageViewCreateInfo image_view_ci {
+			.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+			.viewType = VK_IMAGE_VIEW_TYPE_2D,
+			.format = format,
+			.subresourceRange = {
+				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+				.levelCount = 1,
+				.baseArrayLayer = 0,
+				.layerCount = 1,
+			}
+		};
+		forn (N) {
+			image_view_ci.subresourceRange.baseMipLevel = i;
+
+			image_view_ci.image = image;
+			vkCreateImageView(graphics.device, &image_view_ci, nullptr, &image_views[i]);
+
+			image_view_ci.image = temp_image;
+			vkCreateImageView(graphics.device, &image_view_ci, nullptr, &temp_image_views[i]);
+		}
+
+		VkFramebufferCreateInfo frame_buffer_ci {
+			.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+			.renderPass = render_pass,
+			.attachmentCount = 1,
+			.width  = graphics.extent.width,
+			.height = graphics.extent.height,
+			.layers = 1,
+		};
+		log::warn("framebuffer ", frame_buffer_ci.width, "x", frame_buffer_ci.height);
+		forn (N) {
+			frame_buffer_ci.pAttachments = &image_views[i];
+			vkCreateFramebuffer(graphics.device, &frame_buffer_ci, nullptr, &frame_buffers[i]);
+			
+			frame_buffer_ci.pAttachments = &temp_image_views[i];
+			vkCreateFramebuffer(graphics.device, &frame_buffer_ci, nullptr, &temp_frame_buffers[i]);
+		
+			frame_buffer_ci.width  /= 2;
+			frame_buffer_ci.height /= 2;
+		}
 	}
 	{
 		VkDescriptorImageInfo image_infos[N];
@@ -1699,8 +1785,6 @@ template <int N>
 void Blur_Post_Process<N>::process(Render_Context const& render_context, VkImage source, VkDescriptorSet source_set)
 {
 	auto cmd = render_context.command_buffer;
-	f32 width  = f32(engine.graphics.extent.width);
-	f32 height = f32(engine.graphics.extent.height);
 	u32 mipWidth  = engine.graphics.extent.width;
 	u32 mipHeight = engine.graphics.extent.height;
 
@@ -1869,19 +1953,21 @@ void Blur_Post_Process<N>::process(Render_Context const& render_context, VkImage
 	{
 		engine.graphics.set_default_scissor(cmd);
 		engine.graphics.set_default_viewport(cmd);
+		
+		local_persist REMOVE r {combine_render_pass};
+		r.draw(render_context);
 
 		Uniforms push {
 			.direction = {0.0f, 0.0f},
 		};
 		vkCmdBindPipeline(render_context.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, combine_pipeline);
-		f32 m = 1.0f;
+		f32 w[] = {0.8f, 0.8f, 0.75f, 0.7f, 0.7f, 4.f, 4.f};
 		forn (N)
 		{
-			push.size.x = m;
+			push.size.x = w[i];
 			vkCmdPushConstants(render_context.command_buffer, pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Uniforms), &push);
 			vkCmdBindDescriptorSets(render_context.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &image_sets[i], 0, nullptr);
 			vkCmdDraw(render_context.command_buffer, 3, 1, 0, 0);
-			m *= 0.75f;
 		}
 		push.size.x = 1.0f;
 		vkCmdPushConstants(render_context.command_buffer, pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Uniforms), &push);

@@ -1,27 +1,6 @@
 #ifndef BUILD_H
 #define BUILD_H
-
-#define OS_WINDOWS 0x01
-#define OS_MACOS   0x02
-#define OS_LINUX   0x04
-#define OS_ANDROID 0x08
-#define OS_IOS     0x10
-#define OS_ALL     0xFF
-
-#if defined(_WIN32)
-#	define OS OS_WINDOWS
-#elif defined(__APPLE__)
-#	define OS OS_MACOS
-#elif defined(__linux__)
-#	define OS OS_LINUX
-#else
-#	error "Build program does not support this OS!"
-#endif
-
-#define NOB_IMPLEMENTATION
-#define NOB_STRIP_PREFIX
-#include "tools/nob.h"
-#include "tools/helpers.h"
+#include "tools/core_build.h"
 
 #define MSVC_OPTIONS "/nologo", "/std:c++20", "/EHsc-", \
 					 "/utf-8", "/GR-", "/MT", \
@@ -32,29 +11,27 @@
 					  "-Wno-missing-field-initializers", \
 					  "-Wno-missing-designated-field-initializers"
 
-//! TODO: this is insane, replace with array
-#define X_ANDROID_ARCHITECTURES(X) \
-	X("arm64-v8a",   "aarch64-linux-android35-clang++", arm32) \
-	X("armeabi-v7a", "armv7a-linux-androideabi35-clang++", arm64) \
-
-//! TODO: android dependency?
-const char* android_sdk_path;
-const char* android_ndk_path;
-const char* android_toolchain; // compilers location
-const char* android_tools;     // command-line tools
-const char* android_platform;
-const char* android_build_tools;
-
-struct {
+static struct {
 	int         target_os;
 	const char* output_dir;
 	const char* intermediate_dir;
 	const char* cache_dir; // need? only used for vcvars
-	const char* company;   // com.example (Android only)
+	const char* company;   // (Android only) com.example
 	const char* keystore;  // (Android only)
 } build;
 
-Cmd cmd;
+static struct {
+	const char* sdk_path;
+	const char* ndk_path;
+	const char* toolchain; // compilers location
+	const char* tools;     // command-line tools
+	const char* platform;
+	const char* build_tools;
+} android;
+
+static struct {
+	const char* compiler;
+} slang;
 
 typedef struct Dependency Dependency;
 typedef int (*P_fetch_callback)(Dependency*);
@@ -69,6 +46,12 @@ struct Dependency {
     const char*       library_path;
     const char*       url;
 };
+
+typedef struct {
+    const char* platform;
+    const char* build_tools;
+    const char* ndk;
+} Android_Dependency;
 
 typedef enum {
 	OPT_SPEED  = 0, // speed is the default
@@ -91,6 +74,13 @@ typedef struct {
 	Compile_Flags  flags;
 	Optimization   optimization;
 } Cpp_Program;
+
+//! TODO: implement
+typedef struct {
+	Cpp_Program program;
+	const char* asset_dir;
+	const char* icons_dir;
+} Application;
 
 static void check_cpp_compiler(void);
 static void create_build_directories(void);
@@ -118,6 +108,8 @@ static void cache_set(const char* name, const char* value)
 	check(write_entire_file(cache_file_temp(name), value, strlen(value)));
 }
 
+Result build_freetype_android(Dependency* d, const char* source_dir);
+
 int fetch_vulkan(Dependency* d)
 {
 	//! TODO: don't exit after install
@@ -144,6 +136,7 @@ int fetch_vulkan(Dependency* d)
     d->include_path = temp_sprintf("%s/include", sdk_location);
     d->library_path = temp_sprintf("%s/Lib", sdk_location);
 	d->name = "vulkan-1"; // want to link against this library
+	slang.compiler = temp_sprintf("%s/bin/slangc", sdk_location);
 #elif OS == OS_MACOS
 	const char* url = "https://sdk.lunarg.com/sdk/download/latest/mac/vulkan_sdk.zip";
 	const char* home = getenv("HOME");
@@ -176,52 +169,11 @@ int fetch_vulkan(Dependency* d)
 
     d->include_path = temp_sprintf("%s/macOS/include", sdk_location);
     d->library_path = temp_sprintf("%s/macOS/lib", sdk_location);
+	slang.compiler = temp_sprintf("%s/macOS/bin/slangc", sdk_location);
 #endif
 
 	assert(file_exists(d->include_path));
 	assert(file_exists(d->library_path));
-	return 0;
-}
-
-int build_freetype_android(Dependency* d, const char* source_dir)
-{
-	#if OS == OS_WINDOWS
-	#	define _BUILD_FREETYPE_ANDROID_OPTIONS "-G", "Ninja",
-	#else
-	#	define _BUILD_FREETYPE_ANDROID_OPTIONS
-	#endif
-	#define _BUILD_FREETYPE_ANDROID(ARCH, COMPILER, ID) \
-		const char* dst_ ## ID = temp_sprintf("../%s/lib/" ARCH "/libfreetype.a", build.output_dir); \
-		const char* build_ ## ID = temp_sprintf("%s/build-" ARCH, source_dir); \
-		if (!file_exists(dst_ ## ID)) { run_output("freetype.cmake-" ARCH ".log", "cmake", \
-			"-S", source_dir, "-B", build_ ## ID, \
-			_BUILD_FREETYPE_ANDROID_OPTIONS \
-			temp_sprintf("-DCMAKE_TOOLCHAIN_FILE='%s/build/cmake/android.toolchain.cmake'", android_ndk_path), \
-			"-DANDROID_ABI=" ARCH, \
-			"-DANDROID_PLATFORM=\"android-35\"", \
-			"-DCMAKE_BUILD_TYPE=Release", \
-			"-DFT_DISABLE_ZLIB=TRUE", \
-			"-DFT_DISABLE_BZIP2=TRUE", \
-			"-DFT_DISABLE_PNG=TRUE", \
-			"-DFT_DISABLE_HARFBUZZ=TRUE", \
-			"-DFT_DISABLE_BROTLI=TRUE", \
-		); \
-		run_output("freetype.build-" ARCH ".log", "cmake", "--build", build_ ## ID, "-j", "--config", "Release"); \
-		if (!file_exists(dst_ ## ID)) \
-		check(copy_file( \
-			temp_sprintf("%s/libfreetype.a", build_ ## ID), \
-			dst_ ## ID \
-		)); }
-	X_ANDROID_ARCHITECTURES(_BUILD_FREETYPE_ANDROID)
-	#undef _BUILD_FREETYPE_ANDROID
-
-	const char* dst_include_path = temp_sprintf("../%s", d->include_path);
-	if (!file_exists(dst_include_path))
-	check(copy_directory_recursively(
-		temp_sprintf("%s/include", source_dir),
-		dst_include_path
-	));
-
 	return 0;
 }
 
@@ -305,7 +257,7 @@ int fetch_glfw(Dependency* d)
 		scoped_temp()
 		{
 			if (!file_exists("glfw"))
-				run("git", "clone", "-q", "--depth=1", "--branch", d->version, d->url);
+				run_output("glfw.git.log", "git", "clone", "-q", "--depth=1", "--branch", d->version, d->url);
 
 			const char* build_dir = "glfw/build";
 			run_output("glfw.cmake.log", "cmake",
@@ -330,15 +282,53 @@ int fetch_glfw(Dependency* d)
 	return 0;
 }
 
-Dependency dependencies[] = {
-#   include "dependencies.h"
-};
+#include "dependencies.h"
 
-Cpp_Program fission = {
+static Cpp_Program fission = {
 	.source = "src/main.cpp",
 	.output_name = "fission",
 	.flags = COMPILE_STATIC_LIBRARY,
 };
+
+Result build_freetype_android(Dependency* d, const char* source_dir)
+{
+	iterate (android_architectures)
+	{
+		Android_Architecture arch = android_architectures[i];
+		const char* libpath = temp_sprintf("../%s/lib/%s/libfreetype.a", build.output_dir, arch.name);
+		const char* build_dir = temp_sprintf("%s/build-%s", source_dir, arch.name);
+
+		if (!file_exists(libpath))
+		{
+			const char* cmake_log = temp_sprintf("freetype.cmake-%s.log", arch.name);
+			const char* cmake_toolchain = temp_sprintf("%s/build/cmake/android.toolchain.cmake'", android.ndk_path);
+			run_output(cmake_log, "cmake",
+				"-S", source_dir, "-B", build_dir,
+			#if OS == OS_WINDOWS
+				"-G", "Ninja",
+			#endif
+				"--toolchain", cmake_toolchain,
+				temp_sprintf("-DANDROID_ABI=%s", arch.name),
+				temp_sprintf("-DANDROID_PLATFORM=%s", android_dependency.platform),
+				"-DCMAKE_BUILD_TYPE=Release",
+				"-DFT_DISABLE_ZLIB=TRUE",
+				"-DFT_DISABLE_BZIP2=TRUE",
+				"-DFT_DISABLE_PNG=TRUE",
+				"-DFT_DISABLE_HARFBUZZ=TRUE",
+				"-DFT_DISABLE_BROTLI=TRUE"
+			);
+
+			const char* build_log = temp_sprintf("freetype.build-%s.log", arch.name);
+			run_output(build_log, "cmake", "--build", build_dir, "-j", "--config", "Release");
+			check(copy_file(temp_sprintf("%s/libfreetype.a", build_dir), libpath));
+		}
+	}
+
+	const char* dst_include_path = temp_sprintf("../%s", d->include_path);
+	if (!file_exists(dst_include_path))
+	check(copy_directory_recursively(temp_sprintf("%s/include", source_dir), dst_include_path));
+	return Success;
+}
 
 static void create_build_directories(void)
 {
@@ -354,10 +344,11 @@ static void create_build_directories(void)
 		if (build.target_os == OS_ANDROID)
 		{
 			check(mkdir_if_not_exists(temp_sprintf("%s/lib", build.output_dir)));
-			#define _MAKE_OUTPUT_DIR_ANDROID(ARCH, ...) \
-				check(mkdir_if_not_exists(temp_sprintf("%s/lib/" ARCH, build.output_dir)));
-			X_ANDROID_ARCHITECTURES(_MAKE_OUTPUT_DIR_ANDROID)
-			#undef _MAKE_OUTPUT_DIR_ANDROID
+			iterate (android_architectures)
+			{
+				Android_Architecture arch = android_architectures[i];
+				check(mkdir_if_not_exists(temp_sprintf("%s/lib/%s", build.output_dir, arch.name)));
+			}
 		}
 	}
 }
@@ -397,7 +388,7 @@ static void check_cpp_compiler_android(void)
 		}
 	}
 	else nob_log(INFO, "Found Android SDK " PATH("%s"), sdk_location);
-	android_sdk_path = sdk_location;
+	android.sdk_path = sdk_location;
 
 	// Check/Install required tools (https://apilevels.com/)
 	const char* sdkmanager = find_file_recursive(sdk_location, OS!=OS_WINDOWS? "sdkmanager" : "sdkmanager.bat");
@@ -413,15 +404,15 @@ static void check_cpp_compiler_android(void)
 		if (!file_exists("platform-tools"))
 			run(sdkmanager, sdkroot, "--install", "platform-tools");
 	}
-	android_tools = path_parent(sdkmanager);
-	android_ndk_path = temp_sprintf("%s/ndk/28.2.13676358", sdk_location);
-	android_platform = temp_sprintf("%s/platforms/android-35", sdk_location);
-	android_build_tools = temp_sprintf("%s/build-tools/35.0.0", sdk_location);
+	android.tools = path_parent(sdkmanager);
+	android.ndk_path = temp_sprintf("%s/ndk/28.2.13676358", sdk_location);
+	android.platform = temp_sprintf("%s/platforms/android-35", sdk_location);
+	android.build_tools = temp_sprintf("%s/build-tools/35.0.0", sdk_location);
 	const char* toolchain_path = temp_sprintf("%s/ndk/28.2.13676358/toolchains/llvm", sdk_location);
 	const char* clang = find_file_recursive(toolchain_path, "armv7a-linux-androideabi35-clang++");
 	const char* bin = path_parent(clang);
 	nob_log(INFO, "Found Android toolchain " PATH("%s"), bin);
-	android_toolchain = bin;
+	android.toolchain = bin;
 
 	// Check if there is a keystore available
 	//! TODO: how to properly handle keystores?
@@ -438,16 +429,15 @@ static void check_cpp_compiler_android(void)
 	{
 		String_Builder builder = {0};
 	#if OS == OS_WINDOWS
-		sb_appendf(&builder, "$Env:PATH += ';%s/platform-tools'\n", android_sdk_path);
+		sb_appendf(&builder, "$Env:PATH += ';%s/platform-tools'\n", android.sdk_path);
 	#else
-		sb_appendf(&builder, "export PATH=\"%s/platform-tools:$PATH\"\n", android_sdk_path);
+		sb_appendf(&builder, "export PATH=\"%s/platform-tools:$PATH\"\n", android.sdk_path);
 	#endif
-		//! TODO: echo information out
 		sb_appendf(&builder,
-			"# Start debugging by using `adb`\n"
-			"# `adb install test.apk`\n"
-			"# `adb shell am start -n dev.lazergenix.test/.MainActivity`\n"
-			"# `adb logcat FissionEngine:D *:S`\n"
+			"echo Start debugging by using adb\n"
+			"echo \"adb install test.apk\"\n"
+			"echo \"adb shell am start -n dev.lazergenix.test/.MainActivity\"\n"
+			"echo \"adb logcat FissionEngine:D *:S\"\n"
 		);
 		write_entire_file(setup_env, builder.items, builder.count);
 	}
@@ -523,46 +513,46 @@ static Result compile_android(Cpp_Program program)
 		cmd_append(&options, "-static-libstdc++", "-shared");
 	}
 	
-	pushd(android_toolchain);
+	pushd(android.toolchain);
 
 	const char* package = temp_sprintf("%s.%s", build.company, program.output_name);
 	const char* namespace = string_replace(package, '.', '_');
 
-	#define _COMPILE_ANDROID(ARCH, COMPILER, ...) \
-		cmd_append(&cmd, ANDROID_COMPILER(COMPILER)); \
-		cmd_extend(&cmd, &options); \
-		if (program.flags & (COMPILE_OBJECT|COMPILE_STATIC_LIBRARY)) \
-			cmd_append(&cmd, "-o", temp_sprintf("%s/%s/%s.o/" ARCH ".o", root, build.intermediate_dir, program.output_name)); \
-		else { \
-			cmd_append(&cmd, temp_sprintf("%s/src/platform_android.cpp", root)); \
-			cmd_append(&cmd, temp_sprintf("-D__ANDROID_NAMESPACE__=%s", namespace)); \
-			cmd_append(&cmd, temp_sprintf("-L%s/%s/lib/" ARCH, root, build.output_dir)); \
-			forn (program.libraries.count) \
-				cmd_append(&cmd, temp_sprintf("-l%s", program.libraries.items[i])); \
-			cmd_append(&cmd, "-landroid", "-llog", "-lvulkan"); \
-			cmd_append(&cmd, "-o", temp_sprintf("%s/%s/lib/" ARCH "/lib%s.so", root, build.output_dir, program.output_name)); \
-		} \
+	iterate (android_architectures)
+	{
+		Android_Architecture arch = android_architectures[i];
+		cmd_append(&cmd, temp_sprintf(ANDROID_COMPILER, arch.compiler));
+		cmd_extend(&cmd, &options);
+		if (program.flags & (COMPILE_OBJECT|COMPILE_STATIC_LIBRARY))
+			cmd_append(&cmd, "-o", temp_sprintf("%s/%s/%s.o/%s.o", root, build.intermediate_dir, program.output_name, arch.name));
+		else {
+			cmd_append(&cmd, temp_sprintf("%s/src/platform_android.cpp", root));
+			cmd_append(&cmd, temp_sprintf("-D__ANDROID_NAMESPACE__=%s", namespace));
+			cmd_append(&cmd, temp_sprintf("-L%s/%s/lib/%s", root, build.output_dir, arch.name));
+			forn (program.libraries.count)
+				cmd_append(&cmd, temp_sprintf("-l%s", program.libraries.items[i]));
+			cmd_append(&cmd, "-landroid", "-llog", "-lvulkan");
+			cmd_append(&cmd, "-o", temp_sprintf("%s/%s/lib/%s/lib%s.so", root, build.output_dir, arch.name, program.output_name));
+		}
 		if (!cmd_run_sync_and_reset(&cmd)) return_defer(Failed);
-	X_ANDROID_ARCHITECTURES(_COMPILE_ANDROID)
-	#undef _COMPILE_ANDROID
+	}
 
 	if (program.flags & COMPILE_STATIC_LIBRARY)
+	iterate (android_architectures)
 	{
-		#define _LIBRARY_ANDROID(ARCH, ...) \
-		cmd_append(&cmd, "./llvm-ar", "rvs"); \
-		cmd_append(&cmd, temp_sprintf("%s/%s/lib/" ARCH "/lib%s.a", root, build.output_dir, program.output_name)); \
-		cmd_append(&cmd, temp_sprintf("%s/%s/%s.o/" ARCH ".o", root, build.intermediate_dir, program.output_name)); \
-		forn (program.object_files.count) { \
-			const char* object_file = temp_sprintf("%s/%s/%s" OBJ_EXT "/" ARCH ".o", root, build.intermediate_dir, program.object_files.items[i]); \
-			const char* object_file2 = temp_sprintf("%s/%s/%s.o/" ARCH ".o", root, build.intermediate_dir, program.object_files.items[i]); \
-			if (file_exists(object_file)) \
-				cmd_append(&cmd, object_file); \
-			else \
-				cmd_append(&cmd, object_file2); \
-		} \
+		Android_Architecture arch = android_architectures[i];
+		cmd_append(&cmd, "./llvm-ar", "rvs");
+		cmd_append(&cmd, temp_sprintf("%s/%s/lib/%s/lib%s.a", root, build.output_dir, arch.name, program.output_name));
+		cmd_append(&cmd, temp_sprintf("%s/%s/%s.o/%s.o", root, build.intermediate_dir, program.output_name, arch.name));
+		forn (program.object_files.count) {
+			const char* object_file = temp_sprintf("%s/%s/%s.o/%s.o", root, build.intermediate_dir, program.object_files.items[i], arch.name);
+			const char* object_file2 = temp_sprintf("%s/%s/%s.o/%s.o", root, build.intermediate_dir, program.object_files.items[i], arch.name);
+			if (file_exists(object_file))
+				cmd_append(&cmd, object_file);
+			else
+				cmd_append(&cmd, object_file2);
+		}
 		if (!cmd_run_sync_and_reset(&cmd)) return_defer(Failed);
-		X_ANDROID_ARCHITECTURES(_LIBRARY_ANDROID)
-		#undef _LIBRARY_ANDROID
 	}
 
 	if (program.flags & (COMPILE_OBJECT|COMPILE_STATIC_LIBRARY))
@@ -571,13 +561,13 @@ static Result compile_android(Cpp_Program program)
 	const char* package_path = string_replace(package, '.', '/');
 	
 	popd();
-	pushd(android_build_tools);
+	pushd(android.build_tools);
 
 	// Generate R.java
 	cmd_append(&cmd, "./aapt", "package", "-f", "-m");
 	cmd_append(&cmd, "-S", temp_sprintf("%s/src/android/res", root), "-J", temp_sprintf("%s/%s", root, build.intermediate_dir));
 	cmd_append(&cmd, "-M", temp_sprintf("%s/src/android/AndroidManifest.xml", root));
-	cmd_append(&cmd, "-I", temp_sprintf("%s/android.jar", android_platform));
+	cmd_append(&cmd, "-I", temp_sprintf("%s/android.jar", android.platform));
 	cmd_append(&cmd, "--custom-package", package);
 	if (!cmd_run_sync_and_reset(&cmd)) return_defer(Failed);
 
@@ -593,7 +583,7 @@ static Result compile_android(Cpp_Program program)
 	}
 
 	// Compile .java -> .class
-	cmd_append(&cmd, "javac", "-classpath", temp_sprintf("%s/android.jar", android_platform));
+	cmd_append(&cmd, "javac", "-classpath", temp_sprintf("%s/android.jar", android.platform));
 	cmd_append(&cmd, "-d", temp_sprintf("%s/%s", root, build.intermediate_dir));
 	cmd_append(&cmd, activity_path);
 	cmd_append(&cmd, temp_sprintf("%s/%s/%s/R.java", root, build.intermediate_dir, package_path));
@@ -601,7 +591,7 @@ static Result compile_android(Cpp_Program program)
 
 	// Generate classes.dex
 	cmd_append(&cmd, ANDROID_D8, "--min-api", "21");
-	cmd_append(&cmd, "--classpath", temp_sprintf("%s/android.jar", android_platform));
+	cmd_append(&cmd, "--classpath", temp_sprintf("%s/android.jar", android.platform));
 	cmd_append_all_ends_with(&cmd, temp_sprintf("%s/%s/%s", root, build.intermediate_dir, package_path), ".class");
 	cmd_append(&cmd, "--output", temp_sprintf("%s/%s", root, build.intermediate_dir));
 	if (!cmd_run_sync_and_reset(&cmd)) return_defer(Failed);
@@ -612,7 +602,7 @@ static Result compile_android(Cpp_Program program)
 	cmd_append(&cmd, "./aapt", "package", "-f");
 	cmd_append(&cmd, "-M", temp_sprintf("%s/src/android/AndroidManifest.xml", root));
 	cmd_append(&cmd, "-S", temp_sprintf("%s/src/android/res", root));
-	cmd_append(&cmd, "-I", temp_sprintf("%s/android.jar", android_platform));
+	cmd_append(&cmd, "-I", temp_sprintf("%s/android.jar", android.platform));
 	cmd_append(&cmd, "-F", output_apk);
 	cmd_append(&cmd, "--custom-package", package);
 	if (!cmd_run_sync_and_reset(&cmd)) return_defer(Failed);
@@ -626,10 +616,11 @@ static Result compile_android(Cpp_Program program)
 	scoped_dir(temp_sprintf("%s/%s", root, build.output_dir))
 	{
 		cmd_append(&cmd, "zip", "-qr", temp_sprintf("int/%s.output.apk", program.output_name));
-		#define _ADD_SHARED_LIBRARY(ARCH, ...) \
-			cmd_append(&cmd, temp_sprintf("lib/" ARCH "/lib%s.so", program.output_name));
-		X_ANDROID_ARCHITECTURES(_ADD_SHARED_LIBRARY)
-		#undef _ADD_SHARED_LIBRARY
+		iterate (android_architectures)
+		{
+			Android_Architecture arch = android_architectures[i];
+			cmd_append(&cmd, temp_sprintf("lib/%s/lib%s.so", arch.name, program.output_name));
+		}
 		if (!cmd_run_sync_and_reset(&cmd)) return_defer(Failed);
 	}
 
@@ -778,7 +769,7 @@ static Result compile_macos(Cpp_Program program)
     if (!cmd_run_sync_and_reset(&cmd)) return Failed;
 	if (program.flags & COMPILE_STATIC_LIBRARY)
 	{
-		cmd_append(&cmd, "ar", "rvs");
+		cmd_append(&cmd, "ar", "rvs", "-c");
 		cmd_append(&cmd, temp_sprintf("%s/lib%s.a", build.output_dir, program.output_name));
 		cmd_append(&cmd, temp_sprintf("%s/%s.o", build.intermediate_dir, program.output_name));
 		forn (program.object_files.count)
@@ -1015,7 +1006,7 @@ int compile_shaders(void)
 		const char* source_path = temp_sprintf("src/shaders/%s", path);
 		if (!needs_rebuild(binary_path, &source_path, 1))
 			continue;
-		run("slangc", "-target", "spirv", source_path, "-o", binary_path);
+		run(slang.compiler, "-target", "spirv", source_path, "-o", binary_path);
 	}
 	return 0;
 }
@@ -1030,15 +1021,16 @@ int generate_embedded_objects(void)
 		if (strcmp(path, ".")  == 0) continue;
 		if (strcmp(path, "..") == 0) continue;
 		if (sv_end_with(sv_from_cstr(path), ".hpp")) continue;
+
 		const char* name = file_name_no_exts(path);
-		const char* output_path = temp_sprintf("%s/%s" OBJ_EXT, build.intermediate_dir, path);
+		const char* output_path = temp_sprintf("%s/%s%s", build.intermediate_dir, path, obj_ext(build.target_os));
 		const char* binary_path = temp_sprintf("src/embed/%s", path);
 		const char* symbol_name = identifier_from_file_name(path);
 		cmd_append(&fission.object_files, path);
 
 		const char* full_output_path = output_path;
 		if (build.target_os == OS_ANDROID)
-			full_output_path = temp_sprintf("%s/arm64-v8a.o", output_path);
+			full_output_path = temp_sprintf("%s/arm64-v8a.o", output_path); // only check
 
 		// Generate binary object
 		if (needs_rebuild(full_output_path, &binary_path, 1))

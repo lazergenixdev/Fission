@@ -32,5 +32,4 @@ Sampler2D texture;
 float4 main(VOut input) : SV_Target
 {
     return input.color * texture.Sample(input.texcoord);
-    //return input.color * float4(input.texcoord, 1, 1);
 }

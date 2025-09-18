@@ -1,3 +1,26 @@
+#ifndef CORE_BUILD_H
+#define CORE_BUILD_H
+
+#define OS_WINDOWS 0x01
+#define OS_MACOS   0x02
+#define OS_LINUX   0x04
+#define OS_ANDROID 0x08
+#define OS_IOS     0x10
+#define OS_ALL     0xFF
+
+#if defined(_WIN32)
+#	define OS OS_WINDOWS
+#elif defined(__APPLE__)
+#	define OS OS_MACOS
+#elif defined(__linux__)
+#	define OS OS_LINUX
+#else
+#	error "Build program does not support this OS!"
+#endif
+
+#define NOB_IMPLEMENTATION
+#define NOB_STRIP_PREFIX
+#include "nob.h"
 #include "android_elf.h"
 
 #if OS == OS_MACOS
@@ -25,20 +48,17 @@
 	"    }\n" \
 	"}\n"
 
-	
 #if OS == OS_WINDOWS
-#	define ANDROID_COMPILER(X) X ".cmd" // thanks Android, very cool
+#	define ANDROID_COMPILER "%s.cmd" // thanks Android, very cool
 #	define ANDROID_D8 "d8.bat" // I am disappointed
 #	define ANDROID_APKSIGNER "apksigner.bat" // ._.
-#	define OBJ_EXT ".obj"
 #	define SCRIPT_EXT ".ps1"
 #	define setenv(name, value) _putenv_s(name, value)
 #	define PATH_SEP ";"
 #else
-#	define ANDROID_COMPILER(X) "./" X
+#	define ANDROID_COMPILER "./%s"
 #	define ANDROID_D8 "./d8"
 #	define ANDROID_APKSIGNER "./apksigner"
-#	define OBJ_EXT ".o"
 #	define SCRIPT_EXT ".sh"
 #	define setenv(name, value) setenv(name, value, 1)
 #	define PATH_SEP ":"
@@ -49,11 +69,12 @@
 #endif
 #define assert(E) assert_impl(E, #E)
 #define check(E) if (!(E)) exit(1)
-#define run(...) do { Cmd C = {0}; cmd_append(&C, __VA_ARGS__); check(cmd_run_sync(C)); cmd_free(C); } while(0)
-#define run_output(output_path, ...) do { Cmd C = {0}; cmd_append(&C, __VA_ARGS__); check(cmd_run_opt(&C, (Cmd_Opt){.stdout_path = output_path, .stderr_path = output_path})); cmd_free(C); } while(0)
+#define run(...) do { cmd_append(&cmd, __VA_ARGS__); check(cmd_run_sync_and_reset(&cmd)); } while(0)
+#define run_output(output_path, ...) do { cmd_append(&cmd, __VA_ARGS__); check(cmd_run_opt(&cmd, (Cmd_Opt){.stdout_path = output_path, .stderr_path = output_path})); cmd.count = 0; } while(0)
 #define len(A) (sizeof(A)/sizeof(A[0]))
 #define forn(N) for (int i = 0; i < (N); ++i)
 #define iterate(A) for (int i = 0; i < len(A); ++i)
+#define log_result(R) nob_log(INFO, (R) ? "\x1b[91mCompilation Failed!\x1b[0m" : "\x1b[92mCompilation Succedded!\x1b[0m");
 
 #define scoped(start, end) for (int _i = (start, 0); _i < 1; (end), ++_i)
 #define scoped_dir(dir) scoped(pushd(dir), popd())
@@ -63,10 +84,22 @@
 
 #define PATH(L) "(\x1b[92m" L "\x1b[0m)"
 
+static Cmd cmd;
+
 typedef enum {
 	Success = 0,
 	Failed  = 1,
 } Result;
+
+typedef struct {
+	const char* name;
+	const char* compiler;
+} Android_Architecture;
+
+static Android_Architecture android_architectures[] = {
+	{.name = "arm64-v8a",   .compiler = "aarch64-linux-android35-clang++"},
+	{.name = "armeabi-v7a", .compiler = "armv7a-linux-androideabi35-clang++"},
+};
 
 static void assert_impl(int cond, const char* info)
 {
@@ -550,3 +583,5 @@ static Result write_object_from_binary_file_android_arm64(const char* output_fil
 
 	return Success;
 }
+
+#endif // CORE_BUILD_H

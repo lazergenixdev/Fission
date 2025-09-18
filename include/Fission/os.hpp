@@ -98,12 +98,16 @@
 
 #if defined(OS_WINDOWS)
 #   define OS_CALL CALLBACK
-#   define os_main() int APIENTRY ::WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int)
+#   define os_main(...) int APIENTRY __VA_ARGS__ WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int)
 #elif defined(OS_LINUX) || defined(OS_MACOS)
 #   define OS_CALL
-#   define os_main() int main(int, char**)
+#   define os_main(...) int __VA_ARGS__ main(int, char**)
 #elif defined(OS_ANDROID)
 #   define OS_CALL
+#endif
+
+#ifdef os_main
+os_main();
 #endif
 
 BEGIN_NAMESPACE(os)

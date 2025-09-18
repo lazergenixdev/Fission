@@ -289,6 +289,16 @@ namespace fission
 }
 
 // --------------------------------------------------------------------------------
+
+namespace fission
+{
+	struct IResizeListener
+	{
+		virtual void on_resize(u32 old_image_count) = 0;
+	};
+}
+
+// --------------------------------------------------------------------------------
 // Graphics
 
 namespace fission
@@ -311,22 +321,24 @@ namespace fission
 
 	struct Graphics
 	{
-		void upload (VkBuffer destination, void const* data, VkDeviceSize size);
+		struct Image_Upload_Options
+		{
+			VkImageLayout final_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			u32           layer        = 0;
+			
+			constexpr Image_Upload_Options() {}
+		};
 
-		void upload (
-			VkImage       destination,
-			void const*   image_data,
-			VkExtent3D    extent,
-			VkFormat      format,
-			VkImageLayout final_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			u32           layer = 0
-		);
 
 	//	array<VkPresentModeKHR> supported_present_modes() { return {}; }
 	//	version api_version();
 	//	inline constexpr v2u32 size();
-
 	//	auto pre_rotation () -> glm::mat2;
+
+		void upload(VkBuffer destination, void const* data, VkDeviceSize size);
+		void upload(VkImage destination, void const* data, VkExtent3D extent, VkFormat format,
+			Image_Upload_Options const& options = {});
+
 		inline auto render_size() -> vec2; // Physical size of the swap chain images
 		inline void set_default_viewport(VkCommandBuffer cmd);
 		inline void set_default_scissor(VkCommandBuffer cmd);
@@ -381,14 +393,15 @@ namespace fission
 		auto create(Create_Info const& info) -> Result;
 		void destroy();
 
+		auto on_resize(Window* window) -> u32;
 	private:
 		auto create_instance        (bool debug) -> Result;
-		auto create_surface         (struct Window* window) -> Result;
+		auto create_surface         (Window* window) -> Result;
 		auto pick_physical_device   () -> Result;
 		auto pick_queue_families    () -> Result;
 		auto create_device          (bool debug) -> Result;
 		auto create_allocator       () -> Result;
-		auto create_swap_chain      (struct Window* window) -> Result;
+		auto create_swap_chain      (Window* window) -> Result;
 		auto create_sc_image_views  () -> Result;
 		auto create_command_buffers () -> Result;
 		auto create_sync_objects    () -> Result;
@@ -752,6 +765,12 @@ namespace fission
 			return *this;
 		}
 
+		Pipeline_Creator& vertex_layout(VkPipelineVertexInputStateCreateInfo* info)
+		{
+			vertex_input_state = info;
+			return *this;
+		}
+
 		Pipeline_Creator& add_dynamic_state(VkDynamicState state);
 		Pipeline_Creator& add_shader(VkShaderStageFlagBits stage, VkShaderModule shader);
 
@@ -779,6 +798,7 @@ namespace fission
 		};
 
 		auto create(Create_Info const& info) -> Result;
+		void destroy();
 	};
 	
 // --------------------------------------------------------------------------------
@@ -824,6 +844,7 @@ namespace fission
 		};
 
 		auto create(Create_Info const& info) -> Result;
+		void destroy();
 	};
 
 	struct Draw_Data_2d
@@ -889,6 +910,20 @@ namespace fission
 			vertex_arena.push<vertex>({.position = p1, .color = color});
 			vertex_arena.push<vertex>({.position = p2, .color = color});
 			current.vertex_count += 3;
+		}
+
+		inline void add_rect(rf32 rect, vec4 color = vec4(1.0f))
+		{
+			u32 v = current.vertex_count;
+			index_arena.push<v3u32>({v, v+1, v+2});
+			index_arena.push<v3u32>({v+3, v, v+2});
+			current.index_count += 6;
+
+			vertex_arena.push<vertex>({{rect.x.low,  rect.y.high}, vec2(-1.0f), color});
+			vertex_arena.push<vertex>({{rect.x.low,  rect.y.low }, vec2(-1.0f), color});
+			vertex_arena.push<vertex>({{rect.x.high, rect.y.low }, vec2(-1.0f), color});
+			vertex_arena.push<vertex>({{rect.x.high, rect.y.high}, vec2(-1.0f), color});
+			current.vertex_count += 4;
 		}
 
 		inline void add_rect_textured(rf32 rect, rf32 uv, vec4 color = vec4(1.0f))
@@ -968,7 +1003,7 @@ namespace fission
 // --------------------------------------------------------------------------------
 
 	template <int pass_count>
-	struct Blur_Post_Process
+	struct Blur_Post_Process: public IResizeListener
 	{
 		VkRenderPass           render_pass;
 		VkImage                temp_image;
@@ -1000,6 +1035,8 @@ namespace fission
 
 		auto create(Create_Info const& info) -> Result;
 		void process(Render_Context const& render_context, VkImage source, VkDescriptorSet source_set);
+		void on_resize(u32 old_image_count) override;
+		auto create_images() -> Result;
 	};
 
 }
@@ -1008,35 +1045,51 @@ namespace fission
 
 namespace fission
 {
-	// ONLY meant for HARD-CODED defaults
+	//! NOTE: ONLY meant for HARD-CODED defaults
 	// (engine will handle saving/loading settings to/from file)
-	struct Defaults {
-		string      window_title     = ":)";
-		u32         window_width     = 1280;
-		u32         window_height    = 720;
-		Window_Mode window_mode      = Windowed;
-		int         display_index    = Display_Index_Automatic;
-		string      config_location  = ".Fission"; // "app_name"
-		u32         flags            = 0;
-
+	struct Defaults
+	{
 		enum Flag: u32 {
-			fEnable_Graphics_Debugging = 1 << 0,
+			None                      = 0,
+			Enable_Graphics_Debugging = (1<<0), // keep?
 		};
+
+		string      window_title      = ":)";
+		u32         window_width      = 1280;
+		u32         window_height     = 720;
+		Window_Mode window_mode       = Windowed;
+		int         display_index     = Display_Index_Automatic;
+		string      config_location   = ".Fission";
+		Flag        flags             = None;
+		u32         minimum_log_level = log::Debug;
 	};
 
-	struct App_Info {
+	struct Application
+	{
 		string   name;
 		Version  version     { 0,1,0 };
 		string   version_tag { "dev" };
 
-		App_Info();
+		Application();
+
+		// Called once before engine creation
+		auto defaults() -> Defaults;
+
+		// Called after engine creation, before render loop
+		void on_create();
+
+		// Called after swap chain is resized
+		void on_resize(u32 old_image_count);
+
+		// Render + Update loop
+		void on_update(f64 dt, array<Event>, Render_Context const&);
 	};
 }
 
 // --------------------------------------------------------------------------------
 // User implemented functions
 
-// fission::App_Info::App_Info()
+//! TODO: move to Application
 auto on_create() -> struct fission::Defaults;
 void on_update(f64 dt, fission::array<fission::Event> events, fission::Render_Context const&);
 
@@ -1044,14 +1097,14 @@ namespace fission
 { 
 	struct Engine
 	{
+		static constexpr Version version {0,1,0};
+
 		enum Flag: u64 {
-			Running                       = 1 << 0,
-			Graphics_Recreate_Swap_Chain  = 1 << 1,
-			Window_Resized                = 1 << 2,
-			Window_Destroy_Enable         = 1 << 3,
-			Change_Scene                  = 1 << 4,
-			FPS_Limiter_Enable            = 1 << 5,
-			Save_Current_Frame            = 1 << 6,
+			Running             = 1 << 0,
+			Recreate_Swap_Chain = 1 << 1,
+			Change_Scene        = 1 << 2, //! TODO: implement
+			FPS_Limiter_Enable  = 1 << 3, //! TODO: implement
+			Save_Current_Frame  = 1 << 4, //! TODO: implement
 		};
 
 		int              exit_code               {EXIT_SUCCESS};
@@ -1060,8 +1113,8 @@ namespace fission
 		FT_Library 	     freetype_library        {};
 		Window           window                  {};
 		Graphics         graphics                {};
-		os::Thread       render_thread           {};
 		Arena            frame_arena             {};
+		os::Thread       render_thread           {};
 		VkRenderPass     overlay_render_pass     {};
 		VkFramebuffer    frame_buffers [Graphics::MAX_SWAP_CHAIN_IMAGES] {};
 		u32              frame_count             {};
@@ -1070,42 +1123,39 @@ namespace fission
 		Renderer_2d      renderer                {};
 		Renderer_2d      line_renderer           {};
 		u64              last_ticks              {};
+		IResizeListener* resize_listener         {};
+		Application      app;
 		
-		// DEBUG
-		App_Info app_info;
+		// TODO: remove
 		VkPipeline blur_pipeline {};
 		VkDescriptorPool descriptor_pool {};
 		VkSampler sampler {};
 		VkDescriptorSetLayout descriptor_set_layout {};
 		VkRenderPass render_pass {};
-
 		Blur_Post_Process<5> blur_post;
-		
-		//! TODO: need 1 per frames in flight
 		Render_Image    render_image {};
 		VkDescriptorSet render_image_set {};
 
 	public:
-		auto version_string  () -> string;
-		auto create          (Defaults const& defaults) -> Result;
-		void run             ();
-		void destroy         ();
+		auto version_string () -> string;
 
-		auto render_frame () -> bool;
-		auto setup () -> Result;
 	private:
 	#ifdef os_main
-		friend os_main();
+		friend os_main(::);
 	#endif
 		static auto OS_CALL render_main(void*) -> os::Thread_Result;
 		
+		auto create () -> Result;
+		void run ();
+		void destroy ();
+		auto render_frame () -> bool;
+		auto setup () -> Result;
 		void shutdown ();
-
 		void resize ();
 		auto create_layers () -> Result;
 		auto create_frame_buffers () -> Result;
 		auto create_screenshot_buffer () -> Result;
-	//	void save_frame (Render_Context& ctx);
+		void save_frame (Render_Context& ctx);
 		void write_frame ();
 	};
 

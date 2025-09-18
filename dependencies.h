@@ -1,3 +1,5 @@
+
+static Dependency dependencies[] = {
 {
 	.targets = OS_LINUX | OS_WINDOWS | OS_MACOS,
     .name = "vulkan",
@@ -21,3 +23,12 @@
     .include_path = "include/glfw",
     .url = "https://github.com/glfw/glfw.git",
 },
+};
+
+// Platform Dependencies
+
+static Android_Dependency android_dependency = {
+	.platform    = "android-35",
+	.ndk         = "28.2.13676358",
+	.build_tools = "35.0.0",
+};

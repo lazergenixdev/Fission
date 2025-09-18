@@ -10,6 +10,9 @@ namespace os {
 
 BEGIN_NAMESPACE(fission)
 
+Window::~Window() { log::info("YOU ARE TERMINATED"); }
+Arena& temp_arena() { return engine.temp_arena; }
+
 #define check(Result, ...) if ((result = (Result)) < VK_SUCCESS) { log::error(__VA_ARGS__); return stop(); } (void)0
 #define for_(itr, N) for (decltype(N) itr = 0; itr < (N); ++itr)
 
@@ -80,9 +83,9 @@ auto Font::create(Create_Info const& info) -> Result
 	
 	float yMax = float(face->size->metrics.ascender >> 6);
 	auto _h = u32(face->size->metrics.height >> 6);
-	v2u32 size = { _h * 12, _h * 12 };
+	v2u32 size = { _h * 10 + 1, _h * 10 + 1 };
 	auto pixel_data = (rgba8*)calloc(sizeof(rgba8), size.x * size.y);
-	auto pack = rbp::MaxRectsBinPack(size.x, size.y, false);
+	auto pack = rbp::MaxRectsBinPack(size.x-1, size.y-1, false);
 
 	auto generate_glyph = [&]() -> Glyph {
 		Glyph g;
@@ -98,6 +101,8 @@ auto Font::create(Create_Info const& info) -> Result
 		auto bitmap = face->glyph->bitmap;
 
 		auto rect = pack.Insert(bitmap.width+1, bitmap.rows+1, rbp::MaxRectsBinPack::RectBestAreaFit);
+		rect.x += 1;
+		rect.y += 1;
 
 		/* now, copy to our target surface */
 		for_(y, bitmap.rows) {
@@ -170,6 +175,12 @@ auto Font::create(Create_Info const& info) -> Result
 
 	return Success;
 }
+void Font::destroy()
+{
+	vkDestroyImageView(engine.graphics.device, image_view, nullptr);
+	vmaDestroyImage(engine.graphics.allocator, image, image_allocation);
+	glyph_map.clear();
+}
 
 auto Window::pop_all_events(Arena& arena) -> array<Event>
 {
@@ -184,13 +195,6 @@ auto Window::pop_all_events(Arena& arena) -> array<Event>
 	}
 	return {count, data};
 }
-
-Window::~Window() {
-	//! NOTE: Exiting application, no need to do anything
-	log::info("YOU ARE TERMINATED");
-}
-
-Arena& temp_arena() { return engine.temp_arena; }
 
 Logging_Timestamp Logging_Timestamp::now()
 {
@@ -220,24 +224,32 @@ bool stop() {
     return false;
 }
 
-auto Engine::create(Defaults const& defaults) -> Result
+auto Engine::create() -> Result
 {
-	logger.minimum_level = log::Debug;
-//	scoped_set(logger.minimum_level, log::Verbose);
+	auto const& defaults = on_create();
+	logger.minimum_level = defaults.minimum_log_level;
+    log::info("Fission version ", version.x, ".", version.y, ".", version.z);
 	if (os::init()) return Failed;
-    //! TODO: place log file in same directory as the executable
+
+    //! TODO: leave backing file up to the platform layer?
 	logger.backing_file = os::open_file("fission.log", os::Write);
     os_mutex_create(&logger.mutex);
-    log::info("Creating Fission Engine...");
+	
 	engine.temp_arena.create(16_MiB);
 	engine.frame_arena.create(8_MiB);
 
-	FT_Init_FreeType(&freetype_library);
-	FT_Int x, y, z;
-	FT_Library_Version(freetype_library, &x, &y, &z);
-	log::info("Using FreeType version ", x, ".", y, ".", z);
-
 	//! TODO: setup in-game console here
+
+	if (FT_Error error = FT_Init_FreeType(&freetype_library))
+	{
+		log::error("[FT_Init_FreeType] failed with ", error);
+		return Failed;
+	}
+	{
+		FT_Int x, y, z;
+		FT_Library_Version(freetype_library, &x, &y, &z);
+		log::info("Using FreeType version ", x, ".", y, ".", z);
+	}
 
 	Window::Create_Info window_info {
 		.title = defaults.window_title,
@@ -349,6 +361,7 @@ auto Engine::create(Defaults const& defaults) -> Result
 		.render_pass = overlay_render_pass,
 		.source_attachment = render_image.image_view,
 	});
+	resize_listener = &blur_post;
 	
 	{
 		VkDescriptorSetAllocateInfo set_info {
@@ -375,6 +388,7 @@ auto Engine::create(Defaults const& defaults) -> Result
     log::info("Starting render thread...");
 	if (os_thread_start(render_main, nullptr, &engine.render_thread))
 		return log::error("Failed to start render thread!"), Failed;
+
 	return Success;
 }
 
@@ -411,9 +425,9 @@ auto Engine::render_frame() -> bool
 		flags &= ~Change_Scene;
 	}
 #endif
-	if (flags & Graphics_Recreate_Swap_Chain) {
+	if (flags & Recreate_Swap_Chain) {
 		resize();
-		flags &=~ Graphics_Recreate_Swap_Chain;
+		flags &=~ Recreate_Swap_Chain;
 	}
 	
 	Render_Context render_context { .frame = frame_count & 1 };
@@ -455,7 +469,7 @@ auto Engine::render_frame() -> bool
 	array<Event> events = window.pop_all_events(frame_arena);
 	on_update(dt, events, render_context);
 	
-#if 1
+#if 0
     {
 		const u32 n = 256;
 		local_persist f32 frame_times[n] = {};
@@ -510,18 +524,18 @@ auto Engine::render_frame() -> bool
 
 	if (result != VK_SUCCESS) {
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-			if (!(flags & Running)) return stop(); // ok, we head out
+			if (!(flags & Running)) return false; // ok, we head out
 			resize();
 		}
 		else {
-			log::error("[vkQueuePresentKHR] failed with ", (u32)result);
+			log::error("[vkQueuePresentKHR] failed with ", (s32)result);
 			return stop();
 		}
 	}
 
 	frame_count += 1;
 
-	return bool(flags & Running);
+	return !!(flags & Running);
 }
 
 auto Engine::create_frame_buffers() -> Result
@@ -543,21 +557,35 @@ auto Engine::create_frame_buffers() -> Result
 	return Success;
 }
 
-// TODO: error handling
 void Engine::resize()
 {
-    auto& g = graphics;
-    vkDeviceWaitIdle(g.device);
-
-    // Destroy
-    vkDestroySwapchainKHR(g.device, g.swap_chain, nullptr);
-    forn (g.image_count) vkDestroyImageView(g.device, g.image_views[i], nullptr);
-    forn (g.image_count) vkDestroyFramebuffer(g.device, frame_buffers[i], nullptr);
-
-    // Create
-    g.create_swap_chain(&window);
-    g.create_sc_image_views();
+    vkDeviceWaitIdle(graphics.device);
+	u32 old_image_count = graphics.on_resize(&window);
+    forn (old_image_count)
+		vkDestroyFramebuffer(graphics.device, frame_buffers[i], nullptr);
 	create_frame_buffers();
+
+	render_image.destroy();
+	render_image.create({
+		.width = graphics.extent.width,
+		.height = graphics.extent.height,
+		.format = VK_FORMAT_R32G32B32A32_SFLOAT,
+		.render_pass = render_pass,
+		.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+	});
+	VkDescriptorImageInfo imageInfo;
+	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	imageInfo.imageView = render_image.image_view;
+	VkWriteDescriptorSet write{ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+	write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	write.descriptorCount = 1;
+	write.dstBinding = 0;
+	write.dstSet = render_image_set;
+	write.pImageInfo = &imageInfo;
+	vkUpdateDescriptorSets(graphics.device, 1, &write, 0, nullptr);
+
+	resize_listener->on_resize(old_image_count);
+	app.on_resize(old_image_count);
 }
 
 void Engine::shutdown()

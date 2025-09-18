@@ -58,7 +58,7 @@ extern "C"
     JNIEXPORT void JAVA_NATIVE_FUNCTION(createGraphics)(JNIEnv *env, jclass, jobject java_surface)
     {
         engine.window._native = ANativeWindow_fromSurface(env, java_surface);
-        if (engine.create(on_create())) return;
+        if (engine.create()) return;
     }
 
     JNIEXPORT void JAVA_NATIVE_FUNCTION(addTouchEvent)(JNIEnv*, jclass, jint action, jfloat x, jfloat y)

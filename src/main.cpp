@@ -57,7 +57,7 @@ auto OS_CALL Engine::render_main(void*) -> os::Thread_Result
 #ifdef os_main
 os_main()
 {
-    if (engine.create(on_create()))
+    if (engine.create())
 		return engine.exit_code;
     engine.run();
     engine.destroy();

@@ -71,7 +71,7 @@ void on_glfw_error(int error, const char* description) {
 
 void on_glfw_frame_buffer_resize(GLFWwindow*, int width, int height) {
     NOT_USED(width, height);
-    engine.flags |= Engine::Graphics_Recreate_Swap_Chain;
+    //engine.flags |= Engine::Recreate_Swap_Chain;
 }
 
 void on_glfw_cursor_position(GLFWwindow* glfw_window, double x, double y) {

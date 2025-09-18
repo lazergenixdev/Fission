@@ -610,7 +610,7 @@ struct Version
 {
 	u32 x, y, z;
 
-	Version(u32 major, u32 minor, u32 patch)
+	constexpr Version(u32 major, u32 minor, u32 patch)
 	: x(major), y(minor), z(patch)
 	{}
 };
@@ -621,7 +621,7 @@ struct Version
 namespace fission
 {
 	template <typename T, u32 count>
-	u32 array_count(T (&)[count]) { return count; }
+	static constexpr u32 array_count(T (&)[count]) { return count; }
 
 	template <typename T>
 	struct array
@@ -726,7 +726,7 @@ namespace fission
 	};
 
 	global Arena scratch_arena;
-	inline Arena& temp_arena();
+	extern Arena& temp_arena();
 }
 
 // --------------------------------------------------------------------------------
@@ -734,6 +734,13 @@ namespace fission
 
 namespace fission
 {
+	template<typename T>
+	concept is_string_like = requires(T a)
+	{
+		{ a.size() } -> std::convertible_to<std::size_t>;
+		{ a.data() } -> std::convertible_to<const c8*>;
+	};
+
 	struct string
 	{
 		size_t count = 0;
@@ -751,8 +758,9 @@ namespace fission
 		:	count(buffer_size), data(reinterpret_cast<c8*>(buffer))
 		{}
 
-		template <typename string_type>
-		inline constexpr string(string_type const& s)
+		template <typename T>
+		requires is_string_like<T>
+		inline constexpr string(T const& s)
 		:   count(s.size()), data((c8*)s.data())
 		{}
 

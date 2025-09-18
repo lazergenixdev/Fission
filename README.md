@@ -12,6 +12,8 @@ The build program is built with the Clang C compiler, make sure to have clang in
 You can check that you have clang installed by running `clang` in your terminal.
 ## Windows
 
+- Ninja is required for android build
+
 In order to compile code for Windows, you will need to have Visual Studio installed.
 - [Install Visual Studio](https://visualstudio.microsoft.com/downloads/)
 
