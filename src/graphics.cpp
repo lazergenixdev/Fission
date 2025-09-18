@@ -173,11 +173,11 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debug_utils_callback(
 #ifdef check
 #undef check
 #endif
-#define check(FUNC, ERROR_MESSAGE) \
-  if (FUNC < VK_SUCCESS) {         \
-    log::error(ERROR_MESSAGE);     \
-    return Failed;                 \
-  }                                \
+#define check(FUNC, ERROR_MESSAGE)                    \
+  if (VkResult result = (FUNC)) {                     \
+    log::error(ERROR_MESSAGE, " with ", (int)result); \
+    return Failed;                                    \
+  }                                                   \
   (void)0
 
 #ifdef assert
@@ -306,7 +306,7 @@ auto Graphics::create_instance(bool debug) -> Result
 		.applicationVersion = VK_MAKE_API_VERSION(0,0,1,0),
 		.pEngineName = "Fission",
 		.engineVersion = VK_MAKE_API_VERSION(0,0,1,0),
-		.apiVersion = VK_API_VERSION_1_3,
+		.apiVersion = VK_API_VERSION_1_0,
 	};
 
 	const char* extension_names[] = {
@@ -993,41 +993,40 @@ void Graphics::upload(
     vmaDestroyBuffer(allocator, buffer, allocation);
 }
 
-#if 0
-version Graphics::api_version()
-{
-	if (physical_device == VK_NULL_HANDLE) {
-		fs::log::warn("Cannot call Graphics::api_version until graphics has been created");
-		return {};
-	}
-
-	VkPhysicalDeviceProperties properties;
-	vkGetPhysicalDeviceProperties(physical_device, &properties);
-
-	return {
-		VK_API_VERSION_MAJOR(properties.apiVersion),
-		VK_API_VERSION_MINOR(properties.apiVersion),
-		VK_API_VERSION_PATCH(properties.apiVersion),
-	};
-}
+//version Graphics::api_version()
+//{
+//	if (physical_device == VK_NULL_HANDLE) {
+//		fs::log::warn("Cannot call Graphics::api_version until graphics has been created");
+//		return {};
+//	}
+//
+//	VkPhysicalDeviceProperties properties;
+//	vkGetPhysicalDeviceProperties(physical_device, &properties);
+//
+//	return {
+//		VK_API_VERSION_MAJOR(properties.apiVersion),
+//		VK_API_VERSION_MINOR(properties.apiVersion),
+//		VK_API_VERSION_PATCH(properties.apiVersion),
+//	};
+//}
 
 auto Graphics::pre_rotation() -> glm::mat2
 {
 	using namespace glm;
-	switch (sc_transform)
+	switch (transform)
 	{
 	default:
 		return mat2(1.0f);
 	case VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR:
-		return rotate(mat4(1.0f), radians(90.0f), vec3(0.0f, 0.0f, 1.0f));
+		return rotate(mat4(1.0f), radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	case VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR:
-		return rotate(mat4(1.0f), radians(180.0f), vec3(0.0f, 0.0f, 1.0f));
+		return rotate(mat4(1.0f), radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	case VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR:
-		return rotate(mat4(1.0f), radians(270.0f), vec3(0.0f, 0.0f, 1.0f));
+		return rotate(mat4(1.0f), radians(270.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	}
 }
 
-
+#if 0
 ////////////////////////////////////////////////////////////////////
 // Shaders
 

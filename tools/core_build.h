@@ -82,7 +82,7 @@
 #define scoped_temp() for (int _i = (mkdir_if_not_exists("temp"), pushd("temp"), 0); _i < 1; (popd()), ++_i)
 #define scoped_timer(what) for (uint64_t _start_ns = nanos_since_unspecified_epoch(), _done = 0; !_done; nob_log(INFO, what " took \x1b[93m%f\x1b[0m seconds", (double)((nanos_since_unspecified_epoch() - _start_ns)/1000)/1e6), _done = 1)
 
-#define PATH(L) "(\x1b[92m" L "\x1b[0m)"
+#define PATH(L) "(\x1b[93m" L "\x1b[0m)"
 
 static Cmd cmd;
 

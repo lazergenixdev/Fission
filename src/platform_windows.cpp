@@ -93,7 +93,7 @@ LRESULT CALLBACK _message_callback(HWND hwnd, UINT Msg, WPARAM wParam, LPARAM lP
 	{
 		auto& event = engine.window.event_queue[engine.window.event_tail];
 		event.type = Event_Key_Down;
-		event.key_down.key_id = u32(0);
+		event.key_down.key_id = u32(key::Mouse_Primary);
 		engine.window.event_tail = (engine.window.event_tail + 1) % array_count(engine.window.event_queue);
 	} break;
 
@@ -290,6 +290,7 @@ void log::write_log_from_logger(int level)
     };
 	if (logger.backing_file) {
 		fwrite(logger.arena.start, 1, logger.arena.allocated, logger.backing_file);
+        fputc('\n', logger.backing_file);
 		fflush(logger.backing_file);
 	}
 	// Also output to debugger (if available)

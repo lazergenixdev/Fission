@@ -1,6 +1,7 @@
 #include "Fission/core.hpp"
 #include "miniaudio.h"
 #include "../src/embed/Jet.mp3.hpp"
+#include "../src/embed/lyrics_data.txt.hpp"
 using namespace fission;
 
 #define HALF 0
@@ -120,8 +121,9 @@ vec2 measure_text(c32* text, u32 count)
 void draw(Draw_Data_2d& draw_data)
 {
 	u32 current_timestamp = u32(t*1000.0f);
-	f32 w = f32(engine.graphics.extent.width);
-	f32 h = f32(engine.graphics.extent.height);
+	auto shader_size = engine.graphics.shader_size();
+	f32 w = f32(shader_size.x);
+	f32 h = f32(shader_size.y);
 	f32 fs = f32(font_size);
 	Animation_Style style = Animation_Style_Centered;
 	for (auto& ln: lines)
@@ -200,6 +202,11 @@ auto read_entire_file(Arena& arena, const char* path) -> string
 		fread(buffer, s, 1, fh);
 		fclose(fh);
 	}
+	else
+	{
+		buffer = (char*)embedded::lyrics_data_txt_start;
+		s = long(embedded::lyrics_data_txt_end - embedded::lyrics_data_txt_start);
+	}
 	return string(buffer, s);
 }
 
@@ -252,7 +259,7 @@ void load_animation_data()
 			i += 1;
 			u32 cmd_len = 0;
 			u32 cmd = i;
-			while (codepoints.data[i+cmd_len] != U' ') ++cmd_len;
+			while (i+cmd_len < codepoints.count && codepoints.data[i+cmd_len] != U' ') ++cmd_len;
 			i += cmd_len + 1;
 			if (unicode_equals(codepoints.data+cmd, cmd_len, U"repeat"))
 			{
@@ -275,7 +282,7 @@ void load_animation_data()
 				}
 				lines.count += count;
 			}
-			while (codepoints.data[i] != U'\n') ++i;
+			while (i < codepoints.count && codepoints.data[i] != U'\n') ++i;
 			offset = 0;
 			file_line += 1;
 			cmd_mode = false;
@@ -466,7 +473,7 @@ void on_update(f64 dt, array<Event> events, Render_Context const& ctx)
 		switch (e.type)
 		{
 		case Event_Key_Down:
-			if (e.key_down.key_id == 0)
+			if (e.key_down.key_id == key::Mouse_Primary)
 			{
 				hold = true;
 			}
@@ -478,7 +485,7 @@ void on_update(f64 dt, array<Event> events, Render_Context const& ctx)
 			}
 			break;
 		case Event_Key_Up:
-			if (e.key_down.key_id == 0)
+			if (e.key_down.key_id == key::Mouse_Primary)
 			{
 				hold = false;
 			}
@@ -488,22 +495,29 @@ void on_update(f64 dt, array<Event> events, Render_Context const& ctx)
 		}
 	}
 	if (hold && (last_mouse_position != engine.window.mouse_position)) {
+	#if !defined(OS_ANDROID)
 		t = f32(engine.window.mouse_position.x)
 			/ f32(engine.graphics.extent.width);
 		t += OFFSET;
 		t /= f32(SCALE);
 		t = clamp(t, 0.0f, 1.0f);
 		t *= f32(second_count);
+		ASSERT(!ma_device_stop(&device));
 		ASSERT(!ma_decoder_seek_to_pcm_frame(&decoder, frame_from_seconds(t)));
+		ASSERT(!ma_device_start(&device));
+		engine.last_ticks = ticks();
+
 		log::info("t = ", t);
 		last_mouse_position = engine.window.mouse_position;
+	#endif
+		hold = false;
 	}
 
 	vkCmdBindDescriptorSets(ctx.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 		engine.pipeline_layout, 0, 1, &font.set, 0, nullptr);
 
-	f32 widt = (f32)engine.graphics.extent.width;
-	f32 heig = (f32)engine.graphics.extent.height;
+	f32 widt = (f32)engine.graphics.shader_size().x;
+	f32 heig = (f32)engine.graphics.shader_size().y;
 	
 	if (0)
 	{

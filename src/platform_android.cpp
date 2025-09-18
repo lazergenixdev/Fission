@@ -53,12 +53,17 @@ auto Window::create(Create_Info const&) -> Result
     return Success;
 }
 
+auto android_startup() -> Result
+{
+	return engine.create();
+}
+
 extern "C"
 {
     JNIEXPORT void JAVA_NATIVE_FUNCTION(createGraphics)(JNIEnv *env, jclass, jobject java_surface)
     {
         engine.window._native = ANativeWindow_fromSurface(env, java_surface);
-        if (engine.create()) return;
+        if (android_startup()) return;
     }
 
     JNIEXPORT void JAVA_NATIVE_FUNCTION(addTouchEvent)(JNIEnv*, jclass, jint action, jfloat x, jfloat y)
@@ -67,7 +72,7 @@ extern "C"
         engine.window.mouse_position = {(int)roundf(x), (int)roundf(y)};
         auto& event = engine.window.event_queue[engine.window.event_tail];
         event.type = (action == ACTION_UP? Event_Key_Up : Event_Key_Down);
-        event.key_down.key_id = u32(32);
+        event.key_down.key_id = u32(key::Mouse_Primary);
         engine.window.event_tail = (engine.window.event_tail + 1) % array_count(engine.window.event_queue);
     }
 }

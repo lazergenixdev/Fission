@@ -13,14 +13,20 @@ struct VOut
     float4 color;
 }
 
+struct Uniforms
+{
+	float4x4 transform;
+}
+
 [vk::push_constant]
-float4 offset_scale;
+Uniforms u;
 
 [shader("vertex")]
 VOut main(Vertex input)
 {
     VOut output;
-    output.position = float4(input.position.xy * offset_scale.zw + offset_scale.xy, 0, 1);
+    float4 pos = mul(u.transform, float4(input.position, 0, 1));
+    output.position = float4(pos.xy, 0, 1);
     output.texcoord = input.texcoord;
     output.color = input.color;
     return output;

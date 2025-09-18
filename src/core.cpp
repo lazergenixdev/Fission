@@ -264,7 +264,7 @@ auto Engine::create() -> Result
 	#if defined(OS_ANDROID)
         .debug = false,
 	#else
-        .debug = true,
+        .debug = false,
 	#endif
     };
 	if (graphics.create(graphics_info)) return Failed;
@@ -337,7 +337,7 @@ auto Engine::create() -> Result
 		VkPushConstantRange push {
 			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
 			.offset = 0,
-			.size = sizeof(vec4),
+			.size = sizeof(glm::vec4),
 		};
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo {
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -463,7 +463,15 @@ auto Engine::render_frame() -> bool
 	graphics.set_default_viewport(render_context.command_buffer);
 
 	vec4 scale {-1.0f, -1.0f, 2.0f / (float)graphics.extent.width, 2.0f / (float)graphics.extent.height};
-	vkCmdPushConstants(render_context.command_buffer, pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vec4), &scale);
+	
+	auto shader_size = graphics.shader_size();
+	glm::mat4 transform = glm::mat4(graphics.pre_rotation()) * (glm::mat4 {
+			{ 2.0f / (float)shader_size.x, 0.0f, 0.0f, 0.0f },
+			{ 0.0f, 2.0f / (float)shader_size.y, 0.0f, 0.0f },
+			{ 0.0f, 0.0f, 1.0f, 0.0f },
+			{ -1.0f, -1.0f, 0.0f, 1.0f },
+		});
+	vkCmdPushConstants(render_context.command_buffer, pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &transform);
 
 	f64 dt = seconds_elapsed_and_reset(last_ticks);
 	array<Event> events = window.pop_all_events(frame_arena);

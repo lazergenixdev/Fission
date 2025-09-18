@@ -8,7 +8,9 @@
     <application android:label="Test" android:icon="@mipmap/ic_launcher">
         <activity android:name=".MainActivity"
                   android:theme="@android:style/Theme.NoTitleBar"
-                  android:exported="true">
+                  android:exported="true"
+				  android:configChanges="orientation|screenSize"
+				  android:screenOrientation="userLandscape">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

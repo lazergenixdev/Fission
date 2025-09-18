@@ -301,7 +301,7 @@ Result build_freetype_android(Dependency* d, const char* source_dir)
 		if (!file_exists(libpath))
 		{
 			const char* cmake_log = temp_sprintf("freetype.cmake-%s.log", arch.name);
-			const char* cmake_toolchain = temp_sprintf("%s/build/cmake/android.toolchain.cmake'", android.ndk_path);
+			const char* cmake_toolchain = temp_sprintf("%s/build/cmake/android.toolchain.cmake", android.ndk_path);
 			run_output(cmake_log, "cmake",
 				"-S", source_dir, "-B", build_dir,
 			#if OS == OS_WINDOWS
@@ -434,10 +434,10 @@ static void check_cpp_compiler_android(void)
 		sb_appendf(&builder, "export PATH=\"%s/platform-tools:$PATH\"\n", android.sdk_path);
 	#endif
 		sb_appendf(&builder,
-			"echo Start debugging by using adb\n"
-			"echo \"adb install test.apk\"\n"
-			"echo \"adb shell am start -n dev.lazergenix.test/.MainActivity\"\n"
-			"echo \"adb logcat FissionEngine:D *:S\"\n"
+			"echo \"Start debugging by using adb\"\n"
+			"echo \"'adb install test.apk'\"\n"
+			"echo \"'adb shell am start -n dev.lazergenix.test/.MainActivity'\"\n"
+			"echo \"'adb logcat FissionEngine:D *:S'\"\n"
 		);
 		write_entire_file(setup_env, builder.items, builder.count);
 	}

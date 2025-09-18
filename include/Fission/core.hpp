@@ -186,6 +186,7 @@ namespace fission
 	namespace key
 	{
 		enum Key: u32 {
+			Mouse_Primary = 1,
 			R = FISSION_KEY('R', GLFW_KEY_R, 0),
 			J = FISSION_KEY('J', GLFW_KEY_J, 0),
 			K = FISSION_KEY('K', GLFW_KEY_K, 0),
@@ -332,8 +333,15 @@ namespace fission
 
 	//	array<VkPresentModeKHR> supported_present_modes() { return {}; }
 	//	version api_version();
-	//	inline constexpr v2u32 size();
-	//	auto pre_rotation () -> glm::mat2;
+	
+		inline constexpr auto shader_size() -> v2u32 {
+			auto rotate_bits = VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR | VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR;
+			return transform & rotate_bits
+			? v2u32{extent.height, extent.width}
+			: v2u32{extent.width, extent.height};
+		}
+
+		auto pre_rotation () -> glm::mat2;
 
 		void upload(VkBuffer destination, void const* data, VkDeviceSize size);
 		void upload(VkImage destination, void const* data, VkExtent3D extent, VkFormat format,
@@ -1143,6 +1151,7 @@ namespace fission
 	#ifdef os_main
 		friend os_main(::);
 	#endif
+		friend auto android_startup() -> Result;
 		static auto OS_CALL render_main(void*) -> os::Thread_Result;
 		
 		auto create () -> Result;
