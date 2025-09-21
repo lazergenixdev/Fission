@@ -97,7 +97,7 @@ void on_glfw_mouse_button(GLFWwindow* glfw_window, int button, int action, int m
 
     auto& event = engine.window.event_queue[engine.window.event_tail];
     event.type = (action == GLFW_RELEASE? Event_Key_Up : Event_Key_Down);
-    event.key_down.key_id = u32(0);
+    event.key_down.key_id = u32(key::Mouse_Primary); //! TODO
     engine.window.event_tail = (engine.window.event_tail + 1) % array_count(engine.window.event_queue);
 }
 
@@ -124,9 +124,9 @@ void on_glfw_character(GLFWwindow* glfw_window, unsigned int codepoint) {
 auto Window::create(Create_Info const& info) -> Result
 {
 	scoped_set(logger.prefix, OS_NAME);
+    log::info("Creating Window...");
     log::info("Using GLFW version ", glfwGetVersionString());
     glfwSetErrorCallback(on_glfw_error);
-    log::info("Creating Window...");
     glfwInitVulkanLoader(&vkGetInstanceProcAddr);
     if (glfwInit() != GLFW_TRUE) return Failed;
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);

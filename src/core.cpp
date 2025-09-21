@@ -227,13 +227,14 @@ bool stop() {
 auto Engine::create() -> Result
 {
 	auto const& defaults = on_create();
-	logger.minimum_level = defaults.minimum_log_level;
-    log::info("Fission version ", version.x, ".", version.y, ".", version.z);
-	if (os::init()) return Failed;
 
-    //! TODO: leave backing file up to the platform layer?
+	//! TODO: leave backing file up to the platform layer?
+	logger.minimum_level = defaults.minimum_log_level;
 	logger.backing_file = os::open_file("fission.log", os::Write);
     os_mutex_create(&logger.mutex);
+	if (os::init()) return Failed;
+
+	log::info("Fission version ", version.x, ".", version.y, ".", version.z);
 	
 	engine.temp_arena.create(16_MiB);
 	engine.frame_arena.create(8_MiB);
@@ -264,7 +265,7 @@ auto Engine::create() -> Result
 	#if defined(OS_ANDROID)
         .debug = false,
 	#else
-        .debug = false,
+        .debug = true,
 	#endif
     };
 	if (graphics.create(graphics_info)) return Failed;
@@ -337,7 +338,7 @@ auto Engine::create() -> Result
 		VkPushConstantRange push {
 			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
 			.offset = 0,
-			.size = sizeof(glm::vec4),
+			.size = sizeof(glm::mat4),
 		};
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo {
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -361,7 +362,6 @@ auto Engine::create() -> Result
 		.render_pass = overlay_render_pass,
 		.source_attachment = render_image.image_view,
 	});
-	resize_listener = &blur_post;
 	
 	{
 		VkDescriptorSetAllocateInfo set_info {
@@ -592,7 +592,7 @@ void Engine::resize()
 	write.pImageInfo = &imageInfo;
 	vkUpdateDescriptorSets(graphics.device, 1, &write, 0, nullptr);
 
-	resize_listener->on_resize(old_image_count);
+	blur_post.on_resize(old_image_count);
 	app.on_resize(old_image_count);
 }
 

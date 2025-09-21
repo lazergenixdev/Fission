@@ -14,6 +14,133 @@
 static LARGE_INTEGER perf_frequency;
 
 // --------------------------------------------------------------------------------
+// Utils
+
+enum IMMERSIVE_HC_CACHE_MODE
+{
+	IHCM_USE_CACHED_VALUE,
+	IHCM_REFRESH
+};
+enum WINDOWCOMPOSITIONATTRIB
+{
+	WCA_USEDARKMODECOLORS = 26,
+};
+enum PreferredAppMode
+{
+	Default,
+	AllowDark,
+	ForceDark,
+	ForceLight,
+	Max
+};
+struct WINDOWCOMPOSITIONATTRIBDATA
+{
+	WINDOWCOMPOSITIONATTRIB Attrib;
+	PVOID pvData;
+	SIZE_T cbData;
+};
+
+using fnRtlGetNtVersionNumbers = void (WINAPI*)(LPDWORD major, LPDWORD minor, LPDWORD build);
+using fnSetWindowCompositionAttribute = BOOL(WINAPI*)(HWND hWnd, WINDOWCOMPOSITIONATTRIBDATA*);
+// 1809 17763
+using fnShouldAppsUseDarkMode = bool (WINAPI*)(); // ordinal 132
+using fnAllowDarkModeForApp = bool (WINAPI*)(bool allow); // ordinal 135, in 1809
+using fnFlushMenuThemes = void (WINAPI*)(); // ordinal 136
+using fnRefreshImmersiveColorPolicyState = void (WINAPI*)(); // ordinal 104
+using fnIsDarkModeAllowedForWindow = bool (WINAPI*)(HWND hWnd); // ordinal 137
+using fnGetIsImmersiveColorUsingHighContrast = bool (WINAPI*)(IMMERSIVE_HC_CACHE_MODE mode); // ordinal 106
+using fnOpenNcThemeData = HTHEME(WINAPI*)(HWND hWnd, LPCWSTR pszClassList); // ordinal 49
+// 1903 18362
+using fnSetPreferredAppMode = PreferredAppMode(WINAPI*)(PreferredAppMode appMode); // ordinal 135, in 1903
+using fnIsDarkModeAllowedForApp = bool (WINAPI*)(); // ordinal 139
+using fnShouldSystemUseDarkMode = bool (WINAPI*)(); // ordinal 138
+using fnAllowDarkModeForWindow = bool (WINAPI*)(HWND hWnd, bool allow); // ordinal 133
+
+static fnAllowDarkModeForWindow _AllowDarkModeForWindow = nullptr;
+static fnShouldAppsUseDarkMode _ShouldAppsUseDarkMode = nullptr;
+static fnIsDarkModeAllowedForWindow _IsDarkModeAllowedForWindow = nullptr;
+static fnSetWindowCompositionAttribute _SetWindowCompositionAttribute = nullptr;
+static DWORD g_buildNumber = 0;
+
+bool IsHighContrast()
+{
+	HIGHCONTRASTW highContrast = {sizeof(highContrast)};
+	if (SystemParametersInfoW(SPI_GETHIGHCONTRAST, sizeof(highContrast), &highContrast, FALSE))
+		return bool(highContrast.dwFlags & HCF_HIGHCONTRASTON);
+	return false;
+}
+
+// Interface made to look like just regular windows API functions
+void EnableDarkModeAPI()
+{
+	fnAllowDarkModeForApp _AllowDarkModeForApp = nullptr;
+	fnRefreshImmersiveColorPolicyState _RefreshImmersiveColorPolicyState = nullptr;
+	fnGetIsImmersiveColorUsingHighContrast _GetIsImmersiveColorUsingHighContrast = nullptr;
+	fnOpenNcThemeData _OpenNcThemeData = nullptr;
+	fnSetPreferredAppMode _SetPreferredAppMode = nullptr;
+
+	bool g_darkModeSupported = false;
+	bool g_darkModeEnabled = false;
+
+	auto AllowDarkModeForApp = [&](bool allow)
+	{
+		if (_AllowDarkModeForApp)
+			_AllowDarkModeForApp(allow);
+		else if (_SetPreferredAppMode)
+			_SetPreferredAppMode(allow ? AllowDark : Default);
+	};
+
+	HMODULE hUxtheme = LoadLibraryExW(L"uxtheme.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+	if (hUxtheme)
+	{
+		_OpenNcThemeData = reinterpret_cast<fnOpenNcThemeData>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(49)));
+		_RefreshImmersiveColorPolicyState = reinterpret_cast<fnRefreshImmersiveColorPolicyState>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(104)));
+		_GetIsImmersiveColorUsingHighContrast = reinterpret_cast<fnGetIsImmersiveColorUsingHighContrast>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(106)));
+		_ShouldAppsUseDarkMode = reinterpret_cast<fnShouldAppsUseDarkMode>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(132)));
+		_AllowDarkModeForWindow = reinterpret_cast<fnAllowDarkModeForWindow>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(133)));
+
+		auto ord135 = GetProcAddress(hUxtheme, MAKEINTRESOURCEA(135));
+		if (g_buildNumber < 18362)
+			_AllowDarkModeForApp = reinterpret_cast<fnAllowDarkModeForApp>(ord135);
+		else
+			_SetPreferredAppMode = reinterpret_cast<fnSetPreferredAppMode>(ord135);
+
+		_IsDarkModeAllowedForWindow = reinterpret_cast<fnIsDarkModeAllowedForWindow>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(137)));
+		_SetWindowCompositionAttribute = reinterpret_cast<fnSetWindowCompositionAttribute>(GetProcAddress(GetModuleHandleW(L"user32.dll"), "SetWindowCompositionAttribute"));
+
+		if (_OpenNcThemeData &&
+			_RefreshImmersiveColorPolicyState &&
+			_ShouldAppsUseDarkMode &&
+			_AllowDarkModeForWindow &&
+			(_AllowDarkModeForApp || _SetPreferredAppMode) &&
+			_IsDarkModeAllowedForWindow)
+		{
+			g_darkModeSupported = true;
+
+			AllowDarkModeForApp(true);
+			_RefreshImmersiveColorPolicyState();
+			g_darkModeEnabled = _ShouldAppsUseDarkMode() && !IsHighContrast();
+		}
+	}
+}
+
+void SetDarkModeForWindow(HWND hwnd)
+{
+	_AllowDarkModeForWindow(hwnd, true);
+
+	// Window should use dark mode when: ( _IsDarkModeAllowedForWindow(hWnd) && _ShouldAppsUseDarkMode() && !IsHighContrast() )
+	// however, _IsDarkModeAllowedForWindow only returns true in debug builds.
+	// I'm not sure of why this is the case, this could be looked into further.
+	BOOL dark = !IsHighContrast();
+
+	if (_SetWindowCompositionAttribute)
+	{
+		WINDOWCOMPOSITIONATTRIBDATA data = {WCA_USEDARKMODECOLORS, &dark, sizeof(dark)};
+		_SetWindowCompositionAttribute(hwnd, &data);
+	}
+}
+
+// --------------------------------------------------------------------------------
 
 // I WANT BETTER WINDOWS!
 //#define TEST
@@ -29,6 +156,9 @@ LRESULT CALLBACK _message_callback(HWND hwnd, UINT Msg, WPARAM wParam, LPARAM lP
     //    DestroyWindow(hWnd);
     //    return 0;
     //}
+    case WM_CREATE: {
+        SetDarkModeForWindow(hwnd);
+    } break;
 #ifdef TEST
     case WM_NCCALCSIZE:
         // Remove default non-client frame completely
@@ -313,6 +443,9 @@ void log::write_log_from_logger(int level)
 			count -= written;
 			if (offset >= logger.arena.allocated) break;
 		}
+		char newline = '\n';
+		written = 0;
+		while (written == 0 && WriteConsoleA(handle, &newline, 1, &written, NULL));
 	}
 	else {
 		fputs(level_colors[level], stdout);
@@ -410,6 +543,8 @@ auto Window::create (Create_Info const& info) -> Result
     else log::verbose("Registered window class");
 
     auto title = utf8_to_16(win32_arena, info.title);
+	
+	EnableDarkModeAPI();
 
     _handle = CreateWindowExW(
         WS_EX_APPWINDOW,

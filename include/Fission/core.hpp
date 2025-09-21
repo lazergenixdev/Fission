@@ -290,16 +290,6 @@ namespace fission
 }
 
 // --------------------------------------------------------------------------------
-
-namespace fission
-{
-	struct IResizeListener
-	{
-		virtual void on_resize(u32 old_image_count) = 0;
-	};
-}
-
-// --------------------------------------------------------------------------------
 // Graphics
 
 namespace fission
@@ -379,10 +369,10 @@ namespace fission
 		VkCommandPool                  command_pool                {};
 		VkQueue                        transfer_queue              {};
 		VkCommandPool                  transfer_command_pool       {};
-		VkCommandBuffer                command_buffers         [F] {}; // Max 2 frames in flight
+		VkCommandBuffer                command_buffers         [F] {};
 		VkFence                        fences                  [F] {};
-		VkSemaphore                    image_ready_semaphore   [F] {}; // Signalled when image is ready to be rendered to
-		VkSemaphore                    present_ready_semaphore [M] {}; // Signalled when image is ready to be presented
+		VkSemaphore                    image_ready_semaphore   [F] {}; // Signaled when image is ready to be rendered to
+		VkSemaphore                    present_ready_semaphore [M] {}; // Signaled when image is ready to be presented
 		VmaAllocator                   allocator                   {};
 		VkDebugUtilsMessengerEXT       debug_messenger             {};
 		Queue_Families                 queue_family                {};
@@ -548,120 +538,68 @@ namespace fission
 	{
 		switch (format)
 		{
-		case VK_FORMAT_UNDEFINED:
-			return 0;
-		case VK_FORMAT_R8_UNORM:
-		case VK_FORMAT_R8_SNORM:
-		case VK_FORMAT_R8_USCALED:
-		case VK_FORMAT_R8_SSCALED:
-		case VK_FORMAT_R8_UINT:
-		case VK_FORMAT_R8_SINT:
-		case VK_FORMAT_R8_SRGB:
-			return 1;
-		case VK_FORMAT_R8G8_UNORM:
-		case VK_FORMAT_R8G8_SNORM:
-		case VK_FORMAT_R8G8_USCALED:
-		case VK_FORMAT_R8G8_SSCALED:
-		case VK_FORMAT_R8G8_UINT:
-		case VK_FORMAT_R8G8_SINT:
-		case VK_FORMAT_R8G8_SRGB:
-		case VK_FORMAT_R16_UNORM:
-		case VK_FORMAT_R16_SNORM:
-		case VK_FORMAT_R16_USCALED:
-		case VK_FORMAT_R16_SSCALED:
-		case VK_FORMAT_R16_UINT:
-		case VK_FORMAT_R16_SINT:
-		case VK_FORMAT_R16_SFLOAT:
-			return 2;
-		case VK_FORMAT_R8G8B8_UNORM:
-		case VK_FORMAT_R8G8B8_SNORM:
-		case VK_FORMAT_R8G8B8_USCALED:
-		case VK_FORMAT_R8G8B8_SSCALED:
-		case VK_FORMAT_R8G8B8_UINT:
-		case VK_FORMAT_R8G8B8_SINT:
-		case VK_FORMAT_R8G8B8_SRGB:
-		case VK_FORMAT_B8G8R8_UNORM:
-		case VK_FORMAT_B8G8R8_SNORM:
-		case VK_FORMAT_B8G8R8_USCALED:
-		case VK_FORMAT_B8G8R8_SSCALED:
-		case VK_FORMAT_B8G8R8_UINT:
-		case VK_FORMAT_B8G8R8_SINT:
-		case VK_FORMAT_B8G8R8_SRGB:
-			return 3;
-		case VK_FORMAT_R8G8B8A8_UNORM:
-		case VK_FORMAT_R8G8B8A8_SNORM:
-		case VK_FORMAT_R8G8B8A8_USCALED:
-		case VK_FORMAT_R8G8B8A8_SSCALED:
-		case VK_FORMAT_R8G8B8A8_UINT:
-		case VK_FORMAT_R8G8B8A8_SINT:
-		case VK_FORMAT_R8G8B8A8_SRGB:
-		case VK_FORMAT_B8G8R8A8_UNORM:
-		case VK_FORMAT_B8G8R8A8_SNORM:
-		case VK_FORMAT_B8G8R8A8_USCALED:
-		case VK_FORMAT_B8G8R8A8_SSCALED:
-		case VK_FORMAT_B8G8R8A8_UINT:
-		case VK_FORMAT_B8G8R8A8_SINT:
-		case VK_FORMAT_B8G8R8A8_SRGB:
-		case VK_FORMAT_R16G16_UNORM:
-		case VK_FORMAT_R16G16_SNORM:
-		case VK_FORMAT_R16G16_USCALED:
-		case VK_FORMAT_R16G16_SSCALED:
-		case VK_FORMAT_R16G16_UINT:
-		case VK_FORMAT_R16G16_SINT:
-		case VK_FORMAT_R16G16_SFLOAT:
-		case VK_FORMAT_R32_UINT:
-		case VK_FORMAT_R32_SINT:
-		case VK_FORMAT_R32_SFLOAT:
-			return 4;
-		case VK_FORMAT_R16G16B16_UNORM:
-		case VK_FORMAT_R16G16B16_SNORM:
-		case VK_FORMAT_R16G16B16_USCALED:
-		case VK_FORMAT_R16G16B16_SSCALED:
-		case VK_FORMAT_R16G16B16_UINT:
-		case VK_FORMAT_R16G16B16_SINT:
-		case VK_FORMAT_R16G16B16_SFLOAT:
-			return 6;
-		case VK_FORMAT_R16G16B16A16_UNORM:
-		case VK_FORMAT_R16G16B16A16_SNORM:
-		case VK_FORMAT_R16G16B16A16_USCALED:
-		case VK_FORMAT_R16G16B16A16_SSCALED:
-		case VK_FORMAT_R16G16B16A16_UINT:
-		case VK_FORMAT_R16G16B16A16_SINT:
-		case VK_FORMAT_R16G16B16A16_SFLOAT:
-		case VK_FORMAT_R32G32_UINT:
-		case VK_FORMAT_R32G32_SINT:
-		case VK_FORMAT_R32G32_SFLOAT:
-		case VK_FORMAT_R64_UINT:
-		case VK_FORMAT_R64_SINT:
-		case VK_FORMAT_R64_SFLOAT:
-			return 8;
-		case VK_FORMAT_R32G32B32_UINT:
-		case VK_FORMAT_R32G32B32_SINT:
-		case VK_FORMAT_R32G32B32_SFLOAT:
-			return 12;
-		case VK_FORMAT_R32G32B32A32_UINT:
-		case VK_FORMAT_R32G32B32A32_SINT:
-		case VK_FORMAT_R32G32B32A32_SFLOAT:
-		case VK_FORMAT_R64G64_UINT:
-		case VK_FORMAT_R64G64_SINT:
-		case VK_FORMAT_R64G64_SFLOAT:
-			return 16;
-		case VK_FORMAT_R64G64B64_UINT:
-		case VK_FORMAT_R64G64B64_SINT:
-		case VK_FORMAT_R64G64B64_SFLOAT:
-			return 24;
-		case VK_FORMAT_R64G64B64A64_UINT:
-		case VK_FORMAT_R64G64B64A64_SINT:
-		case VK_FORMAT_R64G64B64A64_SFLOAT:
-			return 32;
-		case VK_FORMAT_D16_UNORM:
-		case VK_FORMAT_D32_SFLOAT:
-		case VK_FORMAT_S8_UINT:
-		case VK_FORMAT_D16_UNORM_S8_UINT:
-		case VK_FORMAT_D24_UNORM_S8_UINT:
-		case VK_FORMAT_D32_SFLOAT_S8_UINT:
 		default:
 			return 0;
+		case VK_FORMAT_R8_UNORM: case VK_FORMAT_R8_USCALED:
+		case VK_FORMAT_R8_SNORM: case VK_FORMAT_R8_SSCALED:
+		case VK_FORMAT_R8_SINT: case VK_FORMAT_R8_UINT:
+		case VK_FORMAT_R8_SRGB:
+			return 1;
+		case VK_FORMAT_R8G8_UNORM: case VK_FORMAT_R8G8_USCALED:
+		case VK_FORMAT_R8G8_SNORM: case VK_FORMAT_R8G8_SSCALED:
+		case VK_FORMAT_R8G8_UINT: case VK_FORMAT_R8G8_SINT:
+		case VK_FORMAT_R8G8_SRGB: case VK_FORMAT_R16_SFLOAT:
+		case VK_FORMAT_R16_UNORM: case VK_FORMAT_R16_SNORM:
+		case VK_FORMAT_R16_USCALED: case VK_FORMAT_R16_UINT:
+		case VK_FORMAT_R16_SSCALED: case VK_FORMAT_R16_SINT:
+			return 2;
+		case VK_FORMAT_R8G8B8_UNORM: case VK_FORMAT_R8G8B8_USCALED:
+		case VK_FORMAT_R8G8B8_SNORM: case VK_FORMAT_R8G8B8_SSCALED:
+		case VK_FORMAT_R8G8B8_UINT: case VK_FORMAT_R8G8B8_SINT:
+		case VK_FORMAT_B8G8R8_UNORM: case VK_FORMAT_B8G8R8_USCALED:
+		case VK_FORMAT_B8G8R8_SNORM: case VK_FORMAT_B8G8R8_SSCALED:
+		case VK_FORMAT_B8G8R8_UINT: case VK_FORMAT_B8G8R8_SINT:
+		case VK_FORMAT_R8G8B8_SRGB: case VK_FORMAT_B8G8R8_SRGB:
+			return 3;
+		case VK_FORMAT_R8G8B8A8_UNORM: case VK_FORMAT_R8G8B8A8_USCALED:
+		case VK_FORMAT_R8G8B8A8_SNORM: case VK_FORMAT_R8G8B8A8_SSCALED:
+		case VK_FORMAT_R8G8B8A8_UINT: case VK_FORMAT_R8G8B8A8_SINT:
+		case VK_FORMAT_B8G8R8A8_UNORM: case VK_FORMAT_B8G8R8A8_USCALED:
+		case VK_FORMAT_B8G8R8A8_SNORM: case VK_FORMAT_B8G8R8A8_SSCALED:
+		case VK_FORMAT_B8G8R8A8_UINT: case VK_FORMAT_B8G8R8A8_SINT:
+		case VK_FORMAT_R8G8B8A8_SRGB: case VK_FORMAT_B8G8R8A8_SRGB:
+		case VK_FORMAT_R16G16_UNORM: case VK_FORMAT_R16G16_USCALED:
+		case VK_FORMAT_R16G16_SNORM: case VK_FORMAT_R16G16_SSCALED:
+		case VK_FORMAT_R16G16_UINT: case VK_FORMAT_R16G16_SINT:
+		case VK_FORMAT_R32_UINT: case VK_FORMAT_R32_SINT:
+		case VK_FORMAT_R16G16_SFLOAT: case VK_FORMAT_R32_SFLOAT:
+			return 4;
+		case VK_FORMAT_R16G16B16_UNORM: case VK_FORMAT_R16G16B16_USCALED:
+		case VK_FORMAT_R16G16B16_SNORM: case VK_FORMAT_R16G16B16_SSCALED:
+		case VK_FORMAT_R16G16B16_UINT: case VK_FORMAT_R16G16B16_SFLOAT:
+		case VK_FORMAT_R16G16B16_SINT:
+			return 6;
+		case VK_FORMAT_R16G16B16A16_UNORM: case VK_FORMAT_R16G16B16A16_USCALED:
+		case VK_FORMAT_R16G16B16A16_SNORM: case VK_FORMAT_R16G16B16A16_SSCALED:
+		case VK_FORMAT_R16G16B16A16_UINT: case VK_FORMAT_R16G16B16A16_SINT:
+		case VK_FORMAT_R32G32_UINT: case VK_FORMAT_R32G32_SINT:
+		case VK_FORMAT_R32G32_SFLOAT: case VK_FORMAT_R64_SFLOAT:
+		case VK_FORMAT_R64_UINT: case VK_FORMAT_R64_SINT:
+		case VK_FORMAT_R16G16B16A16_SFLOAT:
+			return 8;
+		case VK_FORMAT_R32G32B32_UINT: case VK_FORMAT_R32G32B32_SINT:
+		case VK_FORMAT_R32G32B32_SFLOAT:
+			return 12;
+		case VK_FORMAT_R32G32B32A32_UINT: case VK_FORMAT_R32G32B32A32_SFLOAT:
+		case VK_FORMAT_R32G32B32A32_SINT: case VK_FORMAT_R64G64_SFLOAT:
+		case VK_FORMAT_R64G64_UINT: case VK_FORMAT_R64G64_SINT:
+			return 16;
+		case VK_FORMAT_R64G64B64_UINT: case VK_FORMAT_R64G64B64_SINT:
+		case VK_FORMAT_R64G64B64_SFLOAT:
+			return 24;
+		case VK_FORMAT_R64G64B64A64_UINT: case VK_FORMAT_R64G64B64A64_SINT:
+		case VK_FORMAT_R64G64B64A64_SFLOAT:
+			return 32;
 		}
 	}
 
@@ -1011,7 +949,7 @@ namespace fission
 // --------------------------------------------------------------------------------
 
 	template <int pass_count>
-	struct Blur_Post_Process: public IResizeListener
+	struct Blur_Post_Process
 	{
 		VkRenderPass           render_pass;
 		VkImage                temp_image;
@@ -1043,7 +981,7 @@ namespace fission
 
 		auto create(Create_Info const& info) -> Result;
 		void process(Render_Context const& render_context, VkImage source, VkDescriptorSet source_set);
-		void on_resize(u32 old_image_count) override;
+		void on_resize(u32 old_image_count);
 		auto create_images() -> Result;
 	};
 
@@ -1105,7 +1043,11 @@ namespace fission
 { 
 	struct Engine
 	{
-		static constexpr Version version {0,1,0};
+		static constexpr Version version {
+			FISSION_VERSION_MAJOR,
+			FISSION_VERSION_MINOR,
+			FISSION_VERSION_PATCH,
+		};
 
 		enum Flag: u64 {
 			Running             = 1 << 0,
@@ -1131,7 +1073,6 @@ namespace fission
 		Renderer_2d      renderer                {};
 		Renderer_2d      line_renderer           {};
 		u64              last_ticks              {};
-		IResizeListener* resize_listener         {};
 		Application      app;
 		
 		// TODO: remove

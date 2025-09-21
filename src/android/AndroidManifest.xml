@@ -4,13 +4,21 @@
     package="dev.lazergenix.test">
 
     <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35"/>
+	
+    <!-- Indicate that the app requires Vulkan support (version 1.1) -->
+    <uses-feature android:name="android.hardware.vulkan.version" android:version="4198400" android:required="true" />
+    
+    <!-- Indicate that the app doesn't require OpenGL ES -->
+    <uses-feature android:name="android.hardware.opengles.aep" android:required="false" />
 
     <application android:label="Test" android:icon="@mipmap/ic_launcher">
         <activity android:name=".MainActivity"
                   android:theme="@android:style/Theme.NoTitleBar"
                   android:exported="true"
-				  android:configChanges="orientation|screenSize"
-				  android:screenOrientation="userLandscape">
+				  android:configChanges="orientation|screenSize">
+			<!--
+				  android:screenOrientation="userLandscape"
+			-->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

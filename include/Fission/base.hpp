@@ -11,12 +11,12 @@
  * @License:      MIT (see end of file)
  */
 #pragma once
+#include "version.h"
 #include <cstdint>     // -> sized integer types
 #include <cmath>
 #include <concepts>
 #include <chrono>
 #include <glm/glm.hpp> // TODO: may need to remove dependency
-//#include <vector>      // TODO: remove
 
 // --------------------------------------------------------------------------------
 // Macro Helpers

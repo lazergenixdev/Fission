@@ -726,12 +726,13 @@ static Result compile_macos(Cpp_Program program)
 		"    <key>CFBundleIdentifier</key>\n"
 		"    <string>com.example.myapp</string>\n"
 		"    <key>CFBundleName</key>\n"
-		"    <string>MyApp</string>\n"
+		"    <string>%s</string>\n"
 		"    <key>CFBundleVersion</key>\n"
 		"    <string>1.0</string>\n"
 		"</dict>\n" INFO_PLIST_FOOTER;
 
-		sb_appendf(&builder, plist_contents, program.output_name);
+		//! TODO: customizable app name
+		sb_appendf(&builder, plist_contents, program.output_name, program.output_name);
 		if (!write_entire_file(temp_sprintf("%s/Info.plist", contents_dir), builder.items, builder.count))
 			return Failed;
 	}
@@ -1006,7 +1007,7 @@ int compile_shaders(void)
 		const char* source_path = temp_sprintf("src/shaders/%s", path);
 		if (!needs_rebuild(binary_path, &source_path, 1))
 			continue;
-		run(slang.compiler, "-target", "spirv", source_path, "-o", binary_path);
+		run(slang.compiler, "-target", "spirv", "-capability", "spirv_1_1", source_path, "-o", binary_path);
 	}
 	return 0;
 }

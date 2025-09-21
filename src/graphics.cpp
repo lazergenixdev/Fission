@@ -1587,12 +1587,12 @@ auto Blur_Post_Process<N>::create(Create_Info const& info) -> Result
 	}
 	{
 		VkShaderModule shader_module;
-		VkShaderModuleCreateInfo info {
+		VkShaderModuleCreateInfo shader_info {
 			.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
 			.codeSize = size_t(embedded::blur_spv_end - embedded::blur_spv_start),
 			.pCode = (u32*)embedded::blur_spv_start,
 		};
-		vkCreateShaderModule(graphics.device, &info, nullptr, &shader_module);
+		vkCreateShaderModule(graphics.device, &shader_info, nullptr, &shader_module);
 		
 		VkPipelineVertexInputStateCreateInfo vertex_layout { VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
 		auto pc = Pipeline_Creator{}

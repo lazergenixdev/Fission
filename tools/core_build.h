@@ -483,6 +483,7 @@ static Result write_object_from_binary_file_android_armv7(const char* output_fil
 	data.sh_addralign = 4;
 	sb_append_buf(&output, &data, sizeof(data));
 
+	//! TODO: figure out how to properly write this section (.ARM.attributes)
     Elf32_Shdr arm_attributes = {0}; // .data
     arm_attributes.sh_name = data.sh_name + 5 + 1;
     arm_attributes.sh_type = 0x70000003; // https://github.com/ARM-software/abi-aa/blob/main/addenda32/addenda32.rst#3352the-target-related-attributes

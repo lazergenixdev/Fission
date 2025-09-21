@@ -7,6 +7,7 @@ using namespace fission;
 #define HALF 0
 #define SCALE 1.0f
 #define OFFSET 0.0f
+#define PLAYBACK_SPEED 1.0f // This is a HACK
 
 enum Animation_Style {
 	Animation_Style_Centered,
@@ -40,22 +41,22 @@ void audio_data_callback(ma_device* pDevice, void* pOutput, const void*, ma_uint
 		return;
 
 	ma_result result;
-#if HALF
-	result = ma_decoder_read_pcm_frames(pDecoder, pOutput, frameCount/2, NULL);
-    ASSERT(!result || result == MA_AT_END);	
-	auto frames = (vec2*)pOutput;
-	for (int i = frameCount/2 - 1; i >= 0; --i) {
-		frames[i*2-1] = frames[i] * 0.2f;
-		frames[i*2]   = frames[i] * 0.2f;
+	if constexpr (PLAYBACK_SPEED == 0.5f) {
+		result = ma_decoder_read_pcm_frames(pDecoder, pOutput, frameCount/2, NULL);
+		ASSERT(!result || result == MA_AT_END);	
+		auto frames = (vec2*)pOutput;
+		for (int i = frameCount/2 - 1; i >= 0; --i) {
+			frames[i*2-1] = frames[i] * 0.2f;
+			frames[i*2]   = frames[i] * 0.2f;
+		}
+	} else {
+		result = ma_decoder_read_pcm_frames(pDecoder, pOutput, frameCount, NULL);	
+		ASSERT(!result || result == MA_AT_END);	
+		auto frames = (vec2*)pOutput;
+		forn (frameCount) {
+			frames[i] = frames[i] * 0.3f;
+		}
 	}
-#else
-    result = ma_decoder_read_pcm_frames(pDecoder, pOutput, frameCount, NULL);	
-    ASSERT(!result || result == MA_AT_END);	
-	auto frames = (vec2*)pOutput;
-	forn (frameCount) {
-		frames[i] = frames[i] * 0.3f;
-	}
-#endif
 }
 
 struct Animated_Line
@@ -66,7 +67,6 @@ struct Animated_Line
 };
 
 bool initialized = false;
-bool start_frame = false;
 Font font;
 u32 font_size;
 array<Animated_Line> lines;
@@ -108,10 +108,7 @@ vec2 measure_text(c32* text, u32 count)
 	Glyph* g;
 	forn (count)
 	{
-		auto c = text[i];
-		auto it = font.glyph_map.find(c);
-		if (it == font.glyph_map.end()) g = &font.fallback;
-		else                            g = &it->second;
+		Glyph* g = lookup_glyph(text[i]);
 		box.x += g->advance;
 		box.y = math::max(box.y, g->rc.bottom() - g->rc.top());
 	}
@@ -135,6 +132,7 @@ void draw(Draw_Data_2d& draw_data)
 			continue;
 		switch (style) {
 		default:
+
 		case Animation_Style_Centered: {
 			vec2 offset = (vec2(w,h) - measure_text(ln.characters, ln.count)) * 0.5f;
 			forn (ln.count) {
@@ -148,6 +146,7 @@ void draw(Draw_Data_2d& draw_data)
 				offset += add_character(draw_data, ln.characters[i], offset + vec2(0.f, movein - moveout), scale, 1.0f-dist);
 			}
 		} break;
+
 		case Animation_Style_Moving_Right: {
 			forn (ln.count) {
 				u32 timestamp = ln.starts[0] + ln.starts[i+1];
@@ -415,12 +414,7 @@ void fission::Application::on_resize(u32)
 
 void on_update(f64 dt, array<Event> events, Render_Context const& ctx)
 {
-#if HALF
-	t += dt * 0.5f;
-#else
-	t += dt;
-#endif
-	if (start_frame) t = 0, start_frame = false;
+	t += dt * PLAYBACK_SPEED;
 
 	if (!initialized)
 	{
@@ -458,13 +452,13 @@ void on_update(f64 dt, array<Event> events, Render_Context const& ctx)
 
 		ASSERT(!ma_device_init(NULL, &deviceConfig, &device));
 		ASSERT(!ma_device_start(&device));
+		engine.last_ticks = ticks();
 		
 		ma_decoder_get_length_in_pcm_frames(&decoder, &frame_count);
 		second_count = f64(frame_count) / f64(deviceConfig.sampleRate);
 		log::info("seconds ", second_count);
 
 		initialized = true;
-		start_frame = true;
 	}
 	local_persist bool hold = false;
 	local_persist v2s32 last_mouse_position;
