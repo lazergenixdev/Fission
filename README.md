@@ -1,44 +1,34 @@
-# Fission
+# Fission [![License](https://img.shields.io/github/license/lazergenixdev/Fission?color=dodgerblue&style=plastic)](https://github.com/lazergenixdev/Fission/blob/master/LICENSE) [![GitHub commits since latest release (by date including pre-releases)](https://img.shields.io/github/commits-since/lazergenixdev/Fission/latest/master?include_prereleases&style=plastic)](https://github.com/lazergenixdev/Fission/commits/master)
+***Fission*** is an open source cross-platform game framework designed for a game that is still in development :)
 
 ## Platforms Supported
 - Windows `x86_64`
 - MacOS `arm64`
 - Android `armv7` `arm64`
-- Linux `x86_64` (planned)
+- ~~Linux~~ (planned)
 
 # Building 🏗️
 ## Prerequisites
-The build program is built with the Clang C compiler, make sure to have clang installed.
-You can check that you have clang installed by running `clang` in your terminal.
-## Windows
+- `Windows` [Visual Studio](https://visualstudio.microsoft.com/downloads/),
+            [clang](https://github.com/llvm/llvm-project/releases),
+            [cmake](https://cmake.org/download/),
+            [Ninja](https://ninja-build.org/) (Android only)
+- `MacOS` [Xcode](https://apps.apple.com/us/app/xcode/id497799835), cmake
 
-- Ninja is required for android build
+The build program is built with the Clang C compiler, and requires cmake to build it's dependencies.
+You can check that you have clang installed by running `clang --version` in your terminal and making sure you have a somewhat recent version.
 
-In order to compile code for Windows, you will need to have Visual Studio installed.
-- [Install Visual Studio](https://visualstudio.microsoft.com/downloads/)
-
-To install Clang:
- - [Install LLVM](https://github.com/llvm/llvm-project/releases) (installer will start with "LLVM-")
- - You may need to restart terminal after installation
-
-Once you have clang installed then you can run `tools/setup-windows.bat` (or simply compile the `build.c` yourself)
-
-## MacOS
-
-You should already have the Apple Clang Compiler installed with Xcode.
-- [Install Xcode](https://apps.apple.com/us/app/xcode/id497799835?mt=12)
-
-Then you can run `tools/setup-macos.sh` (or simply compile the `build.c` yourself)
-
+To build the build program, simply run one of the setup scripts provided (it will look like `tools/setup-[platform]`).
 ## How to use build program
-Then to build the project, simply run the build program from the project directory.
+Once you have the build program built, to build the project, simply run the build program from the project directory.
 ```bash
 ./build
 ```
 Additionally, you can pass options to the build program:
  - `all`: Compile all example programs along with Fission
  - `debug`: Compile with debug symbols
+ - `android`: Set target OS to Android
 
 ## Binaries 📦
-After a build, Fission and all other libraries you will need to link you application with will be in `bin/[target_os]/`.
+After a build, Fission and all other libraries you will need to link your application with, will be in `bin/[target_os]/`.
 Additionally, all the includes you will need will be in `include/`.
