@@ -21,6 +21,13 @@ namespace os
 }
 
 // --------------------------------------------------------------------------------
+// Source
+
+#include "base.cpp"
+#include "core.cpp"
+#include "graphics.cpp"
+
+// --------------------------------------------------------------------------------
 // Platform
 
 #if   defined(OS_WINDOWS)
@@ -31,15 +38,10 @@ namespace os
 #   include "platform_linux.cpp"
 #elif defined(OS_ANDROID)
 // Android platform layer built into application
-// to allow for namespace to be changed per application
+//   to allow for namespace to be changed per application.
+// Will probably change this in the future when I get more
+//   into JNI stuff...
 #endif
-
-// --------------------------------------------------------------------------------
-// Source
-
-#include "base.cpp"
-#include "core.cpp"
-#include "graphics.cpp"
 
 // --------------------------------------------------------------------------------
 // Entry-points

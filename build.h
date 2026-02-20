@@ -395,6 +395,7 @@ static void check_cpp_compiler_android(void)
 	const char* sdkroot = temp_sprintf("--sdk_root=%s", sdk_location);
 	scoped_dir(sdk_location)
 	{
+		//! TODO: no hard code
 		if (!file_exists("build-tools/35.0.0"))
 			run(sdkmanager, sdkroot, "--install", "build-tools;35.0.0");
 		if (!file_exists("platforms/android-35"))
@@ -786,10 +787,10 @@ static Result compile(Cpp_Program program)
 		program.output_name = file_name_no_exts(program.source);
 	switch (build.target_os)
 	{
-	case OS_MACOS: return compile_macos(program);
+	case OS_MACOS:   return compile_macos(program);
 	case OS_WINDOWS: return compile_windows(program);
 	case OS_ANDROID: return compile_android(program);
-	default: return Failed;
+	default:         return Failed;
 	}
 }
 
@@ -1007,7 +1008,7 @@ int compile_shaders(void)
 		const char* source_path = temp_sprintf("src/shaders/%s", path);
 		if (!needs_rebuild(binary_path, &source_path, 1))
 			continue;
-		run(slang.compiler, "-target", "spirv", "-capability", "spirv_1_1", source_path, "-o", binary_path);
+		run(slang.compiler, "-target", "spirv", source_path, "-o", binary_path);
 	}
 	return 0;
 }

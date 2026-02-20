@@ -860,8 +860,7 @@ namespace fission
 	template <std::floating_point T>
 	inline void format_single(Arena& arena, const T value)
 	{
-		// :/
-		arena.allocated += snprintf(arena.next_ptr<char>(), 10000, "%f", value);
+		arena.allocated += snprintf(arena.next_ptr<char>(), arena.remaining(), "%f", value);
 	}
 	
 	// Pointer Formatting

@@ -68,13 +68,15 @@ auto Font::create(Create_Info const& info) -> Result
 {
 	auto& graphics = engine.graphics;
 
-	VkDescriptorSetAllocateInfo set_info {
-		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-		.descriptorPool = engine.descriptor_pool,
-		.descriptorSetCount = 1,
-		.pSetLayouts = &engine.descriptor_set_layout,
-	};
-	vkAllocateDescriptorSets(graphics.device, &set_info, &set);
+	if (!set) {
+		VkDescriptorSetAllocateInfo set_info {
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+			.descriptorPool = engine.descriptor_pool,
+			.descriptorSetCount = 1,
+			.pSetLayouts = &engine.descriptor_set_layout,
+		};
+		vkAllocateDescriptorSets(graphics.device, &set_info, &set);
+	}
 
 	FT_Face face;
 	FT_Long ttf_size = (FT_Long)(embedded::NotoSansKR_Regular_ttf_end - embedded::NotoSansKR_Regular_ttf_start);
@@ -175,6 +177,7 @@ auto Font::create(Create_Info const& info) -> Result
 
 	return Success;
 }
+
 void Font::destroy()
 {
 	vkDestroyImageView(engine.graphics.device, image_view, nullptr);
@@ -457,13 +460,10 @@ auto Engine::render_frame() -> bool
 	render_context.frame_buffer = frame_buffers[render_context.image_index];
 
 	BeginCommandBuffer(render_context.command_buffer);
-
 	CmdBeginRenderPass(render_context.command_buffer, render_pass, render_image.frame_buffer, {});
 	graphics.set_default_scissor(render_context.command_buffer);
 	graphics.set_default_viewport(render_context.command_buffer);
 
-	vec4 scale {-1.0f, -1.0f, 2.0f / (float)graphics.extent.width, 2.0f / (float)graphics.extent.height};
-	
 	auto shader_size = graphics.shader_size();
 	glm::mat4 transform = glm::mat4(graphics.pre_rotation()) * (glm::mat4 {
 			{ 2.0f / (float)shader_size.x, 0.0f, 0.0f, 0.0f },

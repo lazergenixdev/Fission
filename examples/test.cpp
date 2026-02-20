@@ -4,7 +4,6 @@
 #include "../src/embed/lyrics_data.txt.hpp"
 using namespace fission;
 
-#define HALF 0
 #define SCALE 1.0f
 #define OFFSET 0.0f
 #define PLAYBACK_SPEED 1.0f // This is a HACK
@@ -414,7 +413,10 @@ void fission::Application::on_resize(u32)
 
 void on_update(f64 dt, array<Event> events, Render_Context const& ctx)
 {
-	t += dt * PLAYBACK_SPEED;
+	local_persist bool paused = false;
+
+	if (!paused)
+		t += dt * PLAYBACK_SPEED;
 
 	if (!initialized)
 	{
@@ -477,6 +479,17 @@ void on_update(f64 dt, array<Event> events, Render_Context const& ctx)
 				t = 0.0f;
 				ma_decoder_seek_to_pcm_frame(&decoder, 0);
 			}
+			if (e.key_down.key_id == ' ')
+			{
+				if (paused) {
+					ASSERT(!ma_decoder_seek_to_pcm_frame(&decoder, frame_from_seconds(t)));
+					ASSERT(!ma_device_start(&device));
+				}
+				else {
+					ASSERT(!ma_device_stop(&device));
+				}
+				paused = !paused;
+			}
 			break;
 		case Event_Key_Up:
 			if (e.key_down.key_id == key::Mouse_Primary)
@@ -496,9 +509,11 @@ void on_update(f64 dt, array<Event> events, Render_Context const& ctx)
 		t /= f32(SCALE);
 		t = clamp(t, 0.0f, 1.0f);
 		t *= f32(second_count);
-		ASSERT(!ma_device_stop(&device));
-		ASSERT(!ma_decoder_seek_to_pcm_frame(&decoder, frame_from_seconds(t)));
-		ASSERT(!ma_device_start(&device));
+		if (!paused) {
+			ASSERT(!ma_device_stop(&device));
+			ASSERT(!ma_decoder_seek_to_pcm_frame(&decoder, frame_from_seconds(t)));
+			ASSERT(!ma_device_start(&device));
+		}
 		engine.last_ticks = ticks();
 
 		log::info("t = ", t);
@@ -538,6 +553,7 @@ auto on_create() -> Defaults
         .window_title = "제트별",
         .window_width  = 1280,
         .window_height =  720,
+		.minimum_log_level = log::Verbose,
     };
 }
 
